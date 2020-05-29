@@ -1,0 +1,1 @@
+SpaceONE Inventory Service

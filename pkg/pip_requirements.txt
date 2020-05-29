@@ -1,0 +1,7 @@
+spaceone-core
+spaceone-api
+mongoengine
+redis
+langcodes
+ipaddress
+python-consul
