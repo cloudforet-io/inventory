@@ -8,5 +8,5 @@ def EmptyInfo():
     return Empty()
 
 
-def StatisticsInfo(values):
-    return change_struct_type({'results': values})
+def StatisticsInfo(result):
+    return change_struct_type(result)
