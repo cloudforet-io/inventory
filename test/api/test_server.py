@@ -1141,6 +1141,10 @@ class TestServer(unittest.TestCase):
                             'name': 'Server Total Count'
                         }]
                     }
+                },
+                'page': {
+                    'start': 2,
+                    'limit': 3
                 }
             }
         }
@@ -1149,6 +1153,25 @@ class TestServer(unittest.TestCase):
             params, metadata=(('token', self.token),))
 
         self._print_data(result, 'test_stat_server_total_count')
+
+    def test_stat_server_distinct(self):
+        self.test_list_query()
+
+        params = {
+            'domain_id': self.domain.domain_id,
+            'query': {
+                'distinct': 'server_id',
+                'page': {
+                    'start': 2,
+                    'limit': 3
+                }
+            }
+        }
+
+        result = self.inventory_v1.Server.stat(
+            params, metadata=(('token', self.token),))
+
+        self._print_data(result, 'test_stat_server_distinct')
 
 
 if __name__ == "__main__":

@@ -610,6 +610,25 @@ class TestCloudService(unittest.TestCase):
 
         self._print_data(result, 'test_stat_cloud_service')
 
+    def test_stat_cloud_service_distinct(self):
+        self.test_list_query()
+
+        params = {
+            'domain_id': self.domain.domain_id,
+            'query': {
+                'distinct': 'cloud_service_id',
+                'page': {
+                    'start': 1,
+                    'limit': 3
+                }
+            }
+        }
+
+        result = self.inventory_v1.CloudService.stat(
+            params, metadata=(('token', self.token),))
+
+        self._print_data(result, 'test_stat_cloud_service_distinct')
+
 
 if __name__ == "__main__":
     unittest.main(testRunner=RichTestRunner)
