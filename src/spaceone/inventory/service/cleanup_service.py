@@ -79,3 +79,37 @@ class CleanupService(BaseService):
             for state, hour in policy.items():
                 _LOGGER.debug(f'[update_job_state] {resource_type}, {hour}, {state}, {domain_id}')
                 mgr.update_job_state_by_hour(hour, state, domain_id)
+
+    @transaction
+    @check_required(['domain_id'])
+    def delete_resources(self, params):
+        """
+        Args:
+            params (dict): {
+                'options': {},
+                'domain_id': str
+                }
+
+        Based on domain's delete policy, delete resources
+
+        Returns:
+        """
+        domain_id = params['domain_id']
+        # Get Delete Policy of domain
+        # TODO: from domain config
+        policies = {'inventory.Server':{'DELETE': 48},
+                    'inventory.CloudService': {'DELETE': 48}
+                    }
+
+        mgr = self.locator.get_manager('CleanupManager')
+        for resource_type, policy in policies.items():
+            try:
+                for method, hour in policy.items():
+                    _LOGGER.debug(f'[delete_resources] {resource_type}, {hour}, {method}, {domain_id}')
+                    deleted_resources, total_count = mgr.delete_resources_by_policy(resource_type, hour, method, domain_id)
+                    _LOGGER.debug(f'[delete_resources] number of deleted count: {total_count}')
+                    _LOGGER.debug(f'[delete_resources] resources: {deleted_resources}')
+                    # TODO: event notification
+            except Exception as e:
+                _LOGGER.error(f'[delete_resources] {resource_type}, {policy}')
+                _LOGGER.error(f'[delete_resources] {e}')

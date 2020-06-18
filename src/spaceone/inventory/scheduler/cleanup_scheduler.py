@@ -151,10 +151,23 @@ class CleanupScheduler(HourlyScheduler):
                        }
             }
 
+        delete_resources = {
+            'locator': 'SERVICE',
+            'name': 'CleanupService',
+            'metadata': metadata,
+            'method': 'delete_resources',
+            'params': {'params': {
+                            'options': {},
+                            'domain_id': domain['domain_id']
+                            }
+                       }
+        }
+
         stp = {'name': 'inventory_cleanup_schedule',
                'version': 'v1',
                'executionEngine': 'BaseWorker',
-               'stages': [sched_job, update_job_state]}
+               'stages': [sched_job, update_job_state, delete_resources]}
+
         _LOGGER.debug(f'[_create_job_request] tasks: {stp}')
         return stp
 
