@@ -1,5 +1,4 @@
 name: SpaceONE CI
-
 on:
   push:
     branches:
@@ -10,31 +9,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-
       - name: Set environment virables
         env:
-          # 이 곳에서 환경변수를 통해 설정 관리
-          SERVICE: inventory
+          IMAGE_PREFIX: spaceone
           PYPI_UPLOAD: true # upload pypi if this is true
           DOCKER_UPLOAD: true
           # LOCATION points the parent directory
           LOCATION_SETUP_PY: src # optional. for pypi upload
           LOCATION_VERSION: src # the location for VERSION file (ex- . means the location of VERSION is ./VERSION)
           LOCATION_DOCKERFILE: .
-          IMAGE_PREFIX: spaceone 
-          IS_SUDO: false
+
         run: |
           cat <<EOF>set_env.sh
-          echo "::set-env name=SERVICE::$SERVICE"
+          echo "::set-env name=SERVICE::$(cut -d'/' -f2 <<<${{github.repository}})"
+          echo "::set-env name=IMAGE_PREFIX::$IMAGE_PREFIX"
+
           echo "::set-env name=PYPI_UPLOAD::$PYPI_UPLOAD"
           echo "::set-env name=DOCKER_UPLOAD::$DOCKER_UPLOAD"
           echo "::set-env name=LOCATION_SETUP_PY::$LOCATION_SETUP_PY"
           echo "::set-env name=LOCATION_VERSION::$LOCATION_VERSION"
           echo "::set-env name=LOCATION_DOCKERFILE::$LOCATION_DOCKERFILE"
-          echo "::set-env name=IMAGE_PREFIX::$IMAGE_PREFIX"
-          echo "::set-env name=IS_SUDO::$IS_SUDO"
-          echo "::set-env name=VERSION::$(cat $LOCATION_VERSION/VERSION)-${{ github.run_id }}"
-          echo "$(cat $LOCATION_VERSION/VERSION)-${{ github.run_id }}">$LOCATION_VERSION/VERSION
+
+          echo "::set-env name=VERSION::$(cat $LOCATION_VERSION/VERSION).${{ github.run_id }}"
+          echo "$(cat $LOCATION_VERSION/VERSION).${{ github.run_id }}">$LOCATION_VERSION/VERSION
           EOF
 
           bash set_env.sh
@@ -43,6 +40,7 @@ jobs:
         with:
           name: set_env.sh
           path: set_env.sh
+
       - run: |
           cat set_env.sh
 
@@ -51,6 +49,7 @@ jobs:
         with:
           ref: master
           path: master_branch
+
       - name: Compare version
         run: |
           echo "MASTER BRANCH VERSION"
@@ -64,8 +63,8 @@ jobs:
           echo "::set-env name=IS_NEW_VERSION::false"
           cmp --silent master_branch/$LOCATION_VERSION/VERSION $LOCATION_VERSION/VERSION || \
           echo "::set-env name=IS_NEW_VERSION::true"
-
   pypi:
+    if: github.repository_owner == 'spaceone-dev'
     needs: initialize
     runs-on: ubuntu-latest
     steps:
@@ -73,6 +72,8 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: set_env.sh
+      - run: |
+          echo temp
 
       - name: Set environment variables
         run: |
@@ -86,41 +87,34 @@ jobs:
       - name: Install dependencies
         if: env.PYPI_UPLOAD == 'true'
         run: |
-          if [ $IS_SUDO = true ]
-            then
-              sudo python -m pip install --upgrade pip
-              sudo pip install setuptools wheel twine
-            else
-              python -m pip install --upgrade pip
-              pip install setuptools wheel twine
-          fi
-              
+            python -m pip install --upgrade pip
+            pip install setuptools wheel twine
+
       - name: Build
         if: env.PYPI_UPLOAD == 'true'
         run: |
-          if test -f "Makefile"; then
-            make all
-          fi
           cd $LOCATION_SETUP_PY
-          if [ $IS_SUDO = true ]
-            then
-              sudo python setup.py sdist bdist_wheel
-            else
-              python setup.py sdist bdist_wheel
-          fi
+          python setup.py sdist bdist_wheel
+
       - name: Upload Pypi
         if: env.PYPI_UPLOAD == 'true'
         id: upload
         run: |
           cd $LOCATION_SETUP_PY
-          if [ $IS_SUDO = true ]
-            then
-              sudo twine upload dist/*.whl --username ${{ secrets.PYPI_USERNAME }} --password ${{ secrets.PYPI_PASSWORD }} --verbose
-            else
-              twine upload dist/*.whl --username ${{ secrets.PYPI_USERNAME }} --password ${{ secrets.PYPI_PASSWORD }} --verbose
-          fi
+          twine upload dist/*.whl --username ${{ secrets.PYPI_USERNAME }} --password ${{ secrets.PYPI_PASSWORD }} --verbose
+
+      - name: Slack
+        if: always()
+        uses: 8398a7/action-slack@v3.2.0
+        with:
+          status: ${{job.status}}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+          author_name: Github Action Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
 
   docker:
+    if: github.repository_owner == 'spaceone-dev'
     needs: initialize
     runs-on: ubuntu-latest
     steps:
@@ -140,5 +134,13 @@ jobs:
           repository: ${{ env.IMAGE_PREFIX }}/${{ env.SERVICE }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          workdir: ${{ env.LOCATION_DOCKERFILE }}
           tags: latest,${{ env.VERSION }}
+      - name: Slack
+        if: always()
+        uses: 8398a7/action-slack@v3.2.0
+        with:
+          status: ${{job.status}}
+          fields: repo,message,commit,author,action,eventName,ref,workflow,job,took
+          author_name: Github Action Slack
+        env:
+          SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
