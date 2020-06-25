@@ -116,7 +116,7 @@ class CollectorManager(BaseManager):
         return self.collector_db.list_collectors(query)
 
     def stat_collectors(self, query):
-        return self.collector_db.stat(**query)
+        return self.collector_db.stat_collectors(query)
 
     def collect(self, params):
         """
