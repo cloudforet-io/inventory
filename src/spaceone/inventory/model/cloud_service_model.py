@@ -43,8 +43,8 @@ class CloudService(MongoModel):
             'provider',
             'cloud_service_group',
             'cloud_service_type',
-            'reference',
-            'collection_info.state'
+            'reference.resource_id',
+            'project_id'
         ],
         'change_query_keys': {
             'region_id': 'region.region_id'

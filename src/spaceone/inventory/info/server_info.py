@@ -20,7 +20,8 @@ def ServerInfo(server_vo: Server, minimal=False):
         'os_type': server_vo.os_type,
         'provider': server_vo.provider,
         'reference': server_pb2.ServerReference(
-            **server_vo.reference.to_dict()) if server_vo.reference else None
+            **server_vo.reference.to_dict()) if server_vo.reference else None,
+        'project_id': server_vo.project_id
     }
 
     if not minimal:
@@ -35,7 +36,6 @@ def ServerInfo(server_vo: Server, minimal=False):
             'pool_info': PoolInfo(server_vo.pool, minimal=True) if server_vo.pool else None,
             'zone_info': ZoneInfo(server_vo.zone, minimal=True) if server_vo.zone else None,
             'region_info': RegionInfo(server_vo.region, minimal=True) if server_vo.region else None,
-            'project_id': server_vo.project_id,
             'domain_id': server_vo.domain_id,
             'tags': change_struct_type(server_vo.tags),
             'collection_info': change_struct_type(server_vo.collection_info.to_dict()),
