@@ -14,7 +14,8 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
         'cloud_service_group': cloud_svc_vo.cloud_service_group,
         'provider': cloud_svc_vo.provider,
         'reference': cloud_service_pb2.CloudServiceReference(
-            **cloud_svc_vo.reference.to_dict()) if cloud_svc_vo.reference else None
+            **cloud_svc_vo.reference.to_dict()) if cloud_svc_vo.reference else None,
+        'project_id': cloud_svc_vo.project_id
     }
 
     if not minimal:
@@ -22,7 +23,6 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
             'region_info': RegionInfo(cloud_svc_vo.region, minimal=True) if cloud_svc_vo.region else None,
-            'project_id': cloud_svc_vo.project_id,
             'domain_id': cloud_svc_vo.domain_id,
             'tags': change_struct_type(cloud_svc_vo.tags),
             'collection_info': change_struct_type(cloud_svc_vo.collection_info.to_dict()),

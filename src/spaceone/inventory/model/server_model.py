@@ -112,8 +112,8 @@ class Server(MongoModel):
             "server_type",
             "os_type",
             'provider',
-            'reference',
-            'collection_info.state'
+            'reference.resource_id',
+            'project_id'
 
         ],
         'change_query_keys': {
