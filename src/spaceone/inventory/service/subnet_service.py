@@ -45,22 +45,13 @@ class SubnetService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
         domain_id = params['domain_id']
 
-        params['collection_info'] = collection_data_mgr.create_new_history(params,
-                                                                           domain_id,
-                                                                           collector_id,
-                                                                           service_account_id,
-                                                                           secret_id,
-                                                                           exclude_keys=['domain_id'])
+        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         network_mgr: NetworkManager = self.locator.get_manager('NetworkManager')
         ntype_mgr: NetworkTypeManager = self.locator.get_manager('NetworkTypeManager')
@@ -123,12 +114,8 @@ class SubnetService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
         domain_id = params['domain_id']
@@ -136,28 +123,11 @@ class SubnetService(BaseService):
 
         subnet_vo = self.subnet_mgr.get_subnet(params.get('subnet_id'), domain_id)
 
-        params = collection_data_mgr.exclude_data_by_pinned_keys(params, subnet_vo.collection_info)
-        params = collection_data_mgr.exclude_data_by_history(params,
-                                                             subnet_vo.to_dict(),
-                                                             domain_id,
-                                                             subnet_vo.collection_info,
-                                                             collector_id,
-                                                             service_account_id,
-                                                             secret_id,
-                                                             exclude_keys=['subnet_id', 'domain_id',
-                                                                           'release_project'])
-
         ntype_mgr: NetworkTypeManager = self.locator.get_manager('NetworkTypeManager')
         npolicy_mgr: NetworkPolicyManager = self.locator.get_manager('NetworkPolicyManager')
         identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
 
         list(map(lambda ip_range: self._check_ip_range(ip_range, subnet_vo.cidr), params.get('ip_ranges', [])))
-
-        if 'data' in params:
-            params['data'] = collection_data_mgr.merge_data(subnet_vo.data, params['data'])
-
-        if 'metadata' in params:
-            params['metadata'] = collection_data_mgr.merge_metadata(subnet_vo.metadata, params['metadata'])
 
         if 'gateway' in params:
             self._check_ip(params['gateway'])
@@ -177,6 +147,9 @@ class SubnetService(BaseService):
             identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
 
+        exclude_keys = ['subnet_id', 'domain_id', 'release_project']
+        params = data_mgr.merge_data_by_history(params, subnet_vo.to_dict(), exclude_keys=exclude_keys)
+
         return self.subnet_mgr.update_subnet_by_vo(params, subnet_vo)
 
     @transaction
@@ -195,12 +168,12 @@ class SubnetService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         subnet_vo = self.subnet_mgr.get_subnet(params.get('subnet_id'), params['domain_id'])
 
-        params['collection_info'] = collection_data_mgr.update_pinned_keys(params['keys'],
-                                                                           subnet_vo.collection_info)
+        params['collection_info'] = data_mgr.update_pinned_keys(params['keys'],
+                                                                subnet_vo.collection_info.to_dict())
 
         return self.subnet_mgr.update_subnet_by_vo(params, subnet_vo)
 

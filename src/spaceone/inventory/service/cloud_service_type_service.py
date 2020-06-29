@@ -33,22 +33,11 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
 
-        domain_id = params['domain_id']
-
-        params['collection_info'] = collection_data_mgr.create_new_history(params,
-                                                                           domain_id,
-                                                                           collector_id,
-                                                                           service_account_id,
-                                                                           secret_id,
-                                                                           exclude_keys=['domain_id'])
+        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         if provider:
             params['provider'] = provider
@@ -73,12 +62,8 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
 
         domain_id = params['domain_id']
@@ -86,21 +71,11 @@ class CloudServiceTypeService(BaseService):
         cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
                                                                            domain_id)
 
-        params = collection_data_mgr.exclude_data_by_pinned_keys(params, cloud_svc_type_vo.collection_info)
-        params = collection_data_mgr.exclude_data_by_history(params,
-                                                             cloud_svc_type_vo.to_dict(),
-                                                             domain_id,
-                                                             cloud_svc_type_vo.collection_info,
-                                                             collector_id,
-                                                             service_account_id,
-                                                             secret_id,
-                                                             exclude_keys=['cloud_service_type_id', 'domain_id'])
-
-        if 'metadata' in params:
-            params['metadata'] = collection_data_mgr.merge_metadata(cloud_svc_type_vo.metadata, params['metadata'])
-
         if provider:
             params['provider'] = provider
+
+        exclude_keys = ['cloud_service_type_id', 'domain_id']
+        params = data_mgr.merge_data_by_history(params, cloud_svc_type_vo.to_dict(), exclude_keys=exclude_keys)
 
         return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(params, cloud_svc_type_vo)
 
@@ -120,15 +95,15 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
                                                                            params['domain_id'])
 
-        params['collection_info'] = collection_data_mgr.update_pinned_keys(params['keys'],
-                                                                           cloud_svc_type_vo.collection_info)
+        params['collection_info'] = data_mgr.update_pinned_keys(params['keys'],
+                                                                cloud_svc_type_vo.collection_info.to_dict())
 
-        return self.cloud_svc_type_mgr.update_cloud_service_by_vo(params, cloud_svc_type_vo)
+        return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(params, cloud_svc_type_vo)
 
     @transaction
     @check_required(['cloud_service_type_id', 'domain_id'])

@@ -37,23 +37,14 @@ class CloudServiceService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
         domain_id = params['domain_id']
 
-        params['collection_info'] = collection_data_mgr.create_new_history(params,
-                                                                           domain_id,
-                                                                           collector_id,
-                                                                           service_account_id,
-                                                                           secret_id,
-                                                                           exclude_keys=['domain_id'])
+        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         if provider:
             params['provider'] = provider
@@ -83,7 +74,9 @@ class CloudServiceService(BaseService):
                     'tags': 'dict',
                     'region_id': 'str',
                     'project_id': 'str',
-                    'domain_id': 'str'
+                    'domain_id': 'str',
+                    'release_project': 'bool',
+                    'release_region': 'bool'
                 }
 
         Returns:
@@ -91,12 +84,8 @@ class CloudServiceService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
@@ -106,22 +95,6 @@ class CloudServiceService(BaseService):
         release_project = params.get('release_project', False)
 
         cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], domain_id)
-
-        params = collection_data_mgr.exclude_data_by_pinned_keys(params, cloud_svc_vo.collection_info)
-        params = collection_data_mgr.exclude_data_by_history(params,
-                                                             cloud_svc_vo.to_dict(),
-                                                             domain_id,
-                                                             cloud_svc_vo.collection_info,
-                                                             collector_id,
-                                                             service_account_id,
-                                                             secret_id,
-                                                             exclude_keys=['cloud_service_id', 'domain_id'])
-
-        if 'data' in params:
-            params['data'] = collection_data_mgr.merge_data(cloud_svc_vo.data, params['data'])
-
-        if 'metadata' in params:
-            params['metadata'] = collection_data_mgr.merge_metadata(cloud_svc_vo.metadata, params['metadata'])
 
         if provider:
             params['provider'] = provider
@@ -141,6 +114,9 @@ class CloudServiceService(BaseService):
             identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
 
+        exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_pool']
+        params = data_mgr.merge_data_by_history(params, cloud_svc_vo.to_dict(), exclude_keys=exclude_keys)
+
         return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
 
     @transaction
@@ -159,12 +135,11 @@ class CloudServiceService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], params['domain_id'])
 
-        params['collection_info'] = collection_data_mgr.update_pinned_keys(params['keys'],
-                                                                           cloud_svc_vo.collection_info)
+        params['collection_info'] = data_mgr.update_pinned_keys(params['keys'], cloud_svc_vo.collection_info.to_dict())
 
         return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
 

@@ -37,21 +37,11 @@ class NetworkPolicyService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
-
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         domain_id = params['domain_id']
 
-        params['collection_info'] = collection_data_mgr.create_new_history(params,
-                                                                           domain_id,
-                                                                           collector_id,
-                                                                           service_account_id,
-                                                                           secret_id,
-                                                                           exclude_keys=['domain_id'])
+        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         zone_mgr: ZoneManager = self.locator.get_manager('ZoneManager')
         zone_vo = zone_mgr.get_zone(params.get('zone_id'), domain_id)
@@ -87,32 +77,14 @@ class NetworkPolicyService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
-
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         domain_id = params['domain_id']
 
         network_policy_vo = self.npolicy_mgr.get_network_policy(params.get('network_policy_id'), domain_id)
 
-        params = collection_data_mgr.exclude_data_by_pinned_keys(params, network_policy_vo.collection_info)
-        params = collection_data_mgr.exclude_data_by_history(params,
-                                                             network_policy_vo.to_dict(),
-                                                             domain_id,
-                                                             network_policy_vo.collection_info,
-                                                             collector_id,
-                                                             service_account_id,
-                                                             secret_id,
-                                                             exclude_keys=['network_policy_id', 'domain_id'])
-
-        if 'data' in params:
-            params['data'] = collection_data_mgr.merge_data(network_policy_vo.data, params['data'])
-
-        if 'metadata' in params:
-            params['metadata'] = collection_data_mgr.merge_metadata(network_policy_vo.metadata, params['metadata'])
+        exclude_keys = ['network_policy_id', 'domain_id']
+        params = data_mgr.merge_data_by_history(params, network_policy_vo.to_dict(), exclude_keys=exclude_keys)
 
         list(map(lambda route: self._check_route_rule(route), params.get('routing_tables', [])))
         list(map(lambda dns: self._check_dns(dns), params.get('dns', [])))
@@ -135,12 +107,12 @@ class NetworkPolicyService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         network_policy_vo = self.npolicy_mgr.get_network_policy(params.get('network_policy_id'), params.get('domain_id'))
 
-        params['collection_info'] = collection_data_mgr.update_pinned_keys(params['keys'],
-                                                                           network_policy_vo.collection_info)
+        params['collection_info'] = data_mgr.update_pinned_keys(params['keys'],
+                                                                network_policy_vo.collection_info.to_dict())
 
         return self.npolicy_mgr.update_network_policy_by_vo(params, network_policy_vo)
 
