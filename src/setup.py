@@ -34,9 +34,10 @@ setup(
         'spaceone-api',
         'mongoengine',
         'redis',
-        "langcodes",
-        "ipaddress",
-        "python-consul"
+        'langcodes',
+        'ipaddress',
+        'python-consul',
+        'jsondiff'
     ],
     zip_safe=False,
 )

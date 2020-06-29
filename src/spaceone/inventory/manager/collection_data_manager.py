@@ -1,58 +1,32 @@
 import logging
 from datetime import datetime
-from _collections import defaultdict
+from jsondiff import diff
 
 from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.error import *
 
-_SPECIAL_KEYS = ['data', 'view.table.layout', 'view.sub_data.layouts']
+_SPECIAL_KEYS = ['data', 'metadata.view.sub_data.layouts']
 _LOGGER = logging.getLogger(__name__)
+_DEFAULT_PRIORITY = 10
 
 
 class CollectionDataManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.update_history = {}
+        self.change_history = {}
+        self.old_history = {}
         self.metadata_info = {}
         self.collector_priority = {}
+        self.exclude_keys = []
         self.collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         self.job_id = self.transaction.get_meta('job_id')
         self.collector_id = self.transaction.get_meta('collector_id')
         self.secret_id = self.transaction.get_meta('secret.secret_id')
         self.service_account_id = self.transaction.get_meta('secret.service_account_id')
-        self.exclude_keys = []
-        self.updated_at = datetime.utcnow().timestamp()
-
-    def update_pinned_keys(self, keys, collection_info):
-        update_keys = self._get_all_update_keys(collection_info.update_history)
-
-        for key in keys:
-            if key not in update_keys:
-                raise ERROR_NOT_ALLOW_PINNING_KEYS(key=key)
-
-        return {
-            'state': collection_info.state,
-            'collectors': collection_info.collectors,
-            'update_history': collection_info.update_history,
-            'pinned_keys': keys
-        }
-
-    @staticmethod
-    def exclude_data_by_pinned_keys(resource_data, collection_info):
-        for key in collection_info.pinned_keys:
-            if key.startswith('data.'):
-                sub_key = key.split('.')[1]
-
-                if sub_key in resource_data.get('data', {}):
-                    del resource_data['data'][sub_key]
-            else:
-                if key in resource_data:
-                    del resource_data[key]
-
-        return resource_data
+        self.updated_at = f'{datetime.utcnow().isoformat()}Z'
 
     def create_new_history(self, resource_data, **kwargs):
         self.exclude_keys = kwargs.get('exclude_keys', []) + ['metadata']
@@ -61,7 +35,6 @@ class CollectionDataManager(BaseManager):
         all_secrets = []
 
         if self.collector_id:
-            # self.collector_mgr.get_collector(collector_id, domain_id)
             all_collectors.append(self.collector_id)
             state = 'ACTIVE'
 
@@ -75,205 +48,163 @@ class CollectionDataManager(BaseManager):
             self.collector_id = 'MANUAL'
             state = 'MANUAL'
 
-        self._create_update_data_history(resource_data)
+        self._create_data_history(resource_data)
 
         collection_info = {
             'state': state,
             'collectors': all_collectors,
             'service_accounts': all_service_accounts,
             'secrets': all_secrets,
-            'update_history': self._make_update_history()
+            'change_history': self._make_change_history(self.change_history)
         }
 
         return collection_info
 
-    def exclude_data_by_history(self, resource_data, old_data, domain_id, collection_info,
-                                collector_id, service_account_id, secret_id, **kwargs):
-        exclude_keys = kwargs.get('exclude_keys', []) + ['metadata']
-        current_collectors = collection_info.collectors
-        current_service_accounts = collection_info.service_accounts
-        current_secrets = collection_info.secrets
-        all_service_accounts = []
-        all_secrets = []
+    def _set_data_history(self, key, data):
+        if key not in self.exclude_keys:
+            updated_by = self.collector_id
+            if updated_by == 'MANUAL':
+                priority = 1
+            else:
+                priority = self.collector_priority.get(updated_by, _DEFAULT_PRIORITY)
 
-        if collector_id:
-            try:
-                new_collector_vo = self.collector_mgr.get_collector(collector_id, domain_id)
-                priority = new_collector_vo.priority
-            except Exception as e:
-                _LOGGER.warning(f'[exclude_data_by_history] No collector : {collector_id}')
-                priority = 10
+            self.change_history[key] = {
+                'priority': priority,
+                'data': data,
+                'job_id': self.job_id,
+                'updated_by': updated_by,
+                'updated_at': self.updated_at
+            }
 
-            all_collectors = list(set(current_collectors + [collector_id]))
+    def _create_special_data_history(self, data, key_path):
+        if isinstance(data, dict):
+            for key, value in data.items():
+                self._set_data_history(f'{key_path}.{key}', value)
 
-            if service_account_id:
-                all_service_accounts = list(set(current_service_accounts + [service_account_id]))
+        elif isinstance(data, list):
+            for value in data:
+                name = value.get('name')
+                if name:
+                    self._set_data_history(f'{key_path}.{name}', value)
 
-            if secret_id:
-                all_secrets = list(set(current_secrets + [secret_id]))
+    def _create_data_history(self, resource_data):
+        for key, value in resource_data.items():
+            if key in ['data', 'metadata']:
+                for s_key in _SPECIAL_KEYS:
+                    data = utils.get_dict_value(resource_data, s_key)
+                    self._create_special_data_history(data, s_key)
+            else:
+                self._set_data_history(key, value)
+
+    def update_pinned_keys(self, keys, collection_info):
+        change_keys = self._get_all_change_keys(collection_info.get('change_history', []))
+
+        for key in keys:
+            if key not in change_keys:
+                raise ERROR_NOT_ALLOW_PINNING_KEYS(key=key)
+
+        collection_info['pinned_keys'] = keys
+
+        return collection_info
+
+    @staticmethod
+    def _get_all_change_keys(change_history):
+        change_keys = []
+        for change_info in change_history:
+            change_keys.append(change_info['key'])
+
+        return change_keys
+
+    def merge_data_by_history(self, resource_data, old_data, **kwargs):
+        self.exclude_keys = kwargs.get('exclude_keys', [])
+        collection_info = old_data['collection_info']
+        all_collectors = collection_info.get('collectors', [])
+        all_service_accounts = collection_info.get('service_accounts', [])
+        all_secrets = collection_info.get('secrets', [])
+        pinned_keys = collection_info.get('pinned_keys', [])
+
+        if self.collector_id:
+            all_collectors.append(self.collector_id)
+
+            if self.service_account_id:
+                all_service_accounts.append(self.service_account_id)
+
+            if self.secret_id:
+                all_secrets.append(self.secret_id)
 
             state = 'ACTIVE'
         else:
-            collector_id = 'MANUAL'
-            all_collectors = current_collectors
-            all_service_accounts = current_service_accounts
-            all_secrets = current_secrets
-            state = collection_info.state
-            priority = 10
+            self.collector_id = 'MANUAL'
+            state = collection_info['state']
 
-        self._get_collector_priority(current_collectors)
-        self._load_update_history(collection_info.update_history)
-        self._load_old_metadata(old_data.get('metadata', {}))
-        excluded_resource_data = self._compare_data(resource_data,
-                                                    old_data,
-                                                    collector_id,
-                                                    service_account_id,
-                                                    secret_id,
-                                                    priority,
-                                                    exclude_keys)
+        for key in pinned_keys:
+            resource_data = self._update_data_by_key(resource_data, key, action='exclude')
 
-        excluded_resource_data['collection_info'] = {
+        self._get_collector_priority(all_collectors)
+        self._create_data_history(resource_data)
+        self._load_old_data_history(old_data)
+
+        merged_data = self._merge_data(old_data)
+
+        merged_data['collection_info'] = {
             'state': state,
-            'collectors': all_collectors,
-            'service_accounts': all_service_accounts,
-            'secrets': all_secrets,
-            'update_history': self._make_update_history(),
-            'pinned_keys': collection_info.pinned_keys
+            'collectors': list(set(all_collectors)),
+            'service_accounts': list(set(all_service_accounts)),
+            'secrets': list(set(all_secrets)),
+            'change_history': self._make_change_history(self.old_history),
+            'pinned_keys': pinned_keys
         }
 
-        return excluded_resource_data
+        return merged_data
 
-    @staticmethod
-    def merge_data(old_data, new_data):
-        merged_data = old_data.copy()
-        merged_data.update(new_data)
+    def _merge_data(self, merged_data):
+        for key, history_info in self.change_history.items():
+            new_data = history_info['data']
+            new_priority = history_info['priority']
+            if key in self.old_history:
+                old_priority = self.old_history[key]['priority']
+                old_data = self.old_history[key]['data']
+                if new_priority <= old_priority and new_data != old_data:
+                    history_info['diff'] = diff(old_data, new_data, syntax='symmetric', dump=True)
+                    self.old_history[key] = history_info
+                    self._update_data_by_key(merged_data, key, value=new_data)
+            else:
+                self.old_history[key] = history_info
+                self._update_data_by_key(merged_data, key, value=new_data)
+
         return merged_data
 
     @staticmethod
-    def merge_metadata(old_metadata, new_metadata):
-        return new_metadata
-        metadata = {}
-        for meta_key in _METADATA_KEYS:
-            meta_values = defaultdict(dict)
-            for sequence in (old_metadata.get(meta_key, []), new_metadata.get(meta_key, [])):
-                for meta_value in sequence:
-                    meta_values[meta_value['name']].update(meta_value)
+    def _update_data_by_key(resource_data, key, action='set', value=None):
+        if '.' in key:
+            key_path, sub_key = key.rsplit('.', 1)
+            data = utils.get_dict_value(resource_data, key_path)
+            if isinstance(data, dict):
+                if action == 'set':
+                    data[sub_key] = value
+                elif action == 'exclude':
+                    if sub_key in data:
+                        del data[sub_key]
+            elif isinstance(data, list):
+                list_data = []
+                for d in data:
+                    if d.get('name') != sub_key:
+                        list_data.append(d)
 
-            metadata[meta_key] = meta_values.values()
+                if action == 'set':
+                    list_data.append(value)
 
-        return metadata
+                data = list_data
 
-    @staticmethod
-    def _exclude_metadata_item(items, collector_id):
-        changed_items = []
-        for item in items:
-            if item.get('updated_by') != collector_id:
-                changed_items.append(item)
+            utils.change_dict_value(resource_data, key_path, data)
 
-        return changed_items
+        elif key in resource_data:
+            if action == 'set':
+                resource_data[key] = value
+            elif action == 'exclude':
+                del resource_data[key]
 
-    @staticmethod
-    def _get_all_update_keys(update_history):
-        update_keys = []
-        for update_info in update_history:
-            update_keys.append(update_info.key)
-
-        return update_keys
-
-    def _set_data_history(self, key):
-        if key not in self.exclude_keys:
-            self.update_history[key] = {
-                'updated_by': self.collector_id,
-                'updated_at': self.update_at,
-                'service_account_id': self.service_account_id,
-                'secret_id': self.secret_id,
-                'job_id': self.job_id
-            }
-
-    def _create_update_data_history(self, resource_data):
-        for key, value in resource_data.items():
-            if key in ['data', 'metadata']:
-                for _s_key in _SPECIAL_KEYS:
-                    data = utils.get_dict_value(resource_data, _s_key)
-            else:
-                pass
-
-            # if key == 'data':
-            #     self._set_data_history(value, exclude_keys, collector_id, updated_at,
-            #                            service_account_id, secret_id)
-            # elif key == 'metadata':
-            #     self._set_metadata_history(value, collector_id, updated_at,
-            #                                service_account_id, secret_id)
-            # else:
-            #     self._set_field_data_history(key, exclude_keys, collector_id, updated_at,
-            #                                  service_account_id, secret_id)
-
-    def _set_data_history(self, data, exclude_keys, collector_id, updated_at,
-                          service_account_id, secret_id):
-        for sub_key in data.keys():
-            if f'data.{sub_key}' not in exclude_keys:
-                self.update_history[f'data.{sub_key}'] = {
-                    'updated_by': collector_id,
-                    'updated_at': updated_at,
-                    'service_account_id': service_account_id,
-                    'secret_id': secret_id
-                }
-
-    def _set_layout_history(self, layout, key_path, collector_id, updated_at,
-                            service_account_id, secret_id):
-        if not isinstance(layout, dict):
-            raise ERROR_METADATA_DICT_TYPE(key=key_path)
-
-        if 'name' in layout:
-            name = layout['name'].strip()
-            self.update_history[f'{key_path}.{name}'] = {
-                'updated_by': collector_id,
-                'updated_at': updated_at,
-                'service_account_id': service_account_id,
-                'secret_id': secret_id
-            }
-
-    def _set_view_metadata_history(self, view_meta, collector_id, updated_at,
-                                   service_account_id, secret_id):
-        if not isinstance(view_meta, dict):
-            raise ERROR_INVALID_PARAMETER_TYPE(key='metadata.view', type='dict')
-
-        if 'table' in view_meta:
-            layout = view_meta['table'].get('layout')
-            if not isinstance(layout, dict):
-                raise ERROR_METADATA_DICT_TYPE(key='metadata.view.table.layout')
-
-            self._set_layout_history(layout, 'metadata.view.table.layout', collector_id,
-                                     updated_at, service_account_id, secret_id)
-
-        elif 'sub_data' in view_meta:
-            layouts = view_meta['sub_data'].get('layouts')
-            if not isinstance(layouts, list):
-                raise ERROR_METADATA_LIST_VALUE_TYPE(key='metadata.view.sub_data.layouts')
-
-            for layout in layouts:
-                self._set_layout_history(layout, 'metadata.view.sub_data.layouts', collector_id,
-                                         updated_at, service_account_id, secret_id)
-
-    def _set_metadata_history(self, metadata, collector_id, updated_at,
-                              service_account_id, secret_id):
-
-        if not isinstance(metadata, dict):
-            raise ERROR_INVALID_PARAMETER_TYPE(key='metadata', type='dict')
-
-        if 'view' in metadata:
-            self._set_view_metadata_history(metadata['view'], collector_id, updated_at,
-                                            service_account_id, secret_id)
-
-    def _set_field_data_history(self, key, exclude_keys, collector_id, updated_at,
-                                service_account_id, secret_id):
-        if key not in exclude_keys:
-            self.update_history[key] = {
-                'updated_by': collector_id,
-                'updated_at': updated_at,
-                'service_account_id': service_account_id,
-                'secret_id': secret_id
-            }
+        return resource_data
 
     def _get_collector_priority(self, collectors):
         query = {
@@ -290,179 +221,47 @@ class CollectionDataManager(BaseManager):
         for collector_vo in collector_vos:
             self.collector_priority[collector_vo.collector_id] = collector_vo.priority
 
-    def _load_update_history(self, current_update_history):
-        for history_info in current_update_history:
-            self.update_history[history_info.key] = {
-                'priority': self.collector_priority.get(history_info.updated_by, 100),
-                'updated_by': history_info.updated_by,
-                'updated_at': history_info.updated_at,
-                'service_account_id': history_info.service_account_id,
-                'secret_id': history_info.secret_id
+    def _load_old_data_history(self, old_data):
+        change_history = old_data['collection_info'].get('change_history', [])
+        for change_info in change_history:
+            updated_by = change_info['updated_by']
+            key = change_info['key']
+            self.old_history[key] = {
+                'priority': self.collector_priority.get(updated_by, _DEFAULT_PRIORITY),
+                'data': self._get_data_from_history_key(old_data, key),
+                'job_id': change_info.get('job_id'),
+                'updated_by': updated_by,
+                'updated_at': change_info['updated_at']
             }
 
-    def _load_old_metadata(self, old_metadata):
-        for meta_key, meta_values in old_metadata.items():
-            self.metadata_info[meta_key] = {}
-            for value in meta_values:
-                if 'name' in value:
-                    self.metadata_info[meta_key][value['name'].strip()] = value
-
-    def _compare_data(self, resource_data, old_data, collector_id,
-                      service_account_id, secret_id, priority, exclude_keys):
-        updated_at = datetime.utcnow().timestamp()
-        changed_data = {}
-
-        for key, value in resource_data.items():
-            if key == 'data':
-                changed_data['data'] = self._check_data_priority(value, old_data.get('data', {}), exclude_keys,
-                                                                 collector_id, service_account_id,
-                                                                 secret_id, priority, updated_at)
-            # elif key == 'metadata':
-            #     changed_data['metadata'] = self._check_metadata_priority(value, collector_id,
-            #                                                              service_account_id, secret_id,
-            #                                                              priority, updated_at)
+    @staticmethod
+    def _get_data_from_history_key(data, key):
+        if '.' in key:
+            key_path, sub_key = key.rsplit('.', 1)
+            sub_data = utils.get_dict_value(data, key_path)
+            if isinstance(sub_data, dict):
+                if sub_key in sub_data:
+                    return sub_data.get(sub_key)
+            elif isinstance(data, list):
+                for value in sub_data:
+                    if value.get('name') == sub_key:
+                        return value
             else:
-                is_data_remove = self._check_field_data_priority(key, value, old_data.get(key, None),
-                                                                 exclude_keys, collector_id,
-                                                                 service_account_id, secret_id,
-                                                                 priority, updated_at)
-                if not is_data_remove:
-                    changed_data[key] = value
-
-        # return changed_data
-        return resource_data
-
-    def _check_priority(self, key, priority):
-        if key in self.update_history and self.update_history[key]['priority'] < priority:
-            return False
+                return None
         else:
-            return True
+            return data.get(key)
 
-    def _check_data_priority(self, data, old_data, exclude_keys, collector_id,
-                             service_account_id, secret_id, priority, updated_at):
-        changed_data = {}
-        for sub_key, sub_value in data.items():
-            key = f'data.{sub_key}'
-            if key in exclude_keys:
-                changed_data[sub_key] = sub_value
-            elif old_data.get(sub_key) and old_data[sub_key] == sub_value:
-                pass
-            else:
-                if self._check_priority(key, priority):
-                    changed_data[sub_key] = sub_value
+    @staticmethod
+    def _make_change_history(change_history):
+        history_output = []
 
-                    self.update_history[key] = {
-                        'updated_by': collector_id,
-                        'updated_at': updated_at,
-                        'service_account_id': service_account_id,
-                        'secret_id': secret_id
-                    }
-
-        return changed_data
-
-    def _check_layout_history(self, layout, key_path, collector_id, service_account_id, secret_id,
-                              priority, updated_at):
-        if not isinstance(layout, dict):
-            raise ERROR_METADATA_DICT_TYPE(key=key_path)
-        #
-        # if 'name' in layout:
-        #     name = layout['name'].strip()
-        #     history_key = f'{key_path}.{name}'
-        #
-        #     if self.metadata_info.get(meta_key) and self.metadata_info[meta_key] == value:
-        #
-        #     self.update_history[f'{key_path}.{name}'] = {
-        #         'updated_by': collector_id,
-        #         'updated_at': updated_at,
-        #         'service_account_id': service_account_id,
-        #         'secret_id': secret_id
-        #     }
-        #
-        #
-        # for meta_key, meta_values in metadata.items():
-        #     self._check_metadata_item(meta_key, meta_values)
-        #     changed_metadata[meta_key] = []
-        #     for value in meta_values:
-        #         if 'name' in value:
-        #             meta_name = value['name'].strip()
-        #             history_key = f'metadata.{meta_key}.{meta_name}'
-        #
-        #             if self.metadata_info.get(meta_key) and self.metadata_info[meta_key] == value:
-        #                 pass
-        #             else:
-        #                 if self._check_priority(history_key, priority):
-        #                     changed_metadata[meta_key].append(value)
-        #
-        #                     self.update_history[history_key] = {
-        #                         'updated_by': collector_id,
-        #                         'updated_at': updated_at,
-        #                         'service_account_id': service_account_id,
-        #                         'secret_id': secret_id
-        #                     }
-
-    def _check_view_metadata_history(self, view_meta, collector_id, service_account_id,
-                                     secret_id, priority, updated_at):
-        if not isinstance(view_meta, dict):
-            raise ERROR_INVALID_PARAMETER_TYPE(key='metadata.view', type='dict')
-
-        if 'table' in view_meta:
-            layout = view_meta['table'].get('layout')
-            if not isinstance(layout, dict):
-                raise ERROR_METADATA_DICT_TYPE(key='metadata.view.table.layout')
-
-            view_meta['table'] = self._check_layout_history(layout, 'metadata.view.table.layout', collector_id,
-                                                            service_account_id, secret_id, priority, updated_at)
-
-        elif 'sub_data' in view_meta:
-            layouts = view_meta['sub_data'].get('layouts')
-            if not isinstance(layouts, list):
-                raise ERROR_METADATA_LIST_VALUE_TYPE(key='metadata.view.sub_data.layouts')
-
-            for layout in layouts:
-                view_meta['sub_data'] = self._check_layout_history(layout, 'metadata.view.sub_data.layouts',
-                                                                   collector_id, service_account_id, secret_id,
-                                                                   priority, updated_at)
-        return view_meta
-
-    def _check_metadata_priority(self, metadata, collector_id, service_account_id,
-                                 secret_id, priority, updated_at):
-        changed_metadata = {}
-        if 'view' in metadata:
-            changed_metadata['view'] = self._check_view_metadata_history(metadata['view'], collector_id,
-                                                                         service_account_id, secret_id,
-                                                                         priority, updated_at)
-
-        return changed_metadata
-
-    def _check_field_data_priority(self, key, value, old_value, exclude_keys, collector_id,
-                                   service_account_id, secret_id, priority, updated_at):
-        if key in exclude_keys:
-            return False
-        elif value == old_value:
-            return True
-        else:
-            if self._check_priority(key, priority):
-                self.update_history[key] = {
-                    'updated_by': collector_id,
-                    'updated_at': updated_at,
-                    'service_account_id': service_account_id,
-                    'secret_id': secret_id
-                }
-
-                return False
-            else:
-                return True
-
-    def _make_update_history(self):
-        update_history = []
-
-        for key, value in self.update_history.items():
-            update_history.append({
+        for key, history_info in change_history.items():
+            history_output.append({
                 'key': key,
-                'updated_by': value['updated_by'],
-                'updated_at': value['updated_at'],
-                'service_account_id': value.get('service_account_id'),
-                'secret_id': value.get('secret_id')
+                'job_id': history_info.get('job_id'),
+                'diff': history_info.get('diff'),
+                'updated_by': history_info['updated_by'],
+                'updated_at': history_info['updated_at']
             })
 
-        return update_history
+        return history_output

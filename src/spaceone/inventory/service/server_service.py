@@ -53,7 +53,7 @@ class ServerService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
@@ -66,7 +66,7 @@ class ServerService(BaseService):
         primary_ip_address = params.get('primary_ip_address')
 
         params['state'] = params.get('state', 'INSERVICE')
-        params['collection_info'] = collection_data_mgr.create_new_history(params, exclude_keys=['domain_id'])
+        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         if provider:
             params['provider'] = provider
@@ -124,12 +124,8 @@ class ServerService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
@@ -143,22 +139,8 @@ class ServerService(BaseService):
 
         server_vo: Server = self.server_mgr.get_server(params['server_id'], params['domain_id'])
 
-        params = collection_data_mgr.exclude_data_by_pinned_keys(params, server_vo.collection_info)
-        params = collection_data_mgr.exclude_data_by_history(params,
-                                                             server_vo.to_dict(),
-                                                             domain_id,
-                                                             server_vo.collection_info,
-                                                             collector_id,
-                                                             service_account_id,
-                                                             secret_id,
-                                                             exclude_keys=['server_id', 'domain_id',
-                                                                           'release_project', 'release_pool'])
-
-        if 'data' in params:
-            params['data'] = collection_data_mgr.merge_data(server_vo.data, params['data'])
-
-        if 'metadata' in params:
-            params['metadata'] = collection_data_mgr.merge_metadata(server_vo.metadata, params['metadata'])
+        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool']
+        params = data_mgr.merge_data_by_history(params, server_vo.to_dict(), exclude_keys=exclude_keys)
 
         if provider:
             params['provider'] = provider
@@ -214,12 +196,11 @@ class ServerService(BaseService):
 
         """
 
-        collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         server_vo: Server = self.server_mgr.get_server(params['server_id'], params['domain_id'])
 
-        params['collection_info'] = collection_data_mgr.update_pinned_keys(params['keys'],
-                                                                           server_vo.collection_info)
+        params['collection_info'] = data_mgr.update_pinned_keys(params['keys'], server_vo.collection_info.to_dict())
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
 

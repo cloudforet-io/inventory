@@ -290,34 +290,6 @@ class TestServer(unittest.TestCase):
         self.secrets.append(self.secret)
         self.assertEqual(self.secret.name, params['name'])
 
-    def _create_collector(self, name=None, **kwargs):
-        if name is None:
-            name = 'Collector-' + random_string()[0:5]
-
-        self._create_secret()
-
-        params = {
-            'name': name,
-            "plugin_info": {
-                "plugin_id": "plugin-885ff2c52a6c",
-                "version": "1.1",
-                "secret_id": self.secret.secret_id,
-                "options": {}
-            },
-            'domain_id': self.domain.domain_id
-        }
-
-        priority = kwargs.get('priority')
-        if priority:
-            params['priority'] = priority
-
-        self.collector = self.inventory_v1.Collector.create(
-            params,
-            metadata=(('token', self.token),))
-
-        self.collectors.append(self.collector)
-        self.assertEqual(self.collector.name, params['name'])
-
     def _print_data(self, message, description=None):
         print()
         if description:
@@ -401,7 +373,7 @@ class TestServer(unittest.TestCase):
                             'options': {
                                 'fields': [{
                                     'key': 'data.compute.instance_id',
-                                    'name': 'Instance ID2'
+                                    'name': 'Instance ID'
                                 }, {
                                     'key': 'data.platform.type',
                                     'name': 'Platform Type',
@@ -445,7 +417,6 @@ class TestServer(unittest.TestCase):
         """
         self._create_project_group()
         self._create_project(project_group_id=self.project_group.project_group_id)
-        # self._create_collector(priority=1)
         self.test_create_server(name, meta=(
             ('job_id', utils.generate_id('job')),
             ('collector_id', utils.generate_id('collector')),
@@ -458,11 +429,6 @@ class TestServer(unittest.TestCase):
     def test_update_server_by_collector(self, name=None):
         """ Create Server by Collector
         """
-
-        # self._create_collector(priority=2)
-        # self._create_collector(priority=1)
-        # self._create_collector(priority=3)
-
         self.test_create_server_by_collector()
 
         self.server = self.inventory_v1.Server.update(
@@ -500,7 +466,7 @@ class TestServer(unittest.TestCase):
                                 'options': {
                                     'fields': [{
                                         'key': 'data.hardware.core',
-                                        'name': 'Core'
+                                        'name': 'Core2'
                                     }, {
                                         'key': 'data.hardware.memory',
                                         'name': 'Memory'
@@ -540,6 +506,8 @@ class TestServer(unittest.TestCase):
                 ('secret.provider', 'aws')
             ))
 
+        self._print_data(self.server, 'test_update_server_by_collector_1')
+
         self.server = self.inventory_v1.Server.update(
             {
                 'server_id': self.server.server_id,
@@ -576,7 +544,7 @@ class TestServer(unittest.TestCase):
                                         'name': 'Instance ID2'
                                     }, {
                                         'key': 'data.platform.type',
-                                        'name': 'Platform Type',
+                                        'name': 'Platform Type2',
                                         'view_type': 'badge',
                                         'background_color': 'yellow'
                                     }]
@@ -599,7 +567,7 @@ class TestServer(unittest.TestCase):
 
         server_data = MessageToDict(self.server, preserving_proto_field_name=True)
 
-        self._print_data(self.server, 'test_update_server_by_collector')
+        self._print_data(self.server, 'test_update_server_by_collector_2')
         # self.assertEqual(server_data['os_type'], 'WINDOWS')
         # self.assertEqual(server_data['data']['hardware']['core'], 8)
         # self.assertEqual(server_data['reference']['resource_id'], 'resource-yyyy')
@@ -610,9 +578,6 @@ class TestServer(unittest.TestCase):
     def test_pin_server_data(self, name=None):
         """ Create Server by Collector
         """
-        self._create_collector(priority=2)
-        self._create_collector(priority=1)
-
         self.test_create_server(name)
 
         self.server = self.inventory_v1.Server.pin_data(
@@ -628,6 +593,8 @@ class TestServer(unittest.TestCase):
                 ('token', self.token),
             ))
 
+        self._print_data(self.server, 'test_pin_server_data_1')
+
         self.server = self.inventory_v1.Server.update(
             {
                 'server_id': self.server.server_id,
@@ -635,26 +602,27 @@ class TestServer(unittest.TestCase):
                 'data': {
                     'hardware': {
                         'core': 8,
+                        'manufacturer': 'HP',
                         'memory': 16
                     },
                     'os': {
                         'os_distro': 'windows2012',
-                        'os_details': 'Windows 2012 ENT SP2'
+                        # 'os_details': 'Windows 2012 ENT SP2'
                     }
                 },
                 'domain_id': self.domain.domain_id
             },
             metadata=(
                 ('token', self.token),
-                ('collector_id', self.collectors[1].collector_id),
+                ('collector_id', utils.generate_id('collector')),
                 ('service_account_id', utils.generate_id('sa')),
                 ('secret_id', utils.generate_id('secret')),
-                ('job_id', 'job-' + random_string()[0:5]),
+                ('job_id', utils.generate_id('job')),
             ))
 
         server_data = MessageToDict(self.server, preserving_proto_field_name=True)
 
-        self._print_data(self.server, 'test_pin_server_data')
+        self._print_data(self.server, 'test_pin_server_data_2')
         self.assertEqual(server_data['os_type'], 'LINUX')
         self.assertEqual(server_data['data']['hardware']['core'], 4)
         self.assertEqual(server_data['data']['os']['os_distro'], 'windows2012')
