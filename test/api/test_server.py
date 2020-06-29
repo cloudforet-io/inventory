@@ -976,6 +976,37 @@ class TestServer(unittest.TestCase):
         self._print_data(result, 'test_list_server_by_timediff')
         self.assertEqual(result.total_count, 1)
 
+    def test_list_server_deleted(self):
+        self.test_create_server()
+
+        for server in self.servers:
+            self.inventory_v1.Server.delete(
+                {'server_id': server.server_id,
+                 'domain_id': self.domain.domain_id},
+                metadata=(('token', self.token),)
+            )
+
+        params = {
+            'domain_id': self.domain.domain_id,
+            'server_id': self.server.server_id,
+            'query': {
+                'minimal': True,
+                'filter': [{
+                    'key': 'state',
+                    'value': 'DELETED',
+                    'operator': 'eq'
+                }]
+            }
+        }
+
+        result = self.inventory_v1.Server.list(
+            params, metadata=(('token', self.token),))
+
+        self.servers = []
+
+        self._print_data(result, 'test_list_server_deleted')
+        self.assertEqual(result.total_count, 1)
+
     def test_stat_server(self):
         self.test_list_query()
 

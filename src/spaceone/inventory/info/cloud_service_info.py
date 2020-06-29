@@ -12,6 +12,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
         'cloud_service_id': cloud_svc_vo.cloud_service_id,
         'cloud_service_type': cloud_svc_vo.cloud_service_type,
         'cloud_service_group': cloud_svc_vo.cloud_service_group,
+        'state': cloud_svc_vo.state,
         'provider': cloud_svc_vo.provider,
         'reference': cloud_service_pb2.CloudServiceReference(
             **cloud_svc_vo.reference.to_dict()) if cloud_svc_vo.reference else None,
@@ -27,7 +28,8 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'tags': change_struct_type(cloud_svc_vo.tags),
             'collection_info': change_struct_type(cloud_svc_vo.collection_info.to_dict()),
             'created_at': change_timestamp_type(cloud_svc_vo.created_at),
-            'updated_at': change_timestamp_type(cloud_svc_vo.updated_at)
+            'updated_at': change_timestamp_type(cloud_svc_vo.updated_at),
+            'deleted_at': change_timestamp_type(cloud_svc_vo.deleted_at),
         })
 
     return cloud_service_pb2.CloudServiceInfo(**info)

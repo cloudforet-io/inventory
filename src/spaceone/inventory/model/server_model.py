@@ -7,6 +7,7 @@ from spaceone.inventory.model.zone_model import Zone
 from spaceone.inventory.model.pool_model import Pool
 from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
+from spaceone.inventory.error import *
 
 
 class IPAddress(EmbeddedDocument):
@@ -160,27 +161,20 @@ class Server(MongoModel):
         }
     }
 
-    """
-    @queryset_manager
-    def objects(doc_cls, queryset):
-        return queryset.filter(state__ne='DELETED')
+    def update(self, data):
+        if self.state == 'DELETED':
+            raise ERROR_RESOURCE_ALREADY_DELETED(resource_type='Server', resource_id=self.server_id)
 
-    # def update(self, data):
-    #     if self.state == 'DELETED':
-    #         raise ERROR_RESOURCE_ALREADY_DELETED(resource_type='Server', resource_id=self.server_id)
-    #
-    #     return super().update(data)
+        return super().update(data)
 
     def delete(self):
-        # if self.state == 'DELETED':
-        #     raise ERROR_RESOURCE_ALREADY_DELETED(resource_type='Server', resource_id=self.server_id)
+        if self.state == 'DELETED':
+            raise ERROR_RESOURCE_ALREADY_DELETED(resource_type='Server', resource_id=self.server_id)
 
         self.update({
             'state': 'DELETED',
-            #'asset': None,
-            'pool': None,
-            'zone': None,
             'region': None,
+            'zone': None,
+            'pool': None,
             'deleted_at': datetime.utcnow()
         })
-    """

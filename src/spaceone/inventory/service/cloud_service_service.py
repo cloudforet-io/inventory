@@ -233,7 +233,8 @@ class CloudServiceService(BaseService):
 
         """
 
-        return self.cloud_svc_mgr.list_cloud_services(params.get('query', {}))
+        query = self._append_state_query(params.get('query', {}))    # Append Query for DELETED filter (Temporary Logic)
+        return self.cloud_svc_mgr.list_cloud_services(query)
 
     @transaction
     @check_required(['query', 'domain_id'])
@@ -253,3 +254,34 @@ class CloudServiceService(BaseService):
 
         query = params.get('query', {})
         return self.cloud_svc_mgr.stat_cloud_services(query)
+
+    '''
+    TEMPORARY Logic for DELETED filter  
+    '''
+    @staticmethod
+    def _append_state_query(query):
+        state_defaul_filter = {
+            'key': 'state',
+            'value': 'DELETED',
+            'operator': 'not'
+        }
+
+        deleted_display = False
+        for _q in query.get('filter', []):
+            key = _q.get('k', _q.get('key'))
+            value = _q.get('v', _q.get('value'))
+            operator = _q.get('o', _q.get('operator'))
+
+            if key == 'state' and value == 'DELETED' and operator == 'eq':
+                deleted_display = True
+            if key == 'state' and value == ['DELETED'] and operator == 'in':
+                deleted_display = True
+
+        if deleted_display is False:
+            _filter = query.get('filter', None)
+            if _filter is None:
+                query['filter'] = [state_defaul_filter]
+            else:
+                _filter.append(state_defaul_filter)
+
+        return query
