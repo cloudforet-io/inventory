@@ -251,6 +251,7 @@ class ServerService(BaseService):
 
     @transaction
     @check_required(['server_id', 'domain_id'])
+    @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'})
     def get(self, params):
         """
         Args:
@@ -269,6 +270,7 @@ class ServerService(BaseService):
 
     @transaction
     @check_required(['domain_id'])
+    @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'}, key_path='query.only')
     @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address',
                           'ip_addresses', 'server_type', 'os_type', 'provider',
                           'asset_id', 'region_id', 'zone_id', 'pool_id', 'project_id',

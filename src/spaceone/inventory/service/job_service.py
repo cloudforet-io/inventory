@@ -13,6 +13,7 @@ class JobService(BaseService):
 
     @transaction
     @check_required(['domain_id'])
+    @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['job_id', 'state', 'collect_mode', 'collector_id', 'resource_type', 'resource_id',
                           'domain_id'])
     @append_keyword_filter(['job_id'])

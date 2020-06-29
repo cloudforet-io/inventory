@@ -175,6 +175,7 @@ class ZoneService(BaseService):
 
     @transaction
     @check_required(['zone_id', 'domain_id'])
+    @change_only_key({'region_info': 'region'})
     def get(self, params):
         """
         Args:
@@ -193,6 +194,7 @@ class ZoneService(BaseService):
 
     @transaction
     @check_required(['domain_id'])
+    @change_only_key({'region_info': 'region'}, key_path='query.only')
     @append_query_filter(['region_id', 'zone_id', 'name', 'domain_id'])
     @append_keyword_filter(['zone_id', 'name'])
     def list(self, params):
