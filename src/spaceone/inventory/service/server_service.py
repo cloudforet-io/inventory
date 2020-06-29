@@ -55,10 +55,6 @@ class ServerService(BaseService):
 
         collection_data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
-        job_id = self.transaction.get_meta('job_id')
-        collector_id = self.transaction.get_meta('collector_id')
-        secret_id = self.transaction.get_meta('secret.secret_id')
-        service_account_id = self.transaction.get_meta('secret.service_account_id')
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
@@ -70,12 +66,7 @@ class ServerService(BaseService):
         primary_ip_address = params.get('primary_ip_address')
 
         params['state'] = params.get('state', 'INSERVICE')
-        params['collection_info'] = collection_data_mgr.create_new_history(params,
-                                                                           domain_id,
-                                                                           collector_id,
-                                                                           service_account_id,
-                                                                           secret_id,
-                                                                           exclude_keys=['domain_id'])
+        params['collection_info'] = collection_data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         if provider:
             params['provider'] = provider

@@ -2,11 +2,12 @@ import logging
 from datetime import datetime
 from _collections import defaultdict
 
+from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.error import *
 
-_METADATA_KEYS = ['view.table.layout', 'view.sub_data.layouts']
+_SPECIAL_KEYS = ['data', 'view.table.layout', 'view.sub_data.layouts']
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -18,6 +19,12 @@ class CollectionDataManager(BaseManager):
         self.metadata_info = {}
         self.collector_priority = {}
         self.collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
+        self.job_id = self.transaction.get_meta('job_id')
+        self.collector_id = self.transaction.get_meta('collector_id')
+        self.secret_id = self.transaction.get_meta('secret.secret_id')
+        self.service_account_id = self.transaction.get_meta('secret.service_account_id')
+        self.exclude_keys = []
+        self.updated_at = datetime.utcnow().timestamp()
 
     def update_pinned_keys(self, keys, collection_info):
         update_keys = self._get_all_update_keys(collection_info.update_history)
@@ -47,28 +54,28 @@ class CollectionDataManager(BaseManager):
 
         return resource_data
 
-    def create_new_history(self, resource_data, domain_id, collector_id, service_account_id, secret_id, **kwargs):
-        exclude_keys = kwargs.get('exclude_keys', []) + ['metadata']
+    def create_new_history(self, resource_data, **kwargs):
+        self.exclude_keys = kwargs.get('exclude_keys', []) + ['metadata']
         all_collectors = []
         all_service_accounts = []
         all_secrets = []
 
-        if collector_id:
+        if self.collector_id:
             # self.collector_mgr.get_collector(collector_id, domain_id)
-            all_collectors.append(collector_id)
+            all_collectors.append(self.collector_id)
             state = 'ACTIVE'
 
-            if service_account_id:
-                all_service_accounts.append(service_account_id)
-            if secret_id:
-                all_secrets.append(secret_id)
+            if self.service_account_id:
+                all_service_accounts.append(self.service_account_id)
+
+            if self.secret_id:
+                all_secrets.append(self.secret_id)
 
         else:
-            collector_id = 'MANUAL'
+            self.collector_id = 'MANUAL'
             state = 'MANUAL'
 
-        self._create_update_data_history(resource_data, collector_id,
-                                         service_account_id, secret_id, exclude_keys)
+        self._create_update_data_history(resource_data)
 
         collection_info = {
             'state': state,
@@ -173,20 +180,33 @@ class CollectionDataManager(BaseManager):
 
         return update_keys
 
-    def _create_update_data_history(self, resource_data, collector_id,
-                                    service_account_id, secret_id, exclude_keys):
-        updated_at = datetime.utcnow().timestamp()
+    def _set_data_history(self, key):
+        if key not in self.exclude_keys:
+            self.update_history[key] = {
+                'updated_by': self.collector_id,
+                'updated_at': self.update_at,
+                'service_account_id': self.service_account_id,
+                'secret_id': self.secret_id,
+                'job_id': self.job_id
+            }
 
+    def _create_update_data_history(self, resource_data):
         for key, value in resource_data.items():
-            if key == 'data':
-                self._set_data_history(value, exclude_keys, collector_id, updated_at,
-                                       service_account_id, secret_id)
-            elif key == 'metadata':
-                self._set_metadata_history(value, collector_id, updated_at,
-                                           service_account_id, secret_id)
+            if key in ['data', 'metadata']:
+                for _s_key in _SPECIAL_KEYS:
+                    data = utils.get_dict_value(resource_data, _s_key)
             else:
-                self._set_field_data_history(key, exclude_keys, collector_id, updated_at,
-                                             service_account_id, secret_id)
+                pass
+
+            # if key == 'data':
+            #     self._set_data_history(value, exclude_keys, collector_id, updated_at,
+            #                            service_account_id, secret_id)
+            # elif key == 'metadata':
+            #     self._set_metadata_history(value, collector_id, updated_at,
+            #                                service_account_id, secret_id)
+            # else:
+            #     self._set_field_data_history(key, exclude_keys, collector_id, updated_at,
+            #                                  service_account_id, secret_id)
 
     def _set_data_history(self, data, exclude_keys, collector_id, updated_at,
                           service_account_id, secret_id):

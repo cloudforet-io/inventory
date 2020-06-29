@@ -4,7 +4,7 @@ from mongoengine import *
 class UpdateHistory(EmbeddedDocument):
     key = StringField()
     updated_by = StringField(max_length=40)
-    updated_at = IntField()
+    updated_at = DateTimeField()
     service_account_id = StringField(max_length=40, default=None, null=True)
     secret_id = StringField(max_length=40, default=None, null=True)
 
