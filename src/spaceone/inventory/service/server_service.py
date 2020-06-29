@@ -139,11 +139,14 @@ class ServerService(BaseService):
 
         server_vo: Server = self.server_mgr.get_server(params['server_id'], params['domain_id'])
 
-        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool']
-        params = data_mgr.merge_data_by_history(params, server_vo.to_dict(), exclude_keys=exclude_keys)
-
         if provider:
             params['provider'] = provider
+
+        if release_project:
+            params['project_id'] = None
+        elif project_id:
+            self._check_project(project_id, domain_id)
+            params['project_id'] = project_id
 
         if release_region:
             params.update({
@@ -162,12 +165,6 @@ class ServerService(BaseService):
                     if region_id:
                         params.update(self._get_region(region_id, domain_id))
 
-        if release_project:
-            params['project_id'] = None
-        elif project_id:
-            self._check_project(project_id, domain_id)
-            params['project_id'] = project_id
-
         if 'nics' in params:
             params['ip_addresses'] = self._get_ip_addresses_from_nics(params['nics'])
             params['primary_ip_address'] = self._get_primary_ip_address(
@@ -177,6 +174,9 @@ class ServerService(BaseService):
             if primary_ip_address:
                 params['primary_ip_address'] = self._get_primary_ip_address(
                     primary_ip_address, server_vo.ip_addresses)
+
+        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool']
+        params = data_mgr.merge_data_by_history(params, server_vo.to_dict(), exclude_keys=exclude_keys)
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
 

@@ -165,7 +165,11 @@ class CollectionDataManager(BaseManager):
                 old_priority = self.old_history[key]['priority']
                 old_data = self.old_history[key]['data']
                 if new_priority <= old_priority and new_data != old_data:
-                    history_info['diff'] = diff(old_data, new_data, syntax='symmetric', dump=True)
+                    try:
+                        history_info['diff'] = diff(old_data, new_data, syntax='symmetric', dump=True)
+                    except Exception:
+                        pass
+
                     self.old_history[key] = history_info
                     self._update_data_by_key(merged_data, key, value=new_data)
             else:
