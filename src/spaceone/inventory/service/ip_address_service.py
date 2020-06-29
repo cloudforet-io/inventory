@@ -258,7 +258,6 @@ class IPService(BaseService):
     @append_query_filter(['ip_address', 'state', 'subnet_id', 'network_id', 'zone_id',
                           'region_id', 'domain_id'])
     @append_keyword_filter(['ip_address', 'reference.resource_id'])
-
     def list(self, params):
         """
         Args:

@@ -178,6 +178,7 @@ class PoolService(BaseService):
 
     @transaction
     @check_required(['pool_id', 'domain_id'])
+    @change_only_key({'region_info': 'region', 'zone_info': 'zone'})
     def get(self, params):
         """
         Args:
@@ -196,6 +197,7 @@ class PoolService(BaseService):
 
     @transaction
     @check_required(['domain_id'])
+    @change_only_key({'region_info': 'region', 'zone_info': 'zone'}, key_path='query.only')
     @append_query_filter(['region_id', 'zone_id', 'pool_id', 'name', 'domain_id'])
     @append_keyword_filter(['pool_id', 'name'])
     def list(self, params):

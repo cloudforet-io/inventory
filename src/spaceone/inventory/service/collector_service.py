@@ -184,6 +184,7 @@ class CollectorService(BaseService):
 
     @transaction
     @check_required(['collector_id', 'domain_id'])
+    @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['collector_id', 'schedule_id', 'domain_id'])
     @append_keyword_filter(['schedule_id', 'name'])
     def list_schedules(self, params):
