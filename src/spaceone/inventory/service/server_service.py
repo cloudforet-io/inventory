@@ -276,7 +276,8 @@ class ServerService(BaseService):
 
         """
 
-        query = self._append_state_query(params.get('query', {}))    # Append Query for DELETED filter (Temporary Logic)
+        # Append Query for DELETED filter (Temporary Logic)
+        query = self._append_state_query(params.get('query', {}))
         return self.server_mgr.list_servers(query)
 
     @transaction
@@ -295,7 +296,8 @@ class ServerService(BaseService):
 
         """
 
-        query = params.get('query', {})
+        # Append Query for DELETED filter (Temporary Logic)
+        query = self._append_state_query(params.get('query', {}))
         return self.server_mgr.stat_servers(query)
 
     def _get_region(self, region_id, domain_id):
@@ -369,7 +371,7 @@ class ServerService(BaseService):
     '''
     @staticmethod
     def _append_state_query(query):
-        state_defaul_filter = {
+        state_default_filter = {
             'key': 'state',
             'value': 'DELETED',
             'operator': 'not'
@@ -383,14 +385,11 @@ class ServerService(BaseService):
 
             if key == 'state' and value == 'DELETED' and operator == 'eq':
                 deleted_display = True
-            if key == 'state' and value == ['DELETED'] and operator == 'in':
+            if key == 'state' and 'DELETED' in value and operator == 'in':
                 deleted_display = True
 
-        if deleted_display is False:
-            _filter = query.get('filter', None)
-            if _filter is None:
-                query['filter'] = [state_defaul_filter]
-            else:
-                _filter.append(state_defaul_filter)
+        if not deleted_display:
+            query['filter'] = query.get('filter', [])
+            query['filter'].append(state_default_filter)
 
         return query
