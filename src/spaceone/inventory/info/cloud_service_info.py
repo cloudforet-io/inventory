@@ -23,10 +23,10 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
         info.update({
             'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
-            'region_info': RegionInfo(cloud_svc_vo.region, minimal=True) if cloud_svc_vo.region else None,
-            'domain_id': cloud_svc_vo.domain_id,
             'tags': change_struct_type(cloud_svc_vo.tags),
             'collection_info': change_struct_type(cloud_svc_vo.collection_info.to_dict()),
+            'region_info': RegionInfo(cloud_svc_vo.region, minimal=True) if cloud_svc_vo.region else None,
+            'domain_id': cloud_svc_vo.domain_id,
             'created_at': change_timestamp_type(cloud_svc_vo.created_at),
             'updated_at': change_timestamp_type(cloud_svc_vo.updated_at),
             'deleted_at': change_timestamp_type(cloud_svc_vo.deleted_at),
