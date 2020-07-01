@@ -32,25 +32,6 @@ class Region(BaseAPI, region_pb2_grpc.RegionServicer):
         with self.locator.get_service('RegionService', metadata) as region_service:
             return self.locator.get_info('RegionInfo', region_service.get(params))
 
-    def add_member(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('RegionService', metadata) as region_service:
-            return self.locator.get_info('RegionMemberInfo', region_service.add_member(params))
-
-    def modify_member(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('RegionService', metadata) as region_service:
-            return self.locator.get_info('RegionMemberInfo', region_service.modify_member(params))
-
-    def remove_member(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('RegionService', metadata) as region_service:
-            region_service.remove_member(params)
-            return self.locator.get_info('EmptyInfo')
-
     def list(self, request, context):
         params, metadata = self.parse_request(request, context)
 
@@ -63,10 +44,3 @@ class Region(BaseAPI, region_pb2_grpc.RegionServicer):
 
         with self.locator.get_service('RegionService', metadata) as region_service:
             return self.locator.get_info('StatisticsInfo', region_service.stat(params))
-
-    def list_members(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('RegionService', metadata) as region_service:
-            region_map_vo, total_count = region_service.list_members(params)
-            return self.locator.get_info('RegionMembersInfo', region_map_vo, total_count)

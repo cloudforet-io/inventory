@@ -2,7 +2,6 @@ import os
 import uuid
 import random
 import unittest
-from langcodes import Language
 from spaceone.core import config
 from spaceone.core import pygrpc
 from spaceone.core import utils
@@ -116,34 +115,6 @@ class TestRegion(unittest.TestCase):
                 metadata=(('token', self.token),)
             )
 
-    def _create_user(self, user_id=None):
-        lang_code = random.choice(['zh-hans', 'jp', 'ko', 'en', 'es'])
-        language = Language.get(lang_code)
-
-        if user_id is None:
-            user_id = utils.random_string()[0:10]
-
-        param = {
-            'user_id': user_id,
-            'domain_id': self.domain.domain_id,
-            'password': 'qwerty123',
-            'name': 'Steven' + utils.random_string()[0:5],
-            'language': language.__str__(),
-            'timezone': 'utc+9',
-            'tags': {'aa': 'bb'},
-            'email': 'Steven' + utils.random_string()[0:5] + '@mz.co.kr',
-            'mobile': '+821026671234',
-            'group': 'group-id',
-        }
-
-        user = self.identity_v1.User.create(
-            param,
-            metadata=(('token', self.token),)
-        )
-        self.user = user
-        self.users.append(user)
-        self.assertEqual(self.user.name, param['name'])
-
     def test_create_region(self, name=None):
         """ Create Region
         """
@@ -156,9 +127,9 @@ class TestRegion(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.region = self.inventory_v1.Region.create(params,
-                                                      metadata=(('token', self.token),)
-                                                      )
+        self.region = self.inventory_v1.Region.create(
+            params,
+            metadata=(('token', self.token),))
 
         self.regions.append(self.region)
         self.assertEqual(self.region.name, name)
@@ -167,13 +138,14 @@ class TestRegion(unittest.TestCase):
         self.test_create_region()
 
         name = random_string()
-        param = { 'region_id': self.region.region_id,
-                  'name': name,
-                  'domain_id': self.domain.domain_id,
-                }
-        self.region = self.inventory_v1.Region.update(param,
-                                                      metadata=(('token', self.token),)
-                                                      )
+        param = {
+            'region_id': self.region.region_id,
+            'name': name,
+            'domain_id': self.domain.domain_id,
+        }
+        self.region = self.inventory_v1.Region.update(
+            param,
+            metadata=(('token', self.token),))
         self.assertEqual(self.region.name, name)
 
     def test_update_region_tags(self):
@@ -183,13 +155,14 @@ class TestRegion(unittest.TestCase):
             random_string(): random_string(),
             random_string(): random_string()
         }
-        param = { 'region_id': self.region.region_id,
-                  'tags': tags,
-                  'domain_id': self.domain.domain_id,
-                }
-        self.region = self.inventory_v1.Region.update(param,
-                                                      metadata=(('token', self.token),)
-                                                      )
+        param = {
+            'region_id': self.region.region_id,
+            'tags': tags,
+            'domain_id': self.domain.domain_id,
+        }
+        self.region = self.inventory_v1.Region.update(
+            param,
+            metadata=(('token', self.token),))
         self.assertEqual(MessageToDict(self.region.tags), tags)
 
     def test_get_region(self):
@@ -200,289 +173,11 @@ class TestRegion(unittest.TestCase):
             'region_id': self.region.region_id,
             'domain_id': self.domain.domain_id
         }
-        self.region = self.inventory_v1.Region.get(param,
-                                                   metadata=(('token', self.token),)
-                                                   )
+        self.region = self.inventory_v1.Region.get(
+            param,
+            metadata=(('token', self.token),)
+        )
         self.assertEqual(self.region.name, name)
-
-    def test_add_member_region(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        region_member = self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        user_info = MessageToDict(region_member.user_info)
-
-        self.assertEqual(user_info['user_id'], self.user.user_id)
-
-    def test_add_member_region_labels(self):
-        self.test_create_region()
-        self._create_user()
-
-        labels = ['engineer', 'developer']
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'labels': labels,
-            'domain_id': self.domain.domain_id
-        }
-
-        region_member = self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        user_info = MessageToDict(region_member.user_info)
-        self.assertEqual(user_info['user_id'], self.user.user_id)
-
-    def test_add_member_region_labels_2(self):
-        self.test_create_region()
-        self._create_user()
-
-        labels = ['engineer', 'developer', 'developer']
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'labels': labels,
-            'domain_id': self.domain.domain_id
-        }
-
-        region_member = self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        user_info = MessageToDict(region_member.user_info)
-        self.assertEqual(user_info['user_id'], self.user.user_id)
-
-    def test_add_member_not_exist_user(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': 'test',
-            'domain_id': self.domain.domain_id
-        }
-
-        with self.assertRaises(Exception):
-            self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-    def test_add_member_duplicate_user(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param,metadata=(('token', self.token),))
-
-        with self.assertRaises(Exception):
-            self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-    def test_add_member_not_exist_region(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': 'xxxxx',
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        with self.assertRaises(Exception):
-            self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-    def test_modify_member_labels(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'labels': ['engineer'],
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id,
-            'labels': ['developer']
-        }
-
-        region_member = self.inventory_v1.Region.modify_member(param, metadata=(('token', self.token),))
-        user_info = MessageToDict(region_member.user_info)
-
-        print(region_member.labels)
-        self.assertEqual(user_info['user_id'], self.user.user_id)
-
-    def test_modify_member_not_exist_user(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': 'test',
-            'domain_id': self.domain.domain_id
-        }
-
-        with self.assertRaises(Exception):
-            self.inventory_v1.Region.modify_member(param, metadata=(('token', self.token),))
-
-    def test_modify_member_not_exist_region(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': 'test',
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        with self.assertRaises(Exception):
-            self.inventory_v1.Region.modify_member(param, metadata=(('token', self.token),))
-
-    def test_remove_member_region(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.remove_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': self.region.region_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        region_members = self.inventory_v1.Region.list_members(param, metadata=(('token', self.token),))
-        self.assertEqual(0, region_members.total_count)
-
-    def test_remove_member_not_exist_user(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': 'test',
-            'domain_id': self.domain.domain_id
-        }
-
-        with self.assertRaises(Exception):
-            self.inventory_v1.Region.remove_member(param, metadata=(('token', self.token),))
-
-    def test_list_members_region_id(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': self.region.region_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        region_members = self.inventory_v1.Region.list_members(param, metadata=(('token', self.token),))
-
-        self.assertEqual(1, region_members.total_count)
-
-    def test_list_members_region_user_id(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        region_members = self.inventory_v1.Region.list_members(param, metadata=(('token', self.token),))
-        self.assertEqual(1, region_members.total_count)
-
-    def test_list_members_region_query(self):
-        self.test_create_region()
-        self._create_user()
-
-        param = {
-            'region_id': self.region.region_id,
-            'user_id': self.user.user_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.inventory_v1.Region.add_member(param, metadata=(('token', self.token),))
-
-        param = {
-            'region_id': self.region.region_id,
-            'domain_id': self.domain.domain_id,
-            'query': {
-                'filter': [
-                    {'k': 'user_id',
-                     'v': self.user.user_id,
-                     'o': 'eq'}
-                ]
-            }
-        }
-
-        region_members = self.inventory_v1.Region.list_members(param, metadata=(('token', self.token),))
-        self.assertEqual(1, region_members.total_count)
 
     def test_list_region_id(self):
         self.test_create_region()
@@ -493,7 +188,9 @@ class TestRegion(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        regions = self.inventory_v1.Region.list(param, metadata=(('token', self.token),))
+        regions = self.inventory_v1.Region.list(
+            param,
+            metadata=(('token', self.token),))
 
         self.assertEqual(1, regions.total_count)
 
@@ -506,7 +203,9 @@ class TestRegion(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        regions = self.inventory_v1.Region.list(param, metadata=(('token', self.token),))
+        regions = self.inventory_v1.Region.list(
+            param,
+            metadata=(('token', self.token),))
 
         self.assertEqual(1, regions.total_count)
 
@@ -528,7 +227,9 @@ class TestRegion(unittest.TestCase):
             }
         }
 
-        regions = self.inventory_v1.Region.list(param, metadata=(('token', self.token),))
+        regions = self.inventory_v1.Region.list(
+            param,
+            metadata=(('token', self.token),))
         self.assertEqual(len(self.regions), regions.total_count)
 
     def test_stat_region(self):
@@ -557,7 +258,8 @@ class TestRegion(unittest.TestCase):
         }
 
         result = self.inventory_v1.Region.stat(
-            params, metadata=(('token', self.token),))
+            params,
+            metadata=(('token', self.token),))
 
         print(result)
 
