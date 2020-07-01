@@ -276,12 +276,16 @@ class TestCloudService(unittest.TestCase):
         self.cloud_services.append(self.cloud_service)
         self.assertEqual(self.cloud_service.cloud_service_group, group)
 
-    def test_create_cloud_service_region(self, cloud_service_type=None, provider=None):
+    def test_create_cloud_service_region(self, cloud_service_type=None,
+                                         cloud_service_group=None, provider=None):
         """ Create Cloud Service with region
         """
 
         if cloud_service_type is None:
             cloud_service_type = random_string()
+
+        if cloud_service_group is None:
+            cloud_service_group = random_string()
 
         if provider is None:
             provider = random_string()
@@ -291,6 +295,7 @@ class TestCloudService(unittest.TestCase):
         params = {
             'provider': provider,
             'cloud_service_type': cloud_service_type,
+            'cloud_service_group': cloud_service_group,
             'data': {
                 random_string(): random_string(),
                 random_string(): random_string(),

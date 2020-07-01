@@ -21,6 +21,8 @@ class ServerService(BaseService):
     def __init__(self, metadata):
         super().__init__(metadata)
         self.server_mgr: ServerManager = self.locator.get_manager('ServerManager')
+        self.region_mgr: RegionManager = self.locator.get_manager('RegionManager')
+        self.identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
 
     @transaction
     @check_required(['domain_id'])
@@ -40,9 +42,6 @@ class ServerService(BaseService):
                     'nics': 'list',
                     'disks': 'list',
                     'tags': 'dict',
-                    'asset_id': 'str',
-                    'pool_id': 'str',
-                    'zone_id': 'str',
                     'region_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str'
@@ -59,9 +58,6 @@ class ServerService(BaseService):
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
         domain_id = params['domain_id']
-        region_id = params.get('region_id')
-        zone_id = params.get('zone_id')
-        pool_id = params.get('pool_id')
         nics = params.get('nics', [])
         primary_ip_address = params.get('primary_ip_address')
 
@@ -71,17 +67,12 @@ class ServerService(BaseService):
         if provider:
             params['provider'] = provider
 
-        if pool_id:
-            params.update(self._get_pool(pool_id, domain_id))
-        else:
-            if zone_id:
-                params.update(self._get_zone(zone_id, domain_id))
-            else:
-                if region_id:
-                    params.update(self._get_region(region_id, domain_id))
+        if 'region_id' in params:
+            params['region'] = self.region_mgr.get_region(params['region_id'], domain_id)
+            del params['region_id']
 
         if project_id:
-            self._check_project(project_id, domain_id)
+            self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
 
         params['ip_addresses'] = self._get_ip_addresses_from_nics(nics)
@@ -131,8 +122,6 @@ class ServerService(BaseService):
 
         domain_id = params['domain_id']
         region_id = params.get('region_id')
-        zone_id = params.get('zone_id')
-        pool_id = params.get('pool_id')
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
         primary_ip_address = params.get('primary_ip_address', None)
@@ -142,28 +131,17 @@ class ServerService(BaseService):
         if provider:
             params['provider'] = provider
 
+        if release_region:
+            params['region'] = None
+        elif region_id:
+            params['region'] = self.region_mgr.get_region(region_id, domain_id)
+            del params['region_id']
+
         if release_project:
             params['project_id'] = None
         elif project_id:
-            self._check_project(project_id, domain_id)
+            self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
-
-        if release_region:
-            params.update({
-                'pool': None,
-                'zone': None,
-                'region': None
-            })
-
-        else:
-            if pool_id:
-                params.update(self._get_pool(pool_id, domain_id))
-            else:
-                if zone_id:
-                    params.update(self._get_zone(zone_id, domain_id))
-                else:
-                    if region_id:
-                        params.update(self._get_region(region_id, domain_id))
 
         if 'nics' in params:
             params['ip_addresses'] = self._get_ip_addresses_from_nics(params['nics'])
@@ -300,53 +278,18 @@ class ServerService(BaseService):
         query = self._append_state_query(params.get('query', {}))
         return self.server_mgr.stat_servers(query)
 
-    def _get_region(self, region_id, domain_id):
-        region_mgr: RegionManager = self.locator.get_manager('RegionManager')
-        region_vo = region_mgr.get_region(region_id, domain_id)
-
-        return {
-            'region': region_vo
-        }
-
-    def _get_zone(self, zone_id, domain_id):
-        zone_mgr: ZoneManager = self.locator.get_manager('ZoneManager')
-        zone_vo = zone_mgr.get_zone(zone_id, domain_id)
-
-        return {
-            'zone': zone_vo,
-            'region': zone_vo.region
-        }
-
-    def _get_pool(self, pool_id, domain_id):
-        pool_mgr: PoolManager = self.locator.get_manager('PoolManager')
-        pool_vo = pool_mgr.get_pool(pool_id, domain_id)
-
-        return {
-            'pool': pool_vo,
-            'zone': pool_vo.zone,
-            'region': pool_vo.region
-        }
-
-    def _check_project(self, project_id, domain_id):
-        identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
-        identity_mgr.get_project(project_id, domain_id)
-
-        return True
-
     @staticmethod
     def _get_ip_addresses_from_nics(nics: list) -> list:
         all_ip_addresses = []
         for nic in nics:
-            for ip_info in nic.get('ip_addresses', []):
-                ip_address = ip_info.get('ip_address')
-                if ip_address:
-                    all_ip_addresses.append(ip_address)
+            ip_addresses = nic.get('ip_addresses', [])
+            all_ip_addresses += ip_addresses
 
             public_ip_address = nic.get('public_ip_address')
             if public_ip_address:
                 all_ip_addresses.append(public_ip_address)
 
-        return all_ip_addresses
+        return list(set(all_ip_addresses))
 
     @staticmethod
     def _get_primary_ip_address(primary_ip_address, all_ip_addresses, old_primary_ip_address=None):
