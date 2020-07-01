@@ -15,7 +15,7 @@ class CloudServiceService(BaseService):
         self.cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
 
     @transaction
-    @check_required(['data', 'provider', 'domain_id'])
+    @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
     def create(self, params):
         """
         Args:
@@ -186,8 +186,8 @@ class CloudServiceService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region'}, key_path='query.only')
-    @append_query_filter(['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
-                          'region_id', 'project_id', 'domain_id'])
+    @append_query_filter(['cloud_service_id', 'cloud_service_type', 'cloud_service_group', 'group',
+                          'state', 'region_id', 'project_id', 'domain_id'])
     @append_keyword_filter(['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
                             'reference.resource_id'])
     def list(self, params):
@@ -196,8 +196,9 @@ class CloudServiceService(BaseService):
             params (dict): {
                     'cloud_service_id': 'str',
                     'cloud_service_type': 'str',
-                    'cloud_service_group': 'str'Add a reference field to all inventory resources,
+                    'cloud_service_group': 'str',
                     'provider': 'str',
+                    'state': 'str',
                     'region_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
