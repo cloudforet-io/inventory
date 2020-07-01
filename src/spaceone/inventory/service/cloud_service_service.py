@@ -13,6 +13,8 @@ class CloudServiceService(BaseService):
     def __init__(self, metadata):
         super().__init__(metadata)
         self.cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
+        self.region_mgr: RegionManager = self.locator.get_manager('RegionManager')
+        self.identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
 
     @transaction
     @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
@@ -50,13 +52,11 @@ class CloudServiceService(BaseService):
             params['provider'] = provider
 
         if 'region_id' in params:
-            region_mgr: RegionManager = self.locator.get_manager('RegionManager')
-            params['region'] = region_mgr.get_region(params['region_id'], domain_id)
+            params['region'] = self.region_mgr.get_region(params['region_id'], domain_id)
             del params['region_id']
 
         if project_id:
-            identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
-            identity_mgr.get_project(project_id, domain_id)
+            self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
 
         return self.cloud_svc_mgr.create_cloud_service(params)
@@ -101,17 +101,14 @@ class CloudServiceService(BaseService):
 
         if release_region:
             params['region'] = None
-        else:
-            if region_id:
-                region_mgr: RegionManager = self.locator.get_manager('RegionManager')
-                params['region'] = region_mgr.get_region(region_id, domain_id)
-                del params['region_id']
+        elif region_id:
+            params['region'] = self.region_mgr.get_region(region_id, domain_id)
+            del params['region_id']
 
         if release_project:
             params['project_id'] = None
         elif project_id:
-            identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
-            identity_mgr.get_project(project_id, domain_id)
+            self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
 
         exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_pool']
