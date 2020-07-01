@@ -3,9 +3,6 @@ import uuid
 import unittest
 import pprint
 import random
-import yaml
-import time
-from datetime import datetime
 
 from google.protobuf.json_format import MessageToDict
 from spaceone.core import utils, pygrpc
@@ -104,10 +101,6 @@ class TestServer(unittest.TestCase):
     def setUp(self):
         self.servers = []
         self.server = None
-        self.pools = []
-        self.pool = None
-        self.zones = []
-        self.zone = None
         self.regions = []
         self.region = None
         self.projects = []
@@ -136,30 +129,6 @@ class TestServer(unittest.TestCase):
                 metadata=(('token', self.token),)
             )
             print(f'>> delete collector: {collector.name} ({collector.collector_id})')
-
-        for secret in self.secrets:
-            self.secret_v1.Secret.delete(
-                {'secret_id': secret.secret_id,
-                 'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
-            )
-            print(f'>> delete secret: {secret.name} ({secret.secret_id})')
-
-        for pool in self.pools:
-            self.inventory_v1.Pool.delete(
-                {'pool_id': pool.pool_id,
-                 'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
-            )
-            print(f'>> delete zone: {pool.name} ({pool.pool_id})')
-
-        for zone in self.zones:
-            self.inventory_v1.Zone.delete(
-                {'zone_id': zone.zone_id,
-                 'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
-            )
-            print(f'>> delete zone: {zone.name} ({zone.zone_id})')
 
         for region in self.regions:
             self.inventory_v1.Region.delete(
@@ -238,58 +207,6 @@ class TestServer(unittest.TestCase):
         self.regions.append(self.region)
         self.assertEqual(self.region.name, params['name'])
 
-    def _create_zone(self, region_id, name=None):
-        if name is None:
-            name = 'Zone-' + random_string()[0:5]
-
-        params = {
-            'name': name,
-            'region_id': region_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.zone = self.inventory_v1.Zone.create(
-            params,
-            metadata=(('token', self.token),))
-
-        self.zones.append(self.zone)
-        self.assertEqual(self.zone.name, params['name'])
-
-    def _create_pool(self, zone_id, name=None):
-        if name is None:
-            name = 'Pool-' + random_string()[0:5]
-
-        params = {
-            'name': name,
-            'zone_id': zone_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.pool = self.inventory_v1.Pool.create(
-            params,
-            metadata=(('token', self.token),))
-
-        self.pools.append(self.pool)
-        self.assertEqual(self.pool.name, params['name'])
-
-    def _create_secret(self, name=None):
-        if name is None:
-            name = 'Secret-' + random_string()[0:5]
-
-        params = {
-            'name': name,
-            'data': self.secret_conf,
-            'secret_type': 'CREDENTIALS',
-            'domain_id': self.domain.domain_id
-        }
-
-        self.secret = self.secret_v1.Secret.create(
-            params,
-            metadata=(('token', self.token),))
-
-        self.secrets.append(self.secret)
-        self.assertEqual(self.secret.name, params['name'])
-
     def _print_data(self, message, description=None):
         print()
         if description:
@@ -306,8 +223,6 @@ class TestServer(unittest.TestCase):
         self._create_project_group()
         self._create_project(self.project_group.project_group_id)
         self._create_region()
-        self._create_zone(self.region.region_id)
-        self._create_pool(self.zone.zone_id)
 
         ip_address = f'192.168.0.{random.randrange(1, 5)}'
 
@@ -331,10 +246,8 @@ class TestServer(unittest.TestCase):
                 }
             },
             'nics': [{
-                'ip_addresses': [{
-                    'cidr': '192.168.0.0/24',
-                    'ip_address': ip_address
-                }],
+                'ip_addresses': [ip_address],
+                'cidr': '192.168.0.0/24',
                 'mac_address': 'aa:bb:cc:dd:ee:ff',
                 'device': 'eth0',
                 'device_index': 0,
@@ -389,8 +302,7 @@ class TestServer(unittest.TestCase):
                 "resource_id": utils.generate_id('resource'),
                 "external_link": "https://aaa.bbb.ccc/"
             },
-            'pool_id': self.pool.pool_id,
-            'zone_id': self.zone.zone_id,
+            'region_id': self.region.region_id,
             'project_id': self.project.project_id,
             'domain_id': self.domain.domain_id,
             'tags': {
@@ -585,7 +497,7 @@ class TestServer(unittest.TestCase):
                 'server_id': self.server.server_id,
                 'keys': [
                     'os_type',
-                    'data.hardware'
+                    'data.hardware',
                 ],
                 'domain_id': self.domain.domain_id
             },
@@ -595,6 +507,7 @@ class TestServer(unittest.TestCase):
 
         self._print_data(self.server, 'test_pin_server_data_1')
 
+        self._create_region()
         self.server = self.inventory_v1.Server.update(
             {
                 'server_id': self.server.server_id,
@@ -610,6 +523,15 @@ class TestServer(unittest.TestCase):
                         # 'os_details': 'Windows 2012 ENT SP2'
                     }
                 },
+                'nics': [{
+                    'ip_addresses': ['192.168.0.3'],
+                    'cidr': '192.168.0.0/24',
+                    'mac_address': 'aa:bb:cc:dd:ee:ff',
+                    'device': 'eth0',
+                    'device_index': 0,
+                    'public_ip_address': '1.1.1.1'
+                }],
+                'region_id': self.region.region_id,
                 'domain_id': self.domain.domain_id
             },
             metadata=(
@@ -681,46 +603,11 @@ class TestServer(unittest.TestCase):
         self._print_data(self.server, 'test_update_server_region')
         self.assertEqual(self.server.region_info.region_id, self.region.region_id)
 
-    def test_update_server_zone(self):
-        self.test_create_server()
-
-        params = {
-            'server_id': self.server.server_id,
-            'zone_id': self.zone.zone_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.server = self.inventory_v1.Server.update(
-            params,
-            metadata=(('token', self.token),))
-
-        self._print_data(self.server, 'test_update_server_zone')
-        self.assertEqual(self.server.zone_info.zone_id, self.zone.zone_id)
-
-    def test_update_server_pool(self):
-        self.test_create_server()
-        self._create_pool(self.zone.zone_id)
-
-        params = {
-            'server_id': self.server.server_id,
-            'pool_id': self.pool.pool_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.server = self.inventory_v1.Server.update(
-            params,
-            metadata=(('token', self.token),))
-
-        self._print_data(self.server, 'test_update_server_pool')
-        self.assertEqual(self.server.pool_info.pool_id, self.pool.pool_id)
-
     def test_release_server_region(self):
         self.test_create_server()
-        self._create_pool(self.zone.zone_id)
 
         params = {
             'server_id': self.server.server_id,
-            'pool_id': self.pool.pool_id,
             'release_region': True,
             'domain_id': self.domain.domain_id
         }
@@ -730,8 +617,6 @@ class TestServer(unittest.TestCase):
             metadata=(('token', self.token),))
 
         self._print_data(self.server, 'test_release_server_pool')
-        self.assertEqual(MessageToDict(self.server.pool_info, preserving_proto_field_name=True), {})
-        self.assertEqual(MessageToDict(self.server.zone_info, preserving_proto_field_name=True), {})
         self.assertEqual(MessageToDict(self.server.region_info, preserving_proto_field_name=True), {})
 
     def test_update_server_project(self):
@@ -864,7 +749,7 @@ class TestServer(unittest.TestCase):
 
         self.assertEqual(len(self.servers), result.total_count)
 
-    def test_list_pool_id(self):
+    def test_list_region_id(self):
         self.test_create_server()
 
         params = {
@@ -872,8 +757,8 @@ class TestServer(unittest.TestCase):
             'query': {
                 'filter': [
                     {
-                        'k': 'pool_id',
-                        'v': self.pool.pool_id,
+                        'k': 'region_id',
+                        'v': self.region.region_id,
                         'o': 'eq'
                     }
                 ]

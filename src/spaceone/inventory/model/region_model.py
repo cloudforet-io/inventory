@@ -39,6 +39,9 @@ class Region(MongoModel):
         ]
     }
 
+    def __str__(self):
+        return self.region_id
+
     @queryset_manager
     def objects(doc_cls, queryset):
         return queryset.filter(state__ne='DELETED')
@@ -48,54 +51,3 @@ class Region(MongoModel):
             'state': 'DELETED',
             'deleted_at': datetime.utcnow()
         })
-
-    def append(self, key, data):
-        if key == 'members':
-            data.update({
-                'region': self
-            })
-
-            RegionMemberMap.create(data)
-        else:
-            super().append(key, data)
-
-        return self
-
-    def remove(self, key, data):
-        if key == 'members':
-            query = {
-                'filter': [{
-                    'k': 'region',
-                    'v': self,
-                    'o': 'eq'
-                }, {
-                    'k': 'user_id',
-                    'v': data,
-                    'o': 'eq'
-                }]
-            }
-            member_map_vos, map_count = RegionMemberMap.query(**query)
-            member_map_vos.delete()
-        else:
-            super().remove(key, data)
-
-        return self
-
-
-class RegionMemberMap(MongoModel):
-    region = ReferenceField('Region', reverse_delete_rule=CASCADE)
-    user_id = StringField(max_length=40)
-    labels = ListField(StringField(max_length=255))
-
-    meta = {
-        'reference_query_keys': {
-            'region': Region,
-        },
-        'change_query_keys': {
-            'region_id': 'region.region_id'
-        },
-        'indexes': [
-            'region',
-            'user_id'
-        ]
-    }

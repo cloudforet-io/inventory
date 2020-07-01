@@ -3,42 +3,31 @@ from mongoengine import *
 
 from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.region_model import Region
-from spaceone.inventory.model.zone_model import Zone
-from spaceone.inventory.model.pool_model import Pool
 from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
 from spaceone.inventory.error import *
 
 
-class IPAddress(EmbeddedDocument):
-    ip_address = StringField()
-    cidr = StringField(default='')
-    subnet_id = StringField(default='')
-    tags = DictField()
-
-
 class NIC(EmbeddedDocument):
-    device_index = IntField(default=0)
-    device = StringField(max_length=50, default='')
-    nic_type = StringField(max_length=20, default='PHYSICAL')
-    ip_addresses = ListField(EmbeddedDocumentField(IPAddress))
-    mac_address = StringField(default='')
-    public_ip_address = StringField(default='', max_length=100)
-    tags = DictField()
+    device_index = IntField()
+    device = StringField(max_length=50, default=None)
+    nic_type = StringField(max_length=20, default=None)
+    ip_addresses = ListField(StringField(max_length=100))
+    cidr = StringField(default=None)
+    mac_address = StringField(default=None)
+    public_ip_address = StringField(default=None, max_length=100)
+    tags = DictField(default=None)
 
     def to_dict(self):
         return self.to_mongo()
 
 
 class Disk(EmbeddedDocument):
-    device_index = IntField(default=0)
-    device = StringField(max_length=50, default='')
-    size = FloatField(default=0)
-    disk_type = StringField(max_length=20, default='LOCAL')
-    disk_id = StringField(default='')
-    volume_id = StringField(default='')
-    storage_id = StringField(default='')
-    tags = DictField()
+    device_index = IntField()
+    device = StringField(max_length=50, default=None)
+    disk_type = StringField(max_length=20, default=None)
+    size = FloatField(default=None)
+    tags = DictField(default=None)
 
     def to_dict(self):
         return self.to_mongo()
@@ -61,8 +50,6 @@ class Server(MongoModel):
     nics = ListField(EmbeddedDocumentField(NIC))
     disks = ListField(EmbeddedDocumentField(Disk))
     tags = DictField()
-    pool = ReferenceField('Pool', default=None, null=True, reverse_delete_rule=NULLIFY)
-    zone = ReferenceField('Zone', default=None, null=True, reverse_delete_rule=NULLIFY)
     region = ReferenceField('Region', default=None, null=True, reverse_delete_rule=NULLIFY)
     project_id = StringField(max_length=40, default=None, null=True)
     domain_id = StringField(max_length=40)
@@ -85,9 +72,6 @@ class Server(MongoModel):
             'reference',
             'nics',
             'disks',
-            'asset',
-            'pool',
-            'zone',
             'region',
             'project_id',
             'domain_id',
@@ -118,14 +102,9 @@ class Server(MongoModel):
 
         ],
         'change_query_keys': {
-            'asset_id': 'asset.asset_id',
-            'pool_id': 'pool.pool_id',
-            'zone_id': 'zone.zone_id',
             'region_id': 'region.region_id'
         },
         'reference_query_keys': {
-            'pool': Pool,
-            'zone': Zone,
             'region': Region
         },
         'ordering': [
@@ -138,8 +117,6 @@ class Server(MongoModel):
             'server_type',
             'os_type',
             'provider',
-            'pool',
-            'zone',
             'region',
             'project_id',
             'domain_id',
@@ -150,12 +127,6 @@ class Server(MongoModel):
             'lookup': {
                 'region': {
                     'from': 'region'
-                },
-                'zone': {
-                    'from': 'zone'
-                },
-                'pool': {
-                    'from': 'pool'
                 }
             }
         }
@@ -174,7 +145,5 @@ class Server(MongoModel):
         self.update({
             'state': 'DELETED',
             'region': None,
-            'zone': None,
-            'pool': None,
             'deleted_at': datetime.utcnow()
         })

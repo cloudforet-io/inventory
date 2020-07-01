@@ -13,9 +13,11 @@ class CloudServiceService(BaseService):
     def __init__(self, metadata):
         super().__init__(metadata)
         self.cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
+        self.region_mgr: RegionManager = self.locator.get_manager('RegionManager')
+        self.identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
 
     @transaction
-    @check_required(['data', 'provider', 'domain_id'])
+    @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
     def create(self, params):
         """
         Args:
@@ -50,13 +52,11 @@ class CloudServiceService(BaseService):
             params['provider'] = provider
 
         if 'region_id' in params:
-            region_mgr: RegionManager = self.locator.get_manager('RegionManager')
-            params['region'] = region_mgr.get_region(params['region_id'], domain_id)
+            params['region'] = self.region_mgr.get_region(params['region_id'], domain_id)
             del params['region_id']
 
         if project_id:
-            identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
-            identity_mgr.get_project(project_id, domain_id)
+            self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
 
         return self.cloud_svc_mgr.create_cloud_service(params)
@@ -101,21 +101,20 @@ class CloudServiceService(BaseService):
 
         if release_region:
             params['region'] = None
-        else:
-            if region_id:
-                region_mgr: RegionManager = self.locator.get_manager('RegionManager')
-                params['region'] = region_mgr.get_region(region_id, domain_id)
-                del params['region_id']
+        elif region_id:
+            params['region'] = self.region_mgr.get_region(region_id, domain_id)
+            del params['region_id']
 
         if release_project:
             params['project_id'] = None
         elif project_id:
-            identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
-            identity_mgr.get_project(project_id, domain_id)
+            self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
 
+        cloud_svc_data = cloud_svc_vo.to_dict()
+        cloud_svc_data['region'] = cloud_svc_vo.region
         exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_pool']
-        params = data_mgr.merge_data_by_history(params, cloud_svc_vo.to_dict(), exclude_keys=exclude_keys)
+        params = data_mgr.merge_data_by_history(params, cloud_svc_data, exclude_keys=exclude_keys)
 
         return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
 
@@ -186,8 +185,8 @@ class CloudServiceService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region'}, key_path='query.only')
-    @append_query_filter(['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
-                          'region_id', 'project_id', 'domain_id'])
+    @append_query_filter(['cloud_service_id', 'cloud_service_type', 'cloud_service_group', 'group',
+                          'state', 'region_id', 'project_id', 'domain_id'])
     @append_keyword_filter(['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
                             'reference.resource_id'])
     def list(self, params):
@@ -196,8 +195,9 @@ class CloudServiceService(BaseService):
             params (dict): {
                     'cloud_service_id': 'str',
                     'cloud_service_type': 'str',
-                    'cloud_service_group': 'str'Add a reference field to all inventory resources,
+                    'cloud_service_group': 'str',
                     'provider': 'str',
+                    'state': 'str',
                     'region_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
