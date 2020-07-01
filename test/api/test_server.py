@@ -253,6 +253,12 @@ class TestServer(unittest.TestCase):
                 'device_index': 0,
                 'public_ip_address': '1.1.1.1'
             }],
+            'disks': [{
+                'device_index': 0,
+                'device': '/dev/sda',
+                'size': 100.0,
+                'disk_type': 'ebs'
+            }],
             'metadata': {
                 'view': {
                     'sub_data': {

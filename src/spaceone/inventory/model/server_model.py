@@ -9,7 +9,7 @@ from spaceone.inventory.error import *
 
 
 class NIC(EmbeddedDocument):
-    device_index = IntField()
+    device_index = IntField(default=0)
     device = StringField(max_length=50, default=None)
     nic_type = StringField(max_length=20, default=None)
     ip_addresses = ListField(StringField(max_length=100))
@@ -23,7 +23,7 @@ class NIC(EmbeddedDocument):
 
 
 class Disk(EmbeddedDocument):
-    device_index = IntField()
+    device_index = IntField(default=0)
     device = StringField(max_length=50, default=None)
     disk_type = StringField(max_length=20, default=None)
     size = FloatField(default=None)
