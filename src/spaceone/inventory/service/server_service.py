@@ -284,15 +284,19 @@ class ServerService(BaseService):
     @staticmethod
     def _get_ip_addresses_from_nics(nics: list) -> list:
         all_ip_addresses = []
-        for nic in nics:
-            ip_addresses = nic.get('ip_addresses', [])
-            all_ip_addresses += ip_addresses
+        try:
+            for nic in nics:
+                ip_addresses = nic.get('ip_addresses', [])
+                all_ip_addresses += ip_addresses
 
-            public_ip_address = nic.get('public_ip_address')
-            if public_ip_address:
-                all_ip_addresses.append(public_ip_address)
+                public_ip_address = nic.get('public_ip_address')
+                if public_ip_address:
+                    all_ip_addresses.append(public_ip_address)
 
-        return list(set(all_ip_addresses))
+            return list(set(all_ip_addresses))
+
+        except Exception:
+            raise ERROR_INVALID_PARAMETER(key='nics', reason='nics format is invalid.')
 
     @staticmethod
     def _get_primary_ip_address(primary_ip_address, all_ip_addresses, old_primary_ip_address=None):
