@@ -111,8 +111,10 @@ class CloudServiceService(BaseService):
             self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
 
+        cloud_svc_data = cloud_svc_vo.to_dict()
+        cloud_svc_data['region'] = cloud_svc_vo.region
         exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_pool']
-        params = data_mgr.merge_data_by_history(params, cloud_svc_vo.to_dict(), exclude_keys=exclude_keys)
+        params = data_mgr.merge_data_by_history(params, cloud_svc_data, exclude_keys=exclude_keys)
 
         return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
 

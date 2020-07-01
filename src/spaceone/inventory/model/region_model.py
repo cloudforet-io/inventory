@@ -39,6 +39,9 @@ class Region(MongoModel):
         ]
     }
 
+    def __str__(self):
+        return self.region_id
+
     @queryset_manager
     def objects(doc_cls, queryset):
         return queryset.filter(state__ne='DELETED')

@@ -9,25 +9,25 @@ from spaceone.inventory.error import *
 
 
 class NIC(EmbeddedDocument):
-    device_index = IntField(default=0)
-    device = StringField(max_length=50, default='')
-    nic_type = StringField(max_length=20, default='PHYSICAL')
+    device_index = IntField()
+    device = StringField(max_length=50, default=None)
+    nic_type = StringField(max_length=20, default=None)
     ip_addresses = ListField(StringField())
-    cidr = StringField(default='')
-    mac_address = StringField(default='')
-    public_ip_address = StringField(default='', max_length=100)
-    tags = DictField()
+    cidr = StringField(default=None)
+    mac_address = StringField(default=None)
+    public_ip_address = StringField(default=None, max_length=100)
+    tags = DictField(default=None)
 
     def to_dict(self):
         return self.to_mongo()
 
 
 class Disk(EmbeddedDocument):
-    device_index = IntField(default=0)
-    device = StringField(max_length=50, default='')
-    disk_type = StringField(max_length=20, default='LOCAL')
-    size = FloatField(default=0)
-    tags = DictField()
+    device_index = IntField()
+    device = StringField(max_length=50, default=None)
+    disk_type = StringField(max_length=20, default=None)
+    size = FloatField(default=None)
+    tags = DictField(default=None)
 
     def to_dict(self):
         return self.to_mongo()

@@ -29,7 +29,7 @@ class CollectionDataManager(BaseManager):
         self.updated_at = f'{datetime.utcnow().isoformat()}Z'
 
     def create_new_history(self, resource_data, **kwargs):
-        self.exclude_keys = kwargs.get('exclude_keys', []) + ['metadata']
+        self.exclude_keys = kwargs.get('exclude_keys', [])
         all_collectors = []
         all_service_accounts = []
         all_secrets = []
@@ -165,11 +165,7 @@ class CollectionDataManager(BaseManager):
                 old_priority = self.old_history[key]['priority']
                 old_data = self.old_history[key]['data']
                 if new_priority <= old_priority and new_data != old_data:
-                    try:
-                        history_info['diff'] = diff(old_data, new_data, syntax='symmetric', dump=True)
-                    except Exception:
-                        pass
-
+                    history_info['diff'] = self._get_history_diff(old_data, new_data)
                     self.old_history[key] = history_info
                     self._update_data_by_key(merged_data, key, value=new_data)
             else:
@@ -177,6 +173,48 @@ class CollectionDataManager(BaseManager):
                 self._update_data_by_key(merged_data, key, value=new_data)
 
         return merged_data
+
+    @staticmethod
+    def _get_history_diff(old_data, new_data):
+        history_diff = {}
+        try:
+            if isinstance(old_data, list) and isinstance(new_data, list):
+                for value in old_data:
+                    if value not in new_data:
+                        if '$delete' not in history_diff:
+                            history_diff['$delete'] = []
+
+                        history_diff['$delete'].append(value)
+
+                for value in new_data:
+                    if value not in old_data:
+                        if '$insert' not in history_diff:
+                            history_diff['$insert'] = []
+
+                        history_diff['$insert'].append(value)
+            else:
+                history_diff = utils.load_json(
+                    diff(old_data, new_data, syntax='symmetric', dump=True))
+        except Exception:
+            history_diff = utils.load_json(
+                diff(str(old_data), str(new_data), syntax='symmetric', dump=True))
+
+        result = {
+            'insert': [],
+            'delete': [],
+            'update': {}
+        }
+
+        if '$insert' in history_diff:
+            result['insert'] = history_diff['$insert']
+            del history_diff['$insert']
+
+        if '$delete' in history_diff:
+            result['delete'].append(history_diff['$delete'])
+            del history_diff['$delete']
+
+        result['update'] = history_diff
+        return result
 
     @staticmethod
     def _update_data_by_key(resource_data, key, action='set', value=None):
@@ -263,7 +301,7 @@ class CollectionDataManager(BaseManager):
             history_output.append({
                 'key': key,
                 'job_id': history_info.get('job_id'),
-                'diff': history_info.get('diff'),
+                'diff': history_info.get('diff', {}),
                 'updated_by': history_info['updated_by'],
                 'updated_at': history_info['updated_at']
             })

@@ -62,7 +62,6 @@ class ServerService(BaseService):
         primary_ip_address = params.get('primary_ip_address')
 
         params['state'] = params.get('state', 'INSERVICE')
-        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         if provider:
             params['provider'] = provider
@@ -78,6 +77,8 @@ class ServerService(BaseService):
         params['ip_addresses'] = self._get_ip_addresses_from_nics(nics)
         params['primary_ip_address'] = self._get_primary_ip_address(
             primary_ip_address, params['ip_addresses'])
+
+        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         return self.server_mgr.create_server(params)
 
@@ -153,8 +154,10 @@ class ServerService(BaseService):
                 params['primary_ip_address'] = self._get_primary_ip_address(
                     primary_ip_address, server_vo.ip_addresses)
 
+        server_data = server_vo.to_dict()
+        server_data['region'] = server_vo.region
         exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool']
-        params = data_mgr.merge_data_by_history(params, server_vo.to_dict(), exclude_keys=exclude_keys)
+        params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
 

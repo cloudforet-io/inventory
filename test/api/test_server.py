@@ -492,21 +492,22 @@ class TestServer(unittest.TestCase):
         """
         self.test_create_server(name)
 
-        self.server = self.inventory_v1.Server.pin_data(
-            {
-                'server_id': self.server.server_id,
-                'keys': [
-                    'os_type',
-                    'data.hardware'
-                ],
-                'domain_id': self.domain.domain_id
-            },
-            metadata=(
-                ('token', self.token),
-            ))
+        # self.server = self.inventory_v1.Server.pin_data(
+        #     {
+        #         'server_id': self.server.server_id,
+        #         'keys': [
+        #             'os_type',
+        #             'data.hardware',
+        #         ],
+        #         'domain_id': self.domain.domain_id
+        #     },
+        #     metadata=(
+        #         ('token', self.token),
+        #     ))
+        #
+        # self._print_data(self.server, 'test_pin_server_data_1')
 
-        self._print_data(self.server, 'test_pin_server_data_1')
-
+        self._create_region()
         self.server = self.inventory_v1.Server.update(
             {
                 'server_id': self.server.server_id,
@@ -530,6 +531,7 @@ class TestServer(unittest.TestCase):
                     'device_index': 0,
                     'public_ip_address': '1.1.1.1'
                 }],
+                'region_id': self.region.region_id,
                 'domain_id': self.domain.domain_id
             },
             metadata=(
