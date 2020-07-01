@@ -3,6 +3,7 @@ from spaceone.api.inventory.v1 import cloud_service_pb2
 from spaceone.core.pygrpc.message_type import *
 from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.info.region_info import RegionInfo
+from spaceone.inventory.info.collection_info import CollectionInfo
 
 __all__ = ['CloudServiceInfo', 'CloudServicesInfo']
 
@@ -24,7 +25,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
             'tags': change_struct_type(cloud_svc_vo.tags),
-            'collection_info': change_struct_type(cloud_svc_vo.collection_info.to_dict()),
+            'collection_info': CollectionInfo(cloud_svc_vo.collection_info.to_dict()),
             'region_info': RegionInfo(cloud_svc_vo.region, minimal=True) if cloud_svc_vo.region else None,
             'domain_id': cloud_svc_vo.domain_id,
             'created_at': change_timestamp_type(cloud_svc_vo.created_at),

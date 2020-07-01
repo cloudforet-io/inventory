@@ -26,7 +26,7 @@ class CollectionDataManager(BaseManager):
         self.collector_id = self.transaction.get_meta('collector_id')
         self.secret_id = self.transaction.get_meta('secret.secret_id')
         self.service_account_id = self.transaction.get_meta('secret.service_account_id')
-        self.updated_at = f'{datetime.utcnow().isoformat()}Z'
+        self.updated_at = datetime.utcnow()
 
     def create_new_history(self, resource_data, **kwargs):
         self.exclude_keys = kwargs.get('exclude_keys', [])
@@ -55,7 +55,8 @@ class CollectionDataManager(BaseManager):
             'collectors': all_collectors,
             'service_accounts': all_service_accounts,
             'secrets': all_secrets,
-            'change_history': self._make_change_history(self.change_history)
+            'change_history': self._make_change_history(self.change_history),
+            'collected_at': self.updated_at
         }
 
         return collection_info
@@ -152,7 +153,8 @@ class CollectionDataManager(BaseManager):
             'service_accounts': list(set(all_service_accounts)),
             'secrets': list(set(all_secrets)),
             'change_history': self._make_change_history(self.old_history),
-            'pinned_keys': pinned_keys
+            'pinned_keys': pinned_keys,
+            'collected_at': self.updated_at
         }
 
         return merged_data

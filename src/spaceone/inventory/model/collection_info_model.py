@@ -6,7 +6,7 @@ class ChangeHistory(EmbeddedDocument):
     job_id = StringField(max_length=40, default=None, null=True)
     diff = DictField()
     updated_by = StringField(max_length=40)
-    updated_at = StringField()
+    updated_at = DateTimeField()
 
 
 class CollectionInfo(EmbeddedDocument):
@@ -16,6 +16,7 @@ class CollectionInfo(EmbeddedDocument):
     secrets = ListField(StringField(max_length=40))
     change_history = ListField(EmbeddedDocumentField(ChangeHistory))
     pinned_keys = ListField(StringField())
+    collected_at = DateTimeField()
 
     def to_dict(self):
         return self.to_mongo()

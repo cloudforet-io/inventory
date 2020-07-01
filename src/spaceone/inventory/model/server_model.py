@@ -12,7 +12,7 @@ class NIC(EmbeddedDocument):
     device_index = IntField()
     device = StringField(max_length=50, default=None)
     nic_type = StringField(max_length=20, default=None)
-    ip_addresses = ListField(StringField())
+    ip_addresses = ListField(StringField(max_length=100))
     cidr = StringField(default=None)
     mac_address = StringField(default=None)
     public_ip_address = StringField(default=None, max_length=100)
