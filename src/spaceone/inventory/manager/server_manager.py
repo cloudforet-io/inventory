@@ -49,7 +49,39 @@ class ServerManager(BaseManager, ResourceManager):
         return self.server_model.get(server_id=server_id, domain_id=domain_id, only=only)
 
     def list_servers(self, query):
+        # Append Query for DELETED filter (Temporary Logic)
+        query = self._append_state_query(query)
         return self.server_model.query(**query)
 
     def stat_servers(self, query):
+        # Append Query for DELETED filter (Temporary Logic)
+        query = self._append_state_query(query)
         return self.server_model.stat(**query)
+
+    '''
+    TEMPORARY Logic for DELETED filter  
+    '''
+    @staticmethod
+    def _append_state_query(query):
+        state_default_filter = {
+            'key': 'state',
+            'value': 'DELETED',
+            'operator': 'not'
+        }
+
+        deleted_display = False
+        for _q in query.get('filter', []):
+            key = _q.get('k', _q.get('key'))
+            value = _q.get('v', _q.get('value'))
+            operator = _q.get('o', _q.get('operator'))
+
+            if key == 'state' and value == 'DELETED' and operator == 'eq':
+                deleted_display = True
+            if key == 'state' and 'DELETED' in value and operator == 'in':
+                deleted_display = True
+
+        if not deleted_display:
+            query['filter'] = query.get('filter', [])
+            query['filter'].append(state_default_filter)
+
+        return query
