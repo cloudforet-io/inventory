@@ -228,7 +228,8 @@ class ServerService(BaseService):
                           'ip_addresses', 'server_type', 'os_type', 'provider',
                           'asset_id', 'region_id', 'zone_id', 'pool_id', 'project_id',
                           'resource_group_id', 'domain_id'])
-    @append_keyword_filter(['server_id', 'name', 'ip_addresses', 'provider', 'reference.resource_id'])
+    @append_keyword_filter(['server_id', 'name', 'ip_addresses', 'provider', 'reference.resource_id',
+                            'project_id'])
     def list(self, params):
         """
         Args:

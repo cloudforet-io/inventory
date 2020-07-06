@@ -188,7 +188,7 @@ class CloudServiceService(BaseService):
     @append_query_filter(['cloud_service_id', 'cloud_service_type', 'cloud_service_group', 'group',
                           'state', 'region_id', 'project_id', 'domain_id'])
     @append_keyword_filter(['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
-                            'reference.resource_id'])
+                            'reference.resource_id', 'project_id'])
     def list(self, params):
         """
         Args:
