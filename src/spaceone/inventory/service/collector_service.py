@@ -56,7 +56,7 @@ class CollectorService(BaseService):
         _LOGGER.debug(f'[update] params: {params}')
         _LOGGER.debug(f'[update] merged_params: {merged_params}')
 
-        return collector_mgr.update_collector_by_vo(collector_vo, params)
+        return collector_mgr.update_collector_by_vo(collector_vo, merged_params)
 
     @transaction
     @check_required(['collector_id', 'domain_id'])
@@ -254,10 +254,11 @@ class CollectorService(BaseService):
         dict_plugin_info = MessageToDict(plugin_info, preserving_proto_field_name=True)
 
         new_plugin_info = params.get('plugin_info', {})
-        new_plugin_info.update(dict_plugin_info)
+        # new_plugin_info.update(dict_plugin_info)
+        dict_plugin_info.update(new_plugin_info)
 
         new_params = params.copy()
-        new_params['plugin_info'] = new_plugin_info
+        new_params['plugin_info'] = dict_plugin_info
         return new_params
 
     def _get_plugin(self, plugin_info, domain_id):
