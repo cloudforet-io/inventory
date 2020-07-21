@@ -7,10 +7,11 @@ class PluginInfo(EmbeddedDocument):
     plugin_id = StringField(max_length=40)
     version = StringField(max_length=255)
     options = DictField()
+    metadata = DictField()
     secret_id = StringField(max_length=40, null=True)
     secret_group_id = StringField(max_length=40, null=True)
-    provider = StringField(max_length=40)
-
+    provider = StringField(max_length=40, null=True)
+    service_account_id = StringField(max_length=40, null=True)
 
 class Collector(MongoModel):
     collector_id = StringField(max_length=40, generate_id='collector', unique=True)
@@ -24,6 +25,8 @@ class Collector(MongoModel):
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
     last_collected_at = DateTimeField()
+    is_public = BooleanField(default=True)
+    project_id = StringField(max_length=40)
 
     meta = {
         'db_alias': 'default',
@@ -47,7 +50,9 @@ class Collector(MongoModel):
             'plugin_info',
             'state',
             'provider',
-            'capability'
+            'capability',
+            'is_public',
+            'project_id'
 
         ],
         'change_query_keys': {
