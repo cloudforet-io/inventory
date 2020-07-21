@@ -18,6 +18,15 @@ class PluginManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+    def init(self, params):
+        """ Init plugin with params.plugin_info
+
+        Returns: plugin_info(metadata)
+        """
+        plugin_info = params.get('plugin_info', {})
+        domain_id = params['domain_id']
+        return self._init_by_plugin_info(plugin_info, domain_id)
+
     def verify(self, params):
         """ Verify plugin with params.plugin_info
         After verify, plugin_info.options will be updated
@@ -38,9 +47,8 @@ class PluginManager(BaseManager):
         secret_id_list = self.get_secrets_from_plugin_info(plugin_info, domain_id, secret_id)
 
         endpoint = self.get_endpoint(plugin_id, version, domain_id, labels)
-        _LOGGER.debug(f'[verify] endpoint: {endpoint} of plugin: {plugin_id}, {version}')
+        _LOGGER.debug(f'[verify] endpoint: {endpoint} of plugin: {plugin_id}, {version}, {len(secret_id_list)}')
         verified = False
-        verified_options = None
         for secret_id in secret_id_list:
             try:
                 secret_data = self._get_secret_data(secret_id, domain_id)
@@ -73,6 +81,13 @@ class PluginManager(BaseManager):
         """
         plugin_connector = self.locator.get_connector('PluginConnector')
         return plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, labels)
+
+    def init_plugin(self, endpoint, options):
+        """ Init plugin
+        """
+        connector = self.locator.get_connector('CollectorPluginConnector')
+        connector.initialize(endpoint)
+        return connector.init(options)
 
     def verify_plugin(self, endpoint, options, secret_data):
         """ Verify plugin
@@ -133,6 +148,20 @@ class PluginManager(BaseManager):
         secret_mgr = self.locator.get_manager('SecretManager')
         secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
         return secret_data.data
+
+    def _init_by_plugin_info(self, plugin_info, domain_id):
+        self._check_plugin_info(plugin_info)
+        plugin_id = plugin_info['plugin_id']
+        version   = plugin_info['version']
+        options   = plugin_info.get('options', {})
+        labels    = plugin_info.get('labels', {})
+
+        endpoint = self.get_endpoint(plugin_id, version, domain_id, labels)
+        _LOGGER.debug(f'[verify] endpoint: {endpoint} of plugin: {plugin_id}, {version}')
+        plugin_meta = self.init_plugin(endpoint, options)
+        _LOGGER.debug(f'[_init_by_plugin_info] metadata: {plugin_meta}')
+        return plugin_meta
+
 
 def is_member(item, seq):
     return sum(map(lambda x: x == item, seq)) > 0

@@ -39,6 +39,18 @@ class CollectorPluginConnector(BaseConnector):
                           f'(host: {e.get("hostname")}, port: {e.get("port")}, version: plugin)')
             raise ERROR_GRPC_CONFIGURATION
 
+    def init(self, options):
+        params = {
+            'options': options
+        }
+        try:
+            meta = []
+            plugin_info = self.client.Collector.init(params, metadata=meta)
+            return MessageToDict(plugin_info)
+        except Exception as e:
+            _LOGGER.error(f'[init] error: {e}')
+            raise ERROR_INIT_PLUGIN_FAILURE(params=params)
+
     def verify(self, options, secret_data):
         params = {
             'options': options,
@@ -54,7 +66,7 @@ class CollectorPluginConnector(BaseConnector):
 
     def collect(self, options, secret_data, filter, region_id=None, zone_id=None, pool_id=None):
         """ Collector Data base on param
-        
+
         Unary/Stream Between This and Plugin
 
         return Job Result

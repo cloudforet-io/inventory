@@ -2,6 +2,7 @@ import logging
 from google.protobuf.json_format import MessageToDict
 
 from spaceone.core.service import *
+from spaceone.core.error import *
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.manager.region_manager import RegionManager
@@ -24,7 +25,28 @@ class CollectorService(BaseService):
     @transaction
     @check_required(['name', 'plugin_info', 'domain_id'])
     def create(self, params):
+        """
+        Args:
+            params (dict): {
+                'name': 'str',
+                'plugin_info': 'dict',
+                'priority': 'int',
+                'tags': 'dict',
+                'is_public': 'bool',
+                'project_id': 'str',
+                'domain_id': 'str'
+            }
+
+        Returns:
+            collector_vo (object)
+        """
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
+        is_public = params.get('is_public', True)
+        project_id = params.get('project_id', None)
+        if (is_public is False) and (project_id is None):
+            _LOGGER.error(f'[create] project_id is required, if is_public is false')
+            raise ERROR_REQUIRED_PARAMETER(key='project_id')
+
         plugin_info = self._get_plugin(params['plugin_info'], params['domain_id'])
         params['capability'] = plugin_info.get('capability', {})
         params['provider'] = plugin_info.get('provider')
@@ -130,14 +152,27 @@ class CollectorService(BaseService):
 
     @transaction
     @check_required(['collector_id', 'domain_id'])
+    def update_plugin(self, params):
+        collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
+        collector_id = params['collector_id']
+        domain_id = params['domain_id']
+        version = params.get('version', None)
+        options = params.get('options', None)
+        #updated_option = collector_mgr.verify_plugin(collector_id, secret_id, domain_id)
+        collector_vo = collector_mgr.update_plugin(collector_id, domain_id, version, options)
+        return collector_vo
+
+    @transaction
+    @check_required(['collector_id', 'domain_id'])
     def verify_plugin(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         collector_id = params['collector_id']
         secret_id = params.get('secret_id', None)
         domain_id = params['domain_id']
-        updated_option = collector_mgr.verify_plugin(collector_id, secret_id, domain_id)
+        #updated_option = collector_mgr.verify_plugin(collector_id, secret_id, domain_id)
+        collector_mgr.verify_plugin(collector_id, secret_id, domain_id)
         # If you here, succeed verify
-        return {'status': True}
+        #return {'status': True}
 
     @transaction
     @check_required(['collector_id', 'schedule', 'domain_id'])

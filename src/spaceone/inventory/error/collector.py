@@ -4,6 +4,8 @@ from spaceone.core.error import *
 class ERROR_NO_COLLECTOR(ERROR_BASE):
     _message = '{collector_id} does not exist in {domain_id}'
 
+class ERROR_INIT_PLUGIN_FAILURE(ERROR_BASE):
+    _message = 'Fail to init plugin, params={params}'
 
 class ERROR_VERIFY_PLUGIN_FAILURE(ERROR_BASE):
     _message = 'Fail to verify plugin, params={params}'

@@ -44,6 +44,8 @@ class CollectorManager(BaseManager):
           - priority
           - tags
           - domain_id
+          - is_public
+          - project_id
         """
         # Create DB first
         collector_vo = self.collector_db.create_collector(params)
@@ -51,18 +53,40 @@ class CollectorManager(BaseManager):
         # Plugin Manager
         plugin_mgr = self.locator.get_manager('PluginManager')
 
-        # Verify plugin.options
+        # init plugin
         try:
-            updated_params = plugin_mgr.verify(params)
-            _LOGGER.debug(f'[create_collector] updated options: {updated_params}')
+            #updated_params = plugin_mgr.verify(params)
+            plugin_metadata = plugin_mgr.init(params)
+            _LOGGER.debug(f'[create_collector] metadata: {plugin_metadata}')
             plugin_info = params.get('plugin_info', {})
-            plugin_info['options'] = updated_params['options']
+            #plugin_info['options'] = updated_params['options']
+            plugin_info['metadata'] = plugin_metadata['metadata']
             params2 = {'plugin_info': plugin_info}
             collector_vo = self.update_collector_by_vo(collector_vo, params2)
             return collector_vo
         except Exception as e:
-            _LOGGER.debug(f'[create_collector] failed plugin verify: {e}')
+            _LOGGER.debug(f'[create_collector] failed plugin init: {e}')
             raise ERROR_VERIFY_PLUGIN_FAILURE(params=params)
+
+    def update_plugin(self, collector_id, domain_id, version, options):
+        collector_vo = self.get_collector(collector_id, domain_id)
+        collector_dict = collector_vo.to_dict()
+        plugin_info = collector_dict['plugin_info']
+        if version:
+            # Update plugin_version
+            plugin_id = plugin_info['plugin_id']
+            repo_mgr = self.locator.get_manager('RepositoryManager')
+            repo_mgr.check_plugin_version(plugin_id, version, domain_id)
+
+            plugin_info['version'] = version
+        if options:
+            # Overwriting
+            plugin_info['options'] = options
+        params = {
+            'plugin_info': plugin_info
+        }
+        _LOGGER.debug(f'[update_plugin] {plugin_info}')
+        return self.update_collector_by_vo(collector_vo, params)
 
     def verify_plugin(self, collector_id, secret_id, domain_id):
         # Get collector
@@ -73,6 +97,7 @@ class CollectorManager(BaseManager):
 
         # Call Plugin Manager
         plugin_mgr = self.locator.get_manager('PluginManager')
+        _LOGGER.debug(f'[verify_plugin] secret_id: {secret_id}')
         try:
             return plugin_mgr.verify_by_plugin_info(new_plugin_info, domain_id, secret_id)
         except Exception as e:

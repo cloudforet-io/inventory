@@ -21,9 +21,11 @@ def PluginInfo(vo, minimal=False):
     if not minimal:
         info.update({
             'options': change_struct_type(vo.options),
+            'metadata': change_struct_type(vo.metadata),
             'secret_id': vo.secret_id,
             'secret_group_id': vo.secret_group_id,
-            'provider': vo.provider
+            'provider': vo.provider,
+            'service_account_id': vo.service_account_id
         })
     return collector_pb2.PluginInfo(**info)
 
@@ -35,7 +37,9 @@ def CollectorInfo(vo, minimal=False):
         'provider': vo.provider,
         'capability': change_struct_type(vo.capability),
         'plugin_info': PluginInfo(vo.plugin_info, minimal=minimal),
-        'state': vo.state
+        'state': vo.state,
+        'is_public': vo.is_public,
+        'project_id': vo.project_id
     }
 
     if not minimal:

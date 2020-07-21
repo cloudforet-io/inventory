@@ -63,11 +63,17 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
         with self.locator.get_service('CollectorService', metadata) as collector_service:
             return self.locator.get_info('JobInfo', collector_service.collect(params))
 
+    def update_plugin(self, request, context):
+        params, metadata = self.parse_request(request, context)
+        with self.locator.get_service('CollectorService', metadata) as collector_service:
+            return self.locator.get_info('CollectorInfo', collector_service.update_plugin(params))
+
     def verify_plugin(self, request, context):
         params, metadata = self.parse_request(request, context)
 
         with self.locator.get_service('CollectorService', metadata) as collector_service:
-            return self.locator.get_info('VerifyInfo', collector_service.verify_plugin(params))
+            collector_service.verify_plugin(params)
+            return self.locator.get_info('EmptyInfo')
 
     def add_schedule(self, request, context):
         params, metadata = self.parse_request(request, context)
