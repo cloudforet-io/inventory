@@ -2,8 +2,6 @@ import logging
 
 from spaceone.core.service import *
 from spaceone.inventory.manager.region_manager import RegionManager
-from spaceone.inventory.manager.zone_manager import ZoneManager
-from spaceone.inventory.manager.pool_manager import PoolManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.manager.server_manager import ServerManager
@@ -42,7 +40,8 @@ class ServerService(BaseService):
                     'nics': 'list',
                     'disks': 'list',
                     'tags': 'dict',
-                    'region_id': 'str',
+                    'region_code': 'str',
+                    'region_type': 'str',
                     'project_id': 'str',
                     'domain_id': 'str'
                 }
@@ -66,9 +65,16 @@ class ServerService(BaseService):
         if provider:
             params['provider'] = provider
 
-        if 'region_id' in params:
-            params['region'] = self.region_mgr.get_region(params['region_id'], domain_id)
-            del params['region_id']
+        if 'region_code' in params and 'region_type' not in params:
+            raise ERROR_REQUIRED_PARAMETER(key='region_type')
+
+        if 'region_type' in params and 'region_code' not in params:
+            raise ERROR_REQUIRED_PARAMETER(key='region_code')
+
+        if 'region_code' in params and 'region_type' in params:
+            # Validation Check
+            self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
+            params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
 
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
@@ -102,9 +108,6 @@ class ServerService(BaseService):
                     'disks': 'list',
                     'tags': 'dict',
                     'asset_id': 'str',
-                    'pool_id': 'str',
-                    'zone_id': 'str',
-                    'region_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
@@ -122,7 +125,6 @@ class ServerService(BaseService):
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
         domain_id = params['domain_id']
-        region_id = params.get('region_id')
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
         primary_ip_address = params.get('primary_ip_address', None)
@@ -133,10 +135,11 @@ class ServerService(BaseService):
             params['provider'] = provider
 
         if release_region:
-            params['region'] = None
-        elif region_id:
-            params['region'] = self.region_mgr.get_region(region_id, domain_id)
-            del params['region_id']
+            params.update({
+                'region_code': None,
+                'region_type': None,
+                'region_ref': None
+            })
 
         if release_project:
             params['project_id'] = None
@@ -155,9 +158,12 @@ class ServerService(BaseService):
                     primary_ip_address, server_vo.ip_addresses)
 
         server_data = server_vo.to_dict()
-        server_data['region'] = server_vo.region
         exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool']
         params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
+
+        _LOGGER.debug("------- PARAMS with Update history ------")
+        _LOGGER.debug(params)
+        _LOGGER.debug("-----------------------------------------")
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
 
@@ -226,7 +232,7 @@ class ServerService(BaseService):
     @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'}, key_path='query.only')
     @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address',
                           'ip_addresses', 'server_type', 'os_type', 'provider',
-                          'asset_id', 'region_id', 'zone_id', 'pool_id', 'project_id',
+                          'asset_id', 'region_code', 'region_type', 'project_id',
                           'resource_group_id', 'domain_id'])
     @append_keyword_filter(['server_id', 'name', 'ip_addresses', 'provider', 'reference.resource_id',
                             'project_id'])
@@ -243,9 +249,8 @@ class ServerService(BaseService):
                     'os_type': 'LINUX | WINDOWS',
                     'provider': 'str',
                     'asset_id': 'str',
-                    'region_id': 'str',
-                    'zone_id': 'str',
-                    'pool_id': 'str',
+                    'region_code': 'str',
+                    'region_type': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'resource_group_id': 'str',

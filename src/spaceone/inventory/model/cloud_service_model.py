@@ -2,7 +2,6 @@ from mongoengine import *
 from datetime import datetime
 
 from spaceone.core.model.mongo_model import MongoModel
-from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
 from spaceone.inventory.error import *
@@ -18,7 +17,9 @@ class CloudService(MongoModel):
     metadata = DictField()
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
     tags = DictField()
-    region = ReferenceField('Region', default=None, null=True, reverse_delete_rule=NULLIFY)
+    region_code = StringField(max_length=255)
+    region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'))
+    region_ref = StringField(max_length=255)
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
@@ -32,7 +33,6 @@ class CloudService(MongoModel):
             'metadata',
             'reference',
             'tags',
-            'region',
             'project_id',
             'collection_info'
         ],
@@ -50,12 +50,6 @@ class CloudService(MongoModel):
             'reference.resource_id',
             'project_id'
         ],
-        'change_query_keys': {
-            'region_id': 'region.region_id'
-        },
-        'reference_query_keys': {
-            'region': Region
-        },
         'ordering': [
             'provider',
             'cloud_service_group',
@@ -66,18 +60,12 @@ class CloudService(MongoModel):
             'provider',
             'cloud_service_group',
             'cloud_service_type',
-            'region',
+            'region_code',
+            'region_type',
             'domain_id',
             'reference.resource_id',
             'collection_info.state'
         ],
-        'aggregate': {
-            'lookup': {
-                'region': {
-                    'from': 'region'
-                }
-            }
-        }
     }
 
     def update(self, data):

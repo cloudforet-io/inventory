@@ -2,7 +2,6 @@ import functools
 from spaceone.api.inventory.v1 import server_pb2
 from spaceone.core.pygrpc.message_type import *
 from spaceone.inventory.model.server_model import Server, NIC, Disk
-from spaceone.inventory.info.region_info import RegionInfo
 from spaceone.inventory.info.collection_info import CollectionInfo
 
 __all__ = ['ServerInfo', 'ServersInfo']
@@ -56,7 +55,8 @@ def ServerInfo(server_vo: Server, minimal=False):
             'disks': list(map(ServerDisk, server_vo.disks)),
             'tags': change_struct_type(server_vo.tags),
             'collection_info': CollectionInfo(server_vo.collection_info.to_dict()),
-            'region_info': RegionInfo(server_vo.region, minimal=True) if server_vo.region else None,
+            'region_code': server_vo.region_code,
+            'region_type': server_vo.region_type,
             'domain_id': server_vo.domain_id,
             'created_at': change_timestamp_type(server_vo.created_at),
             'updated_at': change_timestamp_type(server_vo.updated_at),

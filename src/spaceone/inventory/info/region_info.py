@@ -13,7 +13,9 @@ def RegionInfo(region_vo: Region, minimal=False):
     info = {
         'region_id': region_vo.region_id,
         'name': region_vo.name,
-        'state': region_vo.state
+        'state': region_vo.state,
+        'region_code': region_vo.region_code,
+        'region_type': region_vo.region_type
     }
 
     if not minimal:
