@@ -31,6 +31,7 @@ RESOURCE_MAP = {
     'inventory.FilterCache': 'FilterManager',
     'inventory.CloudService': 'CloudServiceManager',
     'inventory.CloudServiceType': 'CloudServiceTypeManager',
+    'inventory.Region': 'RegionManager',
 }
 
 SERVICE_MAP = {
@@ -44,6 +45,7 @@ SERVICE_MAP = {
     'inventory.FilterCache': 'CollectorService',
     'inventory.CloudService': 'CloudServiceService',
     'inventory.CloudServiceType': 'CloudServiceTypeService',
+    'inventory.Region': 'RegionService',
 }
 
 
