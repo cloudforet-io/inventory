@@ -115,7 +115,7 @@ class TestRegion(unittest.TestCase):
                 metadata=(('token', self.token),)
             )
 
-    def test_create_region(self, name=None):
+    def test_create_region(self, name=None, region_code='ap-northeast-2', region_type='AWS'):
         """ Create Region
         """
 
@@ -124,6 +124,8 @@ class TestRegion(unittest.TestCase):
 
         params = {
             'name': name,
+            'region_code': region_code,
+            'region_type': region_type,
             'domain_id': self.domain.domain_id
         }
 
@@ -135,7 +137,7 @@ class TestRegion(unittest.TestCase):
         self.assertEqual(self.region.name, name)
 
     def test_update_region_name(self):
-        self.test_create_region()
+        self.test_create_region(region_code='korea', region_type='AWS')
 
         name = random_string()
         param = {
@@ -149,7 +151,7 @@ class TestRegion(unittest.TestCase):
         self.assertEqual(self.region.name, name)
 
     def test_update_region_tags(self):
-        self.test_create_region()
+        self.test_create_region(region_code='korea', region_type='DATACENTER')
 
         tags = {
             random_string(): random_string(),
@@ -167,7 +169,7 @@ class TestRegion(unittest.TestCase):
 
     def test_get_region(self):
         name = 'test-region'
-        self.test_create_region(name)
+        self.test_create_region(name, region_code='ap-east-1')
 
         param = {
             'region_id': self.region.region_id,
@@ -180,8 +182,8 @@ class TestRegion(unittest.TestCase):
         self.assertEqual(self.region.name, name)
 
     def test_list_region_id(self):
-        self.test_create_region()
-        self.test_create_region()
+        self.test_create_region(name='test-xxx', region_code='us-east-1', region_type='AWS')
+        self.test_create_region(name='test-yyy', region_code='us-east-2', region_type='AWS')
 
         param = {
             'region_id': self.region.region_id,
@@ -194,9 +196,50 @@ class TestRegion(unittest.TestCase):
 
         self.assertEqual(1, regions.total_count)
 
+    def test_list_region_code(self):
+        self.test_create_region(name='test-xxx', region_code='us-west-1', region_type='AWS')
+        self.test_create_region(name='test-yyy', region_code='us-west-2', region_type='AWS')
+
+        param = {
+            'region_code': self.region.region_code,
+            'domain_id': self.domain.domain_id
+        }
+
+        regions = self.inventory_v1.Region.list(
+            param,
+            metadata=(('token', self.token),))
+
+        self.assertEqual(1, regions.total_count)
+
+    def test_list_region_type(self):
+        self.test_create_region(name='test-xxx', region_code='eu-east-1', region_type='AWS')
+        self.test_create_region(name='test-yyy', region_code='eu-east-2', region_type='AWS')
+
+        param = {
+            'region_type': self.region.region_type,
+            'domain_id': self.domain.domain_id
+        }
+
+        regions = self.inventory_v1.Region.list(
+            param,
+            metadata=(('token', self.token),))
+
+        self.assertEqual(2, regions.total_count)
+
+    def test_dupllicate_region_code(self):
+        self.test_create_region(name='test-xxx', region_code='eu-west-1', region_type='AWS')
+
+        with self.assertRaises(Exception):
+            self.test_create_region(
+                name='test-yyy',
+                region_code='ap-northeast-1',
+                region_type='AWS',
+                metadata=(('token', self.token),)
+            )
+
     def test_list_name(self):
-        self.test_create_region()
-        self.test_create_region()
+        self.test_create_region(region_code='eu-north-1', region_type='AWS')
+        self.test_create_region(region_code='eu-north-2', region_type='AWS')
 
         param = {
             'name': self.region.name,
@@ -209,10 +252,10 @@ class TestRegion(unittest.TestCase):
 
         self.assertEqual(1, regions.total_count)
 
-    def test_list_query(self):
-        self.test_create_region()
-        self.test_create_region()
-        self.test_create_region()
+    def test_list_query(self, region_type='GOOGLE_CLOUD'):
+        self.test_create_region(region_code='ap-northeast-1', region_type=region_type)
+        self.test_create_region(region_code='ap-northeast-2', region_type=region_type)
+        self.test_create_region(region_code='ap-northeast-3', region_type=region_type)
 
         param = {
             'domain_id': self.domain.domain_id,
@@ -233,7 +276,7 @@ class TestRegion(unittest.TestCase):
         self.assertEqual(len(self.regions), regions.total_count)
 
     def test_stat_region(self):
-        self.test_list_query()
+        self.test_list_query(region_type='AZURE')
 
         params = {
             'domain_id': self.domain.domain_id,

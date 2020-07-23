@@ -3,6 +3,7 @@ from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
+from spaceone.inventory.error import *
 
 
 @authentication_handler
@@ -51,13 +52,20 @@ class CloudServiceService(BaseService):
         if provider:
             params['provider'] = provider
 
-        if 'region_id' in params:
-            params['region'] = self.region_mgr.get_region(params['region_id'], domain_id)
-            del params['region_id']
-
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
+
+        if 'region_code' in params and 'region_type' not in params:
+            raise ERROR_REQUIRED_PARAMETER(key='region_type')
+
+        if 'region_type' in params and 'region_code' not in params:
+            raise ERROR_REQUIRED_PARAMETER(key='region_code')
+
+        if 'region_code' in params and 'region_type' in params:
+            # Validation Check
+            self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
+            params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
 
         return self.cloud_svc_mgr.create_cloud_service(params)
 

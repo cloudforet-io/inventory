@@ -2,7 +2,6 @@ from datetime import datetime
 from mongoengine import *
 
 from spaceone.core.model.mongo_model import MongoModel
-from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
 from spaceone.inventory.error import *
@@ -50,7 +49,9 @@ class Server(MongoModel):
     nics = ListField(EmbeddedDocumentField(NIC))
     disks = ListField(EmbeddedDocumentField(Disk))
     tags = DictField()
-    region = ReferenceField('Region', default=None, null=True, reverse_delete_rule=NULLIFY)
+    region_code = StringField(max_length=255)
+    region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'))
+    region_ref = StringField(max_length=255)
     project_id = StringField(max_length=40, default=None, null=True)
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
@@ -72,7 +73,6 @@ class Server(MongoModel):
             'reference',
             'nics',
             'disks',
-            'region',
             'project_id',
             'domain_id',
             'tags',
@@ -87,6 +87,8 @@ class Server(MongoModel):
             'os_type',
             'project_id',
             'domain_id',
+            'region_code',
+            'region_type',
             'collection_info.state'
         ],
         'minimal_fields': [
@@ -98,15 +100,8 @@ class Server(MongoModel):
             "os_type",
             'provider',
             'reference.resource_id',
-            'project_id'
-
+            'project_id',
         ],
-        'change_query_keys': {
-            'region_id': 'region.region_id'
-        },
-        'reference_query_keys': {
-            'region': Region
-        },
         'ordering': [
             'name'
         ],
@@ -117,19 +112,13 @@ class Server(MongoModel):
             'server_type',
             'os_type',
             'provider',
-            'region',
+            'region_code',
+            'region_type',
             'project_id',
             'domain_id',
             'reference.resource_id',
             'collection_info.state'
         ],
-        'aggregate': {
-            'lookup': {
-                'region': {
-                    'from': 'region'
-                }
-            }
-        }
     }
 
     def update(self, data):

@@ -1,6 +1,5 @@
 from mongoengine import *
 from datetime import datetime
-
 from spaceone.core.model.mongo_model import MongoModel
 
 
@@ -8,6 +7,9 @@ class Region(MongoModel):
     region_id = StringField(max_length=40, generate_id='region', unique=True)
     state = StringField(max_length=20, default='ACTIVE')
     name = StringField(max_length=255)
+    region_code = StringField(max_length=255, unique_with=['region_type', 'domain_id'])
+    region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'))
+    region_ref = StringField(max_length=255)
     tags = DictField()
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
@@ -21,12 +23,16 @@ class Region(MongoModel):
         ],
         'exact_fields': [
             'region_id',
-            'state'
+            'state',
+            'region_code',
+            'region_type'
         ],
         'minimal_fields': [
             'region_id',
             'name',
-            'state'
+            'state',
+            'region_code',
+            'region_type'
         ],
         'change_query_keys': {},
         'ordering': [
@@ -35,7 +41,9 @@ class Region(MongoModel):
         'indexes': [
             'region_id',
             'state',
-            'domain_id'
+            'domain_id',
+            'region_code',
+            'region_type'
         ]
     }
 

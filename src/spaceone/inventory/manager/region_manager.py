@@ -17,6 +17,8 @@ class RegionManager(BaseManager):
             _LOGGER.info(f'[ROLLBACK] Delete region : {region_vo.name} ({region_vo.region_id})')
             region_vo.delete()
 
+        params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
+
         region_vo: Region = self.region_model.create(params)
         self.transaction.add_rollback(_rollback, region_vo)
 
@@ -38,6 +40,9 @@ class RegionManager(BaseManager):
 
     def get_region(self, region_id, domain_id, only=None):
         return self.region_model.get(region_id=region_id, domain_id=domain_id, only=only)
+
+    def get_region_from_code(self, region_code, region_type, domain_id, only=None):
+        return self.region_model.get(region_code=region_code, region_type=region_type, domain_id=domain_id, only=only)
 
     def list_regions(self, query):
         return self.region_model.query(**query)
