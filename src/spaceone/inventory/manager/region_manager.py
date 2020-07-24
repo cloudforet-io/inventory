@@ -1,12 +1,13 @@
 import logging
 
 from spaceone.core.manager import BaseManager
+from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.model.region_model import Region
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class RegionManager(BaseManager):
+class RegionManager(BaseManager, ResourceManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

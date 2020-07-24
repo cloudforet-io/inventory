@@ -91,7 +91,6 @@ class ResourceManager(object):
 
         return resources, total_count
 
-
     def _update_collection_state_by_vo(self, resource_vo, state):
         def _rollback(old_data):
             print(f'[ROLLBACK] Revert Data : {old_data["name"]})')
