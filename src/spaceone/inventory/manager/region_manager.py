@@ -9,6 +9,9 @@ _LOGGER = logging.getLogger(__name__)
 
 class RegionManager(BaseManager, ResourceManager):
 
+    resource_keys = ['region_id']
+    query_method = 'list_regions'
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.region_model: Region = self.locator.get_model('Region')
