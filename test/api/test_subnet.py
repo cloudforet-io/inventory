@@ -3,9 +3,7 @@ import uuid
 import random
 import unittest
 from langcodes import Language
-from spaceone.core import config
-from spaceone.core import pygrpc
-from spaceone.core import utils
+from spaceone.core import utils, pygrpc
 from spaceone.core.unittest.runner import RichTestRunner
 from google.protobuf.json_format import MessageToDict
 
@@ -15,7 +13,7 @@ def random_string():
 
 
 class TestSubnet(unittest.TestCase):
-    config = config.load_config(
+    config = utils.load_yaml_from_file(
         os.environ.get('SPACEONE_TEST_CONFIG_FILE', './config.yml'))
 
     identity_v1 = None

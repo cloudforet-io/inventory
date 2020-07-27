@@ -7,7 +7,7 @@ from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.error import *
 
-_SPECIAL_KEYS = ['data', 'metadata.view.sub_data.layouts']
+_SPECIAL_KEYS = ['data', 'metadata.view.sub_data.layouts', 'metadata.view.search']
 _LOGGER = logging.getLogger(__name__)
 _DEFAULT_PRIORITY = 10
 
