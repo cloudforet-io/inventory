@@ -14,7 +14,8 @@ def random_string():
 
 
 class TestServer(unittest.TestCase):
-
+    config = utils.load_yaml_from_file(
+        os.environ.get('SPACEONE_TEST_CONFIG_FILE', './config.yml'))
     pp = pprint.PrettyPrinter(indent=4)
     identity_v1 = None
     inventory_v1 = None
@@ -27,18 +28,10 @@ class TestServer(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         super(TestServer, cls).setUpClass()
-
-        config = utils.load_yaml_from_file(
-            os.environ.get('SPACEONE_TEST_CONFIG_FILE', './config.yml'))
-
-        cls.global_conf = config.get('GLOBAL', {})
-        cls.collector_conf = cls.global_conf.get('COLLECTOR', {})
-        cls.secret_conf = cls.global_conf.get('SECRET', {})
-        endpoints = cls.global_conf.get('ENDPOINTS', {})
+        endpoints = cls.config.get('ENDPOINTS', {})
 
         cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1')
         cls.inventory_v1 = pygrpc.client(endpoint=endpoints.get('inventory', {}).get('v1'), version='v1')
-        cls.secret_v1 = pygrpc.client(endpoint=endpoints.get('secret', {}).get('v1'), version='v1')
 
         cls._create_domain()
         cls._create_domain_owner()
@@ -191,12 +184,17 @@ class TestServer(unittest.TestCase):
         self.projects.append(self.project)
         self.assertEqual(self.project.name, params['name'])
 
-    def _create_region(self, name=None):
+    def _create_region(self, name=None, region_type='AWS', region_code=None):
         if name is None:
             name = 'Region-' + random_string()[0:5]
 
+        if region_code is None:
+            region_code = 'region-' + random_string()[0:5]
+
         params = {
             'name': name,
+            'region_code': region_code,
+            'region_type': region_type,
             'domain_id': self.domain.domain_id
         }
 
@@ -308,7 +306,6 @@ class TestServer(unittest.TestCase):
                 "resource_id": utils.generate_id('resource'),
                 "external_link": "https://aaa.bbb.ccc/"
             },
-            'region_id': self.region.region_id,
             'project_id': self.project.project_id,
             'domain_id': self.domain.domain_id,
             'tags': {
@@ -537,7 +534,6 @@ class TestServer(unittest.TestCase):
                     'device_index': 0,
                     'public_ip_address': '1.1.1.1'
                 }],
-                'region_id': self.region.region_id,
                 'domain_id': self.domain.domain_id
             },
             metadata=(
@@ -594,36 +590,38 @@ class TestServer(unittest.TestCase):
         self.assertEqual(self.server.data['base'], params['data']['base'])
 
     def test_update_server_region(self):
-        self.test_create_server()
-
-        params = {
-            'server_id': self.server.server_id,
-            'region_id': self.region.region_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.server = self.inventory_v1.Server.update(
-            params,
-            metadata=(('token', self.token),))
-
-        self._print_data(self.server, 'test_update_server_region')
-        self.assertEqual(self.server.region_info.region_id, self.region.region_id)
+        pass
+        # self.test_create_server()
+        #
+        # params = {
+        #     'server_id': self.server.server_id,
+        #     'region_id': self.region.region_id,
+        #     'domain_id': self.domain.domain_id
+        # }
+        #
+        # self.server = self.inventory_v1.Server.update(
+        #     params,
+        #     metadata=(('token', self.token),))
+        #
+        # self._print_data(self.server, 'test_update_server_region')
+        # self.assertEqual(self.server.region_info.region_id, self.region.region_id)
 
     def test_release_server_region(self):
-        self.test_create_server()
-
-        params = {
-            'server_id': self.server.server_id,
-            'release_region': True,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.server = self.inventory_v1.Server.update(
-            params,
-            metadata=(('token', self.token),))
-
-        self._print_data(self.server, 'test_release_server_pool')
-        self.assertEqual(MessageToDict(self.server.region_info, preserving_proto_field_name=True), {})
+        pass
+        # self.test_create_server()
+        #
+        # params = {
+        #     'server_id': self.server.server_id,
+        #     'release_region': True,
+        #     'domain_id': self.domain.domain_id
+        # }
+        #
+        # self.server = self.inventory_v1.Server.update(
+        #     params,
+        #     metadata=(('token', self.token),))
+        #
+        # self._print_data(self.server, 'test_release_server_pool')
+        # self.assertEqual(MessageToDict(self.server.region_info, preserving_proto_field_name=True), {})
 
     def test_update_server_project(self):
         self.test_create_server()
@@ -756,24 +754,25 @@ class TestServer(unittest.TestCase):
         self.assertEqual(len(self.servers), result.total_count)
 
     def test_list_region_id(self):
-        self.test_create_server()
-
-        params = {
-            'domain_id': self.domain.domain_id,
-            'query': {
-                'filter': [
-                    {
-                        'k': 'region_id',
-                        'v': self.region.region_id,
-                        'o': 'eq'
-                    }
-                ]
-            }
-        }
-
-        result = self.inventory_v1.Server.list(
-            params, metadata=(('token', self.token),))
-        self.assertEqual(len(self.servers), result.total_count)
+        pass
+        # self.test_create_server()
+        #
+        # params = {
+        #     'domain_id': self.domain.domain_id,
+        #     'query': {
+        #         'filter': [
+        #             {
+        #                 'k': 'region_id',
+        #                 'v': self.region.region_id,
+        #                 'o': 'eq'
+        #             }
+        #         ]
+        #     }
+        # }
+        #
+        # result = self.inventory_v1.Server.list(
+        #     params, metadata=(('token', self.token),))
+        # self.assertEqual(len(self.servers), result.total_count)
 
     def test_list_minimal(self):
         self.test_create_server()
