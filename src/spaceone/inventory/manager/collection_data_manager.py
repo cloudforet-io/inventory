@@ -7,7 +7,6 @@ from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.error import *
 
-_SPECIAL_KEYS = ['data', 'metadata.view.sub_data.layouts', 'metadata.view.search']
 _LOGGER = logging.getLogger(__name__)
 _DEFAULT_PRIORITY = 10
 
@@ -18,7 +17,6 @@ class CollectionDataManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.change_history = {}
         self.old_history = {}
-        self.metadata_info = {}
         self.collector_priority = {}
         self.exclude_keys = []
         self.collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -77,23 +75,13 @@ class CollectionDataManager(BaseManager):
                 'updated_at': self.updated_at
             }
 
-    def _create_special_data_history(self, data, key_path):
-        if isinstance(data, dict):
-            for key, value in data.items():
-                self._set_data_history(f'{key_path}.{key}', value)
-
-        elif isinstance(data, list):
-            for value in data:
-                name = value.get('name')
-                if name:
-                    self._set_data_history(f'{key_path}.{name}', value)
-
     def _create_data_history(self, resource_data):
         for key, value in resource_data.items():
-            if key in ['data', 'metadata']:
-                for s_key in _SPECIAL_KEYS:
-                    data = utils.get_dict_value(resource_data, s_key)
-                    self._create_special_data_history(data, s_key)
+            if key == 'data':
+                for sub_key, sub_value in value.items():
+                    self._set_data_history(f'data.{sub_key}', sub_value)
+            elif key == 'metadata':
+                pass
             else:
                 self._set_data_history(key, value)
 
@@ -146,6 +134,9 @@ class CollectionDataManager(BaseManager):
         self._load_old_data_history(old_data)
 
         merged_data = self._merge_data(old_data)
+
+        if 'metadata' in resource_data:
+            merged_data['metadata'] = resource_data['metadata']
 
         merged_data['collection_info'] = {
             'state': state,
@@ -220,27 +211,14 @@ class CollectionDataManager(BaseManager):
 
     @staticmethod
     def _update_data_by_key(resource_data, key, action='set', value=None):
-        if '.' in key:
-            key_path, sub_key = key.rsplit('.', 1)
-            data = utils.get_dict_value(resource_data, key_path)
-            if isinstance(data, dict):
-                if action == 'set':
-                    data[sub_key] = value
-                elif action == 'exclude':
-                    if sub_key in data:
-                        del data[sub_key]
-            elif isinstance(data, list):
-                list_data = []
-                for d in data:
-                    if d.get('name') != sub_key:
-                        list_data.append(d)
-
-                if action == 'set':
-                    list_data.append(value)
-
-                data = list_data
-
-            utils.change_dict_value(resource_data, key_path, data)
+        if key.startswith('data.'):
+            key_path, sub_key = key.split('.', 1)
+            resource_data['data'] = resource_data.get('data', {})
+            if action == 'set':
+                resource_data['data'][sub_key] = value
+            elif action == 'exclude':
+                if sub_key in resource_data['data']:
+                    del resource_data['data'][sub_key]
 
         elif key in resource_data:
             if action == 'set':
