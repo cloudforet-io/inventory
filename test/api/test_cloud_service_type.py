@@ -3,7 +3,6 @@ import uuid
 import random
 import unittest
 import pprint
-from langcodes import Language
 from spaceone.core import utils, pygrpc
 from spaceone.core.unittest.runner import RichTestRunner
 from google.protobuf.json_format import MessageToDict
@@ -136,12 +135,26 @@ class TestCloudServiceType(unittest.TestCase):
             'name': name,
             'provider': provider,
             'group': group,
+            # 'metadata': {
+            #     'view': {
+            #         'search': [{
+            #             'name': 'Provider',
+            #             'key': 'provider'
+            #         }, {
+            #             'name': 'Project',
+            #             'key': 'project'
+            #         }]
+            #     }
+            # },
             'domain_id': self.domain.domain_id
         }
 
         self.cloud_service_type = self.inventory_v1.CloudServiceType.create(
             params, metadata=(('token', self.token),)
         )
+
+        self._print_data(self.cloud_service_type, 'test_create_cloud_service_type')
+
         self.cloud_service_types.append(self.cloud_service_type)
         self.assertEqual(self.cloud_service_type.name, name)
 
@@ -228,6 +241,32 @@ class TestCloudServiceType(unittest.TestCase):
 
         with self.assertRaises(Exception):
             self.test_create_cloud_service_type(name=name, provider=provider, group=group)
+
+    def test_update_cloud_service_type_metadata(self):
+        self.test_create_cloud_service_type()
+
+        param = {
+            'cloud_service_type_id': self.cloud_service_type.cloud_service_type_id,
+            'labels': ['aa', 'bb'],
+            'metadata': {
+                'view': {
+                    'search': [{
+                        'name': 'Provider',
+                        'key': 'provider'
+                    }, {
+                        'name': 'Project',
+                        'key': 'project'
+                    }]
+                }
+            },
+            'domain_id': self.domain.domain_id,
+        }
+        self.cloud_service_type = self.inventory_v1.CloudServiceType.update(
+            param,
+            metadata=(('token', self.token),)
+        )
+
+        self._print_data(self.cloud_service_type, 'test_update_cloud_service_type_metadata')
 
     def test_update_cloud_service_type_label(self):
         self.test_create_cloud_service_type()
