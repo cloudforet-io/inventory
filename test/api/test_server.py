@@ -590,38 +590,36 @@ class TestServer(unittest.TestCase):
         self.assertEqual(self.server.data['base'], params['data']['base'])
 
     def test_update_server_region(self):
-        pass
-        # self.test_create_server()
-        #
-        # params = {
-        #     'server_id': self.server.server_id,
-        #     'region_id': self.region.region_id,
-        #     'domain_id': self.domain.domain_id
-        # }
-        #
-        # self.server = self.inventory_v1.Server.update(
-        #     params,
-        #     metadata=(('token', self.token),))
-        #
-        # self._print_data(self.server, 'test_update_server_region')
-        # self.assertEqual(self.server.region_info.region_id, self.region.region_id)
+        self.test_create_server()
+
+        params = {
+            'server_id': self.server.server_id,
+            'region_id': self.region.region_id,
+            'domain_id': self.domain.domain_id
+        }
+
+        self.server = self.inventory_v1.Server.update(
+            params,
+            metadata=(('token', self.token),))
+
+        self._print_data(self.server, 'test_update_server_region')
+        self.assertEqual(self.server.region_info.region_id, self.region.region_id)
 
     def test_release_server_region(self):
-        pass
-        # self.test_create_server()
-        #
-        # params = {
-        #     'server_id': self.server.server_id,
-        #     'release_region': True,
-        #     'domain_id': self.domain.domain_id
-        # }
-        #
-        # self.server = self.inventory_v1.Server.update(
-        #     params,
-        #     metadata=(('token', self.token),))
-        #
-        # self._print_data(self.server, 'test_release_server_pool')
-        # self.assertEqual(MessageToDict(self.server.region_info, preserving_proto_field_name=True), {})
+        self.test_create_server()
+
+        params = {
+            'server_id': self.server.server_id,
+            'release_region': True,
+            'domain_id': self.domain.domain_id
+        }
+
+        self.server = self.inventory_v1.Server.update(
+            params,
+            metadata=(('token', self.token),))
+
+        self._print_data(self.server, 'test_release_server_pool')
+        self.assertEqual(MessageToDict(self.server.region_info, preserving_proto_field_name=True), {})
 
     def test_update_server_project(self):
         self.test_create_server()
@@ -754,25 +752,24 @@ class TestServer(unittest.TestCase):
         self.assertEqual(len(self.servers), result.total_count)
 
     def test_list_region_id(self):
-        pass
-        # self.test_create_server()
-        #
-        # params = {
-        #     'domain_id': self.domain.domain_id,
-        #     'query': {
-        #         'filter': [
-        #             {
-        #                 'k': 'region_id',
-        #                 'v': self.region.region_id,
-        #                 'o': 'eq'
-        #             }
-        #         ]
-        #     }
-        # }
-        #
-        # result = self.inventory_v1.Server.list(
-        #     params, metadata=(('token', self.token),))
-        # self.assertEqual(len(self.servers), result.total_count)
+        self.test_create_server()
+
+        params = {
+            'domain_id': self.domain.domain_id,
+            'query': {
+                'filter': [
+                    {
+                        'k': 'region_id',
+                        'v': self.region.region_id,
+                        'o': 'eq'
+                    }
+                ]
+            }
+        }
+
+        result = self.inventory_v1.Server.list(
+            params, metadata=(('token', self.token),))
+        self.assertEqual(len(self.servers), result.total_count)
 
     def test_list_minimal(self):
         self.test_create_server()

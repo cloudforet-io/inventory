@@ -2,7 +2,6 @@ import os
 import uuid
 import random
 import unittest
-from langcodes import Language
 from spaceone.core import utils, pygrpc
 from spaceone.core.unittest.runner import RichTestRunner
 from google.protobuf.json_format import MessageToDict

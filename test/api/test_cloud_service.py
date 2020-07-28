@@ -2,7 +2,6 @@ import os
 import uuid
 import unittest
 import pprint
-from spaceone.core import config
 from spaceone.core import utils, pygrpc
 from spaceone.core.unittest.runner import RichTestRunner
 from google.protobuf.json_format import MessageToDict
@@ -284,34 +283,33 @@ class TestCloudService(unittest.TestCase):
                                          cloud_service_group=None, provider=None):
         """ Create Cloud Service with region
         """
-        pass
 
-        # if cloud_service_type is None:
-        #     cloud_service_type = random_string()
-        #
-        # if cloud_service_group is None:
-        #     cloud_service_group = random_string()
-        #
-        # if provider is None:
-        #     provider = random_string()
-        #
-        # self._create_region()
-        #
-        # params = {
-        #     'provider': provider,
-        #     'cloud_service_type': cloud_service_type,
-        #     'cloud_service_group': cloud_service_group,
-        #     'data': {
-        #         random_string(): random_string(),
-        #         random_string(): random_string(),
-        #         random_string(): random_string()
-        #     },
-        #     'domain_id': self.domain.domain_id
-        # }
-        #
-        # self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.token),))
-        # self.cloud_services.append(self.cloud_service)
-        # self.assertEqual(self.cloud_service.region_info.region_id, self.region.region_id)
+        if cloud_service_type is None:
+            cloud_service_type = random_string()
+
+        if cloud_service_group is None:
+            cloud_service_group = random_string()
+
+        if provider is None:
+            provider = random_string()
+
+        self._create_region()
+
+        params = {
+            'provider': provider,
+            'cloud_service_type': cloud_service_type,
+            'cloud_service_group': cloud_service_group,
+            'data': {
+                random_string(): random_string(),
+                random_string(): random_string(),
+                random_string(): random_string()
+            },
+            'domain_id': self.domain.domain_id
+        }
+
+        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.token),))
+        self.cloud_services.append(self.cloud_service)
+        self.assertEqual(self.cloud_service.region_info.region_id, self.region.region_id)
 
     def test_update_cloud_service_project_id(self):
         self._create_project()
@@ -376,27 +374,26 @@ class TestCloudService(unittest.TestCase):
         self.assertEqual(self.cloud_service.project_id, '')
 
     def test_update_cloud_service_release_region(self):
-        pass
-        # self._create_region()
-        # self.test_create_cloud_service()
-        #
-        # param = {
-        #     'cloud_service_id': self.cloud_service.cloud_service_id,
-        #     'region_id': self.region.region_id,
-        #     'domain_id': self.domain.domain_id
-        # }
-        #
-        # self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
-        #
-        # param = {
-        #     'cloud_service_id': self.cloud_service.cloud_service_id,
-        #     'release_region': True,
-        #     'domain_id': self.domain.domain_id
-        # }
-        #
-        # self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
-        #
-        # self.assertEqual(self.cloud_service.region_info.region_id, '')
+        self._create_region()
+        self.test_create_cloud_service()
+
+        param = {
+            'cloud_service_id': self.cloud_service.cloud_service_id,
+            'region_id': self.region.region_id,
+            'domain_id': self.domain.domain_id
+        }
+
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+
+        param = {
+            'cloud_service_id': self.cloud_service.cloud_service_id,
+            'release_region': True,
+            'domain_id': self.domain.domain_id
+        }
+
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+
+        self.assertEqual(self.cloud_service.region_info.region_id, '')
 
     def test_update_cloud_service_data(self):
         old_data = {
