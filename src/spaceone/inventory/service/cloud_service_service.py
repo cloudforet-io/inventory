@@ -30,7 +30,8 @@ class CloudServiceService(BaseService):
                     'metadata': 'dict',
                     'reference': 'dict',
                     'tags': 'dict',
-                    'region_id': 'str',
+                    'region_code': 'str',
+                    'region_type': 'str',
                     'project_id': 'str',
                     'domain_id': 'str'
                 }
@@ -80,7 +81,6 @@ class CloudServiceService(BaseService):
                     'metadata': 'dict',
                     'reference': 'dict',
                     'tags': 'dict',
-                    'region_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
@@ -98,7 +98,6 @@ class CloudServiceService(BaseService):
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
 
         domain_id = params['domain_id']
-        region_id = params.get('region_id')
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
 
@@ -108,10 +107,11 @@ class CloudServiceService(BaseService):
             params['provider'] = provider
 
         if release_region:
-            params['region'] = None
-        elif region_id:
-            params['region'] = self.region_mgr.get_region(region_id, domain_id)
-            del params['region_id']
+            params.update({
+                'region_code': None,
+                'region_type': None,
+                'region_ref': None
+            })
 
         if release_project:
             params['project_id'] = None
@@ -120,7 +120,6 @@ class CloudServiceService(BaseService):
             params['project_id'] = project_id
 
         cloud_svc_data = cloud_svc_vo.to_dict()
-        cloud_svc_data['region'] = cloud_svc_vo.region
         exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_pool']
         params = data_mgr.merge_data_by_history(params, cloud_svc_data, exclude_keys=exclude_keys)
 
@@ -194,7 +193,7 @@ class CloudServiceService(BaseService):
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region'}, key_path='query.only')
     @append_query_filter(['cloud_service_id', 'cloud_service_type', 'cloud_service_group', 'group',
-                          'state', 'region_id', 'project_id', 'domain_id'])
+                          'state', 'region_code', 'region_type', 'project_id', 'domain_id'])
     @append_keyword_filter(['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
                             'reference.resource_id', 'project_id'])
     def list(self, params):
@@ -206,7 +205,8 @@ class CloudServiceService(BaseService):
                     'cloud_service_group': 'str',
                     'provider': 'str',
                     'state': 'str',
-                    'region_id': 'str',
+                    'region_code': 'str',
+                    'region_type': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)'
