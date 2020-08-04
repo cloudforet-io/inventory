@@ -241,7 +241,17 @@ class TestServer(unittest.TestCase):
                 },
                 'compute': {
                     'instance_id': 'i-' + random_string()[0:12]
-                }
+                },
+                'softwares': [{
+                    'name': 'mysql',
+                    'version': '1.0.0'
+                }, {
+                    'name': 'apache',
+                    'version': '3.0.0'
+                }, {
+                    'name': 'nginx',
+                    'version': '2.0.0'
+                }]
             },
             'nics': [{
                 'ip_addresses': [ip_address],
@@ -358,6 +368,20 @@ class TestServer(unittest.TestCase):
                     'os': {
                         'os_distro': 'windows2012',
                         'os_details': 'Windows 2012 ENT SP2'
+                    },
+                    'iam': {
+                        'profile': {
+                            'k1': 'v1',
+                            'k2': 'v2'
+                        }
+                    },
+                    'lv1': {
+                        'lv2': {
+                            'lv3': {
+                                'k1': 'v1',
+                                'k2': 'v2'
+                            }
+                        }
                     }
                 },
                 'metadata': {
@@ -444,6 +468,20 @@ class TestServer(unittest.TestCase):
                     }],
                     'platform': {
                         'type': 'AZURE'
+                    },
+                    'iam': {
+                        'profile': {
+                            'k2': 'v2',
+                            'k3': 'v3'
+                        }
+                    },
+                    'lv1': {
+                        'lv2': {
+                            'lv3': {
+                                'k2': 'v2',
+                                'k3': 'v3'
+                            }
+                        }
                     }
                 },
                 'server_type': 'BAREMETAL',

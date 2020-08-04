@@ -169,52 +169,26 @@ class CollectionDataManager(BaseManager):
 
     @staticmethod
     def _get_history_diff(old_data, new_data):
-        history_diff = {}
-        try:
-            if isinstance(old_data, list) and isinstance(new_data, list):
-                for value in old_data:
-                    if value not in new_data:
-                        if '$delete' not in history_diff:
-                            history_diff['$delete'] = []
+        if isinstance(old_data, list) and isinstance(new_data, list):
+            history_diff = {
+                'insert': [],
+                'delete': []
+            }
 
-                        history_diff['$delete'].append(value)
+            for value in old_data:
+                if value not in new_data:
+                    history_diff['delete'].append(value)
 
-                for value in new_data:
-                    if value not in old_data:
-                        if '$insert' not in history_diff:
-                            history_diff['$insert'] = []
+            for value in new_data:
+                if value not in old_data:
+                    history_diff['insert'].append(value)
+        else:
+            history_diff = {
+                'insert': new_data,
+                'delete': old_data
+            }
 
-                        history_diff['$insert'].append(value)
-            else:
-                history_diff = utils.load_json(
-                    diff(old_data, new_data, syntax='symmetric', dump=True))
-        except Exception:
-            history_diff = utils.load_json(
-                diff(str(old_data), str(new_data), syntax='symmetric', dump=True))
-
-        result = {
-            'insert': [],
-            'delete': [],
-            'update': {}
-        }
-
-        if isinstance(history_diff, dict):
-            for key, value in history_diff.items():
-                if key.startswith('$'):
-                    if key == '$insert':
-                        result['insert'] = value
-                    elif key == '$delete':
-                        result['delete'] = value
-                    else:
-                        _LOGGER.warning(f'[_get_history_diff] Exception Case ({key}): {str(value)}')
-                else:
-                    pass
-                    # result['update'][key] = value
-
-        elif isinstance(history_diff, list):
-            result['update'] = history_diff
-
-        return result
+        return history_diff
 
     @staticmethod
     def _update_data_by_key(resource_data, key, action='set', value=None):
