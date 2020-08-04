@@ -198,16 +198,22 @@ class CollectionDataManager(BaseManager):
             'update': {}
         }
 
-        if '$insert' in history_diff:
-            result['insert'] = history_diff['$insert']
-            del history_diff['$insert']
+        if isinstance(history_diff, dict):
+            for key, value in history_diff.items():
+                if key.startswith('$'):
+                    if key == '$insert':
+                        result['insert'] = value
+                    elif key == '$delete':
+                        result['delete'] = value
+                    else:
+                        _LOGGER.warning(f'[_get_history_diff] Exception Case ({key}): {str(value)}')
+                else:
+                    pass
+                    # result['update'][key] = value
 
-        if '$delete' in history_diff:
-            result['delete'].append(history_diff['$delete'])
-            del history_diff['$delete']
+        elif isinstance(history_diff, list):
+            result['update'] = history_diff
 
-        _LOGGER.debug(f'[_get_history_diff] {str(history_diff)}')
-        result['update'] = history_diff
         return result
 
     @staticmethod
