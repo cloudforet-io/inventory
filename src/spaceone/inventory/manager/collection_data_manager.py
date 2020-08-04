@@ -192,6 +192,7 @@ class CollectionDataManager(BaseManager):
             history_diff = utils.load_json(
                 diff(str(old_data), str(new_data), syntax='symmetric', dump=True))
 
+        _LOGGER.debug(f'[_get_history_diff] {str(history_diff)}')
         result = {
             'insert': [],
             'delete': [],
