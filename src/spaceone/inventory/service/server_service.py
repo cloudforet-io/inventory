@@ -161,10 +161,6 @@ class ServerService(BaseService):
         exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool']
         params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
 
-        _LOGGER.debug("------- PARAMS with Update history ------")
-        _LOGGER.debug(params)
-        _LOGGER.debug("-----------------------------------------")
-
         return self.server_mgr.update_server_by_vo(params, server_vo)
 
     @transaction
