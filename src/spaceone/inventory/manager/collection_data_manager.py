@@ -206,7 +206,7 @@ class CollectionDataManager(BaseManager):
                     elif key == '$delete':
                         result['delete'] = value
                     else:
-                        print(key, value)
+                        _LOGGER.warning(f'[_get_history_diff] Exception Case ({key}): {str(value)}')
                 else:
                     pass
                     # result['update'][key] = value
