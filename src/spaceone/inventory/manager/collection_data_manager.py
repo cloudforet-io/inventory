@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from jsondiff import diff
 
 from spaceone.core import utils
 from spaceone.core.manager import BaseManager
