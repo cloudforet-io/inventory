@@ -36,8 +36,7 @@ setup(
         'redis',
         'langcodes',
         'ipaddress',
-        'python-consul',
-        'jsondiff'
+        'python-consul'
     ],
     zip_safe=False,
 )
