@@ -87,7 +87,16 @@ class FilterManager(BaseManager):
             related_secret_id_list: ['secret-12343', 'secret-254555' ...]
 
         """
+
+        metadata = plugin_info.get('metadata', None)
+        #############################
+        # WARNING
+        # options is old spec.
+        #############################
         options = plugin_info.get('options', {})
+        if metadata:
+            options = metadata
+
         filter_format = options.get('filter_format', None)
         if filter_format is None:
             _LOGGER.warning(f'[_get_collector_filter] No filter_format at plugin_info')

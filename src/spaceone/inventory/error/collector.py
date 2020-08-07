@@ -4,6 +4,9 @@ from spaceone.core.error import *
 class ERROR_NO_COLLECTOR(ERROR_BASE):
     _message = '{collector_id} does not exist in {domain_id}'
 
+class ERROR_COLLECTOR_STATE(ERROR_BASE):
+    _message = 'collector state is {state}'
+
 class ERROR_INIT_PLUGIN_FAILURE(ERROR_BASE):
     _message = 'Fail to init plugin, params={params}'
 
@@ -71,4 +74,5 @@ class ERROR_WRONG_PLUGIN_SETTINGS(ERROR_BASE):
 class ERROR_INVALID_PLUGIN_OPTIONS(ERROR_INTERNAL_API):
     _message = 'The options received from the plugin is invalid. (reason = {reason})'
 
-
+class ERROR_RESOURCE_KEYS_NOT_DEFINED(ERROR_BASE):
+    _message = "{resource_type} manager does not define resource_keys field"

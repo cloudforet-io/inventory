@@ -4,6 +4,11 @@ from mongoengine import *
 from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.collector_model import Collector
 
+class Error(EmbeddedDocument):
+    error_code = StringField(max_length=128)
+    message = StringField(max_length=2048)
+    additional = DictField()
+
 
 class Job(MongoModel):
     job_id = StringField(max_length=40, generate_id='job', unique=True)
@@ -13,10 +18,13 @@ class Job(MongoModel):
     #results = DictField()
     collect_mode = StringField(max_length=20, default='ALL',
                 choices=('ALL', 'CREATE', 'UPDATE'))
+    total_tasks = IntField(min_value=0, max_value=65000, default=0)
     remained_tasks = IntField(min_value=0, max_value=65000, default=0)          # Number of remained from collector, 0 means No remained_task
     created_count = IntField(default=0)
     updated_count = IntField(default=0)
+    deleted_count = IntField(default=0)
     statistics = DictField()
+    errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))
     collector = ReferenceField('Collector', reverse_delete_rule=NULLIFY)
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
@@ -29,8 +37,11 @@ class Job(MongoModel):
             'state',
             'results',
             'remained_tasks',
+            'total_tasks',
             'created_count',
             'updated_count',
+            'deleted_count',
+            'errors',
             'collected_resources',
             'finished_at',
             'last_updated_at',
