@@ -7,10 +7,18 @@ from spaceone.inventory.info.collector_info import CollectorInfo
 
 __all__ = ['JobInfo', 'JobsInfo']
 
+def ErrorInfo(error):
+    info = {
+        'error_code': error.error_code,
+        'message': error.message,
+        'additional': change_struct_type(error.additional)
+    }
+    return collector_pb2.ErrorInfo(**info)
 
 def JobInfo(job_vo: Job, minimal=False):
     info = {
         'job_id': job_vo.job_id,
+        'total_tasks': job_vo.total_tasks,
         'created_at': change_timestamp_type(job_vo.created_at),
         'finished_at': change_timestamp_type(job_vo.finished_at),
         'state': job_vo.state,
@@ -23,6 +31,7 @@ def JobInfo(job_vo: Job, minimal=False):
             'created_count': job_vo.created_count,
             'updated_count': job_vo.updated_count,
             'filter': change_struct_type(job_vo.filters),
+            'errors': list(map(functools.partial(ErrorInfo), job_vo.errors))
         })
 
     return collector_pb2.JobInfo(**info)

@@ -7,6 +7,9 @@ class ResourceManager(object):
     resource_keys: list = None
     query_method = None
 
+    """
+    This is used by collector
+    """
     def query_resources(self, query, change_rules):
         secrets = []
         only = ['collection_info.secrets']

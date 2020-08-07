@@ -78,10 +78,15 @@ class CollectingManager(BaseManager):
 
         # Check Job State first, if job state is canceled, stop process
         job_mgr = self.locator.get_manager('JobManager')
-        if job_mgr.is_canceled(kwargs['job_id'], domain_id):
-            raise ERROR_COLLECT_CANCELED(job_id=kwargs['job_id'])
+        job_task_mgr = self.locator.get_manager('JobTaskManager')
+
+        job_id = kwargs['job_id']
+        if job_mgr.is_canceled(job_id, domain_id):
+            job_mgr.decrease_remained_tasks(job_id, domain_id)
+            raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
         # Create proper connector
+        job_task_id = kwargs['job_task_id']
         connector = self._get_connector(plugin_info, domain_id)
 
         collect_filter = filters
@@ -106,33 +111,60 @@ class CollectingManager(BaseManager):
             self.secret = secret_mgr.get_secret(secret_id, domain_id)
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
+            job_task_mgr.add_error(job_task_id, domain_id,
+                                   'ERROR_COLLECTOR_SECRET',
+                                   e,
+                                   {'secret_id': secret_id}
+                                   )
+            job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
+
+        try:
+            # Update JobTask (In-progress)
+            self._update_job_task(job_task_id, 'IN_PROGRESS', domain_id, self.secret)
+        except Exception as e:
+            _LOGGER.error(f'[collecing_resources] fail to update job_task: {e}')
 
         # Call method
         try:
             results = connector.collect(plugin_info['options'], secret_data.data, collect_filter)
             _LOGGER.debug('[collect] generator: %s' % results)
         except Exception as e:
+            job_task_mgr.add_error(job_task_id, domain_id,
+                                   'ERROR_COLLECTOR_COLLECTING',
+                                   e,
+                                   {'secret_id': secret_id}
+                                   )
+            job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
 
         try:
             self._process_results(results,
-                                  kwargs['job_id'],
+                                  job_id,
+                                  job_task_id,
                                   kwargs['collector_id'],
                                   secret_id,
                                   domain_id
                                   )
+            self._update_job_task(job_task_id, 'SUCCESS', domain_id)
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] {e}')
-
+            job_task_mgr.add_error(job_task_id, domain_id,
+                                   'ERROR_COLLECTOR_COLLECTING',
+                                   e,
+                                   {'secret_id': secret_id}
+                                   )
+            self._update_job_task(job_task_id, 'FAILURE', domain_id)
+            job_mgr.make_failure(kwargs['job_id'], domain_id)
         finally:
             job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
         return True
 
-    def _process_results(self, results, job_id, collector_id, secret_id, domain_id):
+    def _process_results(self, results, job_id, job_task_id, collector_id, secret_id, domain_id):
         # update meta
         self.transaction.set_meta('job_id', job_id)
+        self.transaction.set_meta('job_task_id', job_task_id)
         self.transaction.set_meta('collector_id', collector_id)
         self.transaction.set_meta('secret.secret_id', secret_id)
         if 'provider' in self.secret:
@@ -147,6 +179,7 @@ class CollectingManager(BaseManager):
                 params = {
                     'domain_id': domain_id,
                     'job_id': job_id,
+                    'job_task_id': job_task_id,
                     'collector_id': collector_id,
                     'secret_id': secret_id
                 }
@@ -161,6 +194,7 @@ class CollectingManager(BaseManager):
                 params (dict): {
                     'domain_id': 'str',
                     'job_id': 'str',
+                    'job_task_id': 'str',
                     'collector_id': 'str',
                     'secret_id': 'str'
                 }
@@ -196,12 +230,22 @@ class CollectingManager(BaseManager):
             total_count = 0
 
         job_mgr = self.locator.get_manager('JobManager')
+        task_item_mgr = self.locator.get_manager('TaskItemManager')
         try:
+            job_id = params['job_id']
+            job_task_id = params['job_task_id']
             if total_count == 0:
                 # Create
                 _LOGGER.debug('[_process_single_result] Create resource.')
                 res_msg = svc.create(data)
-                job_mgr.increase_created_count(params['job_id'], domain_id)
+                job_mgr.increase_created_count(job_id, domain_id)
+                task_item_mgr.create_item_by_resource_vo(mgr,
+                                                    res_msg,
+                                                    resource_type,
+                                                    'CREATE',
+                                                    job_id,
+                                                    job_task_id,
+                                                    domain_id)
             elif total_count == 1:
                 # Update
                 _LOGGER.debug('[_process_single_result] Update resource.')
@@ -212,13 +256,21 @@ class CollectingManager(BaseManager):
                 _LOGGER.debug("------------------------------------ UPDATE ------------------------------")
 
                 res_msg = svc.update(data)
-                job_mgr.increase_updated_count(params['job_id'], domain_id)
+                job_mgr.increase_updated_count(job_id, domain_id)
+                task_item_mgr.create_item_by_resource_vo(mgr,
+                                                    res_msg,
+                                                    resource_type,
+                                                    'UPDATE',
+                                                    job_id,
+                                                    job_task_id,
+                                                    domain_id)
             elif total_count > 1:
                 # Ambiguous
                 # TODO: duplicate
                 _LOGGER.debug(f'[_process_single_result] Too many resources matched. (count={total_count})')
                 _LOGGER.warning(f'[_process_single_result] match_rules: {match_rules}')
         except Exception as e:
+            # TODO: create error message
             _LOGGER.debug(f'[_process_single_result] service error: {svc}, {e}')
 
     def _get_resource_map(self, resource_type):
@@ -236,6 +288,44 @@ class CollectingManager(BaseManager):
         svc = self.locator.get_service(SERVICE_MAP[resource_type], metadata=self.transaction.meta)
         mgr = self.locator.get_manager(RESOURCE_MAP[resource_type])
         return (svc, mgr)
+
+    def _update_job_task(self, job_task_id, state, domain_id, secret={}):
+        """ Update JobTask
+        - state (Pending -> In-progress)
+        - started_time
+        - secret_info
+        """
+        job_task_mgr = self.locator.get_manager('JobTaskManager')
+        if state == 'IN_PROGRESS':
+            job_task_mgr.make_inprogress(job_task_id, domain_id)
+
+            # Update Secret also
+            secret_info = {
+                'secret_id': secret['secret_id'],
+                'name': secret['name']
+            }
+            provider = secret.get('provider', None)
+            service_account_id = secret.get('service_account_id', None)
+            project_id = secret.get('project_id', None)
+
+            if provider:
+                secret_info.update({'provider': provider})
+            if service_account_id:
+                secret_info.update({'service_account_id': service_account_id})
+            if project_id:
+                secret_info.update({'project_id': project_id})
+            _LOGGER.debug(f'[_update_job_task] secret_info: {secret_info}')
+            job_task_mgr.update_secret(job_task_id, secret_info, domain_id)
+
+
+        elif state == 'SUCCESS':
+            job_task_mgr.make_success(job_task_id, domain_id)
+        elif state == 'FAILURE':
+            job_task_mgr.make_failure(job_task_id, domain_id)
+        else:
+            _LOGGER.error(f'[_update_job_task] undefined state: {state}')
+            job_task_mgr.make_failure(job_task_id, domain_id)
+
 
     ######################
     # Internal

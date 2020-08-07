@@ -11,6 +11,7 @@ from spaceone.inventory.error import *
 
 _LOGGER = logging.getLogger(__name__)
 
+MAX_MESSAGE_LENGTH = 2000
 
 class JobManager(BaseManager):
 
@@ -63,6 +64,13 @@ class JobManager(BaseManager):
 
         return job_vo
 
+    def increase_total_tasks(self, job_id, domain_id):
+        job_vo = self.get(job_id, domain_id)
+        total_tasks = job_vo.total_tasks + 1
+        params = {'total_tasks': total_tasks}
+        _LOGGER.debug(f'[increase_total_tasks] {job_id}, {params}')
+        return job_vo.update(params)
+
     def increase_remained_tasks(self, job_id, domain_id):
         job_vo = self.get(job_id, domain_id)
         remained_tasks = job_vo.remained_tasks + 1
@@ -84,6 +92,33 @@ class JobManager(BaseManager):
         if remained_tasks < 0:
             _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {remained_tasks}')
             raise ERROR_JOB_UPDATE(param='remained_tasks')
+        return job_vo
+
+    def add_error(self, job_id, domain_id, error_code, msg, additional=None):
+        """
+        error_info (dict): {
+            'error_code': str,
+            'message': str,
+            'additional': dict
+        }
+        """
+        message = repr(msg)
+        error_info = {
+            'error_code': error_code,
+            'message': message[:MAX_MESSAGE_LENGTH]
+        }
+        if additional:
+            error_info['additional'] = additional
+
+        job_vo = self.get(job_id, domain_id)
+        job_dict = job_vo.to_dict()
+        errors = job_dict.get('errors', [])
+        errors.append(error_info)
+        params = {'errors': errors}
+        _LOGGER.debug(f'[add_error] {params}')
+        job_vo = job_vo.update(params)
+        self.make_failure(job_id,  domain_id)
+
         return job_vo
 
     def update_job_state_by_hour(self, hour, state, domain_id):
@@ -130,7 +165,6 @@ class JobManager(BaseManager):
         job_state_machine.failure()
         self._update_job_state(job_id, job_state_machine.get_state(), domain_id)
 
-
     def increase_created_count(self, job_id, domain_id):
         """ Increase created_count field
         """
@@ -156,6 +190,19 @@ class JobManager(BaseManager):
             'last_updated_at': datetime.utcnow()
         }
         return job_vo.update(updated_param)
+
+    def increase_deleted_count(self, job_id, domain_id):
+        """ Increase deleted_count field
+        """
+        job_vo = self.get(job_id, domain_id)
+
+        deleted_count = job_vo.deleted_count + 1
+
+        deleted_param = {
+            'deleted_count': deleted_count,
+            'last_updated_at': datetime.utcnow()
+        }
+        return job_vo.update(deleted_param)
 
     def is_canceled(self, job_id, domain_id):
         """ Return True/False
@@ -249,8 +296,12 @@ class JobStateMachine():
         self._updated_count = job_vo.updated_count
 
     def inprogress(self):
-        if isinstance(self._state, (CreatedState, InprogressState)):
+        if isinstance(self._state, (CreatedState, InprogressState, FinishedState)):
+            # if collect is synchronous mode,
+            # Job state can change: Inprogress -> Finished -> Inprogress -> Finished ...
             self._state = InprogressState()
+        elif isinstance(self._state, (FailureState)):
+            pass
         else:
             raise ERROR_JOB_STATE_CHANGE(action='inprogress', job_id=self.job_id, state=str(self._state))
         return self.get_state()
@@ -263,8 +314,12 @@ class JobStateMachine():
         return self.get_state()
 
     def finished(self):
-        if isinstance(self._state, (InprogressState)):
+        if isinstance(self._state, (InprogressState, FinishedState)):
+            # if collect is synchronous mode
+            # Job state can change: Finished -> Finished
             self._state = FinishedState()
+        elif isinstance(self._state, (FailureState)):
+            pass
         else:
             raise ERROR_JOB_STATE_CHANGE(action='finished', job_id=self.job_id, state=str(self._state))
         return self.get_state()

@@ -9,6 +9,8 @@ from spaceone.inventory.info.region_info import *
 # from spaceone.inventory.info.ip_address_info import *
 from spaceone.inventory.info.server_info import *
 from spaceone.inventory.info.job_info import *
+from spaceone.inventory.info.job_task_info import *
+from spaceone.inventory.info.task_item_info import *
 from spaceone.inventory.info.cloud_service_type_info import *
 from spaceone.inventory.info.cloud_service_info import *
 from spaceone.inventory.info.collector_info import *

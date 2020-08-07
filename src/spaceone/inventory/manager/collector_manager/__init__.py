@@ -19,6 +19,8 @@ from spaceone.inventory.manager.collector_manager.collecting_manager import Coll
 from spaceone.inventory.manager.collector_manager.collector_db import CollectorDB
 from spaceone.inventory.manager.collector_manager.filter_manager import FilterManager
 from spaceone.inventory.manager.collector_manager.job_manager import JobManager
+from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
+from spaceone.inventory.manager.collector_manager.task_item_manager import TaskItemManager
 from spaceone.inventory.manager.collector_manager.plugin_manager import PluginManager
 from spaceone.inventory.manager.collector_manager.schedule_manager import ScheduleManager
 from spaceone.inventory.manager.collector_manager.secret_manager import SecretManager
@@ -131,11 +133,24 @@ class CollectorManager(BaseManager):
         """
         return collector_vo.update(params)
 
-    def enable_collector(self, collector_id, domain_id):
-        return self.collector_db.enable_collector(collector_id=collector_id, domain_id=domain_id)
+    def enable_collector(self, collector_id, domain_id, plugin_init=True):
+        collector_vo = self.collector_db.enable_collector(collector_id=collector_id, domain_id=domain_id)
+        if plugin_init:
+            # Do plugin init operation
+            collector_info = collector_vo.to_dict()
+            plugin_mgr = self.locator.get_manager('PluginManager')
+            _LOGGER.debug(f'[enable_collector] collector_info: {collector_info}')
+            plugin_metadata = plugin_mgr.init(collector_info)
+            _LOGGER.debug(f'[enable_collector] plugin->init: {plugin_metadata}')
+            plugin_info = collector_info['plugin_info']
+            plugin_info['metadata'] = plugin_metadata
+            collector_vo = self.update_collector_by_vo(collector_vo, {'plugin_info': plugin_info})
+        return collector_vo
 
-    def disable_collector(self, collector_id, domain_id):
-        return self.collector_db.disable_collector(collector_id=collector_id, domain_id=domain_id)
+
+    def disable_collector(self, collector_id, domain_id, plugin_init=True):
+        collector_vo =self.collector_db.disable_collector(collector_id=collector_id, domain_id=domain_id)
+        return collector_vo
 
     def list_collectors(self, query):
         return self.collector_db.list_collectors(query)
@@ -161,12 +176,18 @@ class CollectorManager(BaseManager):
 
         collector_vo = self.get_collector(collector_id, domain_id)
         collector_dict = collector_vo.to_dict()
+        # Check collector state (if disabled, raise error)
+        if collector_dict['state'] == 'DISABLED':
+            raise ERROR_COLLECTOR_STATE(state='DISABLED')
+
         # TODO: get Queue from config
 
         # Create Job
         job_mgr = self.locator.get_manager('JobManager')
         created_job = job_mgr.create_job(collector_vo, params)
 
+        # Create JobTask
+        job_task_mgr = self.locator.get_manager('JobTaskManager')
         # Make in-progress
         try:
             job_mgr.make_inprgress(created_job.job_id, domain_id)
@@ -186,8 +207,12 @@ class CollectorManager(BaseManager):
             _LOGGER.debug(f'[collector] number of secret: {len(secret_list)}')
         except Exception as e:
             _LOGGER.debug(f'[collect] failed in Secret Patch stage: {e}')
+            job_mgr.add_error(created_job.job_id, domain_id,
+                              'ERROR_COLLECT_INITIALIZE',
+                              e,
+                              params)
             job_mgr.make_failure(created_job.job_id, domain_id)
-            raise ERROR_COLLECT_INITIALIZE(stage='Secret Patch', params={params})
+            raise ERROR_COLLECT_INITIALIZE(stage='Secret Patch', params=params)
 
         # Apply Filter Format
         try:
@@ -197,30 +222,41 @@ class CollectorManager(BaseManager):
             collect_filter, secret_list = filter_mgr.get_collect_filter(filters,
                                                                         plugin_info,
                                                                         secret_list)
+            _LOGGER.debug(f'[collector] filter from API: {filters}')
+            _LOGGER.debug(f'[collector] filter for collector: {collect_filter}')
             _LOGGER.debug(f'[collector] number of secret after filter transform: {len(secret_list)}')
         except Exception as e:
             _LOGGER.debug(f'[collect] failed on Filter Transform stage: {e}')
+            job_mgr.add_error(created_job.job_id, domain_id,
+                              'ERROR_COLLECT_INITIALIZE',
+                              e,
+                              params)
             job_mgr.make_failure(created_job.job_id, domain_id)
-            raise ERROR_COLLECT_INITIALIZE(stage='Filter Format', params={params})
+            raise ERROR_COLLECT_INITIALIZE(stage='Filter Format', params=params)
 
         # Loop all secret_list
         for secret_id in secret_list:
             # Do collect per secret
             try:
-                # TODO:
                 # Make Pipeline, then push
                 # parameter of pipeline
+
+                # Create JobTask
+                job_task_vo = job_task_mgr.create_job_task(created_job, domain_id)
+
                 req_params = self._make_collecting_parameters(collector_dict=collector_dict,
                                                               secret_id=secret_id,
                                                               domain_id=domain_id,
                                                               job_vo=created_job,
+                                                              job_task_vo=job_task_vo,
                                                               collect_filter=collect_filter,
                                                               params=params
                                                               )
+                # Update Job
                 _LOGGER.debug(f'[collect] params for collecting: {req_params}')
+                job_mgr.increase_total_tasks(created_job.job_id, domain_id)
                 job_mgr.increase_remained_tasks(created_job.job_id, domain_id)
 
-                # TODO: Push to Queue
                 # Make SpaceONE Template Pipeline
                 task = self._create_task(req_params, domain_id)
                 queue_name = self._get_queue_name(name='collect_queue')
@@ -239,6 +275,11 @@ class CollectorManager(BaseManager):
 
             except Exception as e:
                 # Do not exit, just book-keeping
+                job_mgr.add_error(created_job.job_id, domain_id,
+                                  'ERROR_COLLECTOR_COLLECTING',
+                                  e,
+                                  {'secret_id': secret_id}
+                                  )
                 _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
 
         # Update Timestamp
@@ -292,6 +333,7 @@ class CollectorManager(BaseManager):
             domain_id
             filter
             job_vo
+            job_task_vo
             collect_filter
             params
 
@@ -300,6 +342,7 @@ class CollectorManager(BaseManager):
         new_params = {
             'secret_id': kwargs['secret_id'],
             'job_id':    kwargs['job_vo'].job_id,
+            'job_task_id':    kwargs['job_task_vo'].job_task_id,
             'filters':   kwargs['collect_filter'],
             'domain_id': kwargs['domain_id'],
             'collector_id': kwargs['collector_dict']['collector_id']
