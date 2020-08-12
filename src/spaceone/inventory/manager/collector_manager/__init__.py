@@ -361,12 +361,13 @@ class CollectorManager(BaseManager):
 
     def add_schedule(self, params):
         schedule_mgr = self.locator.get_manager('ScheduleManager')
+        params = self._check_filter(params)
+
         return schedule_mgr.create_schedule(params)
 
     def get_schedule(self, schedule_id, domain_id):
         schedule_mgr = self.locator.get_manager('ScheduleManager')
         return schedule_mgr.get_schedule(schedule_id, domain_id)
-
 
     def list_schedules(self, query):
         schedule_mgr = self.locator.get_manager('ScheduleManager')
@@ -386,3 +387,11 @@ class CollectorManager(BaseManager):
         self.transaction.add_rollback(_rollback, schedule_vo.to_dict())
         return schedule_vo.update(params)
 
+    def _check_filter(self, params):
+        """ Schedule request may have filter
+        Change filter -> filters, since mongodb does not support filter as member key
+        """
+        if 'filter' in params:
+            params['filters'] = params['filter']
+            del params['filter']
+        return params
