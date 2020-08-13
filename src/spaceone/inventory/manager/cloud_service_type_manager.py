@@ -49,46 +49,8 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
         return self.cloud_svc_type_model.get(cloud_service_type_id=cloud_service_type_id, domain_id=domain_id,
                                              only=only)
 
-    def list_cloud_service_types(self, query, include_cloud_service_count=False):
+    def list_cloud_service_types(self, query):
         cloud_svc_type_vos, total_count = self.cloud_svc_type_model.query(**query)
-
-        if include_cloud_service_count:
-            cloud_svc_model: CloudService = self.locator.get_model('CloudService')
-
-            _filter_groups = []
-            _filter_provider = []
-            _filter_name = []
-
-            for cloud_svc_type_vo in cloud_svc_type_vos:
-                _filter_groups.append(cloud_svc_type_vo.group)
-                _filter_provider.append(cloud_svc_type_vo.provider)
-                _filter_name.append(cloud_svc_type_vo.name)
-
-            cloud_svc_filter = [{
-                'k': 'cloud_service_group',
-                'v': list(set(_filter_groups)),
-                'o': 'in'
-            },{
-                'k': 'provider',
-                'v': list(set(_filter_provider)),
-                'o': 'in'
-            },{
-                'k': 'cloud_service_type',
-                'v': list(set(_filter_name)),
-                'o': 'in'
-            }]
-
-            # Get domain_id from query
-            for _f in query.get('filter', []):
-                if _f.get('k', None) == 'domain_id' or _f.get('key', None) == 'domain_id':
-                    cloud_svc_filter.append(_f)
-
-            cloud_svc_vos, cloud_svc_total_count = cloud_svc_model.query(filter=cloud_svc_filter)
-
-            for cloud_svc_type_vo in cloud_svc_type_vos:
-                svc_count = self._get_cloud_service_count_in_type(cloud_svc_type_vo, cloud_svc_vos)
-                setattr(cloud_svc_type_vo, 'cloud_service_count', svc_count)
-
         return cloud_svc_type_vos, total_count
 
     def stat_cloud_service_types(self, query):

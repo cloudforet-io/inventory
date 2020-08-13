@@ -4,7 +4,8 @@ DATABASES = {
         'host': 'localhost',
         'port': 27017,
         'username': '',
-        'password': ''
+        'password': '',
+        'read_preference': 'SECONDARY_PREFERRED'
     }
 }
 
@@ -29,7 +30,6 @@ CONNECTORS = {
     },
     'CollectorPluginConnector': {
     },
-
 }
 
 ENDPOINTS = {}

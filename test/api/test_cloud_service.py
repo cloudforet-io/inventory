@@ -279,9 +279,8 @@ class TestCloudService(unittest.TestCase):
         self.cloud_services.append(self.cloud_service)
         self.assertEqual(self.cloud_service.cloud_service_group, group)
 
-    def test_create_cloud_service_region(self, cloud_service_type=None,
-                                         cloud_service_group=None, provider=None):
-        """ Create Cloud Service with region
+    def test_create_cloud_service_region_code(self, cloud_service_type=None, cloud_service_group=None, provider=None):
+        """ Create Cloud Service with region code
         """
 
         if cloud_service_type is None:
@@ -304,12 +303,14 @@ class TestCloudService(unittest.TestCase):
                 random_string(): random_string(),
                 random_string(): random_string()
             },
+            'region_code': self.region.region_code,
+            'region_type': self.region.region_type,
             'domain_id': self.domain.domain_id
         }
 
         self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.token),))
         self.cloud_services.append(self.cloud_service)
-        self.assertEqual(self.cloud_service.region_info.region_id, self.region.region_id)
+        self.assertEqual(self.cloud_service.region_code, self.region.region_code)
 
     def test_update_cloud_service_project_id(self):
         self._create_project()
@@ -336,19 +337,6 @@ class TestCloudService(unittest.TestCase):
         self._print_data(self.cloud_service, 'test_update_cloud_service_project_id_2')
         self.assertEqual(self.cloud_service.project_id, self.project.project_id)
 
-    def test_update_cloud_service_region(self):
-        self._create_region()
-        self.test_create_cloud_service()
-
-        param = {
-            'cloud_service_id': self.cloud_service.cloud_service_id,
-            'region_id': self.region.region_id,
-            'domain_id': self.domain.domain_id,
-        }
-
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
-        self.assertEqual(self.cloud_service.region_info.region_id, self.region.region_id)
-
     def test_update_cloud_service_release_project(self):
         self._create_project()
         self.test_create_cloud_service()
@@ -372,28 +360,6 @@ class TestCloudService(unittest.TestCase):
         self._print_data(self.cloud_service, 'test_update_cloud_service_release_project_2')
 
         self.assertEqual(self.cloud_service.project_id, '')
-
-    def test_update_cloud_service_release_region(self):
-        self._create_region()
-        self.test_create_cloud_service()
-
-        param = {
-            'cloud_service_id': self.cloud_service.cloud_service_id,
-            'region_id': self.region.region_id,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
-
-        param = {
-            'cloud_service_id': self.cloud_service.cloud_service_id,
-            'release_region': True,
-            'domain_id': self.domain.domain_id
-        }
-
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
-
-        self.assertEqual(self.cloud_service.region_info.region_id, '')
 
     def test_update_cloud_service_data(self):
         old_data = {

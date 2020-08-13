@@ -26,11 +26,6 @@ def CloudServiceTypeInfo(cloud_svc_type_vo: CloudServiceType, minimal=False):
             'updated_at': change_timestamp_type(cloud_svc_type_vo.updated_at)
         })
 
-    if getattr(cloud_svc_type_vo, 'cloud_service_count', None) is not None:
-        info.update({
-            'cloud_service_count': cloud_svc_type_vo.cloud_service_count
-        })
-
     return cloud_service_type_pb2.CloudServiceTypeInfo(**info)
 
 

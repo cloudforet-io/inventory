@@ -250,11 +250,6 @@ class CollectingManager(BaseManager):
                 # Update
                 _LOGGER.debug('[_process_single_result] Update resource.')
                 data.update(res_info[0])
-
-                _LOGGER.debug("------------------------------------ UPDATE ------------------------------")
-                _LOGGER.debug(data)
-                _LOGGER.debug("------------------------------------ UPDATE ------------------------------")
-
                 res_msg = svc.update(data)
                 job_mgr.increase_updated_count(job_id, domain_id)
                 task_item_mgr.create_item_by_resource_vo(mgr,
