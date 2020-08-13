@@ -207,8 +207,6 @@ class TestResourceGroup(unittest.TestCase):
                 'project_id': self.project.project_id
             })
 
-        print(params)
-
         self.resource_group = self.inventory_v1.ResourceGroup.create(
             params,
             metadata=(('token', self.token),))
