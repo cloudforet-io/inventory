@@ -30,6 +30,7 @@ class CloudService(MongoModel):
     meta = {
         'updatable_fields': [
             'data',
+            'state',
             'metadata',
             'reference',
             'tags',

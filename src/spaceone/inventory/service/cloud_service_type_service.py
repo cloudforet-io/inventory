@@ -122,7 +122,7 @@ class CloudServiceTypeService(BaseService):
         """
 
         cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
-                                                                    params['domain_id'])
+                                                                           params['domain_id'])
 
         self.cloud_svc_type_mgr.delete_cloud_service_type_by_vo(cloud_svc_type_vo)
 
@@ -157,7 +157,6 @@ class CloudServiceTypeService(BaseService):
                     'name': 'str',
                     'group': 'str',
                     'provider': 'str',
-                    'include_cloud_service_count': 'boot',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)'
                 }
@@ -168,8 +167,7 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        return self.cloud_svc_type_mgr.list_cloud_service_types(params.get('query', {}),
-                                                                params.get('include_cloud_service_count', False))
+        return self.cloud_svc_type_mgr.list_cloud_service_types(params.get('query', {}))
 
     @transaction
     @check_required(['query', 'domain_id'])

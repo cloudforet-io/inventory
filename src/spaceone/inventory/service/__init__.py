@@ -14,3 +14,4 @@ from spaceone.inventory.service.task_item_service import TaskItemService
 from spaceone.inventory.service.cloud_service_type_service import CloudServiceTypeService
 from spaceone.inventory.service.cloud_service_service import CloudServiceService
 from spaceone.inventory.service.cleanup_service import CleanupService
+from spaceone.inventory.service.resource_group_service import ResourceGroupService

@@ -377,8 +377,7 @@ class TestCloudServiceType(unittest.TestCase):
                         'o': 'in'
                     }
                 ]
-            },
-            'include_cloud_service_count': True
+            }
         }
 
         cloud_service_types = self.inventory_v1.CloudServiceType.list(param, metadata=(('token', self.token),))
