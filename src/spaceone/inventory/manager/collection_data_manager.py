@@ -140,7 +140,7 @@ class CollectionDataManager(BaseManager):
         self._create_data_history(resource_data)
         self._load_old_data_history(old_data)
 
-        self._merge_data_from_history()
+        self._merge_data_from_history(old_data)
 
         if 'metadata' in resource_data and old_data['metadata'] != resource_data['metadata']:
             self.merged_data['metadata'] = resource_data['metadata']
@@ -159,22 +159,27 @@ class CollectionDataManager(BaseManager):
 
         return self.merged_data
 
-    def _merge_data_from_history(self):
+    def _merge_data_from_history(self, old_data):
         for key, history_info in self.change_history.items():
-            new_data = history_info['data']
+            new_value = history_info['data']
             new_priority = history_info['priority']
             if key in self.old_history:
                 old_priority = self.old_history[key]['priority']
-                old_data = self.old_history[key]['data']
-                if new_priority <= old_priority and new_data != old_data:
-                    history_info['diff'] = self._get_history_diff(old_data, new_data)
+                old_value = self.old_history[key]['data']
+                if new_priority <= old_priority and new_value != old_value:
+                    history_info['diff'] = self._get_history_diff(old_value, new_value)
                     self.old_history[key] = history_info
-                    self._update_merge_data(key, new_data)
+                    self._update_merge_data(key, new_value)
                     self.is_changed = True
             else:
                 self.is_changed = True
                 self.old_history[key] = history_info
-                self._update_merge_data(key, new_data)
+                self._update_merge_data(key, new_value)
+
+        if len(self.merged_data.get('data', {}).keys()) > 0:
+            temp_data = old_data.get('data', {})
+            temp_data.update(self.merged_data['data'])
+            self.merged_data['data'] = temp_data
 
     @staticmethod
     def _get_history_diff(old_data, new_data):
