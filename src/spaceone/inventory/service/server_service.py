@@ -155,15 +155,18 @@ class ServerService(BaseService):
                 raise ERROR_REQUIRED_PARAMETER(key='region_code')
 
             if 'region_code' in params and 'region_type' in params:
-                # SKIP validation check
+                # SKIP Validation Check
                 # self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
                 params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
 
         if release_project:
             params['project_id'] = None
-        elif project_id and project_id != secret_project_id:
+        elif project_id:
             # Validation Check
             self.identity_mgr.get_project(project_id, domain_id)
+        elif secret_project_id:
+            # SKIP Validation Check
+            params['project_id'] = secret_project_id
 
         if 'nics' in params:
             params['ip_addresses'] = self._get_ip_addresses_from_nics(params['nics'])
