@@ -44,7 +44,8 @@ class CloudServiceService(BaseService):
         data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
-        project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
+        project_id = params.get('project_id')
+        secret_project_id = self.transaction.get_meta('secret.project_id')
 
         domain_id = params['domain_id']
 
@@ -54,9 +55,11 @@ class CloudServiceService(BaseService):
             params['provider'] = provider
 
         if project_id:
-            # SKIP Validation Check
-            # self.identity_mgr.get_project(project_id, domain_id)
+            self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
+        elif secret_project_id:
+            # SKIP validation check
+            params['project_id'] = secret_project_id
 
         if 'region_code' in params and 'region_type' not in params:
             raise ERROR_REQUIRED_PARAMETER(key='region_type')
@@ -83,6 +86,8 @@ class CloudServiceService(BaseService):
                     'reference': 'dict',
                     'tags': 'dict',
                     'project_id': 'str',
+                    'region_code': 'str',
+                    'region_type': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
                     'release_region': 'bool'
@@ -96,7 +101,8 @@ class CloudServiceService(BaseService):
         data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
-        project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
+        project_id = params.get('project_id')
+        secret_project_id = self.transaction.get_meta('secret.project_id')
 
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
@@ -113,16 +119,26 @@ class CloudServiceService(BaseService):
                 'region_type': None,
                 'region_ref': None
             })
+        else:
+            if 'region_code' in params and 'region_type' not in params:
+                raise ERROR_REQUIRED_PARAMETER(key='region_type')
+
+            if 'region_type' in params and 'region_code' not in params:
+                raise ERROR_REQUIRED_PARAMETER(key='region_code')
+
+            if 'region_code' in params and 'region_type' in params:
+                # SKIP validation check
+                # self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
+                params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
 
         if release_project:
             params['project_id'] = None
-        elif project_id:
-            # SKIP Validation Check
-            # self.identity_mgr.get_project(project_id, domain_id)
-            params['project_id'] = project_id
+        elif project_id and project_id != secret_project_id:
+            # Validation Check
+            self.identity_mgr.get_project(project_id, domain_id)
 
         cloud_svc_data = cloud_svc_vo.to_dict()
-        exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_pool']
+        exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_region']
         params = data_mgr.merge_data_by_history(params, cloud_svc_data, exclude_keys=exclude_keys)
 
         return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)

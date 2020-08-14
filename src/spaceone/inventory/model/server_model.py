@@ -74,6 +74,9 @@ class Server(MongoModel):
             'nics',
             'disks',
             'project_id',
+            'region_code',
+            'region_type',
+            'region_ref',
             'tags',
             'collection_info',
             'deleted_at'

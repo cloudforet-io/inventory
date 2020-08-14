@@ -35,6 +35,9 @@ class CloudService(MongoModel):
             'reference',
             'tags',
             'project_id',
+            'region_code',
+            'region_type',
+            'region_ref',
             'collection_info'
         ],
         'exact_fields': [

@@ -361,6 +361,47 @@ class TestCloudService(unittest.TestCase):
 
         self.assertEqual(self.cloud_service.project_id, '')
 
+    def test_update_cloud_service_region(self):
+        self._create_region()
+        self.test_create_cloud_service()
+
+        param = {
+            'cloud_service_id': self.cloud_service.cloud_service_id,
+            'region_code': self.region.region_code,
+            'region_type': self.region.region_type,
+            'domain_id': self.domain.domain_id
+        }
+
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self._print_data(self.cloud_service, 'test_update_cloud_service_region_code')
+        self.assertEqual(self.cloud_service.region_code, self.region.region_code)
+
+    def test_update_cloud_service_release_region(self):
+        self._create_region()
+        self.test_create_cloud_service()
+
+        param = {
+            'cloud_service_id': self.cloud_service.cloud_service_id,
+            'region_code': self.region.region_code,
+            'region_type': self.region.region_type,
+            'domain_id': self.domain.domain_id
+        }
+
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self._print_data(self.cloud_service, 'test_update_cloud_service_region_code')
+
+        param = {
+            'cloud_service_id': self.cloud_service.cloud_service_id,
+            'release_region': True,
+            'domain_id': self.domain.domain_id
+        }
+
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self._print_data(self.cloud_service, 'test_update_cloud_service_release_region')
+
+        self.assertEqual(self.cloud_service.region_code, '')
+
+
     def test_update_cloud_service_data(self):
         old_data = {
             'a': 'b',

@@ -4,7 +4,7 @@ from spaceone.core.model.mongo_model import MongoModel
 
 class Resource(EmbeddedDocument):
     resource_type = StringField()
-    filters = ListField(DictField())
+    filter = ListField(DictField())
 
 
 class ResourceGroup(MongoModel):
