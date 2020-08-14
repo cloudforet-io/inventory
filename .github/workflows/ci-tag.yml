@@ -42,7 +42,7 @@ jobs:
           echo "::set-env name=VERSION::$VERSION"
           echo $VERSION>$LOCATION_VERSION/VERSION
           # LATEST_TAG true or false
-          if [[ $VERSION =~ ^[0-9]\.[0-9]\.[0-9]$ ]];
+          if [[ $VERSION =~ ^v[0-9]\.[0-9]\.[0-9]$ ]];
           then
             echo "::set-env name=LATEST_TAG::true"
           else
