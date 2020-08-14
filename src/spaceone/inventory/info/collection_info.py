@@ -24,7 +24,6 @@ def CollectionInfo(data):
         'service_accounts': data.get('service_accounts', []),
         'secrets': data.get('secrets', []),
         'change_history': list(map(ChangeHistoryInfo, data.get('change_history', []))),
-        'pinned_keys': data.get('pinned_keys', []),
-        'collected_at': f"{data['collected_at'].isoformat()}Z" if data.get('collected_at') else None
+        'pinned_keys': data.get('pinned_keys', [])
     }
     return change_struct_type(info)

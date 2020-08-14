@@ -16,7 +16,6 @@ class CollectionInfo(EmbeddedDocument):
     secrets = ListField(StringField(max_length=40))
     change_history = ListField(EmbeddedDocumentField(ChangeHistory))
     pinned_keys = ListField(StringField())
-    collected_at = DateTimeField()
 
     def to_dict(self):
         return self.to_mongo()
