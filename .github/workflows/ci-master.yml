@@ -1,8 +1,9 @@
-name: SpaceONE CI
+name: SpaceONE CI commit push
 on:
   push:
     branches:
       - master
+      - github-action
   workflow_dispatch:
 
 jobs:
@@ -12,8 +13,8 @@ jobs:
       - uses: actions/checkout@v2
       - name: Set environment virables
         env:
-          IMAGE_PREFIX: spaceone
-          PYPI_UPLOAD: true # upload pypi if this is true
+          IMAGE_PREFIX: pyengine
+          PYPI_UPLOAD: false # upload pypi if this is true
           DOCKER_UPLOAD: true
           # LOCATION points the parent directory
           LOCATION_SETUP_PY: src # optional. for pypi upload
