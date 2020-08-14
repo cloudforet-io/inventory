@@ -317,6 +317,8 @@ class TestServer(unittest.TestCase):
                 "external_link": "https://aaa.bbb.ccc/"
             },
             'project_id': self.project.project_id,
+            'region_code': self.region.region_code,
+            'region_type': self.region.region_type,
             'domain_id': self.domain.domain_id,
             'tags': {
                 'tag_key': 'tag_value'
@@ -632,7 +634,8 @@ class TestServer(unittest.TestCase):
 
         params = {
             'server_id': self.server.server_id,
-            'region_id': self.region.region_id,
+            'region_code': self.region.region_code,
+            'region_type': self.region.region_type,
             'domain_id': self.domain.domain_id
         }
 
@@ -641,7 +644,7 @@ class TestServer(unittest.TestCase):
             metadata=(('token', self.token),))
 
         self._print_data(self.server, 'test_update_server_region')
-        self.assertEqual(self.server.region_info.region_id, self.region.region_id)
+        self.assertEqual(self.server.region_code, self.region.region_code)
 
     def test_release_server_region(self):
         self.test_create_server()
@@ -657,7 +660,7 @@ class TestServer(unittest.TestCase):
             metadata=(('token', self.token),))
 
         self._print_data(self.server, 'test_release_server_pool')
-        self.assertEqual(MessageToDict(self.server.region_info, preserving_proto_field_name=True), {})
+        self.assertEqual(self.server.region_code, '')
 
     def test_update_server_project(self):
         self.test_create_server()
@@ -789,7 +792,7 @@ class TestServer(unittest.TestCase):
 
         self.assertEqual(len(self.servers), result.total_count)
 
-    def test_list_region_id(self):
+    def test_list_region_code(self):
         self.test_create_server()
 
         params = {
@@ -797,8 +800,8 @@ class TestServer(unittest.TestCase):
             'query': {
                 'filter': [
                     {
-                        'k': 'region_id',
-                        'v': self.region.region_id,
+                        'k': 'region_code',
+                        'v': self.region.region_code,
                         'o': 'eq'
                     }
                 ]

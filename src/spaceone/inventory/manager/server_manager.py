@@ -38,7 +38,6 @@ class ServerManager(BaseManager, ResourceManager):
             server_vo.update(old_data)
 
         self.transaction.add_rollback(_rollback, server_vo.to_dict())
-
         return server_vo.update(params)
 
     def delete_server(self, server_id, domain_id):

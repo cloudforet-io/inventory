@@ -54,7 +54,8 @@ class ServerService(BaseService):
         data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
-        project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
+        project_id = params.get('project_id')
+        secret_project_id = self.transaction.get_meta('secret.project_id')
 
         domain_id = params['domain_id']
         nics = params.get('nics', [])
@@ -77,9 +78,11 @@ class ServerService(BaseService):
             params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
 
         if project_id:
-            # SKIP validation check
-            # self.identity_mgr.get_project(project_id, domain_id)
+            self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
+        elif secret_project_id:
+            # SKIP validation check
+            params['project_id'] = secret_project_id
 
         params['ip_addresses'] = self._get_ip_addresses_from_nics(nics)
         params['primary_ip_address'] = self._get_primary_ip_address(
@@ -109,6 +112,8 @@ class ServerService(BaseService):
                     'disks': 'list',
                     'tags': 'dict',
                     'asset_id': 'str',
+                    'region_code': 'str',
+                    'region_type': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
@@ -123,7 +128,8 @@ class ServerService(BaseService):
         data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
-        project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
+        project_id = params.get('project_id')
+        secret_project_id = self.transaction.get_meta('secret.project_id')
 
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
@@ -141,13 +147,23 @@ class ServerService(BaseService):
                 'region_type': None,
                 'region_ref': None
             })
+        else:
+            if 'region_code' in params and 'region_type' not in params:
+                raise ERROR_REQUIRED_PARAMETER(key='region_type')
+
+            if 'region_type' in params and 'region_code' not in params:
+                raise ERROR_REQUIRED_PARAMETER(key='region_code')
+
+            if 'region_code' in params and 'region_type' in params:
+                # SKIP validation check
+                # self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
+                params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
 
         if release_project:
             params['project_id'] = None
-        elif project_id:
-            # SKIP Validation Check
-            # self.identity_mgr.get_project(project_id, domain_id)
-            params['project_id'] = project_id
+        elif project_id and project_id != secret_project_id:
+            # Validation Check
+            self.identity_mgr.get_project(project_id, domain_id)
 
         if 'nics' in params:
             params['ip_addresses'] = self._get_ip_addresses_from_nics(params['nics'])

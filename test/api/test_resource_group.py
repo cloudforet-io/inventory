@@ -180,7 +180,7 @@ class TestResourceGroup(unittest.TestCase):
                 {
                     'resource_type': 'inventory.Server',
                     'filter': [
-                        {'k': 'data.compute.aws_tags.Schedule', 'v': 'Test', 'o': 'eq'},
+                        {'k': 'data.compute.aws_tags.Schedule', 'v': 'abcde', 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Value', 'v': 'bbbbb', 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Key', 'v': 'Policy', 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Value', 'v': 'N', 'o': 'eq'}
@@ -189,7 +189,7 @@ class TestResourceGroup(unittest.TestCase):
                 {
                     'resource_type': 'CloudService?provider=aws&cloud_service_group=DynamoDB&cloud_service_type=Table',
                     'filter': [
-                        {'k': 'data.compute.aws_tags.Schedule', 'v': 'Test', 'o': 'eq'},
+                        # {'k': 'data.compute.aws_tags.Schedule', 'v': 'Test', 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Value', 'v': 'aaa', 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Key', 'v': 'Policy', 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Value', 'v': 'N', 'o': 'eq'}
