@@ -13,45 +13,47 @@ class PluginInfo(EmbeddedDocument):
     provider = StringField(max_length=40, null=True)
     service_account_id = StringField(max_length=40, null=True)
 
+
 class Collector(MongoModel):
     collector_id = StringField(max_length=40, generate_id='collector', unique=True)
     name = StringField(max_length=255)
+    state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))
     provider = StringField(max_length=40)
+    is_public = BooleanField(default=True)
     capability = DictField()
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)
-    state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))
     priority = IntField(min_value=0, default=10, max_value=99)
     tags = DictField()
+    project_id = StringField(max_length=40)
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
     last_collected_at = DateTimeField()
-    is_public = BooleanField(default=True)
-    project_id = StringField(max_length=40)
 
     meta = {
-        'db_alias': 'default',
         'updatable_fields': [
             'name',
-            'plugin_info',
             'state',
+            'plugin_info',
             'priority',
             'tags',
             'last_collected_at'
         ],
         'exact_fields': [
             'collector_id',
-            'name',
+            'state',
+            'provider',
             'priority',
+            'project_id',
             'domain_id',
         ],
         'minimal_fields': [
             'collector_id',
             'name',
-            'plugin_info',
             'state',
+            'plugin_info',
             'provider',
-            'capability',
             'is_public',
+            'capability',
             'project_id'
 
         ],
@@ -62,7 +64,12 @@ class Collector(MongoModel):
             'name'
         ],
         'indexes': [
-            'collector_id'
+            'collector_id',
+            'state',
+            'provider',
+            'priority',
+            'project_id',
+            'domain_id'
         ]
     }
 
