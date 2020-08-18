@@ -71,42 +71,61 @@ class JobTaskManager(BaseManager):
     #######################
     def update_secret(self, job_task_id, secret_info, domain_id):
         job_task_vo = self.get(job_task_id, domain_id)
-        return job_task_vo.update({'secret_info': secret_info})
+        return job_task_vo.update(secret_info)
+
+    def update_stat(self, job_task_id, stat, domain_id):
+        job_task_vo = self.get(job_task_id, domain_id)
+        return job_task_vo.update(stat)
 
     #######################
     # State
     #######################
-    def _update_job_state(self, job_task_id, state, domain_id):
+    def _update_job_state(self, job_task_id, state, domain_id, started_at=None, finished_at=None, secret=None, stat=None):
+        """
+        Args:
+            secret(dict)
+            stat(dict)
+        """
         job_task_vo = self.get(job_task_id, domain_id)
         params = {'state': state}
-        _LOGGER.debug(f'[update_job_state] job_task_id: {job_task_id}, state: {state}')
+
+        if started_at:
+            params['started_at'] = started_at
+
+        if finished_at:
+            params['finished_at'] = finished_at
+
+        if secret:
+            params.update(secret)
+
+        if stat:
+            params.update(stat)
+
+        _LOGGER.debug(f'[update_job_state] job_task_id: {job_task_id}, status: {state}')
         return job_task_vo.update(params)
 
-    def make_inprogress(self, job_task_id, domain_id):
+    def make_inprogress(self, job_task_id, domain_id, secret=None, stat=None):
         """ Make state to in-progress
         """
         job_task_vo = self.get(job_task_id, domain_id)
         # Update started_at automatically
-        job_task_vo.update_started_at()
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.inprogress()
-        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id)
+        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id, started_at=datetime.utcnow(), secret=secret, stat=stat)
 
-    def make_success(self, job_task_id, domain_id):
+    def make_success(self, job_task_id, domain_id, secret=None, stat=None):
         job_task_vo = self.get(job_task_id, domain_id)
-        job_task_vo.update_finished_at()
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.success()
-        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id)
+        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
 
-    def make_failure(self, job_task_id, domain_id):
+    def make_failure(self, job_task_id, domain_id, secret=None, stat=None):
         job_task_vo = self.get(job_task_id, domain_id)
-        job_task_vo.update_finished_at()
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.failure()
-        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id)
+        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
 
-PRENDING = 'PRENDING'
+PENDING = 'PENDING'
 INPROGRESS = 'IN_PROGRESS'
 SUCCESS = 'SUCCESS'
 FAILURE = 'FAILURE'
@@ -124,7 +143,7 @@ class PendingState(JobTaskState):
         pass
 
     def __str__(self):
-        return PRENDING
+        return PENDING
 
 class InprogressState(JobTaskState):
     def handle(self):

@@ -172,7 +172,7 @@ class CollectorManager(BaseManager):
         """
         collector_id = params['collector_id']
         domain_id = params['domain_id']
-        collect_mode = params.get('collect_mode', 'ALL')
+        # collect_mode = params.get('collect_mode', 'ALL')
 
         collector_vo = self.get_collector(collector_id, domain_id)
         collector_dict = collector_vo.to_dict()
@@ -283,7 +283,7 @@ class CollectorManager(BaseManager):
                 _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
 
         # Update Timestamp
-        self._update_last_collected_time(collector_vo.collector_id, domain_id)
+        #self._update_last_collected_time(collector_vo.collector_id, domain_id)
         return created_job
 
     def _update_last_collected_time(self, collector_id, domain_id):

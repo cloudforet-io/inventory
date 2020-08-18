@@ -50,7 +50,6 @@ class JobManager(BaseManager):
                 'collector_id': str,
                 'filter': dict,
                 'secret_id': str,
-                'collect_mode': str,
                 'domain_id': str
                 }
         Returns: job_vo
@@ -73,23 +72,20 @@ class JobManager(BaseManager):
 
     def increase_remained_tasks(self, job_id, domain_id):
         job_vo = self.get(job_id, domain_id)
-        remained_tasks = job_vo.remained_tasks + 1
-        params = {'remained_tasks': remained_tasks}
-        _LOGGER.debug(f'[increase_remained_tasks] {job_id}, {params}')
-        return job_vo.update(params)
+        job_vo =job_vo.increment('remained_tasks')
+        _LOGGER.debug(f'[increase_remained_tasks] {job_id}, {job_vo.remained_tasks}')
+        return job_vo
 
     def decrease_remained_tasks(self, job_id, domain_id):
         job_vo = self.get(job_id, domain_id)
-        remained_tasks = job_vo.remained_tasks - 1
-        params = {'remained_tasks': remained_tasks}
-        _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {params}')
-        job_vo = job_vo.update(params)
+        job_vo = job_vo.decrement('remained_tasks')
+        _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {job_vo.remained_tasks}')
 
-        if remained_tasks == 0:
+        if job_vo.remained_tasks == 0:
             # Update to Finished
             self.make_finished(job_id, domain_id)
 
-        if remained_tasks < 0:
+        if job_vo.remained_tasks < 0:
             _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {remained_tasks}')
             raise ERROR_JOB_UPDATE(param='remained_tasks')
         return job_vo
@@ -165,44 +161,44 @@ class JobManager(BaseManager):
         job_state_machine.failure()
         self._update_job_state(job_id, job_state_machine.get_state(), domain_id)
 
-    def increase_created_count(self, job_id, domain_id):
-        """ Increase created_count field
-        """
-        job_vo = self.get(job_id, domain_id)
-
-        created_count = job_vo.created_count + 1
-
-        updated_param = {
-            'created_count': created_count,
-            'last_updated_at': datetime.utcnow()
-        }
-        return job_vo.update(updated_param)
-
-    def increase_updated_count(self, job_id, domain_id):
-        """ Increase updated_count field
-        """
-        job_vo = self.get(job_id, domain_id)
-
-        updated_count = job_vo.updated_count + 1
-
-        updated_param = {
-            'updated_count': updated_count,
-            'last_updated_at': datetime.utcnow()
-        }
-        return job_vo.update(updated_param)
-
-    def increase_deleted_count(self, job_id, domain_id):
-        """ Increase deleted_count field
-        """
-        job_vo = self.get(job_id, domain_id)
-
-        deleted_count = job_vo.deleted_count + 1
-
-        deleted_param = {
-            'deleted_count': deleted_count,
-            'last_updated_at': datetime.utcnow()
-        }
-        return job_vo.update(deleted_param)
+#    def increase_created_count(self, job_id, domain_id):
+#        """ Increase created_count field
+#        """
+#        job_vo = self.get(job_id, domain_id)
+#
+#        created_count = job_vo.created_count + 1
+#
+#        updated_param = {
+#            'created_count': created_count,
+#            'last_updated_at': datetime.utcnow()
+#        }
+#        return job_vo.update(updated_param)
+#
+#    def increase_updated_count(self, job_id, domain_id):
+#        """ Increase updated_count field
+#        """
+#        job_vo = self.get(job_id, domain_id)
+#
+#        updated_count = job_vo.updated_count + 1
+#
+#        updated_param = {
+#            'updated_count': updated_count,
+#            'last_updated_at': datetime.utcnow()
+#        }
+#        return job_vo.update(updated_param)
+#
+#    def increase_deleted_count(self, job_id, domain_id):
+#        """ Increase deleted_count field
+#        """
+#        job_vo = self.get(job_id, domain_id)
+#
+#        deleted_count = job_vo.deleted_count + 1
+#
+#        deleted_param = {
+#            'deleted_count': deleted_count,
+#            'last_updated_at': datetime.utcnow()
+#        }
+#        return job_vo.update(deleted_param)
 
     def is_canceled(self, job_id, domain_id):
         """ Return True/False
@@ -292,10 +288,12 @@ class JobStateMachine():
     def __init__(self, job_vo):
         self.job_id = job_vo.job_id
         self._state = STATE_DIC[job_vo.state]
-        self._created_count = job_vo.created_count
-        self._updated_count = job_vo.updated_count
+        #self._created_count = job_vo.created_count
+        #self._updated_count = job_vo.updated_count
 
     def inprogress(self):
+        print("Y" * 50)
+        print(self._state)
         if isinstance(self._state, (CreatedState, InprogressState, FinishedState)):
             # if collect is synchronous mode,
             # Job state can change: Inprogress -> Finished -> Inprogress -> Finished ...
