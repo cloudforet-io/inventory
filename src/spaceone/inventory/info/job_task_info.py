@@ -15,20 +15,28 @@ def ErrorInfo(error):
     }
     return collector_pb2.ErrorInfo(**info)
 
+
 def JobTaskInfo(job_task_vo: JobTask, minimal=False):
     info = {
         'job_task_id': job_task_vo.job_task_id,
-        'job_id': job_task_vo.job.job_id,
-        'project_id': job_task_vo.project_id,
-        'domain_id': job_task_vo.domain_id,
         'state': job_task_vo.state,
+        'created_count': job_task_vo.created_count,
+        'updated_count': job_task_vo.updated_count,
+        'failure_count': job_task_vo.failure_count,
+        'job_id': job_task_vo.job.job_id,
+        'created_at': change_timestamp_type(job_task_vo.created_at),
         'started_at': change_timestamp_type(job_task_vo.started_at),
         'finished_at': change_timestamp_type(job_task_vo.finished_at)
     }
 
     if not minimal:
         info.update({
-            'errors': list(map(functools.partial(ErrorInfo), job_task_vo.errors))
+            'errors': list(map(functools.partial(ErrorInfo), job_task_vo.errors)),
+            'secret_id': job_task_vo.secret_id,
+            'provider': job_task_vo.provider,
+            'service_account_id': job_task_vo.service_account_id,
+            'project_id': job_task_vo.project_id,
+            'domain_id': job_task_vo.domain_id,
         })
 
     return job_task_pb2.JobTaskInfo(**info)
