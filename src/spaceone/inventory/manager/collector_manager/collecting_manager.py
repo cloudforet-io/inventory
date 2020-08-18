@@ -121,7 +121,7 @@ class CollectingManager(BaseManager):
 
         try:
             # Update JobTask (In-progress)
-            self._update_job_task(job_task_id, 'IN_PROGRESS', domain_id, self.secret)
+            self._update_job_task(job_task_id, 'IN_PROGRESS', domain_id, secret=self.secret)
         except Exception as e:
             _LOGGER.error(f'[collecing_resources] fail to update job_task: {e}')
 
@@ -139,14 +139,19 @@ class CollectingManager(BaseManager):
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
 
         try:
-            self._process_results(results,
+            stat = self._process_results(results,
                                   job_id,
                                   job_task_id,
                                   kwargs['collector_id'],
                                   secret_id,
                                   domain_id
                                   )
-            self._update_job_task(job_task_id, 'SUCCESS', domain_id)
+
+            if stat['failure_count'] > 0:
+                JOB_TASK_STATE = 'FAILURE'
+            else:
+                JOB_TASK_STATE = 'SUCCESS'
+            self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, stat=stat)
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] {e}')
             job_task_mgr.add_error(job_task_id, domain_id,
@@ -155,7 +160,7 @@ class CollectingManager(BaseManager):
                                    {'secret_id': secret_id}
                                    )
             self._update_job_task(job_task_id, 'FAILURE', domain_id)
-            job_mgr.make_failure(kwargs['job_id'], domain_id)
+            #job_mgr.make_failure(kwargs['job_id'], domain_id)
         finally:
             job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
@@ -174,6 +179,9 @@ class CollectingManager(BaseManager):
         if 'service_account_id' in self.secret:
             self.transaction.set_meta('secret.service_account_id', self.secret['service_account_id'])
 
+        created = 0
+        updated = 0
+        failure = 0
         for res in results:
             try:
                 params = {
@@ -183,9 +191,22 @@ class CollectingManager(BaseManager):
                     'collector_id': collector_id,
                     'secret_id': secret_id
                 }
-                self._process_single_result(res, params)
+                res_state = self._process_single_result(res, params)
+                if res_state == 1:
+                    created += 1
+                elif res_state == 2:
+                    updated += 1
+                else:
+                    failure += 1
+
             except Exception as e:
                 _LOGGER.error(f'[_process_results] failed single result {e}')
+
+        # Update JobTask
+        return {
+            'created_count': created,
+            'updated_count': updated,
+            'failure_count': failure}
 
     def _process_single_result(self, result, params):
         """ Process single resource (Add/Update)
@@ -198,6 +219,10 @@ class CollectingManager(BaseManager):
                     'collector_id': 'str',
                     'secret_id': 'str'
                 }
+            Returns:
+                1: created
+                2: updated
+                3: error
         """
         # update meta
         domain_id = params['domain_id']
@@ -238,35 +263,39 @@ class CollectingManager(BaseManager):
                 # Create
                 _LOGGER.debug('[_process_single_result] Create resource.')
                 res_msg = svc.create(data)
-                job_mgr.increase_created_count(job_id, domain_id)
-                task_item_mgr.create_item_by_resource_vo(mgr,
-                                                    res_msg,
-                                                    resource_type,
-                                                    'CREATE',
-                                                    job_id,
-                                                    job_task_id,
-                                                    domain_id)
+#                job_mgr.increase_created_count(job_id, domain_id)
+#                task_item_mgr.create_item_by_resource_vo(mgr,
+#                                                    res_msg,
+#                                                    resource_type,
+#                                                    'CREATE',
+#                                                    job_id,
+#                                                    job_task_id,
+#                                                    domain_id)
+                return 1
             elif total_count == 1:
                 # Update
                 _LOGGER.debug('[_process_single_result] Update resource.')
                 data.update(res_info[0])
                 res_msg = svc.update(data)
-                job_mgr.increase_updated_count(job_id, domain_id)
-                task_item_mgr.create_item_by_resource_vo(mgr,
-                                                    res_msg,
-                                                    resource_type,
-                                                    'UPDATE',
-                                                    job_id,
-                                                    job_task_id,
-                                                    domain_id)
+#                job_mgr.increase_updated_count(job_id, domain_id)
+#                task_item_mgr.create_item_by_resource_vo(mgr,
+#                                                    res_msg,
+#                                                    resource_type,
+#                                                    'UPDATE',
+#                                                    job_id,
+#                                                    job_task_id,
+#                                                    domain_id)
+                return 2
             elif total_count > 1:
                 # Ambiguous
                 # TODO: duplicate
                 _LOGGER.debug(f'[_process_single_result] Too many resources matched. (count={total_count})')
                 _LOGGER.warning(f'[_process_single_result] match_rules: {match_rules}')
+                return 3
         except Exception as e:
             # TODO: create error message
             _LOGGER.debug(f'[_process_single_result] service error: {svc}, {e}')
+            return 3
 
     def _get_resource_map(self, resource_type):
         """ Base on resource type
@@ -284,25 +313,23 @@ class CollectingManager(BaseManager):
         mgr = self.locator.get_manager(RESOURCE_MAP[resource_type])
         return (svc, mgr)
 
-    def _update_job_task(self, job_task_id, state, domain_id, secret={}):
+    def _update_job_task(self, job_task_id, state, domain_id, secret=None, stat=None):
         """ Update JobTask
         - state (Pending -> In-progress)
         - started_time
         - secret_info
         """
         job_task_mgr = self.locator.get_manager('JobTaskManager')
-        if state == 'IN_PROGRESS':
-            job_task_mgr.make_inprogress(job_task_id, domain_id)
 
-            # Update Secret also
+        # Update Secret also
+        secret_info = None
+        if secret:
             secret_info = {
-                'secret_id': secret['secret_id'],
-                'name': secret['name']
+                'secret_id': secret['secret_id']
             }
             provider = secret.get('provider', None)
             service_account_id = secret.get('service_account_id', None)
             project_id = secret.get('project_id', None)
-
             if provider:
                 secret_info.update({'provider': provider})
             if service_account_id:
@@ -310,16 +337,16 @@ class CollectingManager(BaseManager):
             if project_id:
                 secret_info.update({'project_id': project_id})
             _LOGGER.debug(f'[_update_job_task] secret_info: {secret_info}')
-            job_task_mgr.update_secret(job_task_id, secret_info, domain_id)
 
-
+        if state == 'IN_PROGRESS':
+            job_task_mgr.make_inprogress(job_task_id, domain_id, secret_info, stat)
         elif state == 'SUCCESS':
-            job_task_mgr.make_success(job_task_id, domain_id)
+            job_task_mgr.make_success(job_task_id, domain_id, secret_info, stat)
         elif state == 'FAILURE':
-            job_task_mgr.make_failure(job_task_id, domain_id)
+            job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
         else:
             _LOGGER.error(f'[_update_job_task] undefined state: {state}')
-            job_task_mgr.make_failure(job_task_id, domain_id)
+            job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
 
 
     ######################

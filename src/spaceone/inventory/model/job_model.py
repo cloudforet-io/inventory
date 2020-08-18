@@ -1,4 +1,3 @@
-import datetime
 from mongoengine import *
 
 from spaceone.core.model.mongo_model import MongoModel
@@ -15,46 +14,35 @@ class Job(MongoModel):
     state = StringField(max_length=20, default='CREATED',
                 choices=('CREATED', 'CANCELED', 'IN_PROGRESS', 'FINISHED', 'FAILURE', 'TIMEOUT'))
     filters = DictField()
-    #results = DictField()
-    collect_mode = StringField(max_length=20, default='ALL',
-                choices=('ALL', 'CREATE', 'UPDATE'))
     total_tasks = IntField(min_value=0, max_value=65000, default=0)
-    remained_tasks = IntField(min_value=0, max_value=65000, default=0)          # Number of remained from collector, 0 means No remained_task
-    created_count = IntField(default=0)
-    updated_count = IntField(default=0)
-    deleted_count = IntField(default=0)
-    statistics = DictField()
+    remained_tasks = IntField(max_value=65000, default=0)          # Number of remained from collector, 0 means No remained_task
     errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))
     collector = ReferenceField('Collector', reverse_delete_rule=NULLIFY)
+    project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
-    finished_at = DateTimeField()
-    last_updated_at = DateTimeField()
+    updated_at = DateTimeField(auto_now=True)
+    finished_at = DateTimeField(default=None, null=True)
 
     meta = {
-        'db_alias': 'default',
         'updatable_fields': [
             'state',
-            'results',
-            'remained_tasks',
             'total_tasks',
-            'created_count',
-            'updated_count',
-            'deleted_count',
+            'remained_tasks',
             'errors',
-            'collected_resources',
             'finished_at',
-            'last_updated_at',
         ],
         'exact_fields': [
             'job_id',
+            'state',
+            'project_id',
+            'domain_id',
         ],
         'minimal_fields': [
             'job_id',
             'state',
             'created_at',
             'finished_at',
-            'collect_mode',
         ],
         'change_query_keys': {
             'collector_id': 'collector.collector_id'
@@ -63,10 +51,14 @@ class Job(MongoModel):
             'collector': Collector
         },
         'ordering': [
-            'domain_id'
+            '-created_at'
         ],
         'indexes': [
-            'job_id'
+            'job_id',
+            'state',
+            'collector',
+            'project_id',
+            'domain_id',
         ],
         'aggregate': {
             'lookup': {
@@ -76,8 +68,4 @@ class Job(MongoModel):
             }
         }
     }
- 
-    def update_collected_at(self, stat):
-        stat.update({'finished_at': datetime.datetime.utcnow()})
-        return self.update(stat)
 
