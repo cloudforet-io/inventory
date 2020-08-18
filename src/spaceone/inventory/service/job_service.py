@@ -14,8 +14,7 @@ class JobService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
-    @append_query_filter(['job_id', 'state', 'collect_mode', 'collector_id', 'resource_type', 'resource_id',
-                          'domain_id'])
+    @append_query_filter(['job_id', 'state', 'collector_id', 'project_id', 'domain_id'])
     @append_keyword_filter(['job_id'])
     def list(self, params):
         """
@@ -23,10 +22,8 @@ class JobService(BaseService):
             params (dict): {
                     'job_id': 'str',
                     'state': 'str',
-                    'collect_mode': 'str',
                     'collector_id': 'dict',
-                    'resource_type': 'str',
-                    'resource_id': 'str',
+                    'project_id': 'str',
                     'domain_id  ': 'str',
                     'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
                 }
