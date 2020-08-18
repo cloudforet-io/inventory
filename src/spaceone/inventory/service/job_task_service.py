@@ -13,15 +13,20 @@ class JobTaskService(BaseService):
 
     @transaction
     @check_required(['domain_id'])
-    @append_query_filter(['job_task_id', 'job_id', 'state', 'domain_id'])
+    @append_query_filter(['job_task_id', 'state', 'job_id', 'secret_id', 'provider',
+                          'service_account_id', 'project_id', 'domain_id'])
     @append_keyword_filter(['job_task_id'])
     def list(self, params):
         """
         Args:
             params (dict): {
                     'job_task_id': 'str',
-                    'job_id': 'str',
                     'state': 'str',
+                    'job_id': 'str',
+                    'secret_id': 'str',
+                    'provider': 'str',
+                    'service_account_id': 'str',
+                    'project_id': 'str',
                     'domain_id  ': 'str',
                     'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
                 }

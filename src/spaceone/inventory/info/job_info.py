@@ -7,6 +7,7 @@ from spaceone.inventory.info.collector_info import CollectorInfo
 
 __all__ = ['JobInfo', 'JobsInfo']
 
+
 def ErrorInfo(error):
     info = {
         'error_code': error.error_code,
@@ -15,23 +16,25 @@ def ErrorInfo(error):
     }
     return collector_pb2.ErrorInfo(**info)
 
+
 def JobInfo(job_vo: Job, minimal=False):
     info = {
         'job_id': job_vo.job_id,
-        'total_tasks': job_vo.total_tasks,
+        'state': job_vo.state,
         'created_at': change_timestamp_type(job_vo.created_at),
         'finished_at': change_timestamp_type(job_vo.finished_at),
-        'state': job_vo.state,
-        'collect_mode': job_vo.collect_mode
     }
 
     if not minimal:
         info.update({
-            'collector_info': CollectorInfo(job_vo.collector, minimal=True) if job_vo.collector else None,
-            'created_count': job_vo.created_count,
-            'updated_count': job_vo.updated_count,
             'filter': change_struct_type(job_vo.filters),
-            'errors': list(map(functools.partial(ErrorInfo), job_vo.errors))
+            'total_tasks': job_vo.total_tasks,
+            'remained_tasks': job_vo.remained_tasks,
+            'errors': list(map(functools.partial(ErrorInfo), job_vo.errors)),
+            'collector_info': CollectorInfo(job_vo.collector, minimal=True) if job_vo.collector else None,
+            'project_id': job_vo.project_id,
+            'domain_id': job_vo.domain_id,
+            'updated_at': change_timestamp_type(job_vo.updated_at),
         })
 
     return collector_pb2.JobInfo(**info)
