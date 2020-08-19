@@ -127,7 +127,7 @@ class JobManager(BaseManager):
         jobs, total_count = self.list_jobs(query)
         _LOGGER.debug(f'[update_job_state_by_hour] job count: {total_count} to {state}')
         for job in jobs:
-            self.make_failure(job.job_id, domain_id)
+            self.make_timeout(job.job_id, domain_id)
 
     def _update_job_state(self, job_id, state, domain_id):
         job_vo = self.get(job_id, domain_id)
@@ -159,6 +159,12 @@ class JobManager(BaseManager):
         job_vo = self.get(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
         job_state_machine.failure()
+        self._update_job_state(job_id, job_state_machine.get_state(), domain_id)
+
+    def make_timeout(self, job_id, domain_id):
+        job_vo = self.get(job_id, domain_id)
+        job_state_machine = JobStateMachine(job_vo)
+        job_state_machine.timeout()
         self._update_job_state(job_id, job_state_machine.get_state(), domain_id)
 
 #    def increase_created_count(self, job_id, domain_id):
@@ -208,6 +214,18 @@ class JobManager(BaseManager):
         if job_state_machine.get_state()  == CANCELED:
             return True
         return False
+
+    def should_cancel(self, job_id, domain_id):
+        """ Return True/False
+        """
+        job_vo = self.get(job_id, domain_id)
+        job_state_machine = JobStateMachine(job_vo)
+        job_state = job_state_machine.get_state()
+
+        if job_state  == CREATED or job_state == INPROGRESS:
+            return False
+        return True
+
 
     def _check_filter(self, params):
         """ Schedule request may have filter

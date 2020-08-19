@@ -5,6 +5,9 @@ from spaceone.inventory.manager.cleanup_manager import CleanupManager
 
 _LOGGER = logging.getLogger(__name__)
 
+# TODO
+# define as Domain config variable
+JOB_TIMEOUT = 2
 
 @authentication_handler
 @authorization_handler
@@ -72,7 +75,7 @@ class CleanupService(BaseService):
         domain_id = params['domain_id']
         # Get Cleanup Policy of domain
         # TODO: from domain config
-        policies = {'inventory.Job': {'FAILURE': 1}}
+        policies = {'inventory.Job': {'TIMEOUT': JOB_TIMEOUT}}
 
         mgr = self.locator.get_manager('JobManager')
         for resource_type, policy in policies.items():
