@@ -80,13 +80,15 @@ class CollectingManager(BaseManager):
         job_mgr = self.locator.get_manager('JobManager')
         job_task_mgr = self.locator.get_manager('JobTaskManager')
 
+        job_task_id = kwargs['job_task_id']
+
         job_id = kwargs['job_id']
-        if job_mgr.is_canceled(job_id, domain_id):
+        if job_mgr.should_cancel(job_id, domain_id):
             job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self._update_job_task(job_task_id, 'FAILURE', domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
         # Create proper connector
-        job_task_id = kwargs['job_task_id']
         connector = self._get_connector(plugin_info, domain_id)
 
         collect_filter = filters

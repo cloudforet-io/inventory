@@ -25,7 +25,7 @@ class JobTaskManager(BaseManager):
             job_task_vo.delete()
 
         params = {
-            'job': job_vo,
+            'job_id': job_vo.job_id,
             'domain_id': domain_id
         }
         job_task_vo: JobTask = self.job_task_model.create(params)
