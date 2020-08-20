@@ -42,6 +42,14 @@ class CloudService(MongoModel):
         ],
         'exact_fields': [
             'cloud_service_id',
+            'state',
+            'provider',
+            'reference.resource_id',
+            'cloud_service_group',
+            'cloud_service_type',
+            'region_code',
+            'region_type',
+            'region_ref',
             'project_id',
             'domain_id',
             'collection_info.state'
@@ -61,13 +69,16 @@ class CloudService(MongoModel):
         ],
         'indexes': [
             'cloud_service_id',
+            'state',
             'provider',
             'cloud_service_group',
             'cloud_service_type',
+            'reference.resource_id',
             'region_code',
             'region_type',
+            'region_ref',
+            'project_id',
             'domain_id',
-            'reference.resource_id',
             'collection_info.state'
         ],
     }

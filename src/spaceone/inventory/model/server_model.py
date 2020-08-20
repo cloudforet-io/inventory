@@ -87,10 +87,13 @@ class Server(MongoModel):
             'primary_ip_address'
             'server_type',
             'os_type',
-            'project_id',
-            'domain_id',
+            'provider',
+            'reference.resource_id',
             'region_code',
             'region_type',
+            'region_ref'
+            'project_id',
+            'domain_id',
             'collection_info.state'
         ],
         'minimal_fields': [
@@ -114,11 +117,12 @@ class Server(MongoModel):
             'server_type',
             'os_type',
             'provider',
+            'reference.resource_id',
             'region_code',
             'region_type',
+            'region_ref',
             'project_id',
             'domain_id',
-            'reference.resource_id',
             'collection_info.state'
         ],
     }

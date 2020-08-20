@@ -25,7 +25,9 @@ class Region(MongoModel):
             'region_id',
             'state',
             'region_code',
-            'region_type'
+            'region_type',
+            'region_ref',
+            'domain_id'
         ],
         'minimal_fields': [
             'region_id',
@@ -41,9 +43,10 @@ class Region(MongoModel):
         'indexes': [
             'region_id',
             'state',
-            'domain_id',
             'region_code',
-            'region_type'
+            'region_type',
+            'region_ref',
+            'domain_id'
         ]
     }
 
