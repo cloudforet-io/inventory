@@ -64,6 +64,10 @@ class JobTaskManager(BaseManager):
         job_task_vo = job_task_vo.update(params)
 
         self.make_failure(job_task_id, domain_id)
+        # Update Job Failure
+        job_mgr = self.locator.get_manager('JobManager')
+        job_mgr.make_error(job_task_vo.job_id, domain_id)
+
         return job_task_vo
 
     #######################
@@ -80,14 +84,14 @@ class JobTaskManager(BaseManager):
     #######################
     # State
     #######################
-    def _update_job_state(self, job_task_id, state, domain_id, started_at=None, finished_at=None, secret=None, stat=None):
+    def _update_job_status(self, job_task_id, status, domain_id, started_at=None, finished_at=None, secret=None, stat=None):
         """
         Args:
             secret(dict)
             stat(dict)
         """
         job_task_vo = self.get(job_task_id, domain_id)
-        params = {'state': state}
+        params = {'status': status}
 
         if started_at:
             params['started_at'] = started_at
@@ -101,7 +105,7 @@ class JobTaskManager(BaseManager):
         if stat:
             params.update(stat)
 
-        _LOGGER.debug(f'[update_job_state] job_task_id: {job_task_id}, status: {state}')
+        _LOGGER.debug(f'[update_job_status] job_task_id: {job_task_id}, status: {status}')
         return job_task_vo.update(params)
 
     def make_inprogress(self, job_task_id, domain_id, secret=None, stat=None):
@@ -111,21 +115,22 @@ class JobTaskManager(BaseManager):
         # Update started_at automatically
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.inprogress()
-        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id, started_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, started_at=datetime.utcnow(), secret=secret, stat=stat)
 
     def make_success(self, job_task_id, domain_id, secret=None, stat=None):
         job_task_vo = self.get(job_task_id, domain_id)
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.success()
-        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
 
     def make_failure(self, job_task_id, domain_id, secret=None, stat=None):
         job_task_vo = self.get(job_task_id, domain_id)
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.failure()
-        self._update_job_state(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
 
 PENDING = 'PENDING'
+CANCELED = 'CANCELED'
 INPROGRESS = 'IN_PROGRESS'
 SUCCESS = 'SUCCESS'
 FAILURE = 'FAILURE'
@@ -144,6 +149,13 @@ class PendingState(JobTaskState):
 
     def __str__(self):
         return PENDING
+
+class CanceledState(JobTaskState):
+    def handle(self):
+        pass
+
+    def __str__(self):
+        return CANCELED
 
 class InprogressState(JobTaskState):
     def handle(self):
@@ -168,6 +180,7 @@ class FailureState(JobTaskState):
 
 STATE_DIC = {
     'PENDING'       : PendingState(),
+    'CANCELED'      : CanceledState(),
     'IN_PROGRESS'   : InprogressState(),
     'SUCCESS'       : SuccessState(),
     'FAILURE'       : FailureState()
@@ -176,7 +189,7 @@ STATE_DIC = {
 class JobTaskStateMachine():
     def __init__(self, job_task_vo):
         self.job_task_id = job_task_vo.job_task_id
-        self._state = STATE_DIC[job_task_vo.state]
+        self._state = STATE_DIC[job_task_vo.status]
 
     def inprogress(self):
         if isinstance(self._state, (PendingState, InprogressState, SuccessState, FailureState)):
