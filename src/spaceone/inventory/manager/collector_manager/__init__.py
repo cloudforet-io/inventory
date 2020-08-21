@@ -188,13 +188,6 @@ class CollectorManager(BaseManager):
 
         # Create JobTask
         job_task_mgr = self.locator.get_manager('JobTaskManager')
-        # Make in-progress
-        try:
-            job_mgr.make_inprgress(created_job.job_id, domain_id)
-        except Exception as e:
-            _LOGGER.debug(f'[collect] {e}')
-            _LOGGER.debug(f'[collect] fail to change {collector_id} job state to in-progress')
-
         # Create Pipeline & Push
         try:
             secret_id = params.get('secret_id', None)
@@ -211,7 +204,7 @@ class CollectorManager(BaseManager):
                               'ERROR_COLLECT_INITIALIZE',
                               e,
                               params)
-            job_mgr.make_failure(created_job.job_id, domain_id)
+            job_mgr.make_error_by_vo(created_job)
             raise ERROR_COLLECT_INITIALIZE(stage='Secret Patch', params=params)
 
         # Apply Filter Format
@@ -231,8 +224,15 @@ class CollectorManager(BaseManager):
                               'ERROR_COLLECT_INITIALIZE',
                               e,
                               params)
-            job_mgr.make_failure(created_job.job_id, domain_id)
+            job_mgr.make_error_by_vo(created_job)
             raise ERROR_COLLECT_INITIALIZE(stage='Filter Format', params=params)
+
+        # Make in-progress
+        try:
+            job_mgr.make_inprogress_by_vo(created_job)
+        except Exception as e:
+            _LOGGER.debug(f'[collect] {e}')
+            _LOGGER.debug(f'[collect] fail to change {collector_id} job state to in-progress')
 
         # Loop all secret_list
         for secret_id in secret_list:
@@ -254,8 +254,8 @@ class CollectorManager(BaseManager):
                                                               )
                 # Update Job
                 _LOGGER.debug(f'[collect] params for collecting: {req_params}')
-                job_mgr.increase_total_tasks(created_job.job_id, domain_id)
-                job_mgr.increase_remained_tasks(created_job.job_id, domain_id)
+                job_mgr.increase_total_tasks_by_vo(created_job)
+                job_mgr.increase_remained_tasks_by_vo(created_job)
 
                 # Make SpaceONE Template Pipeline
                 task = self._create_task(req_params, domain_id)
@@ -272,6 +272,16 @@ class CollectorManager(BaseManager):
                     _LOGGER.debug('####### Synchronous collect ########')
                     collecting_mgr = self.locator.get_manager('CollectingManager')
                     collecting_mgr.collecting_resources(**req_params)
+
+            except ERROR_BASE as e:
+                # Do not exit, just book-keeping
+                job_mgr.add_error(created_job.job_id, domain_id,
+                                  e.error_code,
+                                  e.message,
+                                  {'secret_id': secret_id}
+                                  )
+                _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
+
 
             except Exception as e:
                 # Do not exit, just book-keeping

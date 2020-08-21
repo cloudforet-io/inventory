@@ -10,8 +10,8 @@ class Error(EmbeddedDocument):
 
 class JobTask(MongoModel):
     job_task_id = StringField(max_length=40, generate_id='job_task', unique=True)
-    state = StringField(max_length=20, default='PENDING',
-                        choices=('PENDING', 'IN_PROGRESS', 'SUCCESS', 'FAILURE'))
+    status = StringField(max_length=20, default='PENDING',
+                        choices=('PENDING', 'CANCELED', 'IN_PROGRESS', 'SUCCESS', 'FAILURE'))
     created_count = IntField()
     updated_count = IntField()
     failure_count = IntField()
@@ -28,7 +28,7 @@ class JobTask(MongoModel):
 
     meta = {
         'updatable_fields': [
-            'state',
+            'status',
             'secret_id',
             'provider',
             'service_account_id',
@@ -42,7 +42,7 @@ class JobTask(MongoModel):
         ],
         'exact_fields': [
             'job_task_id',
-            'state',
+            'status',
             'job_id',
             'secret_id',
             'provider',
@@ -52,7 +52,7 @@ class JobTask(MongoModel):
         ],
         'minimal_fields': [
             'job_task_id',
-            'state',
+            'status',
             'created_count',
             'updated_count',
             'failure_count',
@@ -66,7 +66,7 @@ class JobTask(MongoModel):
         ],
         'indexes': [
             'job_task_id',
-            'state',
+            'status',
             'job_id',
             'secret_id',
             'provider',

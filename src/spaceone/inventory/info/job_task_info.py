@@ -19,11 +19,11 @@ def ErrorInfo(error):
 def JobTaskInfo(job_task_vo: JobTask, minimal=False):
     info = {
         'job_task_id': job_task_vo.job_task_id,
-        'state': job_task_vo.state,
+        'status': job_task_vo.status,
         'created_count': job_task_vo.created_count,
         'updated_count': job_task_vo.updated_count,
         'failure_count': job_task_vo.failure_count,
-        'job_id': job_task_vo.job.job_id,
+        'job_id': job_task_vo.job_id,
         'created_at': change_timestamp_type(job_task_vo.created_at),
         'started_at': change_timestamp_type(job_task_vo.started_at),
         'finished_at': change_timestamp_type(job_task_vo.finished_at)

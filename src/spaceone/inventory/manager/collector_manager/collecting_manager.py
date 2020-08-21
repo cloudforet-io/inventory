@@ -83,6 +83,7 @@ class CollectingManager(BaseManager):
         job_task_id = kwargs['job_task_id']
 
         job_id = kwargs['job_id']
+        job_vo = job_mgr.get(job_id, domain_id)
         if job_mgr.should_cancel(job_id, domain_id):
             job_mgr.decrease_remained_tasks(job_id, domain_id)
             self._update_job_task(job_task_id, 'FAILURE', domain_id)
@@ -111,6 +112,18 @@ class CollectingManager(BaseManager):
             secret_mgr = self.locator.get_manager('SecretManager')
             secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
             self.secret = secret_mgr.get_secret(secret_id, domain_id)
+
+        except ERROR_BASE as e:
+            _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
+            job_task_mgr.add_error(job_task_id, domain_id,
+                                   e.error_code,
+                                   e.message,
+                                   {'secret_id': secret_id}
+                                   )
+            job_mgr.decrease_remained_tasks(job_id, domain_id)
+            raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
+
+
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
             job_task_mgr.add_error(job_task_id, domain_id,
@@ -127,10 +140,24 @@ class CollectingManager(BaseManager):
         except Exception as e:
             _LOGGER.error(f'[collecing_resources] fail to update job_task: {e}')
 
+        #################
         # Call method
+        #################
         try:
+            _LOGGER.debug('[collect] Before call collect')
             results = connector.collect(plugin_info['options'], secret_data.data, collect_filter)
             _LOGGER.debug('[collect] generator: %s' % results)
+
+        except ERROR_BASE as e:
+            _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
+            job_task_mgr.add_error(job_task_id, domain_id,
+                                   e.error_code,
+                                   e.message,
+                                   {'secret_id': secret_id}
+                                   )
+            job_mgr.decrease_remained_tasks(job_id, domain_id)
+            raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
+
         except Exception as e:
             job_task_mgr.add_error(job_task_id, domain_id,
                                    'ERROR_COLLECTOR_COLLECTING',
@@ -153,7 +180,18 @@ class CollectingManager(BaseManager):
                 JOB_TASK_STATE = 'FAILURE'
             else:
                 JOB_TASK_STATE = 'SUCCESS'
+            # Update Statistics of JobTask
             self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, stat=stat)
+
+        except ERROR_BASE as e:
+            _LOGGER.error(f'[collecting_resources] {e}')
+            job_task_mgr.add_error(job_task_id, domain_id,
+                                   e.error_code,
+                                   e.message,
+                                   {'secret_id': secret_id}
+                                   )
+            self._update_job_task(job_task_id, 'FAILURE', domain_id)
+
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] {e}')
             job_task_mgr.add_error(job_task_id, domain_id,
@@ -162,7 +200,7 @@ class CollectingManager(BaseManager):
                                    {'secret_id': secret_id}
                                    )
             self._update_job_task(job_task_id, 'FAILURE', domain_id)
-            #job_mgr.make_failure(kwargs['job_id'], domain_id)
+
         finally:
             job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 

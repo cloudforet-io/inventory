@@ -79,9 +79,9 @@ class CleanupService(BaseService):
 
         mgr = self.locator.get_manager('JobManager')
         for resource_type, policy in policies.items():
-            for state, hour in policy.items():
-                _LOGGER.debug(f'[update_job_state] {resource_type}, {hour}, {state}, {domain_id}')
-                mgr.update_job_state_by_hour(hour, state, domain_id)
+            for status, hour in policy.items():
+                _LOGGER.debug(f'[update_job_state] {resource_type}, {hour}, {status}, {domain_id}')
+                mgr.update_job_status_by_hour(hour, status, domain_id)
 
     @transaction
     @check_required(['domain_id'])
