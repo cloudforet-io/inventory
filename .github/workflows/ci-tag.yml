@@ -42,7 +42,7 @@ jobs:
           echo "::set-env name=VERSION::$VERSION"
           echo $VERSION>$LOCATION_VERSION/VERSION
           # LATEST_TAG true or false
-          if [[ $VERSION =~ ^v[0-9]\.[0-9]\.[0-9]$ ]];
+          if [[ $VERSION =~ ^[0-9]\.[0-9]\.[0-9]$ ]];
           then
             echo "::set-env name=LATEST_TAG::true"
           else
@@ -141,3 +141,21 @@ jobs:
           author_name: Github Action Slack
         env:
           SLACK_WEBHOOK_URL: ${{secrets.SLACK_WEBHOOK_URL}}
+  branch:
+    if: github.repository_owner == 'spaceone-dev'
+    needs: initialize
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: set_env.sh
+      - name: Set environment variables
+        run: |
+          bash set_env.sh
+      - name: make branch
+        if: env.LATEST_TAG == 'true'
+        uses: peterjgrainger/action-create-branch@v2.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.REPOSITORY_ACCESS_KEY }}
+        with:
+          branch: $VERSION
