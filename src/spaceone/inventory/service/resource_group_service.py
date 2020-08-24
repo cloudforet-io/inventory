@@ -32,7 +32,6 @@ class ResourceGroupService(BaseService):
         Returns:
             resource_group_vo (object)
         """
-        print(params)
         return self.resource_group_mgr.create_resource_group(params)
 
     @transaction

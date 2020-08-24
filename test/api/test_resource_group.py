@@ -181,7 +181,7 @@ class TestResourceGroup(unittest.TestCase):
                     'resource_type': 'inventory.Server',
                     'filter': [
                         {'k': 'data.compute.aws_tags.Schedule', 'v': 'abcde', 'o': 'eq'},
-                        # {'k': 'data.compute.aws_tags.Value', 'v': 'bbbbb', 'o': 'eq'},
+                        {'k': 'data.compute.aws_tags.Value', 'v': ['bbbbb'], 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Key', 'v': 'Policy', 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Value', 'v': 'N', 'o': 'eq'}
                     ]
@@ -189,10 +189,10 @@ class TestResourceGroup(unittest.TestCase):
                 {
                     'resource_type': 'CloudService?provider=aws&cloud_service_group=DynamoDB&cloud_service_type=Table',
                     'filter': [
-                        # {'k': 'data.compute.aws_tags.Schedule', 'v': 'Test', 'o': 'eq'},
-                        # {'k': 'data.compute.aws_tags.Value', 'v': 'aaa', 'o': 'eq'},
-                        # {'k': 'data.compute.aws_tags.Key', 'v': 'Policy', 'o': 'eq'},
-                        # {'k': 'data.compute.aws_tags.Value', 'v': 'N', 'o': 'eq'}
+                        {'k': 'data.compute.aws_tags.Schedule', 'v': 'Test', 'o': 'eq'},
+                        {'k': 'data.compute.aws_tags.Value', 'v': 'aaa', 'o': 'eq'},
+                        {'k': 'data.compute.aws_tags.Key', 'v': 'Policy', 'o': 'eq'},
+                        {'k': 'data.compute.aws_tags.Value', 'v': 'N', 'o': 'eq'}
                     ]
                 },
             ],
@@ -214,7 +214,7 @@ class TestResourceGroup(unittest.TestCase):
         self.resource_groups.append(self.resource_group)
         self.assertEqual(self.resource_group.name, name)
 
-    def test_update_region_name(self):
+    def test_update_resource_group_name(self):
         self.test_create_resource_group()
 
         name = random_string()
@@ -227,6 +227,28 @@ class TestResourceGroup(unittest.TestCase):
             param,
             metadata=(('token', self.token),))
         self.assertEqual(self.resource_group.name, name)
+
+    def test_update_resource_group_resource(self):
+        self.test_create_resource_group()
+        update_resource = [
+            {
+                'resource_type': 'inventory.Server',
+                'filter': [
+                    {'k': 'data.compute.xxxx', 'v': 'abcde', 'o': 'eq'},
+                ]
+            },
+        ]
+
+        param = {
+            'resource_group_id': self.resource_group.resource_group_id,
+            'resources': update_resource,
+            'domain_id': self.domain.domain_id,
+        }
+        self.resource_group = self.inventory_v1.ResourceGroup.update(
+            param,
+            metadata=(('token', self.token),))
+
+        self.assertEqual(len(self.resource_group.resources), len(update_resource))
 
     def test_update_resource_group_project(self):
         self.test_create_resource_group()
