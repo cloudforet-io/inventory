@@ -77,9 +77,11 @@ class JobManager(BaseManager):
         job_vo = job_vo.decrement('remained_tasks')
         _LOGGER.debug(f'[decrease_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
 
-        if job_vo.remained_tasks == 0:
+        if job_vo.remained_tasks == 0 and job_vo.mark_error == 0:
             # Update to Finished
             self.make_success_by_vo(job_vo)
+        else:
+            self.make_error_by_vo(job_vo)
 
         if job_vo.remained_tasks < 0:
             _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {remained_tasks}')
@@ -102,11 +104,14 @@ class JobManager(BaseManager):
     def decrease_remained_tasks(self, job_id, domain_id):
         job_vo = self.get(job_id, domain_id)
         job_vo = job_vo.decrement('remained_tasks')
-        _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {job_vo.remained_tasks}')
+        _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {job_vo.remained_tasks} / {job_vo.total_tasks}')
 
         if job_vo.remained_tasks == 0:
-            # Update to Finished
-            self.make_success_by_vo(job_vo)
+            if job_vo.mark_error == 0:
+                # Update to Finished
+                self.make_success_by_vo(job_vo)
+            else:
+                self.make_error_by_vo(job_vo)
 
         if job_vo.remained_tasks < 0:
             _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {remained_tasks}')
@@ -136,7 +141,7 @@ class JobManager(BaseManager):
         params = {'errors': errors}
         _LOGGER.debug(f'[add_error] {params}')
         job_vo = job_vo.update(params)
-        self.make_error_by_vo(job_vo)
+        self.mark_error_by_vo(job_vo)
 
         return job_vo
 
@@ -157,8 +162,8 @@ class JobManager(BaseManager):
     ###############
     def _update_job_status_by_vo(self, job_vo, status):
         params = {'status': status}
-        if status == 'SUCCESS':
-            params.update({'finished_at': datetime.utcnow()}) 
+        if status == 'SUCCESS' or status == 'TIMEOUT' or status == 'ERROR' or status == 'CANCELED':
+            params.update({'finished_at': datetime.utcnow()})
         _LOGGER.debug(f'[update_job_status] job_id: {job_vo.job_id}, status: {status}')
         return job_vo.update(params)
 
@@ -244,6 +249,14 @@ class JobManager(BaseManager):
             return True
         return False
 
+    def mark_error_by_vo(self, job_vo):
+        job_vo.update({'mark_error': 1})
+
+    def mark_error(self, job_id, domain_id):
+        """ Mark Job has error
+        """
+        job_vo = self.get(job_id, domain_id)
+        job_vo.update({'mark_error': 1})
 
     def _check_filter(self, params):
         """ Schedule request may have filter

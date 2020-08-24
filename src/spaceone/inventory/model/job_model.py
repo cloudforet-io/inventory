@@ -23,6 +23,7 @@ class Job(MongoModel):
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     finished_at = DateTimeField(default=None, null=True)
+    mark_error = IntField(min_value=0, default=0)
 
     meta = {
         'updatable_fields': [
@@ -31,6 +32,7 @@ class Job(MongoModel):
             'remained_tasks',
             'errors',
             'finished_at',
+            'mark_error',
         ],
         'exact_fields': [
             'job_id',

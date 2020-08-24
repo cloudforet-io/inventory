@@ -66,7 +66,7 @@ class JobTaskManager(BaseManager):
         self.make_failure(job_task_id, domain_id)
         # Update Job Failure
         job_mgr = self.locator.get_manager('JobManager')
-        job_mgr.make_error(job_task_vo.job_id, domain_id)
+        job_mgr.mark_error(job_task_vo.job_id, domain_id)
 
         return job_task_vo
 

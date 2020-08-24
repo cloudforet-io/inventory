@@ -240,6 +240,8 @@ class CollectorManager(BaseManager):
             try:
                 # Make Pipeline, then push
                 # parameter of pipeline
+                job_mgr.increase_total_tasks_by_vo(created_job)
+                job_mgr.increase_remained_tasks_by_vo(created_job)
 
                 # Create JobTask
                 job_task_vo = job_task_mgr.create_job_task(created_job, domain_id)
@@ -254,9 +256,6 @@ class CollectorManager(BaseManager):
                                                               )
                 # Update Job
                 _LOGGER.debug(f'[collect] params for collecting: {req_params}')
-                job_mgr.increase_total_tasks_by_vo(created_job)
-                job_mgr.increase_remained_tasks_by_vo(created_job)
-
                 # Make SpaceONE Template Pipeline
                 task = self._create_task(req_params, domain_id)
                 queue_name = self._get_queue_name(name='collect_queue')
