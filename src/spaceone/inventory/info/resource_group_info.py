@@ -10,12 +10,9 @@ _LOGGER = logging.getLogger()
 
 
 def ResourceInfo(resource: Resource):
-
-    print(resource.filter)
-
     info = {
         'resource_type': resource.resource_type,
-        'filter': change_filter_type(resource.filter)
+        'filter': change_list_value_type(resource.filter)
     }
     return resource_group_pb2.Resource(**info)
 
