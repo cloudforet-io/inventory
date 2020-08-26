@@ -12,5 +12,5 @@ venv
 local-conf.yml
 test/reports
 test/_trial_temp
-
+.DS_Store
 .venv/
