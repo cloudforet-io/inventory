@@ -108,6 +108,9 @@ class JobTaskManager(BaseManager):
         _LOGGER.debug(f'[update_job_status] job_task_id: {job_task_id}, status: {status}')
         return job_task_vo.update(params)
 
+    def update_created(self, job_task_id):
+        job_task_vo = self.get(job_task_id, domain_id)
+        #job_task_vo.update({'created': created
     def make_inprogress(self, job_task_id, domain_id, secret=None, stat=None):
         """ Make state to in-progress
         """

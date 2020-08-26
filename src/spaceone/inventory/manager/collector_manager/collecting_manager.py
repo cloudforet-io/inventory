@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import logging
+import json
+import time
 
 from google.protobuf.json_format import MessageToDict
 
@@ -48,6 +50,10 @@ SERVICE_MAP = {
     'inventory.Region': 'RegionService',
 }
 
+DB_QUEUE_NAME = 'db_q'
+CREATED = 1
+UPDATED = 2
+ERROR = 3
 
 #################################################
 # Collecting Resource and Update DB
@@ -57,6 +63,18 @@ class CollectingManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.secret = None      # secret info for update meta
+        self.initialize()
+
+    def initialize(self):
+        _LOGGER.debug(f'[initialize] initialize Worker configuration')
+        queues = config.get_global('QUEUES')
+        if DB_QUEUE_NAME in queues:
+            self.use_db_queue = True
+            self.db_queue = DB_QUEUE_NAME
+        else:
+            self.use_db_queue = False
+        _LOGGER.debug(f'[initialize] use db_queue: {self.use_db_queue}')
+
     ##########################################################
     # collect
     #
@@ -118,7 +136,7 @@ class CollectingManager(BaseManager):
             job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
-                                   {'secret_id': secret_id}
+                                   {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
             job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
@@ -129,7 +147,7 @@ class CollectingManager(BaseManager):
             job_task_mgr.add_error(job_task_id, domain_id,
                                    'ERROR_COLLECTOR_SECRET',
                                    e,
-                                   {'secret_id': secret_id}
+                                   {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
             job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
@@ -140,9 +158,9 @@ class CollectingManager(BaseManager):
         except Exception as e:
             _LOGGER.error(f'[collecing_resources] fail to update job_task: {e}')
 
-        #################
+        ##########################################################
         # Call method
-        #################
+        ##########################################################
         try:
             _LOGGER.debug('[collect] Before call collect')
             results = connector.collect(plugin_info['options'], secret_data.data, collect_filter)
@@ -153,7 +171,7 @@ class CollectingManager(BaseManager):
             job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
-                                   {'secret_id': secret_id}
+                                   {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
             job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
@@ -162,11 +180,16 @@ class CollectingManager(BaseManager):
             job_task_mgr.add_error(job_task_id, domain_id,
                                    'ERROR_COLLECTOR_COLLECTING',
                                    e,
-                                   {'secret_id': secret_id}
+                                   {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
             job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
 
+        ##############################################################
+        # Processing Result
+        # Type 1: use_db_queue == False, processing synchronously
+        # Type 2: use_db_queue == True, processing asynchronously
+        ##############################################################
         try:
             stat = self._process_results(results,
                                   job_id,
@@ -175,7 +198,6 @@ class CollectingManager(BaseManager):
                                   secret_id,
                                   domain_id
                                   )
-
             if stat['failure_count'] > 0:
                 JOB_TASK_STATE = 'FAILURE'
             else:
@@ -188,7 +210,7 @@ class CollectingManager(BaseManager):
             job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
-                                   {'secret_id': secret_id}
+                                   {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
             self._update_job_task(job_task_id, 'FAILURE', domain_id)
 
@@ -197,7 +219,7 @@ class CollectingManager(BaseManager):
             job_task_mgr.add_error(job_task_id, domain_id,
                                    'ERROR_COLLECTOR_COLLECTING',
                                    e,
-                                   {'secret_id': secret_id}
+                                   {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
             self._update_job_task(job_task_id, 'FAILURE', domain_id)
 
@@ -222,6 +244,8 @@ class CollectingManager(BaseManager):
         created = 0
         updated = 0
         failure = 0
+
+        idx = 0
         for res in results:
             try:
                 params = {
@@ -231,7 +255,25 @@ class CollectingManager(BaseManager):
                     'collector_id': collector_id,
                     'secret_id': secret_id
                 }
-                res_state = self._process_single_result(res, params)
+                res_dict = MessageToDict(res, preserving_proto_field_name=True)
+
+                idx += 1
+                ######################################
+                # Asynchronous DB Updater (using Queue)
+                ######################################
+                if self.use_db_queue:
+                    _LOGGER.debug(f'[_process_results] use db queue: {idx}')
+                    # Create Asynchronus Task
+                    pushed = self._create_db_update_task(res_dict, params)
+                    if pushed == False:
+                        failure += 1
+                    continue
+
+                #####################################
+                # Synchrous Update
+                # If you here, processing in worker
+                #####################################
+                res_state = self._process_single_result(res_dict, params)
                 if res_state == 1:
                     created += 1
                 elif res_state == 2:
@@ -244,14 +286,16 @@ class CollectingManager(BaseManager):
 
         # Update JobTask
         return {
+            'total_count': idx,
             'created_count': created,
             'updated_count': updated,
-            'failure_count': failure}
+            'failure_count': failure
+        }
 
-    def _process_single_result(self, result, params):
+    def _process_single_result(self, resource, params):
         """ Process single resource (Add/Update)
             Args:
-                result (message): resource from collector
+                resource (message_dict): resource from collector
                 params (dict): {
                     'domain_id': 'str',
                     'job_id': 'str',
@@ -266,8 +310,7 @@ class CollectingManager(BaseManager):
         """
         # update meta
         domain_id = params['domain_id']
-        resource_type = result.resource_type
-        resource = MessageToDict(result, preserving_proto_field_name=True)
+        resource_type = result['resource_type']
         data = resource['resource']
 
         _LOGGER.debug(f'[_process_single_result] {resource_type}')
@@ -282,6 +325,10 @@ class CollectingManager(BaseManager):
         data['domain_id'] = domain_id
         # General Resource like Server, CloudService
         match_rules = resource.get('match_rules', {})
+        ##################################
+        # Match rules
+        ##################################
+        start = time.time()
         try:
             res_info, total_count = self._query_with_match_rules(data,
                                                                  match_rules,
@@ -294,48 +341,56 @@ class CollectingManager(BaseManager):
             _LOGGER.warning(f'[_process_single_result] assume new resource, create')
             total_count = 0
 
-        job_mgr = self.locator.get_manager('JobManager')
-        task_item_mgr = self.locator.get_manager('TaskItemManager')
+        end = time.time()
+        diff = end - start
+        _LOGGER.error(f'query time: {diff}')
+
+        #########################################
+        # Create / Update to DB
+        #########################################
+        response = ERROR
+        res_id = "Unknown"
         try:
             job_id = params['job_id']
             job_task_id = params['job_task_id']
+            # For book-keeping
             if total_count == 0:
                 # Create
-                _LOGGER.debug('[_process_single_result] Create resource.')
                 res_msg = svc.create(data)
-#                job_mgr.increase_created_count(job_id, domain_id)
-#                task_item_mgr.create_item_by_resource_vo(mgr,
-#                                                    res_msg,
-#                                                    resource_type,
-#                                                    'CREATE',
-#                                                    job_id,
-#                                                    job_task_id,
-#                                                    domain_id)
-                return 1
+                diff = time.time() - end
+                _LOGGER.error(f'insert: {diff}')
+                response = CREATED
+
             elif total_count == 1:
                 # Update
-                _LOGGER.debug('[_process_single_result] Update resource.')
                 data.update(res_info[0])
                 res_msg = svc.update(data)
-#                job_mgr.increase_updated_count(job_id, domain_id)
-#                task_item_mgr.create_item_by_resource_vo(mgr,
-#                                                    res_msg,
-#                                                    resource_type,
-#                                                    'UPDATE',
-#                                                    job_id,
-#                                                    job_task_id,
-#                                                    domain_id)
-                return 2
+                diff = time.time() - end
+                _LOGGER.error(f'update: {diff}')
+                response = UPDATED
+
             elif total_count > 1:
                 # Ambiguous
                 # TODO: duplicate
                 _LOGGER.debug(f'[_process_single_result] Too many resources matched. (count={total_count})')
                 _LOGGER.warning(f'[_process_single_result] match_rules: {match_rules}')
-                return 3
+                response = ERROR
+
+        except ERROR_BASE as e:
+            job_task_mgr = self.locator.get_manager('JobTaskManager')
+            job_task_mgr.add_error(job_task_id, domain_id,
+                                   e.error_code,
+                                   e.message,
+                                   {'resource_type': resource_type, 'resource_id': res_id}
+                                   )
+ 
         except Exception as e:
             # TODO: create error message
             _LOGGER.debug(f'[_process_single_result] service error: {svc}, {e}')
-            return 3
+            response = ERROR
+        finally:
+            # Update statistics
+            return RESPONSE
 
     def _get_resource_map(self, resource_type):
         """ Base on resource type
@@ -462,3 +517,20 @@ class CollectingManager(BaseManager):
                 return found_resource, total_count
 
         return found_resource, total_count
+
+    ########################
+    # Asynchronous DB Update
+    ########################
+    def _create_db_update_task(self, res, param):
+        """ Create Asynchronous Task
+        """
+        try:
+            # Push Queue
+            task = {'res': res, 'param': param, 'meta': self.transaction.meta}
+            json_task = json.dumps(task)
+            queue.put(self.db_queue, json_task)
+            return True
+        except Exception as e:
+            _LOGGER.error(f'[_create_db_update_task] {e}')
+            return False
+
