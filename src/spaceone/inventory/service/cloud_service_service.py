@@ -213,8 +213,8 @@ class CloudServiceService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region'}, key_path='query.only')
-    @append_query_filter(['cloud_service_id', 'cloud_service_type', 'cloud_service_group', 'group',
-                          'state', 'region_code', 'region_type', 'project_id', 'domain_id'])
+    @append_query_filter(['cloud_service_id', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
+                          'region_code', 'region_type', 'project_id', 'domain_id'])
     @append_keyword_filter(['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
                             'reference.resource_id', 'project_id'])
     def list(self, params):
@@ -222,10 +222,10 @@ class CloudServiceService(BaseService):
         Args:
             params (dict): {
                     'cloud_service_id': 'str',
+                    'state': 'str',
                     'cloud_service_type': 'str',
                     'cloud_service_group': 'str',
                     'provider': 'str',
-                    'state': 'str',
                     'region_code': 'str',
                     'region_type': 'str',
                     'project_id': 'str',
