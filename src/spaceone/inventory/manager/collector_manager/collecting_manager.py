@@ -310,7 +310,7 @@ class CollectingManager(BaseManager):
         """
         # update meta
         domain_id = params['domain_id']
-        resource_type = result['resource_type']
+        resource_type = resource['resource_type']
         data = resource['resource']
 
         _LOGGER.debug(f'[_process_single_result] {resource_type}')
@@ -383,7 +383,7 @@ class CollectingManager(BaseManager):
                                    e.message,
                                    {'resource_type': resource_type, 'resource_id': res_id}
                                    )
- 
+
         except Exception as e:
             # TODO: create error message
             _LOGGER.debug(f'[_process_single_result] service error: {svc}, {e}')
