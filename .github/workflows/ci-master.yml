@@ -31,9 +31,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - name: pull docker image
-        run: |
-          docker pull ${{ env.IMAGE_PREFIX }}/${{ env.SERVICE }}
       - name: Upload docker
         uses: docker/build-push-action@v1
         with:
