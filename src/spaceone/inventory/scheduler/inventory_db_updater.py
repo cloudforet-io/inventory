@@ -30,7 +30,14 @@ class InventoryDBUpdater(BaseWorker):
                 # Create Transaction
                 collecting_mgr.transaction = Transaction(resource_info['meta'])
                 # processing
-                collecting_mgr._process_single_result(resource_info['res'], resource_info['param'])
+                method = resource_info['method']
+                if method == '_process_single_result':
+                    collecting_mgr._process_single_result(resource_info['res'], resource_info['param'])
+                elif method == '_watchdog_job_task_stat':
+                    collecting_mgr._watchdog_job_task_stat(resource_info['param'])
+                else:
+                    _LOGGER.error(f'Unknown request: {resource_info}')
+
             except Exception as e:
                 _LOGGER.error(f'[{self._name_}] failed to processing: {e}')
                 continue
