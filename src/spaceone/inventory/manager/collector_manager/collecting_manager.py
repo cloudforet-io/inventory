@@ -54,6 +54,8 @@ DB_QUEUE_NAME = 'db_q'
 CREATED = 1
 UPDATED = 2
 ERROR = 3
+JOB_TASK_STAT_EXPIRE_TIME = 3600            # 1 hour
+WATCHDOG_WAITING_TIME = 30                  # wait 30 seconds, before watchdog works
 
 #################################################
 # Collecting Resource and Update DB
@@ -246,18 +248,22 @@ class CollectingManager(BaseManager):
         failure = 0
 
         idx = 0
+        params = {
+            'domain_id': domain_id,
+            'job_id': job_id,
+            'job_task_id': job_task_id,
+            'collector_id': collector_id,
+            'secret_id': secret_id
+        }
+        _LOGGER.debug(f'[_process_results] processing results')
+        if self.use_db_queue:
+            self._create_job_task_stat_cache(job_id, job_task_id, domain_id)
+
         for res in results:
             try:
-                params = {
-                    'domain_id': domain_id,
-                    'job_id': job_id,
-                    'job_task_id': job_task_id,
-                    'collector_id': collector_id,
-                    'secret_id': secret_id
-                }
                 res_dict = MessageToDict(res, preserving_proto_field_name=True)
-
                 idx += 1
+                _LOGGER.debug(f'[_process_results] idx: {idx}')
                 ######################################
                 # Asynchronous DB Updater (using Queue)
                 ######################################
@@ -284,6 +290,12 @@ class CollectingManager(BaseManager):
             except Exception as e:
                 _LOGGER.error(f'[_process_results] failed single result {e}')
 
+        # Add watchdog for stat finalizing
+        if self.use_db_queue:
+            _LOGGER.debug(f'[_process_results] push watchdog, {job_task_id}')
+            pushed = self._create_db_update_task_watchdog(idx, job_id, job_task_id, domain_id)
+
+        _LOGGER.debug(f'[_process_results] number of idx: {idx}')
         # Update JobTask
         return {
             'total_count': idx,
@@ -373,8 +385,12 @@ class CollectingManager(BaseManager):
                 # Ambiguous
                 # TODO: duplicate
                 _LOGGER.debug(f'[_process_single_result] Too many resources matched. (count={total_count})')
+                _LOGGER.debug(f'[_process_single_result] resource from collector: {resource}')
                 _LOGGER.warning(f'[_process_single_result] match_rules: {match_rules}')
                 response = ERROR
+
+            if self.use_db_queue:
+                self._update_job_task_stat_to_cache(job_id, job_task_id, response, domain_id)
 
         except ERROR_BASE as e:
             job_task_mgr = self.locator.get_manager('JobTaskManager')
@@ -389,8 +405,7 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(f'[_process_single_result] service error: {svc}, {e}')
             response = ERROR
         finally:
-            # Update statistics
-            return RESPONSE
+            return response
 
     def _get_resource_map(self, resource_type):
         """ Base on resource type
@@ -442,6 +457,91 @@ class CollectingManager(BaseManager):
         else:
             _LOGGER.error(f'[_update_job_task] undefined state: {state}')
             job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
+
+    def _create_job_task_stat_cache(self, job_id, job_task_id, domain_id):
+        """ Update to cache
+        Args:
+            - kind: CREATED | UPDATED | ERROR
+        cache key
+            - job_task_stat:<job_id>:<job_task_id>:created = N
+            - job_task_stat:<job_id>:<job_task_id>:updated = M
+            - job_task_stat:<job_id>:<job_task_id<:failure = X
+        """
+        cache.set("test-cache", {'a': 1}, expire=JOB_TASK_STAT_EXPIRE_TIME)
+        try:
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:CREATED'
+            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME, data_format='int')
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:UPDATED'
+            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME, data_format='int')
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
+            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME, data_format='int')
+        except Exception as e:
+            _LOGGER.error(f'[_create_job_task_stat_cache] {e}')
+
+
+    def _update_job_task_stat_to_cache(self, job_id, job_task_id, kind, domain_id):
+        """ Update to cache
+        Args:
+            - kind: CREATED | UPDATED | ERROR
+        cache key
+            - job_task_stat:<job_id>:<job_task_id>:created = N
+            - job_task_stat:<job_id>:<job_task_id>:updated = M
+            - job_task_stat:<job_id>:<job_task_id<:failure = X
+        """
+        if kind == CREATED:
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:CREATED'
+        elif kind == UPDATED:
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:UPDATED'
+        elif kind == ERROR:
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
+        cache.increment(key)
+        print("#" * 100)
+        print(f"update_cache {key}")
+        time.sleep(10)
+
+    def _watchdog_job_task_stat(self, param):
+        """ WatchDog for cache stat
+        Update to DB
+        param = {
+            'job_id': job_id,
+            'job_task_id': job_task_id,
+            'domain_id': domain_id,
+            'total_count': total_count
+            }
+        """
+        # Wait a little, may be working task exist
+        time.sleep(WATCHDOG_WAITING_TIME)
+        domain_id = param['domain_id']
+        job_id = param['job_id']
+        job_task_id = param['job_task_id']
+
+        try:
+            key_created = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:CREATED'
+            value_created = cache.get(key_created, data_format='int')
+            cache.delete(key_created)
+        except:
+            value_created = 0
+        try:
+            key_updated = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:UPDATED'
+            value_updated = cache.get(key_updated, data_format='int')
+            cache.delete(key_updated)
+        except:
+            value_updated = 0
+        try:
+            key_failure = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
+            value_failure = cache.get(key_failure, data_format='int')
+            cache.delete(key_failure)
+        except:
+            value_failure = 0
+        # Update to DB
+        stat_result = {
+            'total_count': param['total_count'],
+            'created_count': value_created,
+            'updated_count': value_updated,
+            'failure_count': value_failure
+        }
+        job_task_mgr = self.locator.get_manager('JobTaskManager')
+        job_task_mgr.update_stat(job_task_id, stat_result, domain_id)
 
 
     ######################
@@ -511,7 +611,7 @@ class CollectingManager(BaseManager):
 
         for order in sorted(match_order):
             query = rule_matcher.make_query(order, match_rules, resource, domain_id)
-            _LOGGER.debug(f'[_query_with_match_rules] query generated: {query}')
+            _LOGGER.error(f'[_query_with_match_rules] query generated: {query}')
             found_resource, total_count = mgr.find_resources(query)
             if found_resource and total_count == 1:
                 return found_resource, total_count
@@ -526,11 +626,25 @@ class CollectingManager(BaseManager):
         """
         try:
             # Push Queue
-            task = {'res': res, 'param': param, 'meta': self.transaction.meta}
+            task = {'method': '_process_single_result', 'res': res, 'param': param, 'meta': self.transaction.meta}
             json_task = json.dumps(task)
             queue.put(self.db_queue, json_task)
             return True
         except Exception as e:
             _LOGGER.error(f'[_create_db_update_task] {e}')
+            return False
+
+    def _create_db_update_task_watchdog(self, total_count, job_id, job_task_id, domain_id):
+        """ Create Asynchronous Task
+        """
+        try:
+            # Push Queue
+            param = {'job_id': job_id, 'job_task_id': job_task_id, 'domain_id': domain_id, 'total_count': total_count}
+            task = {'method': '_watchdog_job_task_stat', 'res': {}, 'param': param, 'meta': self.transaction.meta}
+            json_task = json.dumps(task)
+            queue.put(self.db_queue, json_task)
+            return True
+        except Exception as e:
+            _LOGGER.error(f'[_create_db_update_task_watchdog] {e}')
             return False
 
