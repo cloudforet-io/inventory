@@ -19,7 +19,7 @@ class JobTaskManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.job_task_model: JobTask = self.locator.get_model('JobTask')
 
-    def create_job_task(self, job_vo, domain_id):
+    def create_job_task(self, job_vo, secret_info, domain_id):
         def _rollback(job_task_vo):
             _LOGGER.info(f'[ROLLBACK] Delete job_task: {job_task_vo.job_task_id}')
             job_task_vo.delete()
@@ -28,6 +28,7 @@ class JobTaskManager(BaseManager):
             'job_id': job_vo.job_id,
             'domain_id': domain_id
         }
+        params.update(secret_info)
         job_task_vo: JobTask = self.job_task_model.create(params)
 
         self.transaction.add_rollback(_rollback, job_task_vo)
