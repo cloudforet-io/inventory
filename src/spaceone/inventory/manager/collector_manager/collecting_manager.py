@@ -51,6 +51,7 @@ SERVICE_MAP = {
 }
 
 DB_QUEUE_NAME = 'db_q'
+NOT_COUNT = 0
 CREATED = 1
 UPDATED = 2
 ERROR = 3
@@ -280,11 +281,14 @@ class CollectingManager(BaseManager):
                 # If you here, processing in worker
                 #####################################
                 res_state = self._process_single_result(res_dict, params)
-                if res_state == 1:
+                if res_state == NOT_COUNT:
+                    pass
+                elif res_state == CREATED:
                     created += 1
-                elif res_state == 2:
+                elif res_state == UPDATED:
                     updated += 1
                 else:
+                    # FAILURE
                     failure += 1
 
             except Exception as e:
@@ -316,6 +320,7 @@ class CollectingManager(BaseManager):
                     'secret_id': 'str'
                 }
             Returns:
+                0: exclude at stat (for example, cloud_service_type)
                 1: created
                 2: updated
                 3: error
@@ -405,6 +410,8 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(f'[_process_single_result] service error: {svc}, {e}')
             response = ERROR
         finally:
+            if resource_type == 'inventory.CloudServiceType':
+                response = NOT_COUNT
             return response
 
     def _get_resource_map(self, resource_type):
