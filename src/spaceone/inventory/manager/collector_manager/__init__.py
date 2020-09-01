@@ -235,6 +235,7 @@ class CollectorManager(BaseManager):
             _LOGGER.debug(f'[collect] fail to change {collector_id} job state to in-progress')
 
         # Loop all secret_list
+        self.secret_mgr = self.locator.get_manager('SecretManager')
         for secret_id in secret_list:
             # Do collect per secret
             try:
@@ -244,7 +245,8 @@ class CollectorManager(BaseManager):
                 job_mgr.increase_remained_tasks_by_vo(created_job)
 
                 # Create JobTask
-                job_task_vo = job_task_mgr.create_job_task(created_job, domain_id)
+                secret_info = self._get_secret_info(secret_id, domain_id)
+                job_task_vo = job_task_mgr.create_job_task(created_job, secret_info, domain_id)
 
                 req_params = self._make_collecting_parameters(collector_dict=collector_dict,
                                                               secret_id=secret_id,
@@ -404,3 +406,20 @@ class CollectorManager(BaseManager):
             params['filters'] = params['filter']
             del params['filter']
         return params
+
+    def _get_secret_info(self, secret_id, domain_id):
+        secret = self.secret_mgr.get_secret(secret_id, domain_id)
+        # Update Secret also
+        secret_info = {}
+        if secret:
+            secret_info.update({'secret_id': secret['secret_id']})
+            provider = secret.get('provider', None)
+            service_account_id = secret.get('service_account_id', None)
+            project_id = secret.get('project_id', None)
+            if provider:
+                secret_info.update({'provider': provider})
+            if service_account_id:
+                secret_info.update({'service_account_id': service_account_id})
+            if project_id:
+                secret_info.update({'project_id': project_id})
+        return secret_info
