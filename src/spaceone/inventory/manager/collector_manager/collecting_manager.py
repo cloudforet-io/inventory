@@ -67,6 +67,9 @@ class CollectingManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.secret = None      # secret info for update meta
         self.initialize()
+        self.job_mgr = self.locator.get_manager('JobManager')
+        self.job_task_mgr = self.locator.get_manager('JobTaskManager')
+
 
     def initialize(self):
         _LOGGER.debug(f'[initialize] initialize Worker configuration')
@@ -98,15 +101,12 @@ class CollectingManager(BaseManager):
         """
 
         # Check Job State first, if job state is canceled, stop process
-        job_mgr = self.locator.get_manager('JobManager')
-        job_task_mgr = self.locator.get_manager('JobTaskManager')
-
         job_task_id = kwargs['job_task_id']
 
         job_id = kwargs['job_id']
-        job_vo = job_mgr.get(job_id, domain_id)
-        if job_mgr.should_cancel(job_id, domain_id):
-            job_mgr.decrease_remained_tasks(job_id, domain_id)
+        job_vo = self.job_mgr.get(job_id, domain_id)
+        if self.job_mgr.should_cancel(job_id, domain_id):
+            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             self._update_job_task(job_task_id, 'FAILURE', domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
@@ -136,23 +136,23 @@ class CollectingManager(BaseManager):
 
         except ERROR_BASE as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
-            job_task_mgr.add_error(job_task_id, domain_id,
+            self.job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
                                    {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
-            job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
 
 
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
-            job_task_mgr.add_error(job_task_id, domain_id,
+            self.job_task_mgr.add_error(job_task_id, domain_id,
                                    'ERROR_COLLECTOR_SECRET',
                                    e,
                                    {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
-            job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
 
         try:
@@ -171,21 +171,21 @@ class CollectingManager(BaseManager):
 
         except ERROR_BASE as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
-            job_task_mgr.add_error(job_task_id, domain_id,
+            self.job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
                                    {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
-            job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
 
         except Exception as e:
-            job_task_mgr.add_error(job_task_id, domain_id,
+            self.job_task_mgr.add_error(job_task_id, domain_id,
                                    'ERROR_COLLECTOR_COLLECTING',
                                    e,
                                    {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
-            job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
 
         ##############################################################
@@ -193,6 +193,9 @@ class CollectingManager(BaseManager):
         # Type 1: use_db_queue == False, processing synchronously
         # Type 2: use_db_queue == True, processing asynchronously
         ##############################################################
+        JOB_TASK_STATE = 'SUCCESS'
+        stat  = {}
+        ERROR = False
         try:
             stat = self._process_results(results,
                                   job_id,
@@ -203,31 +206,40 @@ class CollectingManager(BaseManager):
                                   )
             if stat['failure_count'] > 0:
                 JOB_TASK_STATE = 'FAILURE'
-            else:
-                JOB_TASK_STATE = 'SUCCESS'
-            # Update Statistics of JobTask
-            self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, stat=stat)
 
         except ERROR_BASE as e:
             _LOGGER.error(f'[collecting_resources] {e}')
-            job_task_mgr.add_error(job_task_id, domain_id,
+            self.job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
                                    {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
-            self._update_job_task(job_task_id, 'FAILURE', domain_id)
+            JOB_TASK_STATE = 'FAILURE'
+            ERROR = True
 
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] {e}')
-            job_task_mgr.add_error(job_task_id, domain_id,
+            self.job_task_mgr.add_error(job_task_id, domain_id,
                                    'ERROR_COLLECTOR_COLLECTING',
                                    e,
                                    {'resource_type': 'secret.Secret', 'resource_id': secret_id}
                                    )
-            self._update_job_task(job_task_id, 'FAILURE', domain_id)
+            JOB_TASK_STATE = 'FAILURE'
+            ERROR = True
 
         finally:
-            job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
+            if self.use_db_queue and ERROR == False:
+                # WatchDog will finalize the task
+                # if ERROR occurred, there is no data to processing
+                pass
+            else:
+                if self.use_db_queue:
+                    # delete cache
+                    self._delete_job_task_stat_cache(job_id, job_task_id, domain_id)
+                # Update Statistics of JobTask
+                self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, stat=stat)
+                # Update Job
+                self.job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
         return True
 
@@ -392,14 +404,18 @@ class CollectingManager(BaseManager):
                 _LOGGER.debug(f'[_process_single_result] Too many resources matched. (count={total_count})')
                 _LOGGER.debug(f'[_process_single_result] resource from collector: {resource}')
                 _LOGGER.warning(f'[_process_single_result] match_rules: {match_rules}')
+                self.job_task_mgr.add_error(job_task_id, domain_id,
+                                       "TOO MANY RESOURCES MATCH",
+                                       str(resource),
+                                       {'resource_type': resource_type, 'resource_id': res_id}
+                                       )
                 response = ERROR
 
             if self.use_db_queue:
                 self._update_job_task_stat_to_cache(job_id, job_task_id, response, domain_id)
 
         except ERROR_BASE as e:
-            job_task_mgr = self.locator.get_manager('JobTaskManager')
-            job_task_mgr.add_error(job_task_id, domain_id,
+            self.job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
                                    {'resource_type': resource_type, 'resource_id': res_id}
@@ -416,7 +432,6 @@ class CollectingManager(BaseManager):
 
     def _get_resource_map(self, resource_type):
         """ Base on resource type
-
         Returns: (service, manager)
         """
         if resource_type not in RESOURCE_MAP:
@@ -436,7 +451,6 @@ class CollectingManager(BaseManager):
         - started_time
         - secret_info
         """
-        job_task_mgr = self.locator.get_manager('JobTaskManager')
 
         # Update Secret also
         secret_info = None
@@ -456,14 +470,14 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(f'[_update_job_task] secret_info: {secret_info}')
 
         if state == 'IN_PROGRESS':
-            job_task_mgr.make_inprogress(job_task_id, domain_id, secret_info, stat)
+            self.job_task_mgr.make_inprogress(job_task_id, domain_id, secret_info, stat)
         elif state == 'SUCCESS':
-            job_task_mgr.make_success(job_task_id, domain_id, secret_info, stat)
+            self.job_task_mgr.make_success(job_task_id, domain_id, secret_info, stat)
         elif state == 'FAILURE':
-            job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
+            self.job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
         else:
             _LOGGER.error(f'[_update_job_task] undefined state: {state}')
-            job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
+            self.job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
 
     def _create_job_task_stat_cache(self, job_id, job_task_id, domain_id):
         """ Update to cache
@@ -474,17 +488,34 @@ class CollectingManager(BaseManager):
             - job_task_stat:<job_id>:<job_task_id>:updated = M
             - job_task_stat:<job_id>:<job_task_id<:failure = X
         """
-        cache.set("test-cache", {'a': 1}, expire=JOB_TASK_STAT_EXPIRE_TIME)
         try:
             key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:CREATED'
-            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME, data_format='int')
+            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME)
             key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:UPDATED'
-            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME, data_format='int')
+            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME)
             key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
-            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME, data_format='int')
+            cache.set(key, 0, expire=JOB_TASK_STAT_EXPIRE_TIME)
         except Exception as e:
             _LOGGER.error(f'[_create_job_task_stat_cache] {e}')
 
+    def _delete_job_task_stat_cache(self, job_id, job_task_id, domain_id):
+        """ Delete cache
+        Args:
+            - kind: CREATED | UPDATED | ERROR
+        cache key
+            - job_task_stat:<job_id>:<job_task_id>:created = N
+            - job_task_stat:<job_id>:<job_task_id>:updated = M
+            - job_task_stat:<job_id>:<job_task_id<:failure = X
+        """
+        try:
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:CREATED'
+            cache.delete(key)
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:UPDATED'
+            cache.delete(key)
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
+            cache.delete(key)
+        except Exception as e:
+            _LOGGER.error(f'[_delete_job_task_stat_cache] {e}')
 
     def _update_job_task_stat_to_cache(self, job_id, job_task_id, kind, domain_id):
         """ Update to cache
@@ -502,13 +533,11 @@ class CollectingManager(BaseManager):
         elif kind == ERROR:
             key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
         cache.increment(key)
-        print("#" * 100)
-        print(f"update_cache {key}")
-        time.sleep(10)
 
     def _watchdog_job_task_stat(self, param):
         """ WatchDog for cache stat
-        Update to DB
+        1) Update to DB
+        2) Update JobTask status
         param = {
             'job_id': job_id,
             'job_task_id': job_task_id,
@@ -517,6 +546,7 @@ class CollectingManager(BaseManager):
             }
         """
         # Wait a little, may be working task exist
+        _LOGGER.debug(f'[_watchdog_job_task_stat] WatchDog Start: {param["job_task_id"]}')
         time.sleep(WATCHDOG_WAITING_TIME)
         domain_id = param['domain_id']
         job_id = param['job_id']
@@ -524,19 +554,19 @@ class CollectingManager(BaseManager):
 
         try:
             key_created = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:CREATED'
-            value_created = cache.get(key_created, data_format='int')
+            value_created = cache.get(key_created)
             cache.delete(key_created)
         except:
             value_created = 0
         try:
             key_updated = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:UPDATED'
-            value_updated = cache.get(key_updated, data_format='int')
+            value_updated = cache.get(key_updated)
             cache.delete(key_updated)
         except:
             value_updated = 0
         try:
             key_failure = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
-            value_failure = cache.get(key_failure, data_format='int')
+            value_failure = cache.get(key_failure)
             cache.delete(key_failure)
         except:
             value_failure = 0
@@ -547,9 +577,19 @@ class CollectingManager(BaseManager):
             'updated_count': value_updated,
             'failure_count': value_failure
         }
-        job_task_mgr = self.locator.get_manager('JobTaskManager')
-        job_task_mgr.update_stat(job_task_id, stat_result, domain_id)
-
+        _LOGGER.debug(f'[_watchdog_job_task_stat] stat: {stat_result}')
+        try:
+            if stat_result['failure_count'] > 0:
+                JOB_TASK_STATE = 'FAILURE'
+            else:
+                JOB_TASK_STATE = 'SUCCESS'
+            self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, stat=stat_result)
+        except Exception as e:
+            # error
+            pass
+        finally:
+            # Close remained task
+            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
 
     ######################
     # Internal
