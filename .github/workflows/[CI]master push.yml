@@ -1,4 +1,4 @@
-name: SpaceONE CI commit push
+name: "[CI]master push"
 on:
   push:
     branches:
@@ -6,36 +6,39 @@ on:
   workflow_dispatch:
 
 env:
-  IMAGE_PREFIX: pyengine
+  ORGANIZATION: pyengine
   SERVICE: inventory
-  LOCATION_VERSION: src # the location for VERSION file (ex- . means the location of VERSION is ./VERSION)
-  LOCATION_DOCKERFILE: .
+
 
 jobs:
-  initialize:
+  versioning:
     runs-on: ubuntu-latest
     outputs:
       version: ${{ steps.job1.outputs.VERSION }}
     steps:
       - uses: actions/checkout@v2
+      - name: calculate current date
+        run: |
+          sudo ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
+          echo "::set-env name=TIME::$(date +'%Y%m%d.%H%M%S')"
       - name: calculate_version
         id: job1
         run: |
-          echo "::set-output name=VERSION::$(cat $LOCATION_VERSION/VERSION).${{ github.run_id }}"
+          echo "::set-output name=VERSION::$(cat src/VERSION | cut -c 2-).${{ env.TIME }}"
 
   docker:
     if: github.repository_owner == 'spaceone-dev'
-    needs: initialize
+    needs: versioning
     env:
-      VERSION: ${{ needs.initialize.outputs.version }}
+      VERSION: ${{ needs.versioning.outputs.version }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - name: Upload docker
         uses: docker/build-push-action@v1
         with:
-          path: ${{ env.LOCATION_DOCKERFILE }}
-          repository: ${{ env.IMAGE_PREFIX }}/${{ env.SERVICE }}
+          path: .
+          repository: ${{ env.ORGANIZATION }}/${{ env.SERVICE }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           tags: latest,${{ env.VERSION }}
