@@ -75,8 +75,12 @@ class InventoryHourlyScheduler(HourlyScheduler):
         schedules = self.list_schedules()
         result = []
         for schedule in schedules:
-            stp = self._create_job_request(schedule)
-            result.append(stp)
+            try:
+                stp = self._create_job_request(schedule)
+                result.append(stp)
+            except Exception as e:
+                _LOGGER.error(f'[create_task] check schedule {schedule}')
+
         return result
 
     def list_schedules(self):
