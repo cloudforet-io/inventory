@@ -357,6 +357,23 @@ class CollectingManager(BaseManager):
         ##################################
         # Match rules
         ##################################
+        job_id = params['job_id']
+        job_task_id = params['job_task_id']
+        response = ERROR
+        res_id = "Unknown"
+
+        if match_rules == {}:
+            # There may be no match rule, collector error
+            _LOGGER.error(f'[_process_single_result] may be bug, no match rule: {resource}')
+            self.job_task_mgr.add_error(job_task_id, domain_id,
+                                   "Exception",
+                                   f"No match rule found: {resource}",
+                                   {'resource_type': resource_type, 'resource_id': res_id}
+                                   )
+            if self.use_db_queue:
+                self._update_job_task_stat_to_cache(job_id, job_task_id, ERROR, domain_id)
+            return ERROR
+
         start = time.time()
         try:
             res_info, total_count = self._query_with_match_rules(data,
@@ -365,10 +382,23 @@ class CollectingManager(BaseManager):
                                                                  mgr
                                                                  )
             _LOGGER.debug(f'[_process_single_result] matched resources count = {total_count}')
+        except ERROR_TOO_MANY_MATCH as e:
+            _LOGGER.error(f'[_process_single_result] too many match')
+            self.job_task_mgr.add_error(job_task_id, domain_id,
+                                   e.error_code,
+                                   e.message,
+                                   {'resource_type': resource_type, 'resource_id': res_id}
+                                   )
+            total_count = ERROR
         except Exception as e:
             _LOGGER.error(f'[_process_single_result] failed to match: {e}')
             _LOGGER.warning(f'[_process_single_result] assume new resource, create')
-            total_count = 0
+            self.job_task_mgr.add_error(job_task_id, domain_id,
+                                   "Exception",
+                                   "Match Query failed, may be DB proble",
+                                   {'resource_type': resource_type, 'resource_id': res_id}
+                                   )
+            total_count = ERROR
 
         end = time.time()
         diff = end - start
@@ -377,11 +407,7 @@ class CollectingManager(BaseManager):
         #########################################
         # Create / Update to DB
         #########################################
-        response = ERROR
-        res_id = "Unknown"
         try:
-            job_id = params['job_id']
-            job_task_id = params['job_task_id']
             # For book-keeping
             if total_count == 0:
                 # Create
@@ -400,21 +426,15 @@ class CollectingManager(BaseManager):
 
             elif total_count > 1:
                 # Ambiguous
-                # TODO: duplicate
-                _LOGGER.debug(f'[_process_single_result] Too many resources matched. (count={total_count})')
-                _LOGGER.debug(f'[_process_single_result] resource from collector: {resource}')
-                _LOGGER.warning(f'[_process_single_result] match_rules: {match_rules}')
-                self.job_task_mgr.add_error(job_task_id, domain_id,
-                                       "TOO MANY RESOURCES MATCH",
-                                       str(resource),
-                                       {'resource_type': resource_type, 'resource_id': res_id}
-                                       )
+                _LOGGER.error(f'[_process_single_result] will not reach here!')
+                # This is raise at _query_with_match_rules
                 response = ERROR
 
             if self.use_db_queue:
                 self._update_job_task_stat_to_cache(job_id, job_task_id, response, domain_id)
 
         except ERROR_BASE as e:
+            # May be DB error
             self.job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
@@ -662,7 +682,14 @@ class CollectingManager(BaseManager):
             found_resource, total_count = mgr.find_resources(query)
             if found_resource and total_count == 1:
                 return found_resource, total_count
-
+            if total_count > 0:
+                # Raise Error, for detailed tracking
+                if 'data' in resource:
+                    data = resource['data']
+                else:
+                    data = resource
+                raise ERROR_TOO_MANY_MATCH(match_key=match_rules[order], resources=found_resource, more=data)
+        # total_count == 0
         return found_resource, total_count
 
     ########################

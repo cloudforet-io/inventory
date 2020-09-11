@@ -76,3 +76,6 @@ class ERROR_INVALID_PLUGIN_OPTIONS(ERROR_INTERNAL_API):
 
 class ERROR_RESOURCE_KEYS_NOT_DEFINED(ERROR_BASE):
     _message = "{resource_type} manager does not define resource_keys field"
+
+class ERROR_TOO_MANY_MATCH(ERROR_BASE):
+    _message = "match_key: {match_key}, matched_resources: {resources}, more: {more}"
