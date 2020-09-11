@@ -102,7 +102,10 @@ class ResourceManager(object):
         self.transaction.add_rollback(_rollback, resource_vo.to_dict())
         params = resource_vo.to_dict()['collection_info']
         params.update({'state': state})
-        return resource_vo.update({'collection_info': params})
+        if state == "DISCONNECTED" or state == "DELETED":
+            return resource_vo.update({'collection_info': params, 'updated_at': resource_vo.updated_at})
+        else:
+            return resource_vo.update({'collection_info': params})
 
     def _check_resource_finder_state(self):
         if not (self.resource_keys and self.query_method):
