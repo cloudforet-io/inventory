@@ -294,7 +294,7 @@ class CollectorManager(BaseManager):
                 _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
 
         # Update Timestamp
-        #self._update_last_collected_time(collector_vo.collector_id, domain_id)
+        self._update_last_collected_time(collector_vo.collector_id, domain_id)
         return created_job
 
     def _update_last_collected_time(self, collector_id, domain_id):
