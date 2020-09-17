@@ -13,7 +13,8 @@ RUN GRPC_HEALTH_PROBE_VERSION=v0.3.1 && \
     chmod +x /bin/grpc_health_probe
 
 RUN pip install --upgrade pip && \
-    pip install --upgrade --pre -r ${PKG_DIR}/pip_requirements.txt
+    pip install --upgrade -r ${PKG_DIR}/pip_requirements.txt && \
+    pip install --upgrade --pre spaceone-core spaceone-api
 
 COPY src ${SRC_DIR}
 
