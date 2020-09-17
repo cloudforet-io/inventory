@@ -76,7 +76,7 @@ class Collector(MongoModel):
 
 class Scheduled(EmbeddedDocument):
     cron = StringField(max_length=1024)
-    interval = IntField(min_value=1, max_value=60)
+    interval = IntField(min_value=1, max_value=3600)
     minutes = ListField()
     hours = ListField()
 
