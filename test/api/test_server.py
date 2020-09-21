@@ -347,6 +347,7 @@ class TestServer(unittest.TestCase):
         self.test_create_server(name, meta=(
             ('job_id', utils.generate_id('job')),
             ('collector_id', utils.generate_id('collector')),
+            ('plugin_id', utils.generate_id('plugin')),
             ('secret.secret_id', utils.generate_id('secret')),
             ('secret.service_account_id', utils.generate_id('sa')),
             ('secret.project_id', self.project.project_id),
@@ -440,7 +441,8 @@ class TestServer(unittest.TestCase):
             metadata=(
                 ('token', self.token),
                 ('job_id', utils.generate_id('job')),
-                ('collector_id', utils.generate_id('collector')),
+                # ('collector_id', utils.generate_id('collector')),
+                # ('plugin_id', utils.generate_id('plugin')),
                 ('secret.secret_id', utils.generate_id('secret')),
                 ('secret.service_account_id', utils.generate_id('sa')),
                 ('secret.project_id', self.project.project_id),
@@ -455,6 +457,9 @@ class TestServer(unittest.TestCase):
                 'data': {
                     'hardware': {
                         'core': 12
+                    },
+                    'route': {
+                        'default_gateway': '192.168.0.1'
                     },
                     'compute': {
                         'instance_id': 'i-' + random_string()[0:12],
@@ -512,7 +517,8 @@ class TestServer(unittest.TestCase):
             metadata=(
                 ('token', self.token),
                 ('job_id', utils.generate_id('job')),
-                ('collector_id', utils.generate_id('collector')),
+                # ('plugin_id', utils.generate_id('plugin')),
+                # ('collector_id', utils.generate_id('collector')),
                 ('secret.secret_id', utils.generate_id('secret')),
                 ('secret.service_account_id', utils.generate_id('sa')),
                 ('secret.project_id', self.project.project_id),

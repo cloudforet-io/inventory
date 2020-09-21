@@ -23,7 +23,7 @@ class CollectionDataManager(BaseManager):
         self.exclude_keys = []
         self.collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         self.job_id = self.transaction.get_meta('job_id')
-        self.collector_id = self.transaction.get_meta('collector_id')
+        self.updated_by = self.transaction.get_meta('collector_id') or 'manual'
         self.plugin_id = self.transaction.get_meta('plugin_id')
         self.update_mode = self.transaction.get_meta('update_mode') or 'REPLACE'
         self.secret_id = self.transaction.get_meta('secret.secret_id')
@@ -36,8 +36,10 @@ class CollectionDataManager(BaseManager):
         all_service_accounts = []
         all_secrets = []
 
-        if self.collector_id:
-            all_collectors.append(self.collector_id)
+        if self.updated_by == 'manual':
+            state = 'MANUAL'
+        else:
+            all_collectors.append(self.updated_by)
             state = 'ACTIVE'
 
             if self.service_account_id:
@@ -46,9 +48,7 @@ class CollectionDataManager(BaseManager):
             if self.secret_id:
                 all_secrets.append(self.secret_id)
 
-        else:
-            self.collector_id = 'MANUAL'
-            state = 'MANUAL'
+        resource_data = self._change_metadata_path(resource_data)
 
         self._create_data_history(resource_data)
 
@@ -60,33 +60,47 @@ class CollectionDataManager(BaseManager):
             'change_history': self._make_change_history(self.change_history)
         }
 
-        return collection_info
+        resource_data['collection_info'] = collection_info
+
+        return resource_data
+
+    def _change_metadata_path(self, resource_data):
+        if 'metadata' in resource_data:
+            if self.updated_by == 'manual':
+                resource_data['metadata'] = {
+                    'manual': copy.deepcopy(resource_data['metadata'])
+                }
+            elif self.plugin_id:
+                resource_data['metadata'] = {
+                    self.plugin_id: copy.deepcopy(resource_data['metadata'])
+                }
+            else:
+                del resource_data['metadata']
+
+        return resource_data
 
     def _set_data_history(self, key, data):
         if key in self.exclude_keys:
             self._update_merge_data(key, data)
         else:
-            updated_by = self.collector_id
-            if updated_by == 'MANUAL':
+            if self.updated_by == 'manual':
                 priority = 1
             else:
-                priority = self.collector_priority.get(updated_by, _DEFAULT_PRIORITY)
+                priority = self.collector_priority.get(self.updated_by, _DEFAULT_PRIORITY)
 
             self.change_history[key] = {
                 'priority': priority,
                 'data': data,
                 'job_id': self.job_id,
-                'updated_by': updated_by,
+                'updated_by': self.updated_by,
                 'updated_at': self.updated_at
             }
 
     def _create_data_history(self, resource_data):
         for key, value in resource_data.items():
-            if key == 'data':
+            if key in ['data', 'metadata']:
                 for sub_key, sub_value in value.items():
-                    self._set_data_history(f'data.{sub_key}', sub_value)
-            elif key == 'metadata':
-                pass
+                    self._set_data_history(f'{key}.{sub_key}', sub_value)
             else:
                 self._set_data_history(key, value)
 
@@ -118,9 +132,9 @@ class CollectionDataManager(BaseManager):
         pinned_keys = collection_info.get('pinned_keys', [])
         state = collection_info['state']
 
-        if self.collector_id:
-            if self.collector_id not in all_secrets:
-                all_collectors.append(self.collector_id)
+        if self.updated_by != 'manual':
+            if self.updated_by not in all_secrets:
+                all_collectors.append(self.updated_by)
                 self.is_changed = True
 
             if self.service_account_id and self.service_account_id not in all_service_accounts:
@@ -134,9 +148,8 @@ class CollectionDataManager(BaseManager):
             if state != 'ACTIVE':
                 state = 'ACTIVE'
                 self.is_changed = True
-        else:
-            self.collector_id = 'MANUAL'
 
+        resource_data = self._change_metadata_path(resource_data)
         resource_data = self._exclude_data_by_pinned_keys(resource_data, pinned_keys)
 
         self._get_collector_priority(all_collectors)
@@ -144,9 +157,6 @@ class CollectionDataManager(BaseManager):
         self._load_old_data_history(old_data)
 
         self._merge_data_from_history(old_data)
-
-        if 'metadata' in resource_data and old_data['metadata'] != resource_data['metadata']:
-            self.merged_data['metadata'] = resource_data['metadata']
 
         updated_collection_info = {
             'state': state,
@@ -183,10 +193,11 @@ class CollectionDataManager(BaseManager):
                 self.old_history[key] = history_info
                 self._update_merge_data(key, new_value)
 
-        if len(self.merged_data.get('data', {}).keys()) > 0:
-            temp_data = old_data.get('data', {})
-            temp_data.update(self.merged_data['data'])
-            self.merged_data['data'] = temp_data
+        for key in ['data', 'metadata']:
+            if len(self.merged_data.get(key, {}).keys()) > 0:
+                temp_data = old_data.get(key, {})
+                temp_data.update(self.merged_data[key])
+                self.merged_data[key] = temp_data
 
     @staticmethod
     def _merge_old_and_new_value(old_value, new_value):
@@ -239,7 +250,10 @@ class CollectionDataManager(BaseManager):
             key_path, sub_key = key.split('.', 1)
             self.merged_data['data'] = self.merged_data.get('data', {})
             self.merged_data['data'][sub_key] = value
-
+        elif key.startswith('metadata.'):
+            key_path, sub_key = key.split('.', 1)
+            self.merged_data['metadata'] = self.merged_data.get('metadata', {})
+            self.merged_data['metadata'][sub_key] = value
         else:
             self.merged_data[key] = value
 
@@ -266,6 +280,7 @@ class CollectionDataManager(BaseManager):
             self.old_history[key] = {
                 'priority': self.collector_priority.get(updated_by, _DEFAULT_PRIORITY),
                 'data': self._get_data_from_history_key(old_data, key),
+                'diff': change_info.get('diff', {}),
                 'job_id': change_info.get('job_id'),
                 'updated_by': updated_by,
                 'updated_at': change_info['updated_at']
@@ -295,8 +310,8 @@ class CollectionDataManager(BaseManager):
         for key, history_info in change_history.items():
             history_output.append({
                 'key': key,
-                'job_id': history_info.get('job_id'),
                 'diff': history_info.get('diff', {}),
+                'job_id': history_info.get('job_id'),
                 'updated_by': history_info['updated_by'],
                 'updated_at': history_info['updated_at']
             })
