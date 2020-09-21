@@ -454,8 +454,7 @@ class TestServer(unittest.TestCase):
                 'server_id': self.server.server_id,
                 'data': {
                     'hardware': {
-                        'core': 12,
-                        'memory': 24
+                        'core': 12
                     },
                     'compute': {
                         'instance_id': 'i-' + random_string()[0:12],
@@ -517,7 +516,8 @@ class TestServer(unittest.TestCase):
                 ('secret.secret_id', utils.generate_id('secret')),
                 ('secret.service_account_id', utils.generate_id('sa')),
                 ('secret.project_id', self.project.project_id),
-                ('secret.provider', 'aws')
+                ('secret.provider', 'aws'),
+                ('update_mode', 'MERGE')
             ))
 
         server_data = MessageToDict(self.server, preserving_proto_field_name=True)

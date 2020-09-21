@@ -1,4 +1,5 @@
 import logging
+import copy
 from datetime import datetime
 
 from spaceone.core import utils
@@ -23,6 +24,8 @@ class CollectionDataManager(BaseManager):
         self.collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         self.job_id = self.transaction.get_meta('job_id')
         self.collector_id = self.transaction.get_meta('collector_id')
+        self.plugin_id = self.transaction.get_meta('plugin_id')
+        self.update_mode = self.transaction.get_meta('update_mode') or 'REPLACE'
         self.secret_id = self.transaction.get_meta('secret.secret_id')
         self.service_account_id = self.transaction.get_meta('secret.service_account_id')
         self.updated_at = datetime.utcnow()
@@ -166,6 +169,10 @@ class CollectionDataManager(BaseManager):
             if key in self.old_history:
                 old_priority = self.old_history[key]['priority']
                 old_value = self.old_history[key]['data']
+
+                if self.update_mode == 'MERGE':
+                    new_value = self._merge_old_and_new_value(old_value, new_value)
+
                 if new_priority <= old_priority and new_value != old_value:
                     history_info['diff'] = self._get_history_diff(old_value, new_value)
                     self.old_history[key] = history_info
@@ -180,6 +187,15 @@ class CollectionDataManager(BaseManager):
             temp_data = old_data.get('data', {})
             temp_data.update(self.merged_data['data'])
             self.merged_data['data'] = temp_data
+
+    @staticmethod
+    def _merge_old_and_new_value(old_value, new_value):
+        if isinstance(new_value, dict) and isinstance(old_value, dict):
+            new_temp_value = copy.deepcopy(old_value)
+            old_value.update(new_value)
+            return new_temp_value
+        else:
+            return new_value
 
     @staticmethod
     def _get_history_diff(old_data, new_data):
