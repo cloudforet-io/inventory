@@ -75,7 +75,10 @@ class CollectionDataManager(BaseManager):
                     self.plugin_id: copy.deepcopy(resource_data['metadata'])
                 }
             else:
-                del resource_data['metadata']
+                resource_data['metadata'] = {
+                    'manual': copy.deepcopy(resource_data['metadata'])
+                }
+                # del resource_data['metadata']
 
         return resource_data
 
