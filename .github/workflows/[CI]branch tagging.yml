@@ -91,10 +91,7 @@ jobs:
           git push --atomic origin ${{ env.BRANCH }} ${{ env.VERSION }}
       - name: task
         if: github.event_name == 'push'
-        uses: actions/checkout@v2
-        with:
-          ref: ${{ env.BRANCH }}
-      - run: |
+        run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
           git pull

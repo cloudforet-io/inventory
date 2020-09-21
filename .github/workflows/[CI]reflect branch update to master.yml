@@ -10,6 +10,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - name: check version format
+        run: |
+          if [[ !(${{ env.VERSION }} =~ ^v[0-9]\.[0-9]\.[0-9](.*)$) ]];
+            then exit 1
+          fi
       - name: get existing official version
         run: |
           echo "::set-env name=current::$(cat src/VERSION | cut -c 2-6)"
