@@ -46,10 +46,7 @@ class CloudServiceService(BaseService):
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
-
         domain_id = params['domain_id']
-
-        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         if provider:
             params['provider'] = provider
@@ -71,6 +68,8 @@ class CloudServiceService(BaseService):
             # SKIP Validation Check
             # self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
             params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
+
+        params = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         return self.cloud_svc_mgr.create_cloud_service(params)
 
