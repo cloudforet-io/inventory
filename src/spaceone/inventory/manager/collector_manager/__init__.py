@@ -20,7 +20,6 @@ from spaceone.inventory.manager.collector_manager.collector_db import CollectorD
 from spaceone.inventory.manager.collector_manager.filter_manager import FilterManager
 from spaceone.inventory.manager.collector_manager.job_manager import JobManager
 from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
-from spaceone.inventory.manager.collector_manager.task_item_manager import TaskItemManager
 from spaceone.inventory.manager.collector_manager.plugin_manager import PluginManager
 from spaceone.inventory.manager.collector_manager.schedule_manager import ScheduleManager
 from spaceone.inventory.manager.collector_manager.secret_manager import SecretManager
