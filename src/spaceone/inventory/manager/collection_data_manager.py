@@ -196,6 +196,11 @@ class CollectionDataManager(BaseManager):
         for key in ['data', 'metadata']:
             if len(self.merged_data.get(key, {}).keys()) > 0:
                 temp_data = old_data.get(key, {})
+
+                # TODO: Temporary code before metadata migration
+                if key == 'metadata' and 'view' in temp_data:
+                    del temp_data['view']
+
                 temp_data.update(self.merged_data[key])
                 self.merged_data[key] = temp_data
 
