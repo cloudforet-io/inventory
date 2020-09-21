@@ -37,10 +37,10 @@ class CloudServiceTypeService(BaseService):
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
 
-        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
-
         if provider:
             params['provider'] = provider
+
+        params = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         return self.cloud_svc_type_mgr.create_cloud_service_type(params)
 

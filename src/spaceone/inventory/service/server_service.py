@@ -88,7 +88,7 @@ class ServerService(BaseService):
         params['primary_ip_address'] = self._get_primary_ip_address(
             primary_ip_address, params['ip_addresses'])
 
-        params['collection_info'] = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
+        params = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
 
         return self.server_mgr.create_server(params)
 
