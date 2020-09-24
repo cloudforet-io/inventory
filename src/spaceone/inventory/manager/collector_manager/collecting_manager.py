@@ -196,12 +196,14 @@ class CollectingManager(BaseManager):
         JOB_TASK_STATE = 'SUCCESS'
         stat  = {}
         ERROR = False
+        plugin_id = plugin_info.get('plugin_id', None)
         try:
             stat = self._process_results(results,
                                   job_id,
                                   job_task_id,
                                   kwargs['collector_id'],
                                   secret_id,
+                                  plugin_id,
                                   domain_id
                                   )
             if stat['failure_count'] > 0:
@@ -243,12 +245,14 @@ class CollectingManager(BaseManager):
 
         return True
 
-    def _process_results(self, results, job_id, job_task_id, collector_id, secret_id, domain_id):
+    def _process_results(self, results, job_id, job_task_id, collector_id, secret_id, plugin_id, domain_id):
         # update meta
         self.transaction.set_meta('job_id', job_id)
         self.transaction.set_meta('job_task_id', job_task_id)
         self.transaction.set_meta('collector_id', collector_id)
         self.transaction.set_meta('secret.secret_id', secret_id)
+        if plugin_id:
+            self.transaction.set_meta('plugin_id', plugin_id)
         if 'provider' in self.secret:
             self.transaction.set_meta('secret.provider', self.secret['provider'])
         if 'project_id' in self.secret:
