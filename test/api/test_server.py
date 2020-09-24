@@ -798,6 +798,31 @@ class TestServer(unittest.TestCase):
 
         self.assertEqual(len(self.servers), result.total_count)
 
+    def test_list_match_query(self):
+        self.test_create_server()
+
+        params = {
+            'domain_id': self.domain.domain_id,
+            'query': {
+                'filter': [
+                    {
+                        'k': 'data.softwares',
+                        'v': {
+                            'name': 'mysql',
+                            'version': {
+                               '$ne': '2.0.0'
+                            }
+                        },
+                        'o': 'match'
+                    }
+                ]
+            }
+        }
+
+        result = self.inventory_v1.Server.list(
+            params, metadata=(('token', self.token),))
+        self.assertEqual(len(self.servers), result.total_count)
+
     def test_list_region_code(self):
         self.test_create_server()
 
