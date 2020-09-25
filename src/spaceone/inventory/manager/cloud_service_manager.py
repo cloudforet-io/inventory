@@ -81,6 +81,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
                 deleted_display = True
             if key == 'state' and 'DELETED' in value and operator == 'in':
                 deleted_display = True
+            if key == 'state' and 'DELETED' in value and operator == 'contain_in':
+                deleted_display = True
 
         if not deleted_display:
             query['filter'] = query.get('filter', [])
