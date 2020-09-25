@@ -38,7 +38,8 @@ class CloudService(MongoModel):
             'region_code',
             'region_type',
             'region_ref',
-            'collection_info'
+            'collection_info',
+            'deleted_at'
         ],
         'exact_fields': [
             'cloud_service_id',
@@ -95,6 +96,5 @@ class CloudService(MongoModel):
 
         self.update({
             'state': 'DELETED',
-            'region': None,
             'deleted_at': datetime.utcnow()
         })
