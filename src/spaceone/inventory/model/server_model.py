@@ -139,6 +139,5 @@ class Server(MongoModel):
 
         self.update({
             'state': 'DELETED',
-            'region': None,
             'deleted_at': datetime.utcnow()
         })
