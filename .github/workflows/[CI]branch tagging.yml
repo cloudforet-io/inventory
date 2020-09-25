@@ -101,7 +101,7 @@ jobs:
           git push && \git push -f origin "${{ env.VERSION }}"
 
   pypi:
-    if: github.repository_owner == 'spaceone-dev' && needs.condition_check.outputs.NOT_FIRST_TAG = 'false'
+    if: github.repository_owner == 'spaceone-dev' && needs.condition_check.outputs.NOT_FIRST_TAG == 'false'
     needs: [condition_check, update_local_version_file]
     runs-on: ubuntu-latest
     env:
