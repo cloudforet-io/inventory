@@ -346,6 +346,16 @@ class CollectingManager(BaseManager):
         resource_type = resource['resource_type']
         data = resource['resource']
 
+        options = resource.get('options', None)
+        update_mode = None
+        if options:
+            # options exist,
+            # {'update_mode': MERGE | REPLACE}
+            if 'update_mode' in options:
+                update_mode = options['update_mode']
+                self.transaction.set_meta('update_mode', update_mode)
+            # delete update_mode
+
         _LOGGER.debug(f'[_process_single_result] {resource_type}')
         (svc, mgr) = self._get_resource_map(resource_type)
 
@@ -413,7 +423,7 @@ class CollectingManager(BaseManager):
         #########################################
         try:
             # For book-keeping
-            if total_count == 0:
+            if total_count == 0 and update_mode == None:
                 # Create
                 res_msg = svc.create(data)
                 diff = time.time() - end
