@@ -5,3 +5,4 @@ redis
 langcodes
 ipaddress
 python-consul
+marisa-trie
