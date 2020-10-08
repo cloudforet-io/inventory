@@ -1,8 +1,8 @@
-spaceone-core
-spaceone-api
+marisa-trie
 mongoengine
 redis
 langcodes
 ipaddress
 python-consul
-marisa-trie
+spaceone-core
+spaceone-api
