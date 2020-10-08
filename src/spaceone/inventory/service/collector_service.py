@@ -273,8 +273,11 @@ class CollectorService(BaseService):
             # find pluings which has minute rule
             filter_query.append(_make_query_minute(schedule['minute']))
 
+        elif 'interval' in schedule:
+            # find interval schedules
+            filter_query.append(_make_query_interval())
         else:
-            # TODO:
+            # TODO: CRON
             pass
 
         # make query for list_collector
@@ -336,3 +339,12 @@ def _make_query_minute(minute: int):
         'v': minute,
         'o': 'contain'
         }
+
+def _make_query_interval():
+    return {
+        'k': 'schedule.interval',
+        'v': 0,
+        'o': 'gt'
+        }
+
+
