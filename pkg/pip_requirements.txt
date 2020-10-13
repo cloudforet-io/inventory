@@ -3,6 +3,8 @@ mongoengine
 redis
 langcodes
 ipaddress
+fakeredis
+mongomock
 python-consul
 spaceone-core
 spaceone-api

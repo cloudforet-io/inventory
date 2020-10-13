@@ -36,7 +36,9 @@ setup(
         'redis',
         'langcodes',
         'ipaddress',
-        'python-consul'
+        'python-consul',
+        'fakeredis',
+        'mongomock'
     ],
     zip_safe=False,
 )
