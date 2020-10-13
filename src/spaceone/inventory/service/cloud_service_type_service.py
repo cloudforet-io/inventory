@@ -40,7 +40,9 @@ class CloudServiceTypeService(BaseService):
         if provider:
             params['provider'] = provider
 
-        params = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
+        params['ref_cloud_service_type'] = f'{params["provider"]}.{params["group"]}.{params["name"]}'
+
+        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_cloud_service_type'])
 
         return self.cloud_svc_type_mgr.create_cloud_service_type(params)
 
@@ -74,7 +76,11 @@ class CloudServiceTypeService(BaseService):
         if provider:
             params['provider'] = provider
 
-        exclude_keys = ['cloud_service_type_id', 'domain_id']
+        if not cloud_svc_type_vo.ref_cloud_service_type:
+            params['ref_cloud_service_type'] = f'{cloud_svc_type_vo.provider}.{cloud_svc_type_vo.group}.' \
+                                               f'{cloud_svc_type_vo.name}'
+
+        exclude_keys = ['cloud_service_type_id', 'domain_id', 'ref_cloud_service_type']
         params = data_mgr.merge_data_by_history(params, cloud_svc_type_vo.to_dict(), exclude_keys=exclude_keys)
 
         return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(params, cloud_svc_type_vo)

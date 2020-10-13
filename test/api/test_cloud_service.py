@@ -239,6 +239,8 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id,
             'data': data,
             'metadata': metadata,
+            "region_code": "ap-northeast-2",
+            "region_type": "AWS",
             "reference": {
                 "resource_id": "resource-xxxx",
                 "external_link": "https://aaa.bbb.ccc/"

@@ -9,6 +9,7 @@ class CloudServiceType(MongoModel):
     name = StringField(max_length=255, unique_with=['provider', 'group', 'domain_id'])
     provider = StringField(max_length=255)
     group = StringField(max_length=255)
+    ref_cloud_service_type = StringField(max_length=255)
     labels = ListField(StringField(max_length=255))
     metadata = DictField()
     tags = DictField()
@@ -38,13 +39,15 @@ class CloudServiceType(MongoModel):
         ],
         'ordering': [
             'provider',
-            'group'
+            'group',
+            'name'
         ],
         'indexes': [
             'cloud_service_type_id',
             'name',
             'provider',
             'group',
+            'ref_cloud_service_type',
             'domain_id',
             'collection_info.state'
         ]

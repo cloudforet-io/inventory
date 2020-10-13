@@ -60,35 +60,32 @@ class ServerService(BaseService):
         domain_id = params['domain_id']
         nics = params.get('nics', [])
         primary_ip_address = params.get('primary_ip_address')
+        region_type = params.get('region_type')
+        region_code = params.get('region_code')
 
         params['state'] = params.get('state', 'INSERVICE')
 
         if provider:
             params['provider'] = provider
 
-        if 'region_code' in params and 'region_type' not in params:
-            raise ERROR_REQUIRED_PARAMETER(key='region_type')
-
-        if 'region_type' in params and 'region_code' not in params:
+        if region_type and region_code:
+            params['ref_region'] = f'{region_type}.{region_code}'
+        elif region_type and not region_code:
             raise ERROR_REQUIRED_PARAMETER(key='region_code')
-
-        if 'region_code' in params and 'region_type' in params:
-            # SKIP validation check
-            # self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
-            params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
+        elif not region_type and region_code:
+            raise ERROR_REQUIRED_PARAMETER(key='region_type')
 
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
             params['project_id'] = project_id
         elif secret_project_id:
-            # SKIP validation check
             params['project_id'] = secret_project_id
 
         params['ip_addresses'] = self._get_ip_addresses_from_nics(nics)
         params['primary_ip_address'] = self._get_primary_ip_address(
             primary_ip_address, params['ip_addresses'])
 
-        params = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
+        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region'])
 
         return self.server_mgr.create_server(params)
 
@@ -134,7 +131,9 @@ class ServerService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
-        primary_ip_address = params.get('primary_ip_address', None)
+        primary_ip_address = params.get('primary_ip_address')
+        region_type = params.get('region_type')
+        region_code = params.get('region_code')
 
         server_vo: Server = self.server_mgr.get_server(params['server_id'], params['domain_id'])
 
@@ -145,27 +144,21 @@ class ServerService(BaseService):
             params.update({
                 'region_code': None,
                 'region_type': None,
-                'region_ref': None
+                'ref_region': None
             })
         else:
-            if 'region_code' in params and 'region_type' not in params:
-                raise ERROR_REQUIRED_PARAMETER(key='region_type')
-
-            if 'region_type' in params and 'region_code' not in params:
+            if region_type and region_code:
+                params['ref_region'] = f'{region_type}.{region_code}'
+            elif region_type and not region_code:
                 raise ERROR_REQUIRED_PARAMETER(key='region_code')
-
-            if 'region_code' in params and 'region_type' in params:
-                # SKIP Validation Check
-                # self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
-                params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
+            elif not region_type and region_code:
+                raise ERROR_REQUIRED_PARAMETER(key='region_type')
 
         if release_project:
             params['project_id'] = None
         elif project_id:
-            # Validation Check
             self.identity_mgr.get_project(project_id, domain_id)
         elif secret_project_id:
-            # SKIP Validation Check
             params['project_id'] = secret_project_id
 
         if 'nics' in params:
@@ -179,7 +172,7 @@ class ServerService(BaseService):
                     primary_ip_address, server_vo.ip_addresses)
 
         server_data = server_vo.to_dict()
-        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool']
+        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool', 'ref_region']
         params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
 
         return self.server_mgr.update_server_by_vo(params, server_vo)

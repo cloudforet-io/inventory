@@ -11,6 +11,7 @@ class ResourceGroup(MongoModel):
     resource_group_id = StringField(max_length=40, generate_id='rsc-grp', unique=True)
     name = StringField(max_length=255)
     resources = ListField(EmbeddedDocumentField(Resource))
+    options = DictField()
     tags = DictField()
     project_id = StringField(max_length=255)
     domain_id = StringField(max_length=255)
@@ -21,6 +22,7 @@ class ResourceGroup(MongoModel):
             'name',
             'resources',
             'project_id',
+            'options',
             'tags'
         ],
         'exact_fields': [
@@ -33,12 +35,12 @@ class ResourceGroup(MongoModel):
             'name',
             'project_id'
         ],
-        'change_query_keys': {},
         'ordering': [
             'name'
         ],
         'indexes': [
             'resource_group_id',
+            'resources.resource_type',
             'project_id',
             'domain_id',
         ]

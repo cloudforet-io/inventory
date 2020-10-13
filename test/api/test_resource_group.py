@@ -1,10 +1,11 @@
 import os
 import uuid
-import random
 import unittest
+import pprint
+
+from google.protobuf.json_format import MessageToDict
 from spaceone.core import utils, pygrpc
 from spaceone.core.unittest.runner import RichTestRunner
-from google.protobuf.json_format import MessageToDict
 
 
 def random_string():
@@ -15,6 +16,7 @@ class TestResourceGroup(unittest.TestCase):
     config = utils.load_yaml_from_file(
         os.environ.get('SPACEONE_TEST_CONFIG_FILE', './config.yml'))
 
+    pp = pprint.PrettyPrinter(indent=4)
     identity_v1 = None
     inventory_v1 = None
     domain = None
@@ -134,6 +136,13 @@ class TestResourceGroup(unittest.TestCase):
         self.projects.append(self.project)
         self.assertEqual(self.project.name, params['name'])
 
+    def _print_data(self, message, description=None):
+        print()
+        if description:
+            print(f'[ {description} ]')
+
+        self.pp.pprint(MessageToDict(message, preserving_proto_field_name=True))
+
     def setUp(self):
         self.resource_groups = []
         self.resource_group = None
@@ -196,6 +205,9 @@ class TestResourceGroup(unittest.TestCase):
                     ]
                 },
             ],
+            'options': {
+                'raw_filter': 'aaa.bbb.ccc'
+            },
             'domain_id': self.domain.domain_id
         }
 
@@ -210,6 +222,8 @@ class TestResourceGroup(unittest.TestCase):
         self.resource_group = self.inventory_v1.ResourceGroup.create(
             params,
             metadata=(('token', self.token),))
+
+        self._print_data(self.resource_group, 'test_create_resource_group')
 
         self.resource_groups.append(self.resource_group)
         self.assertEqual(self.resource_group.name, name)
@@ -268,7 +282,27 @@ class TestResourceGroup(unittest.TestCase):
 
         self.assertEqual(self.resource_group.project_id, self.project.project_id)
 
-    def test_update_resource_group_tag(self):
+    def test_update_resource_group_options(self):
+        self.test_create_resource_group()
+
+        options = {
+            random_string(): random_string(),
+            random_string(): random_string()
+        }
+        param = {
+            'resource_group_id': self.resource_group.resource_group_id,
+            'options': options,
+            'domain_id': self.domain.domain_id,
+        }
+        self.resource_group = self.inventory_v1.ResourceGroup.update(
+            param,
+            metadata=(('token', self.token),))
+
+        self._print_data(self.resource_group, 'test_update_resource_group_options')
+
+        self.assertEqual(MessageToDict(self.resource_group.options), options)
+
+    def test_update_resource_group_tags(self):
         self.test_create_resource_group()
 
         tags = {
