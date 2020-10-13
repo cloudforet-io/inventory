@@ -4,6 +4,8 @@ from datetime import datetime
 from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
+from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
+from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
 
@@ -38,8 +40,8 @@ class CloudService(MongoModel):
             'project_id',
             'region_code',
             'region_type',
-            'reg_region',
             'ref_cloud_service_type',
+            'ref_region',
             'collection_info',
             'deleted_at'
         ],
@@ -68,6 +70,16 @@ class CloudService(MongoModel):
             'region_type',
             'project_id'
         ],
+        'reference_query_keys': {
+            'ref_cloud_service_type': {
+                'model': CloudServiceType,
+                'foreign_key': 'ref_cloud_service_type'
+            },
+            'ref_region': {
+                'model': Region,
+                'foreign_key': 'ref_region'
+            }
+        },
         'ordering': [
             'provider',
             'cloud_service_group',
@@ -79,29 +91,15 @@ class CloudService(MongoModel):
             'provider',
             'cloud_service_group',
             'cloud_service_type',
+            'ref_cloud_service_type',
             'reference.resource_id',
             'region_code',
             'region_type',
             'ref_region',
-            'ref_cloud_service_type',
             'project_id',
             'domain_id',
             'collection_info.state'
-        ],
-        'aggregate': {
-            'lookup': {
-                'ref_cloud_service_type': {
-                    'from': 'cloud_service_type',
-                    'localField': 'ref_cloud_service_type',
-                    'foreignField': 'ref_cloud_service_type'
-                },
-                'ref_region': {
-                    'from': 'region',
-                    'localField': 'ref_region',
-                    'foreignField': 'ref_region'
-                }
-            }
-        }
+        ]
     }
 
     def update(self, data):

@@ -22,6 +22,7 @@ class CloudServiceType(MongoModel):
         'updatable_fields': [
             'metadata',
             'labels',
+            'ref_cloud_service_type',
             'tags',
             'collection_info'
         ],

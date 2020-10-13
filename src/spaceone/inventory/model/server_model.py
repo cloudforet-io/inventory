@@ -4,6 +4,7 @@ from mongoengine import *
 from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
+from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
 
@@ -109,6 +110,12 @@ class Server(MongoModel):
             'region_type',
             'project_id',
         ],
+        'reference_query_keys': {
+            'ref_region': {
+                'model': Region,
+                'foreign_key': 'ref_region'
+            }
+        },
         'ordering': [
             'name'
         ],
@@ -126,16 +133,7 @@ class Server(MongoModel):
             'project_id',
             'domain_id',
             'collection_info.state'
-        ],
-        'aggregate': {
-            'lookup': {
-                'ref_region': {
-                    'from': 'region',
-                    'localField': 'ref_region',
-                    'foreignField': 'ref_region'
-                }
-            }
-        }
+        ]
     }
 
     def update(self, data):
