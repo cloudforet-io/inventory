@@ -12,7 +12,7 @@ class Error(EmbeddedDocument):
 class Job(MongoModel):
     job_id = StringField(max_length=40, generate_id='job', unique=True)
     status = StringField(max_length=20, default='CREATED',
-                choices=('CREATED', 'CANCELED', 'IN_PROGRESS', 'SUCCESS', 'ERROR', 'TIMEOUT'))
+                         choices=('CREATED', 'CANCELED', 'IN_PROGRESS', 'SUCCESS', 'ERROR', 'TIMEOUT'))
     filters = DictField()
     total_tasks = IntField(min_value=0, max_value=65000, default=0)
     remained_tasks = IntField(max_value=65000, default=0)          # Number of remained from collector, 0 means No remained_task
