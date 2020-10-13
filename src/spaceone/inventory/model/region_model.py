@@ -18,6 +18,7 @@ class Region(MongoModel):
         'updatable_fields': [
             'name',
             'state',
+            'ref_region',
             'tags'
         ],
         'exact_fields': [

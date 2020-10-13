@@ -311,6 +311,9 @@ class TestCloudService(unittest.TestCase):
         }
 
         self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.token),))
+
+        self._print_data(self.cloud_service, 'test_create_cloud_service_region_code')
+
         self.cloud_services.append(self.cloud_service)
         self.assertEqual(self.cloud_service.region_code, self.region.region_code)
 
@@ -375,6 +378,7 @@ class TestCloudService(unittest.TestCase):
         }
 
         self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+
         self._print_data(self.cloud_service, 'test_update_cloud_service_region_code')
         self.assertEqual(self.cloud_service.region_code, self.region.region_code)
 

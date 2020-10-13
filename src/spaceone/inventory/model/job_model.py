@@ -61,13 +61,6 @@ class Job(MongoModel):
             'collector',
             'project_id',
             'domain_id',
-        ],
-        'aggregate': {
-            'lookup': {
-                'collector': {
-                    'from': 'collector'
-                }
-            }
-        }
+        ]
     }
 
