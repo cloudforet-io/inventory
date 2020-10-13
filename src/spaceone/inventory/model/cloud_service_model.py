@@ -94,6 +94,11 @@ class CloudService(MongoModel):
                     'from': 'cloud_service_type',
                     'localField': 'ref_cloud_service_type',
                     'foreignField': 'ref_cloud_service_type'
+                },
+                'ref_region': {
+                    'from': 'region',
+                    'localField': 'ref_region',
+                    'foreignField': 'ref_region'
                 }
             }
         }
