@@ -13,13 +13,14 @@ class CloudService(MongoModel):
     state = StringField(max_length=20, choices=('INSERVICE', 'DELETED'), default='INSERVICE')
     provider = StringField(max_length=255, default='')
     cloud_service_group = StringField(max_length=255, default=None, null=True)
+    ref_cloud_service_type = StringField(max_length=255)
     data = DictField()
     metadata = DictField()
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
     tags = DictField()
     region_code = StringField(max_length=255)
     region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'))
-    region_ref = StringField(max_length=255)
+    ref_region = StringField(max_length=255)
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
@@ -37,7 +38,8 @@ class CloudService(MongoModel):
             'project_id',
             'region_code',
             'region_type',
-            'region_ref',
+            'reg_region',
+            'ref_cloud_service_type',
             'collection_info',
             'deleted_at'
         ],
@@ -50,7 +52,8 @@ class CloudService(MongoModel):
             'cloud_service_type',
             'region_code',
             'region_type',
-            'region_ref',
+            'ref_region',
+            'ref_cloud_service_type',
             'project_id',
             'domain_id',
             'collection_info.state'
@@ -61,6 +64,8 @@ class CloudService(MongoModel):
             'cloud_service_group',
             'cloud_service_type',
             'reference.resource_id',
+            'region_code',
+            'region_type',
             'project_id'
         ],
         'ordering': [
@@ -77,11 +82,21 @@ class CloudService(MongoModel):
             'reference.resource_id',
             'region_code',
             'region_type',
-            'region_ref',
+            'ref_region',
+            'ref_cloud_service_type',
             'project_id',
             'domain_id',
             'collection_info.state'
         ],
+        'aggregate': {
+            'lookup': {
+                'ref_cloud_service_type': {
+                    'from': 'cloud_service_type',
+                    'localField': 'ref_cloud_service_type',
+                    'foreignField': 'ref_cloud_service_type'
+                }
+            }
+        }
     }
 
     def update(self, data):

@@ -27,6 +27,7 @@ def ResourceGroupInfo(rg_vo: ResourceGroup, minimal=False):
     if not minimal:
         info.update({
             'resources': list(map(ResourceInfo, rg_vo.resources)),
+            'options': change_struct_type(rg_vo.options),
             'tags': change_struct_type(rg_vo.tags),
             'domain_id': rg_vo.domain_id,
             'created_at': change_timestamp_type(rg_vo.created_at),

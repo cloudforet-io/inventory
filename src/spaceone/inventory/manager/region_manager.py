@@ -21,8 +21,6 @@ class RegionManager(BaseManager, ResourceManager):
             _LOGGER.info(f'[ROLLBACK] Delete region : {region_vo.name} ({region_vo.region_id})')
             region_vo.delete()
 
-        params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
-
         region_vo: Region = self.region_model.create(params)
         self.transaction.add_rollback(_rollback, region_vo)
 

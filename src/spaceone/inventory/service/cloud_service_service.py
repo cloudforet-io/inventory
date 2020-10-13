@@ -43,33 +43,33 @@ class CloudServiceService(BaseService):
 
         data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
+        domain_id = params['domain_id']
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
-        domain_id = params['domain_id']
+        region_type = params.get('region_type')
+        region_code = params.get('region_code')
 
         if provider:
             params['provider'] = provider
 
         if project_id:
-            # Validation Check
             self.identity_mgr.get_project(project_id, domain_id)
         elif secret_project_id:
-            # SKIP Validation Check
             params['project_id'] = secret_project_id
 
-        if 'region_code' in params and 'region_type' not in params:
+        if region_type and region_code:
+            params['ref_region'] = f'{region_type}.{region_code}'
+        elif region_type and not region_code:
+            raise ERROR_REQUIRED_PARAMETER(key='region_code')
+        elif not region_type and region_code:
             raise ERROR_REQUIRED_PARAMETER(key='region_type')
 
-        if 'region_type' in params and 'region_code' not in params:
-            raise ERROR_REQUIRED_PARAMETER(key='region_code')
+        params['ref_cloud_service_type'] = f'{params["provider"]}.' \
+                                           f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
 
-        if 'region_code' in params and 'region_type' in params:
-            # SKIP Validation Check
-            # self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
-            params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
-
-        params = data_mgr.create_new_history(params, exclude_keys=['domain_id'])
+        params = data_mgr.create_new_history(params,
+                                             exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
 
         return self.cloud_svc_mgr.create_cloud_service(params)
 
@@ -106,6 +106,8 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
+        region_type = params.get('region_type')
+        region_code = params.get('region_code')
 
         cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], domain_id)
 
@@ -116,31 +118,31 @@ class CloudServiceService(BaseService):
             params.update({
                 'region_code': None,
                 'region_type': None,
-                'region_ref': None
+                'ref_region': None
             })
         else:
-            if 'region_code' in params and 'region_type' not in params:
-                raise ERROR_REQUIRED_PARAMETER(key='region_type')
-
-            if 'region_type' in params and 'region_code' not in params:
+            if region_type and region_code:
+                params['ref_region'] = f'{region_type}.{region_code}'
+            elif region_type and not region_code:
                 raise ERROR_REQUIRED_PARAMETER(key='region_code')
-
-            if 'region_code' in params and 'region_type' in params:
-                # SKIP Validation Check
-                # self.region_mgr.get_region_from_code(params['region_code'], params['region_type'], domain_id)
-                params['region_ref'] = f'{params["region_type"]}.{params["region_code"]}'
+            elif not region_type and region_code:
+                raise ERROR_REQUIRED_PARAMETER(key='region_type')
 
         if release_project:
             params['project_id'] = None
         elif project_id:
-            # Validation Check
             self.identity_mgr.get_project(project_id, domain_id)
         elif secret_project_id:
-            # SKIP Validation Check
             params['project_id'] = secret_project_id
 
+        if not cloud_svc_vo.ref_cloud_service_type:
+            params['ref_cloud_service_type'] = f'{cloud_svc_vo.provider}.' \
+                                               f'{cloud_svc_vo.cloud_service_group}.' \
+                                               f'{cloud_svc_vo.cloud_service_type}'
+
         cloud_svc_data = cloud_svc_vo.to_dict()
-        exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_region']
+        exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_region',
+                        'ref_region', 'ref_cloud_service_type']
         params = data_mgr.merge_data_by_history(params, cloud_svc_data, exclude_keys=exclude_keys)
 
         return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)

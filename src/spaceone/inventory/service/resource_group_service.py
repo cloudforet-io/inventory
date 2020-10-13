@@ -25,6 +25,7 @@ class ResourceGroupService(BaseService):
                     'name': 'str',
                     'resources': 'list',
                     'project_id': 'str',
+                    'options': 'dict',
                     'tags': 'dict',
                     'domain_id': 'str'
                 }
@@ -45,6 +46,7 @@ class ResourceGroupService(BaseService):
                     'resources': 'list',
                     'project_id': 'str',
                     'release_project': 'bool',
+                    'options': 'dict',
                     'tags': 'dict',
                     'domain_id': 'str'
                 }

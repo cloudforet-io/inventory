@@ -51,7 +51,7 @@ class Server(MongoModel):
     tags = DictField()
     region_code = StringField(max_length=255)
     region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'))
-    region_ref = StringField(max_length=255)
+    ref_region = StringField(max_length=255)
     project_id = StringField(max_length=40, default=None, null=True)
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
@@ -76,7 +76,7 @@ class Server(MongoModel):
             'project_id',
             'region_code',
             'region_type',
-            'region_ref',
+            'ref_region',
             'tags',
             'collection_info',
             'deleted_at'
@@ -91,7 +91,7 @@ class Server(MongoModel):
             'reference.resource_id',
             'region_code',
             'region_type',
-            'region_ref'
+            'ref_region'
             'project_id',
             'domain_id',
             'collection_info.state'
@@ -105,6 +105,8 @@ class Server(MongoModel):
             "os_type",
             'provider',
             'reference.resource_id',
+            'region_code',
+            'region_type',
             'project_id',
         ],
         'ordering': [
@@ -120,11 +122,20 @@ class Server(MongoModel):
             'reference.resource_id',
             'region_code',
             'region_type',
-            'region_ref',
+            'ref_region',
             'project_id',
             'domain_id',
             'collection_info.state'
         ],
+        'aggregate': {
+            'lookup': {
+                'ref_region': {
+                    'from': 'region',
+                    'localField': 'ref_region',
+                    'foreignField': 'ref_region'
+                }
+            }
+        }
     }
 
     def update(self, data):
