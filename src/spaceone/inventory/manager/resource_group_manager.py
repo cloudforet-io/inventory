@@ -53,3 +53,50 @@ class ResourceGroupManager(BaseManager, ResourceManager):
     @staticmethod
     def delete_resource_group_by_vo(resource_group_vo):
         resource_group_vo.delete()
+
+    def get_resource_group_filter(self, resource_group_id, resource_type, domain_id):
+        filters = []
+        resource_group_vo = self.get_resource_group(resource_group_id, domain_id)
+        for resource in resource_group_vo.resources:
+            if resource.resource_type.startswith(resource_type):
+                _filter = self._get_filter_from_resource_type(resource.resource_type)
+                _filter += resource.filter
+
+                _filter.append({
+                    'k': 'domain_id',
+                    'v': domain_id,
+                    'o': 'eq'
+                })
+
+                if resource_group_vo.project_id:
+                    _filter.append({
+                        'k': 'project_id',
+                        'v': resource_group_vo.project_id,
+                        'o': 'eq'
+                    })
+
+                filters.append(_filter)
+
+        return filters
+
+    def _get_filter_from_resource_type(self, resource_type):
+        resource_type_split = resource_type.split('?', 1)
+        if len(resource_type_split) == 2:
+            return self._get_filter_from_query_string(resource_type_split[1])
+        else:
+            return []
+
+    @staticmethod
+    def _get_filter_from_query_string(query_string):
+        _filter = []
+        for kv in query_string.split('&'):
+            kv_split = kv.split('=', 1)
+            if len(kv_split) == 2:
+                if kv_split[0].strip() != '' and kv_split[1].strip() != '':
+                    _filter.append({
+                        'k': kv_split[0],
+                        'v': kv_split[1],
+                        'o': 'eq'
+                    })
+
+        return _filter

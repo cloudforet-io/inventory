@@ -3,6 +3,7 @@ import logging
 from spaceone.core.service import *
 from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
+from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.manager.server_manager import ServerManager
 from spaceone.inventory.model.server_model import Server
@@ -240,10 +241,9 @@ class ServerService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'}, key_path='query.only')
-    @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address',
-                          'ip_addresses', 'server_type', 'os_type', 'provider',
-                          'asset_id', 'region_code', 'region_type', 'project_id',
-                          'resource_group_id', 'domain_id'])
+    @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses',
+                          'server_type', 'os_type', 'provider', 'region_code', 'region_type',
+                          'resource_group_id', 'project_id', 'domain_id'])
     @append_keyword_filter(['server_id', 'name', 'ip_addresses', 'provider', 'reference.resource_id',
                             'project_id'])
     def list(self, params):
@@ -261,9 +261,9 @@ class ServerService(BaseService):
                     'asset_id': 'str',
                     'region_code': 'str',
                     'region_type': 'str',
+                    'resource_group_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
-                    'resource_group_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)'
                 }
 
@@ -273,15 +273,19 @@ class ServerService(BaseService):
 
         """
 
-        return self.server_mgr.list_servers(params.get('query', {}))
+        query = params.get('query', {})
+        query = self._append_resource_group_filter(query, params['domain_id'])
+
+        return self.server_mgr.list_servers(query)
 
     @transaction
     @check_required(['query', 'domain_id'])
-    @append_query_filter(['domain_id'])
+    @append_query_filter(['resource_group_id', 'domain_id'])
     def stat(self, params):
         """
         Args:
             params (dict): {
+                'resource_group_id': 'str',
                 'domain_id': 'str',
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
             }
@@ -291,7 +295,62 @@ class ServerService(BaseService):
 
         """
 
-        return self.server_mgr.stat_servers(params.get('query', {}))
+        query = params.get('query', {})
+        query = self._append_resource_group_filter(query, params['domain_id'])
+
+        return self.server_mgr.stat_servers(query)
+
+    def _append_resource_group_filter(self, query, domain_id):
+        change_filter = []
+
+        for condition in query.get('filter', []):
+            key = condition.get('k', condition.get('key'))
+            value = condition.get('v', condition.get('value'))
+            operator = condition.get('o', condition.get('operator'))
+
+            if key == 'resource_group_id':
+                server_ids = None
+
+                if operator in ['not', 'not_contain', 'not_in', 'not_contain_in']:
+                    resource_group_operator = 'not_in'
+                else:
+                    resource_group_operator = 'in'
+
+                if operator in ['eq', 'not', 'contain', 'not_contain']:
+                    server_ids = self._get_server_ids_from_resource_group_id(value, domain_id)
+                elif operator in ['in', 'not_in', 'contain_in', 'not_contain_in'] and isinstance(value, list):
+                    server_ids = []
+                    for v in value:
+                        server_ids += self._get_server_ids_from_resource_group_id(v, domain_id)
+
+                if server_ids is not None:
+                    change_filter.append({
+                        'k': 'server_id',
+                        'v': list(set(server_ids)),
+                        'o': resource_group_operator
+                    })
+
+            else:
+                change_filter.append(condition)
+
+        query['filter'] = change_filter
+        return query
+
+    def _get_server_ids_from_resource_group_id(self, resource_group_id, domain_id):
+        resource_type = 'inventory.Server'
+        rg_mgr: ResourceGroupManager = self.locator.get_manager('ResourceGroupManager')
+
+        resource_group_filters = rg_mgr.get_resource_group_filter(resource_group_id, resource_type, domain_id)
+        server_ids = []
+        for resource_group_filter in resource_group_filters:
+            resource_group_query = {
+                'filter': resource_group_filter,
+                'only': ['server_id']
+            }
+            server_vos, total_count = self.server_mgr.list_servers(resource_group_query)
+            for server_vo in server_vos:
+                server_ids.append(server_vo.server_id)
+        return server_ids
 
     @staticmethod
     def _get_ip_addresses_from_nics(nics: list) -> list:
