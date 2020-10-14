@@ -2,6 +2,7 @@ from spaceone.core.service import *
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
+from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.error import *
 
@@ -229,6 +230,7 @@ class CloudServiceService(BaseService):
                     'provider': 'str',
                     'region_code': 'str',
                     'region_type': 'str',
+                    'resource_group_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)'
@@ -240,7 +242,14 @@ class CloudServiceService(BaseService):
 
         """
 
-        return self.cloud_svc_mgr.list_cloud_services(params.get('query', {}))
+        query = params.get('query', {})
+        resource_group_id = params.get('resource_group_id')
+        domain_id = params['domain_id']
+
+        if resource_group_id:
+            query = self._append_resource_group_filter(query, resource_group_id, domain_id)
+
+        return self.cloud_svc_mgr.list_cloud_services(query)
 
     @transaction
     @check_required(['query', 'domain_id'])
@@ -249,6 +258,7 @@ class CloudServiceService(BaseService):
         """
         Args:
             params (dict): {
+                'resource_group_id': 'str',
                 'domain_id': 'str',
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
             }
@@ -258,4 +268,35 @@ class CloudServiceService(BaseService):
 
         """
 
-        return self.cloud_svc_mgr.stat_cloud_services(params.get('query', {}))
+        query = params.get('query', {})
+        resource_group_id = params.get('resource_group_id')
+        domain_id = params['domain_id']
+
+        if resource_group_id:
+            query = self._append_resource_group_filter(query, resource_group_id, domain_id)
+
+        return self.cloud_svc_mgr.stat_cloud_services(query)
+
+    def _append_resource_group_filter(self, query, resource_group_id, domain_id):
+        resource_type = 'inventory.CloudService'
+        query['filter'] = query.get('filter', [])
+        rg_mgr: ResourceGroupManager = self.locator.get_manager('ResourceGroupManager')
+        filters = rg_mgr.get_resource_group_filter(resource_group_id, resource_type, domain_id)
+
+        cloud_service_ids = []
+        for _filter in filters:
+            resource_group_query = {
+                'filter': _filter,
+                'only': ['cloud_service_id']
+            }
+            cloud_service_vos, total_count = self.cloud_svc_mgr.list_cloud_services(resource_group_query)
+            for cloud_service_vo in cloud_service_vos:
+                cloud_service_ids.append(cloud_service_vo.cloud_service_id)
+
+        query['filter'].append({
+            'k': 'cloud_service_id',
+            'v': cloud_service_ids,
+            'o': 'in'
+        })
+
+        return query

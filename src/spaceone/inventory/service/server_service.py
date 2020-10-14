@@ -3,6 +3,7 @@ import logging
 from spaceone.core.service import *
 from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
+from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.manager.server_manager import ServerManager
 from spaceone.inventory.model.server_model import Server
@@ -240,10 +241,9 @@ class ServerService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'}, key_path='query.only')
-    @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address',
-                          'ip_addresses', 'server_type', 'os_type', 'provider',
-                          'asset_id', 'region_code', 'region_type', 'project_id',
-                          'resource_group_id', 'domain_id'])
+    @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses',
+                          'server_type', 'os_type', 'provider', 'region_code', 'region_type',
+                          'project_id', 'domain_id'])
     @append_keyword_filter(['server_id', 'name', 'ip_addresses', 'provider', 'reference.resource_id',
                             'project_id'])
     def list(self, params):
@@ -261,9 +261,9 @@ class ServerService(BaseService):
                     'asset_id': 'str',
                     'region_code': 'str',
                     'region_type': 'str',
+                    'resource_group_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
-                    'resource_group_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)'
                 }
 
@@ -273,7 +273,14 @@ class ServerService(BaseService):
 
         """
 
-        return self.server_mgr.list_servers(params.get('query', {}))
+        query = params.get('query', {})
+        resource_group_id = params.get('resource_group_id')
+        domain_id = params['domain_id']
+
+        if resource_group_id:
+            query = self._append_resource_group_filter(query, resource_group_id, domain_id)
+
+        return self.server_mgr.list_servers(query)
 
     @transaction
     @check_required(['query', 'domain_id'])
@@ -282,6 +289,7 @@ class ServerService(BaseService):
         """
         Args:
             params (dict): {
+                'resource_group_id': 'str',
                 'domain_id': 'str',
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
             }
@@ -291,7 +299,38 @@ class ServerService(BaseService):
 
         """
 
-        return self.server_mgr.stat_servers(params.get('query', {}))
+        query = params.get('query', {})
+        resource_group_id = params.get('resource_group_id')
+        domain_id = params['domain_id']
+
+        if resource_group_id:
+            query = self._append_resource_group_filter(query, resource_group_id, domain_id)
+
+        return self.server_mgr.stat_servers(query)
+
+    def _append_resource_group_filter(self, query, resource_group_id, domain_id):
+        resource_type = 'inventory.Server'
+        query['filter'] = query.get('filter', [])
+        rg_mgr: ResourceGroupManager = self.locator.get_manager('ResourceGroupManager')
+        filters = rg_mgr.get_resource_group_filter(resource_group_id, resource_type, domain_id)
+
+        server_ids = []
+        for _filter in filters:
+            resource_group_query = {
+                'filter': _filter,
+                'only': ['server_id']
+            }
+            server_vos, total_count = self.server_mgr.list_servers(resource_group_query)
+            for server_vo in server_vos:
+                server_ids.append(server_vo.server_id)
+
+        query['filter'].append({
+            'k': 'server_id',
+            'v': server_ids,
+            'o': 'in'
+        })
+
+        return query
 
     @staticmethod
     def _get_ip_addresses_from_nics(nics: list) -> list:
