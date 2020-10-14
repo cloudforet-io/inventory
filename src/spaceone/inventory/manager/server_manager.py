@@ -57,9 +57,6 @@ class ServerManager(BaseManager, ResourceManager):
         query = self._append_state_query(query)
         return self.server_model.stat(**query)
 
-    '''
-    TEMPORARY Logic for DELETED filter  
-    '''
     @staticmethod
     def _append_state_query(query):
         state_default_filter = {
@@ -68,20 +65,19 @@ class ServerManager(BaseManager, ResourceManager):
             'operator': 'not'
         }
 
-        deleted_display = False
-        for _q in query.get('filter', []):
-            key = _q.get('k', _q.get('key'))
-            value = _q.get('v', _q.get('value'))
-            operator = _q.get('o', _q.get('operator'))
+        show_deleted_resource = False
+        for condition in query.get('filter', []):
+            key = condition.get('k', condition.get('key'))
+            value = condition.get('v', condition.get('value'))
+            operator = condition.get('o', condition.get('operator'))
 
-            if key == 'state' and value == 'DELETED' and operator == 'eq':
-                deleted_display = True
-            if key == 'state' and 'DELETED' in value and operator == 'in':
-                deleted_display = True
-            if key == 'state' and 'DELETED' in value and operator == 'contain_in':
-                deleted_display = True
+            if key == 'state':
+                if operator == 'eq' and value == 'DELETED':
+                    show_deleted_resource = True
+                elif operator in ['in', 'contain_in'] and 'DELETED' in value:
+                    show_deleted_resource = True
 
-        if not deleted_display:
+        if not show_deleted_resource:
             query['filter'] = query.get('filter', [])
             query['filter'].append(state_default_filter)
 
