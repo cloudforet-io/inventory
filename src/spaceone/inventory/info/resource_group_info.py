@@ -12,7 +12,8 @@ _LOGGER = logging.getLogger()
 def ResourceInfo(resource: Resource):
     info = {
         'resource_type': resource.resource_type,
-        'filter': change_list_value_type(resource.filter)
+        'filter': change_list_value_type(resource.filter),
+        'keyword': resource.keyword
     }
     return resource_group_pb2.Resource(**info)
 
