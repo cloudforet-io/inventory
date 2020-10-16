@@ -345,11 +345,10 @@ class ServerService(BaseService):
         for resource_group_filter in resource_group_filters:
             resource_group_query = {
                 'filter': resource_group_filter,
-                'only': ['server_id']
+                'distinct': 'server_id'
             }
-            server_vos, total_count = self.server_mgr.list_servers(resource_group_query)
-            for server_vo in server_vos:
-                server_ids.append(server_vo.server_id)
+            result = self.server_mgr.stat_servers(resource_group_query)
+            server_ids += result.get('results', [])
         return server_ids
 
     @staticmethod

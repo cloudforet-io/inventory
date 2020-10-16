@@ -314,10 +314,8 @@ class CloudServiceService(BaseService):
         for resource_group_filter in resource_group_filters:
             resource_group_query = {
                 'filter': resource_group_filter,
-                'only': ['cloud_service_id']
+                'distinct': 'cloud_service_id'
             }
-            cloud_service_vos, total_count = self.cloud_svc_mgr.list_cloud_services(resource_group_query)
-            for cloud_service_vo in cloud_service_vos:
-                cloud_service_ids.append(cloud_service_vo.cloud_service_id)
+            result = self.cloud_svc_mgr.stat_cloud_services(resource_group_query)
+            cloud_service_ids += result.get('results', [])
         return cloud_service_ids
-
