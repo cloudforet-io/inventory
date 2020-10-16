@@ -54,7 +54,7 @@ class ResourceGroupManager(BaseManager, ResourceManager):
     def delete_resource_group_by_vo(resource_group_vo):
         resource_group_vo.delete()
 
-    def get_resource_group_filter(self, resource_group_id, resource_type, domain_id):
+    def get_resource_group_filter(self, resource_group_id, resource_type, domain_id, keyword_filter):
         filters = []
         resource_group_vo = self.get_resource_group(resource_group_id, domain_id)
         for resource in resource_group_vo.resources:
@@ -75,9 +75,28 @@ class ResourceGroupManager(BaseManager, ResourceManager):
                         'o': 'eq'
                     })
 
-                filters.append(_filter)
+                query = {
+                    'filter': _filter
+                }
+
+                if resource.keyword and resource.keyword.strip() != '':
+                    query['filter_or'] = self._get_resource_group_keyword_filter(resource.keyword, keyword_filter)
+
+                filters.append(query)
 
         return filters
+
+    @staticmethod
+    def _get_resource_group_keyword_filter(keyword, keyword_filter):
+        filter_or = []
+        for key in keyword_filter:
+            filter_or.append({
+                'k': key,
+                'v': list(filter(None, keyword.split(' '))),
+                'o': 'contain_in'
+            })
+
+        return filter_or
 
     def _get_filter_from_resource_type(self, resource_type):
         resource_type_split = resource_type.split('?', 1)

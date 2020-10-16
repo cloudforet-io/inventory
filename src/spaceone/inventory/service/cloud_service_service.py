@@ -6,6 +6,9 @@ from spaceone.inventory.manager.resource_group_manager import ResourceGroupManag
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.error import *
 
+_KEYWORD_FILTER = ['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
+                   'reference.resource_id', 'project_id']
+
 
 @authentication_handler
 @authorization_handler
@@ -217,8 +220,7 @@ class CloudServiceService(BaseService):
     @change_only_key({'region_info': 'region'}, key_path='query.only')
     @append_query_filter(['cloud_service_id', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
                           'region_code', 'region_type', 'resource_group_id', 'project_id', 'domain_id'])
-    @append_keyword_filter(['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
-                            'reference.resource_id', 'project_id'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
         Args:
@@ -309,13 +311,11 @@ class CloudServiceService(BaseService):
         resource_type = 'inventory.CloudService'
         rg_mgr: ResourceGroupManager = self.locator.get_manager('ResourceGroupManager')
 
-        resource_group_filters = rg_mgr.get_resource_group_filter(resource_group_id, resource_type, domain_id)
+        resource_group_filters = rg_mgr.get_resource_group_filter(resource_group_id, resource_type, domain_id,
+                                                                  _KEYWORD_FILTER)
         cloud_service_ids = []
-        for resource_group_filter in resource_group_filters:
-            resource_group_query = {
-                'filter': resource_group_filter,
-                'distinct': 'cloud_service_id'
-            }
+        for resource_group_query in resource_group_filters:
+            resource_group_query['distinct'] = 'cloud_service_id'
             result = self.cloud_svc_mgr.stat_cloud_services(resource_group_query)
             cloud_service_ids += result.get('results', [])
         return cloud_service_ids

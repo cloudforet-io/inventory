@@ -10,6 +10,7 @@ from spaceone.inventory.model.server_model import Server
 from spaceone.inventory.error import *
 
 _LOGGER = logging.getLogger(__name__)
+_KEYWORD_FILTER = ['server_id', 'name', 'ip_addresses', 'provider', 'reference.resource_id', 'project_id']
 
 
 @authentication_handler
@@ -244,8 +245,7 @@ class ServerService(BaseService):
     @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses',
                           'server_type', 'os_type', 'provider', 'region_code', 'region_type',
                           'resource_group_id', 'project_id', 'domain_id'])
-    @append_keyword_filter(['server_id', 'name', 'ip_addresses', 'provider', 'reference.resource_id',
-                            'project_id'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
         Args:
@@ -340,13 +340,11 @@ class ServerService(BaseService):
         resource_type = 'inventory.Server'
         rg_mgr: ResourceGroupManager = self.locator.get_manager('ResourceGroupManager')
 
-        resource_group_filters = rg_mgr.get_resource_group_filter(resource_group_id, resource_type, domain_id)
+        resource_group_filters = rg_mgr.get_resource_group_filter(resource_group_id, resource_type, domain_id,
+                                                                  _KEYWORD_FILTER)
         server_ids = []
-        for resource_group_filter in resource_group_filters:
-            resource_group_query = {
-                'filter': resource_group_filter,
-                'distinct': 'server_id'
-            }
+        for resource_group_query in resource_group_filters:
+            resource_group_query['distinct'] = 'server_id'
             result = self.server_mgr.stat_servers(resource_group_query)
             server_ids += result.get('results', [])
         return server_ids

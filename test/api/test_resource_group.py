@@ -193,7 +193,8 @@ class TestResourceGroup(unittest.TestCase):
                         {'k': 'data.compute.aws_tags.Value', 'v': ['bbbbb'], 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Key', 'v': 'Policy', 'o': 'eq'},
                         # {'k': 'data.compute.aws_tags.Value', 'v': 'N', 'o': 'eq'}
-                    ]
+                    ],
+                    'keyword': 'aa bb cc'
                 },
                 {
                     'resource_type': 'CloudService?provider=aws&cloud_service_group=DynamoDB&cloud_service_type=Table',
@@ -249,7 +250,8 @@ class TestResourceGroup(unittest.TestCase):
                 'resource_type': 'inventory.Server',
                 'filter': [
                     {'k': 'data.compute.xxxx', 'v': 'abcde', 'o': 'eq'},
-                ]
+                ],
+                'keyword': 'xx yy zz'
             },
         ]
 
@@ -261,6 +263,8 @@ class TestResourceGroup(unittest.TestCase):
         self.resource_group = self.inventory_v1.ResourceGroup.update(
             param,
             metadata=(('token', self.token),))
+
+        self._print_data(self.resource_group, 'test_update_resource_group_resource')
 
         self.assertEqual(len(self.resource_group.resources), len(update_resource))
 
