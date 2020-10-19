@@ -80,11 +80,11 @@ class CloudService(MongoModel):
                 'foreign_key': 'ref_region'
             }
         },
-        'ordering': [
-            'provider',
-            'cloud_service_group',
-            'cloud_service_type'
-        ],
+#        'ordering': [
+#            'provider',
+#            'cloud_service_group',
+#            'cloud_service_type'
+#        ],
         'indexes': [
             'cloud_service_id',
             'state',
