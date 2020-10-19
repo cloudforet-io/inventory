@@ -133,7 +133,7 @@ jobs:
           twine upload dist/*.whl --username ${{ secrets.PYPI_USERNAME }} --password ${{ secrets.PYPI_PASSWORD }} --verbose
 
   docker:
-    needs: [condition_check, update_local_version_file, pypi]
+    needs: [condition_check, update_local_version_file]
     if: github.repository_owner == 'spaceone-dev'
     runs-on: ubuntu-latest
     env:
