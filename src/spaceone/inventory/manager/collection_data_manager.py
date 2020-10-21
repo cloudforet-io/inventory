@@ -132,6 +132,10 @@ class CollectionDataManager(BaseManager):
         pinned_keys = collection_info.get('pinned_keys', [])
         state = collection_info['state']
 
+        _LOGGER.debug('------------------')
+        _LOGGER.debug(f'Update Mode: {self.update_mode}')
+        _LOGGER.debug(resource_data)
+
         if self.updated_by != 'manual':
             if self.updated_by not in all_secrets:
                 all_collectors.append(self.updated_by)
@@ -169,6 +173,9 @@ class CollectionDataManager(BaseManager):
 
         if self.is_changed:
             self.merged_data['collection_info'] = updated_collection_info
+
+        _LOGGER.debug(self.merged_data)
+        _LOGGER.debug('------------------')
 
         return self.merged_data
 
