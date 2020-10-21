@@ -219,7 +219,7 @@ class CollectionDataManager(BaseManager):
     def _merge_old_and_new_value(old_value, new_value):
         if isinstance(new_value, dict) and isinstance(old_value, dict):
             new_temp_value = copy.deepcopy(old_value)
-            old_value.update(new_value)
+            new_temp_value.update(new_value)
             return new_temp_value
         else:
             return new_value
