@@ -126,6 +126,7 @@ class Server(MongoModel):
             'server_type',
             'os_type',
             'provider',
+            'data.power_state.status',
             'reference.resource_id',
             'region_code',
             'region_type',
