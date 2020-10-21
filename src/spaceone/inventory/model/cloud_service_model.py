@@ -65,6 +65,7 @@ class CloudService(MongoModel):
             'provider',
             'cloud_service_group',
             'cloud_service_type',
+            'data.power_state.status',
             'reference.resource_id',
             'region_code',
             'region_type',
