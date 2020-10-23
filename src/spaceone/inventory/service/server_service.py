@@ -73,9 +73,9 @@ class ServerService(BaseService):
         if region_type and region_code:
             params['ref_region'] = f'{region_type}.{region_code}'
         elif region_type and not region_code:
-            raise ERROR_REQUIRED_PARAMETER(key='region_code')
+            del params['region_type']
         elif not region_type and region_code:
-            raise ERROR_REQUIRED_PARAMETER(key='region_type')
+            del params['region_code']
 
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
@@ -152,9 +152,9 @@ class ServerService(BaseService):
             if region_type and region_code:
                 params['ref_region'] = f'{region_type}.{region_code}'
             elif region_type and not region_code:
-                raise ERROR_REQUIRED_PARAMETER(key='region_code')
+                del params['region_type']
             elif not region_type and region_code:
-                raise ERROR_REQUIRED_PARAMETER(key='region_type')
+                del params['region_code']
 
         if release_project:
             params['project_id'] = None

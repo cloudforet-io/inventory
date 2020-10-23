@@ -65,9 +65,9 @@ class CloudServiceService(BaseService):
         if region_type and region_code:
             params['ref_region'] = f'{region_type}.{region_code}'
         elif region_type and not region_code:
-            raise ERROR_REQUIRED_PARAMETER(key='region_code')
+            del params['region_type']
         elif not region_type and region_code:
-            raise ERROR_REQUIRED_PARAMETER(key='region_type')
+            del params['region_code']
 
         params['ref_cloud_service_type'] = f'{params["provider"]}.' \
                                            f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
@@ -128,9 +128,9 @@ class CloudServiceService(BaseService):
             if region_type and region_code:
                 params['ref_region'] = f'{region_type}.{region_code}'
             elif region_type and not region_code:
-                raise ERROR_REQUIRED_PARAMETER(key='region_code')
+                del params['region_type']
             elif not region_type and region_code:
-                raise ERROR_REQUIRED_PARAMETER(key='region_type')
+                del params['region_code']
 
         if release_project:
             params['project_id'] = None
