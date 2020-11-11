@@ -14,3 +14,4 @@ from spaceone.inventory.manager.collection_data_manager import CollectionDataMan
 from spaceone.inventory.manager.collector_manager.__init__ import *
 from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
+from spaceone.inventory.manager.config_manager import ConfigManager
