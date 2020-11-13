@@ -63,13 +63,13 @@ class CloudServiceService(BaseService):
             params['project_id'] = secret_project_id
 
         if region_type and region_code:
-            params['ref_region'] = f'{region_type}.{region_code}'
+            params['ref_region'] = f'{domain_id}.{region_type}.{region_code}'
         elif region_type and not region_code:
             del params['region_type']
         elif not region_type and region_code:
             del params['region_code']
 
-        params['ref_cloud_service_type'] = f'{params["provider"]}.' \
+        params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
                                            f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
 
         params = data_mgr.create_new_history(params,
@@ -126,7 +126,7 @@ class CloudServiceService(BaseService):
             })
         else:
             if region_type and region_code:
-                params['ref_region'] = f'{region_type}.{region_code}'
+                params['ref_region'] = f'{domain_id}.{region_type}.{region_code}'
             elif region_type and not region_code:
                 del params['region_type']
             elif not region_type and region_code:
@@ -139,8 +139,10 @@ class CloudServiceService(BaseService):
         elif secret_project_id:
             params['project_id'] = secret_project_id
 
-        if not cloud_svc_vo.ref_cloud_service_type:
-            params['ref_cloud_service_type'] = f'{cloud_svc_vo.provider}.' \
+        # if not cloud_svc_vo.ref_cloud_service_type:
+        if True:
+            params['ref_cloud_service_type'] = f'{cloud_svc_vo.domain_id}.' \
+                                               f'{cloud_svc_vo.provider}.' \
                                                f'{cloud_svc_vo.cloud_service_group}.' \
                                                f'{cloud_svc_vo.cloud_service_type}'
 

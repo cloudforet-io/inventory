@@ -34,7 +34,7 @@ class RegionService(BaseService):
             region_vo (object)
         """
 
-        params['ref_region'] = f'{params["region_type"]}.{params["region_code"]}'
+        params['ref_region'] = f'{params["domain_id"]}.{params["region_type"]}.{params["region_code"]}'
 
         region_mgr: RegionManager = self.locator.get_manager('RegionManager')
         return region_mgr.create_region(params)
@@ -58,8 +58,9 @@ class RegionService(BaseService):
 
         region_vo = self.region_mgr.get_region(params['region_id'], params['domain_id'])
 
-        if not region_vo.ref_region:
-            params['ref_region'] = f'{region_vo.region_type}.{region_vo.region_code}'
+        # if not region_vo.ref_region:
+        if True:
+            params['ref_region'] = f'{region_vo.domain_id}.{region_vo.region_type}.{region_vo.region_code}'
 
         return self.region_mgr.update_region_by_vo(params, region_vo)
 

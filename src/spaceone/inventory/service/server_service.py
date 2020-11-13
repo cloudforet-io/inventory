@@ -71,7 +71,7 @@ class ServerService(BaseService):
             params['provider'] = provider
 
         if region_type and region_code:
-            params['ref_region'] = f'{region_type}.{region_code}'
+            params['ref_region'] = f'{domain_id}.{region_type}.{region_code}'
         elif region_type and not region_code:
             del params['region_type']
         elif not region_type and region_code:
@@ -150,7 +150,7 @@ class ServerService(BaseService):
             })
         else:
             if region_type and region_code:
-                params['ref_region'] = f'{region_type}.{region_code}'
+                params['ref_region'] = f'{domain_id}.{region_type}.{region_code}'
             elif region_type and not region_code:
                 del params['region_type']
             elif not region_type and region_code:
