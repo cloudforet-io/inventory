@@ -22,6 +22,9 @@ class CloudServiceTypeService(BaseService):
                     'name': 'str',
                     'group': 'str',
                     'provider': 'str',
+                    'is_primary': 'bool',
+                    'is_major': 'bool',
+                    'resource_type': 'str',
                     'metadata': 'dict',
                     'labels': 'list,
                     'tags': 'dict',
@@ -54,6 +57,9 @@ class CloudServiceTypeService(BaseService):
         Args:
             params (dict): {
                     'cloud_service_type_id': 'str',
+                    'is_primary': 'bool',
+                    'is_major': 'bool',
+                    'resource_type': 'str',
                     'metadata': 'dict',
                     'labels': 'list',
                     'tags': 'dict',

@@ -64,6 +64,8 @@ class ServerService(BaseService):
         primary_ip_address = params.get('primary_ip_address')
         region_type = params.get('region_type')
         region_code = params.get('region_code')
+        cloud_service_group = params.get('cloud_service_group')
+        cloud_service_type = params.get('cloud_service_type')
 
         params['state'] = params.get('state', 'INSERVICE')
 
@@ -76,6 +78,14 @@ class ServerService(BaseService):
             del params['region_type']
         elif not region_type and region_code:
             del params['region_code']
+
+        if cloud_service_group and cloud_service_type and provider:
+            params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
+                                               f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
+        elif cloud_service_group and not cloud_service_type:
+            del params['cloud_service_group']
+        elif not cloud_service_group and cloud_service_type:
+            del params['cloud_service_type']
 
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
@@ -136,6 +146,8 @@ class ServerService(BaseService):
         primary_ip_address = params.get('primary_ip_address')
         region_type = params.get('region_type')
         region_code = params.get('region_code')
+        cloud_service_group = params.get('cloud_service_group')
+        cloud_service_type = params.get('cloud_service_type')
 
         server_vo: Server = self.server_mgr.get_server(params['server_id'], params['domain_id'])
 
@@ -155,6 +167,14 @@ class ServerService(BaseService):
                 del params['region_type']
             elif not region_type and region_code:
                 del params['region_code']
+
+        if cloud_service_group and cloud_service_type and (provider or server_vo.provider):
+            params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
+                                               f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
+        elif cloud_service_group and not cloud_service_type:
+            del params['cloud_service_group']
+        elif not cloud_service_group and cloud_service_type:
+            del params['cloud_service_type']
 
         if release_project:
             params['project_id'] = None

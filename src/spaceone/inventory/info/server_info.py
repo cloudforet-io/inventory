@@ -41,6 +41,8 @@ def ServerInfo(server_vo: Server, minimal=False):
         'server_type': server_vo.server_type,
         'os_type': server_vo.os_type,
         'provider': server_vo.provider,
+        'cloud_service_group': server_vo.cloud_service_group,
+        'cloud_service_type': server_vo.cloud_service_type,
         'reference': server_pb2.ServerReference(
             **server_vo.reference.to_dict()) if server_vo.reference else None,
         'project_id': server_vo.project_id
