@@ -12,7 +12,7 @@ class Region(MongoModel):
     tags = DictField()
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
-    deleted_at = DateTimeField(default=None, null=True)
+    updated_at = DateTimeField(auto_now=True)
 
     meta = {
         'updatable_fields': [
@@ -36,9 +36,9 @@ class Region(MongoModel):
             'region_code',
             'region_type'
         ],
-        'ordering': [
-            'name'
-        ],
+        # 'ordering': [
+        #     'name'
+        # ],
         'indexes': [
             'region_id',
             'state',

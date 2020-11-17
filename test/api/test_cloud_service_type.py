@@ -135,6 +135,9 @@ class TestCloudServiceType(unittest.TestCase):
             'name': name,
             'provider': provider,
             'group': group,
+            'resource_type': 'inventory.Server',
+            'is_primary': True,
+            'is_major': True,
             # 'metadata': {
             #     'view': {
             #         'search': [{
@@ -247,6 +250,8 @@ class TestCloudServiceType(unittest.TestCase):
 
         param = {
             'cloud_service_type_id': self.cloud_service_type.cloud_service_type_id,
+            "is_primary": False,
+            "is_major": False,
             'labels': ['aa', 'bb'],
             'metadata': {
                 'view': {

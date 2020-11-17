@@ -229,6 +229,8 @@ class TestServer(unittest.TestCase):
             'primary_ip_address': ip_address,
             'os_type': 'LINUX',
             'provider': 'aws',
+            'cloud_service_group': 'EC2',
+            'cloud_service_type': 'Instance',
             "server_type": "VM",
             'data': {
                 'os': {
@@ -363,6 +365,8 @@ class TestServer(unittest.TestCase):
             {
                 'server_id': self.server.server_id,
                 'os_type': 'WINDOWS',
+                'cloud_service_group': 'ComputeEngine',
+                'cloud_service_type': 'Instance',
                 'data': {
                     'hardware': {
                         'core': 8,

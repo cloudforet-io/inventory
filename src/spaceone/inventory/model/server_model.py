@@ -4,6 +4,7 @@ from mongoengine import *
 from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
+from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
 from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
@@ -44,15 +45,18 @@ class Server(MongoModel):
                               choices=('UNKNOWN', 'BAREMETAL', 'VM', 'HYPERVISOR'))
     os_type = StringField(max_length=20, choices=('LINUX', 'WINDOWS'))
     provider = StringField(max_length=40)
+    cloud_service_group = StringField(max_length=255, default=None, null=True)
+    cloud_service_type = StringField(max_length=255, default=None, null=True)
+    ref_cloud_service_type = StringField(max_length=255, default=None, null=True)
     data = DictField()
     metadata = DictField()
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
     nics = ListField(EmbeddedDocumentField(NIC))
     disks = ListField(EmbeddedDocumentField(Disk))
     tags = DictField()
-    region_code = StringField(max_length=255)
-    region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'))
-    ref_region = StringField(max_length=255)
+    region_code = StringField(max_length=255, default=None, null=True)
+    region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'), default=None, null=True)
+    ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=40, default=None, null=True)
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
@@ -69,6 +73,9 @@ class Server(MongoModel):
             'server_type',
             'os_type',
             'provider',
+            'cloud_service_group',
+            'cloud_service_type',
+            'ref_cloud_service_type',
             'data',
             'metadata',
             'reference',
@@ -85,14 +92,17 @@ class Server(MongoModel):
         'exact_fields': [
             'server_id',
             'state',
-            'primary_ip_address'
+            'primary_ip_address',
             'server_type',
             'os_type',
-            'provider',
             'reference.resource_id',
+            'provider',
+            'cloud_service_group',
+            'cloud_service_type',
+            'ref_cloud_service_type',
             'region_code',
             'region_type',
-            'ref_region'
+            'ref_region',
             'project_id',
             'domain_id',
             'collection_info.state'
@@ -104,30 +114,39 @@ class Server(MongoModel):
             "primary_ip_address",
             "server_type",
             "os_type",
-            'provider',
             'reference.resource_id',
+            'provider',
+            'cloud_service_group',
+            'cloud_service_type',
             'region_code',
             'region_type',
             'project_id',
         ],
         'reference_query_keys': {
+            'ref_cloud_service_type': {
+                'model': CloudServiceType,
+                'foreign_key': 'ref_cloud_service_type'
+            },
             'ref_region': {
                 'model': Region,
                 'foreign_key': 'ref_region'
             }
         },
-#        'ordering': [
-#            'name'
-#        ],
+        # 'ordering': [
+        #     'name'
+        # ],
         'indexes': [
             'server_id',
             'state',
             'primary_ip_address',
             'server_type',
             'os_type',
-            'provider',
-            'data.power_state.status',
             'reference.resource_id',
+            'data.power_state.status',
+            'provider',
+            'cloud_service_group',
+            'cloud_service_type',
+            'ref_cloud_service_type',
             'region_code',
             'region_type',
             'ref_region',

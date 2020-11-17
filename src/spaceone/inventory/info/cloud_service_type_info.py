@@ -11,16 +11,19 @@ def CloudServiceTypeInfo(cloud_svc_type_vo: CloudServiceType, minimal=False):
     info = {
         'cloud_service_type_id': cloud_svc_type_vo.cloud_service_type_id,
         'name': cloud_svc_type_vo.name,
+        'provider': cloud_svc_type_vo.provider,
         'group': cloud_svc_type_vo.group,
-        'provider': cloud_svc_type_vo.provider
+        'is_primary': cloud_svc_type_vo.is_primary,
+        'is_major': cloud_svc_type_vo.is_major,
+        'resource_type': cloud_svc_type_vo.resource_type
     }
 
     if not minimal:
         info.update({
             'metadata': change_struct_type(cloud_svc_type_vo.metadata),
             'labels': change_list_value_type(cloud_svc_type_vo.labels),
-            'domain_id': cloud_svc_type_vo.domain_id,
             'tags': change_struct_type(cloud_svc_type_vo.tags),
+            'domain_id': cloud_svc_type_vo.domain_id,
             'collection_info': CollectionInfo(cloud_svc_type_vo.collection_info.to_dict()),
             'created_at': change_timestamp_type(cloud_svc_type_vo.created_at),
             'updated_at': change_timestamp_type(cloud_svc_type_vo.updated_at)
