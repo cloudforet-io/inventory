@@ -22,7 +22,7 @@ jobs:
       - name: calculate current date
         run: |
           sudo ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
-          echo "::set-env name=TIME::$(date +'%Y%m%d.%H%M%S')"
+          echo "TIME=$(date +'%Y%m%d.%H%M%S')" >> $GITHUB_ENV
       - name: calculate_version
         id: job1
         run: |
@@ -38,7 +38,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: get service name
         run: |
-          echo "::set-env name=SERVICE::$(echo ${{ github.repository }} | cut -c 14-)"
+          echo "SERVICE=$(echo ${{ github.repository }} | cut -c 14-)" >> $GITHUB_ENV
       - name: Upload docker
         uses: docker/build-push-action@v1
         with:
