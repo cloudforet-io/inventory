@@ -10,6 +10,9 @@ class CloudServiceType(MongoModel):
     provider = StringField(max_length=255)
     group = StringField(max_length=255)
     ref_cloud_service_type = StringField(max_length=255)
+    is_primary = BooleanField(default=False)
+    is_major = BooleanField(default=False)
+    resource_type = StringField(default='inventory.CloudService')
     labels = ListField(StringField(max_length=255))
     metadata = DictField()
     tags = DictField()
@@ -20,6 +23,9 @@ class CloudServiceType(MongoModel):
 
     meta = {
         'updatable_fields': [
+            'is_primary',
+            'is_major',
+            'resource_type',
             'metadata',
             'labels',
             'ref_cloud_service_type',
@@ -27,6 +33,8 @@ class CloudServiceType(MongoModel):
             'collection_info'
         ],
         'exact_fields': [
+            'is_primary',
+            'is_major',
             'cloud_service_type_id',
             'domain_id',
             'collection_info.state'
@@ -36,19 +44,26 @@ class CloudServiceType(MongoModel):
             'name',
             'provider',
             'group',
+            'is_primary',
+            'is_major',
+            'resource_type',
             'collection_info.state'
         ],
-        'ordering': [
-            'provider',
-            'group',
-            'name'
-        ],
+        # 'ordering': [
+        #     'provider',
+        #     'group',
+        #     'name'
+        # ],
         'indexes': [
             'cloud_service_type_id',
             'name',
             'provider',
             'group',
             'ref_cloud_service_type',
+            'is_primary',
+            'is_major',
+            'resource_type',
+            'labels',
             'domain_id',
             'collection_info.state'
         ]
