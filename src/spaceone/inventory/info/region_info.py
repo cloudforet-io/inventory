@@ -21,7 +21,7 @@ def RegionInfo(region_vo: Region, minimal=False):
     if not minimal:
         info.update({
             'created_at': change_timestamp_type(region_vo.created_at),
-            'deleted_at': change_timestamp_type(region_vo.deleted_at),
+            'updated_at': change_timestamp_type(region_vo.updated_at),
             'tags': change_struct_type(region_vo.tags),
             'domain_id': region_vo.domain_id
         })
