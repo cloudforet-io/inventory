@@ -93,7 +93,7 @@ class ServerService(BaseService):
         params['primary_ip_address'] = self._get_primary_ip_address(
             primary_ip_address, params['ip_addresses'])
 
-        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region'])
+        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
 
         return self.server_mgr.create_server(params)
 
@@ -189,7 +189,8 @@ class ServerService(BaseService):
                     primary_ip_address, server_vo.ip_addresses)
 
         server_data = server_vo.to_dict()
-        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool', 'ref_region']
+        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool',
+                        'ref_region', 'ref_cloud_service_type']
         params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
