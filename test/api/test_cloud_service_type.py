@@ -297,6 +297,24 @@ class TestCloudServiceType(unittest.TestCase):
         self._print_data(self.cloud_service_type, 'test_update_cloud_service_type_service_code')
         self.assertEqual(self.cloud_service_type.service_code, service_code)
 
+    def test_update_cloud_service_type_resource_type(self):
+        self.test_create_cloud_service_type()
+
+        resource_type = 'inventory.CloudService'
+
+        param = {
+            'cloud_service_type_id': self.cloud_service_type.cloud_service_type_id,
+            'resource_type': resource_type,
+            'domain_id': self.domain.domain_id,
+        }
+        self.cloud_service_type = self.inventory_v1.CloudServiceType.update(
+            param,
+            metadata=(('token', self.token),)
+        )
+
+        self._print_data(self.cloud_service_type, 'test_update_cloud_service_type_resource_type')
+        self.assertEqual(self.cloud_service_type.resource_type, resource_type)
+
     def test_update_cloud_service_type_label(self):
         self.test_create_cloud_service_type()
 
