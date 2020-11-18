@@ -13,7 +13,7 @@ class CloudServiceType(MongoModel):
     service_code = StringField(max_length=255, default=None, null=True)
     is_primary = BooleanField(default=False)
     is_major = BooleanField(default=False)
-    resource_type = StringField(default='inventory.CloudService')
+    resource_type = StringField(max_length=255)
     labels = ListField(StringField(max_length=255))
     metadata = DictField()
     tags = DictField()

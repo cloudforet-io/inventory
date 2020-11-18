@@ -44,6 +44,8 @@ class CloudServiceTypeService(BaseService):
         if provider:
             params['provider'] = provider
 
+        params['resource_type'] = params.get('resource_type', 'inventory.CloudService')
+
         params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
                                            f'{params["group"]}.{params["name"]}'
 
