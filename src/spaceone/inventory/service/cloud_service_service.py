@@ -35,7 +35,6 @@ class CloudServiceService(BaseService):
                     'reference': 'dict',
                     'tags': 'dict',
                     'region_code': 'str',
-                    'region_type': 'str',
                     'project_id': 'str',
                     'domain_id': 'str'
                 }
@@ -51,7 +50,6 @@ class CloudServiceService(BaseService):
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
-        region_type = params.get('region_type')
         region_code = params.get('region_code')
 
         if provider:
@@ -62,15 +60,13 @@ class CloudServiceService(BaseService):
         elif secret_project_id:
             params['project_id'] = secret_project_id
 
-        if region_type and region_code:
-            params['ref_region'] = f'{domain_id}.{region_type}.{region_code}'
-        elif region_type and not region_code:
-            del params['region_type']
-        elif not region_type and region_code:
-            del params['region_code']
+        if region_code:
+            params['ref_region'] = f'{domain_id}.{provider or "datacenter"}.{region_code}'
 
-        params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
-                                           f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
+        params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
+                                           f'{params["provider"]}.' \
+                                           f'{params["cloud_service_group"]}.' \
+                                           f'{params["cloud_service_type"]}'
 
         params = data_mgr.create_new_history(params,
                                              exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
@@ -90,7 +86,6 @@ class CloudServiceService(BaseService):
                     'tags': 'dict',
                     'project_id': 'str',
                     'region_code': 'str',
-                    'region_type': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
                     'release_region': 'bool'
@@ -110,7 +105,6 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
-        region_type = params.get('region_type')
         region_code = params.get('region_code')
         cloud_service_group = params.get('cloud_service_group')
         cloud_service_type = params.get('cloud_service_type')
@@ -123,16 +117,11 @@ class CloudServiceService(BaseService):
         if release_region:
             params.update({
                 'region_code': None,
-                'region_type': None,
                 'ref_region': None
             })
         else:
-            if region_type and region_code:
-                params['ref_region'] = f'{domain_id}.{region_type}.{region_code}'
-            elif region_type and not region_code:
-                del params['region_type']
-            elif not region_type and region_code:
-                del params['region_code']
+            if region_code:
+                params['ref_region'] = f'{domain_id}.{provider or cloud_svc_vo.provider or "datacenter"}.{region_code}'
 
         if release_project:
             params['project_id'] = None
@@ -236,7 +225,7 @@ class CloudServiceService(BaseService):
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region'}, key_path='query.only')
     @append_query_filter(['cloud_service_id', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
-                          'region_code', 'region_type', 'resource_group_id', 'project_id', 'domain_id'])
+                          'region_code', 'resource_group_id', 'project_id', 'domain_id'])
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
@@ -248,7 +237,6 @@ class CloudServiceService(BaseService):
                     'cloud_service_group': 'str',
                     'provider': 'str',
                     'region_code': 'str',
-                    'region_type': 'str',
                     'resource_group_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
