@@ -58,7 +58,6 @@ def ServerInfo(server_vo: Server, minimal=False):
             'tags': change_struct_type(server_vo.tags),
             'collection_info': CollectionInfo(server_vo.collection_info.to_dict()),
             'region_code': server_vo.region_code,
-            'region_type': server_vo.region_type,
             'domain_id': server_vo.domain_id,
             'created_at': change_timestamp_type(server_vo.created_at),
             'updated_at': change_timestamp_type(server_vo.updated_at),
