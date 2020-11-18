@@ -13,6 +13,7 @@ def CloudServiceTypeInfo(cloud_svc_type_vo: CloudServiceType, minimal=False):
         'name': cloud_svc_type_vo.name,
         'provider': cloud_svc_type_vo.provider,
         'group': cloud_svc_type_vo.group,
+        'service_code': cloud_svc_type_vo.service_code,
         'is_primary': cloud_svc_type_vo.is_primary,
         'is_major': cloud_svc_type_vo.is_major,
         'resource_type': cloud_svc_type_vo.resource_type

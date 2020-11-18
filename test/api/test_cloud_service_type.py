@@ -185,7 +185,7 @@ class TestCloudServiceType(unittest.TestCase):
         self.cloud_service_types.append(self.cloud_service_type)
         self.assertEqual(self.cloud_service_type.name, name)
 
-    def test_create_cloud_service_type_group(self, name=None, provider=None):
+    def test_create_cloud_service_type_with_service_code(self, name=None, provider=None):
         """ Create Cloud Service Type with group
         """
 
@@ -196,17 +196,21 @@ class TestCloudServiceType(unittest.TestCase):
             provider = random_string()
 
         group = random_string()
+        service_code = random_string()
 
         params = {
             'name': name,
             'provider': provider,
             'group': group,
+            'service_code': service_code,
             'domain_id': self.domain.domain_id
         }
 
         self.cloud_service_type = self.inventory_v1.CloudServiceType.create(params, metadata=(('token', self.token),))
         self.cloud_service_types.append(self.cloud_service_type)
-        self.assertEqual(self.cloud_service_type.group, group)
+
+        self._print_data(self.cloud_service_type, 'test_create_cloud_service_type_with_service_code')
+        self.assertEqual(self.cloud_service_type.service_code, service_code)
 
     def test_create_cloud_service_type_labels(self, name=None, provider=None, group=None):
         """ Create Cloud Service Type with group
@@ -272,6 +276,26 @@ class TestCloudServiceType(unittest.TestCase):
         )
 
         self._print_data(self.cloud_service_type, 'test_update_cloud_service_type_metadata')
+
+    def test_update_cloud_service_type_service_code(self):
+        self.test_create_cloud_service_type()
+
+        service_code = random_string()
+
+        param = {
+            'cloud_service_type_id': self.cloud_service_type.cloud_service_type_id,
+            "is_primary": False,
+            "is_major": False,
+            'service_code': service_code,
+            'domain_id': self.domain.domain_id,
+        }
+        self.cloud_service_type = self.inventory_v1.CloudServiceType.update(
+            param,
+            metadata=(('token', self.token),)
+        )
+
+        self._print_data(self.cloud_service_type, 'test_update_cloud_service_type_service_code')
+        self.assertEqual(self.cloud_service_type.service_code, service_code)
 
     def test_update_cloud_service_type_label(self):
         self.test_create_cloud_service_type()
