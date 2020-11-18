@@ -112,6 +112,8 @@ class CloudServiceService(BaseService):
         release_project = params.get('release_project', False)
         region_type = params.get('region_type')
         region_code = params.get('region_code')
+        cloud_service_group = params.get('cloud_service_group')
+        cloud_service_type = params.get('cloud_service_type')
 
         cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], domain_id)
 
@@ -140,11 +142,24 @@ class CloudServiceService(BaseService):
             params['project_id'] = secret_project_id
 
         # if not cloud_svc_vo.ref_cloud_service_type:
-        if True:
-            params['ref_cloud_service_type'] = f'{cloud_svc_vo.domain_id}.' \
-                                               f'{cloud_svc_vo.provider}.' \
-                                               f'{cloud_svc_vo.cloud_service_group}.' \
-                                               f'{cloud_svc_vo.cloud_service_type}'
+        #     params['ref_cloud_service_type'] = f'{cloud_svc_vo.domain_id}.' \
+        #                                        f'{cloud_svc_vo.provider}.' \
+        #                                        f'{cloud_svc_vo.cloud_service_group}.' \
+        #                                        f'{cloud_svc_vo.cloud_service_type}'
+
+        if cloud_service_group and cloud_service_type:
+            if provider or cloud_svc_vo.provider:
+                params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
+                                                   f'{provider or cloud_svc_vo.provider}.' \
+                                                   f'{params["cloud_service_group"]}.' \
+                                                   f'{params["cloud_service_type"]}'
+            else:
+                del params['cloud_service_group']
+                del params['cloud_service_type']
+        elif cloud_service_group and not cloud_service_type:
+            del params['cloud_service_group']
+        elif not cloud_service_group and cloud_service_type:
+            del params['cloud_service_type']
 
         cloud_svc_data = cloud_svc_vo.to_dict()
         exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_region',

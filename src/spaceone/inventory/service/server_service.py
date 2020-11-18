@@ -168,9 +168,15 @@ class ServerService(BaseService):
             elif not region_type and region_code:
                 del params['region_code']
 
-        if cloud_service_group and cloud_service_type and (provider or server_vo.provider):
-            params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
-                                               f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
+        if cloud_service_group and cloud_service_type:
+            if provider or server_vo.provider:
+                params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
+                                                   f'{provider or server_vo.provider}.' \
+                                                   f'{params["cloud_service_group"]}.' \
+                                                   f'{params["cloud_service_type"]}'
+            else:
+                del params['cloud_service_group']
+                del params['cloud_service_type']
         elif cloud_service_group and not cloud_service_type:
             del params['cloud_service_group']
         elif not cloud_service_group and cloud_service_type:

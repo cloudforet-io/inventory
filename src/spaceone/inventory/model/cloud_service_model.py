@@ -40,6 +40,8 @@ class CloudService(MongoModel):
             'project_id',
             'region_code',
             'region_type',
+            'cloud_service_group',
+            'cloud_service_type',
             'ref_cloud_service_type',
             'ref_region',
             'collection_info',
