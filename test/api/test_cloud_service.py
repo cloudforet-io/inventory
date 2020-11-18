@@ -134,7 +134,7 @@ class TestCloudService(unittest.TestCase):
                 metadata=(('token', self.token),)
             )
 
-    def _create_region(self, name=None, region_type='AWS', region_code=None):
+    def _create_region(self, name=None, provider='aws', region_code=None):
         """ Create Region
         """
 
@@ -147,7 +147,7 @@ class TestCloudService(unittest.TestCase):
         params = {
             'name': name,
             'region_code': region_code,
-            'region_type': region_type,
+            'provider': provider,
             'domain_id': self.domain.domain_id
         }
 
@@ -240,7 +240,6 @@ class TestCloudService(unittest.TestCase):
             'data': data,
             'metadata': metadata,
             "region_code": "ap-northeast-2",
-            "region_type": "AWS",
             "reference": {
                 "resource_id": "resource-xxxx",
                 "external_link": "https://aaa.bbb.ccc/"
@@ -306,7 +305,6 @@ class TestCloudService(unittest.TestCase):
                 random_string(): random_string()
             },
             'region_code': self.region.region_code,
-            'region_type': self.region.region_type,
             'domain_id': self.domain.domain_id
         }
 
@@ -373,7 +371,6 @@ class TestCloudService(unittest.TestCase):
         param = {
             'cloud_service_id': self.cloud_service.cloud_service_id,
             'region_code': self.region.region_code,
-            'region_type': self.region.region_type,
             'domain_id': self.domain.domain_id
         }
 
@@ -389,7 +386,6 @@ class TestCloudService(unittest.TestCase):
         param = {
             'cloud_service_id': self.cloud_service.cloud_service_id,
             'region_code': self.region.region_code,
-            'region_type': self.region.region_type,
             'domain_id': self.domain.domain_id
         }
 

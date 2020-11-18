@@ -27,7 +27,6 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'tags': change_struct_type(cloud_svc_vo.tags),
             'collection_info': CollectionInfo(cloud_svc_vo.collection_info.to_dict()),
             'region_code': cloud_svc_vo.region_code,
-            'region_type': cloud_svc_vo.region_type,
             'domain_id': cloud_svc_vo.domain_id,
             'created_at': change_timestamp_type(cloud_svc_vo.created_at),
             'updated_at': change_timestamp_type(cloud_svc_vo.updated_at),

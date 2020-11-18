@@ -43,7 +43,6 @@ class ServerService(BaseService):
                     'disks': 'list',
                     'tags': 'dict',
                     'region_code': 'str',
-                    'region_type': 'str',
                     'project_id': 'str',
                     'domain_id': 'str'
                 }
@@ -62,7 +61,6 @@ class ServerService(BaseService):
         domain_id = params['domain_id']
         nics = params.get('nics', [])
         primary_ip_address = params.get('primary_ip_address')
-        region_type = params.get('region_type')
         region_code = params.get('region_code')
         cloud_service_group = params.get('cloud_service_group')
         cloud_service_type = params.get('cloud_service_type')
@@ -72,16 +70,14 @@ class ServerService(BaseService):
         if provider:
             params['provider'] = provider
 
-        if region_type and region_code:
-            params['ref_region'] = f'{domain_id}.{region_type}.{region_code}'
-        elif region_type and not region_code:
-            del params['region_type']
-        elif not region_type and region_code:
-            del params['region_code']
+        if region_code:
+            params['ref_region'] = f'{domain_id}.{provider or "datacenter"}.{region_code}'
 
         if cloud_service_group and cloud_service_type and provider:
-            params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
-                                               f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
+            params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
+                                               f'{params["provider"]}.' \
+                                               f'{params["cloud_service_group"]}.' \
+                                               f'{params["cloud_service_type"]}'
         elif cloud_service_group and not cloud_service_type:
             del params['cloud_service_group']
         elif not cloud_service_group and cloud_service_type:
@@ -97,7 +93,7 @@ class ServerService(BaseService):
         params['primary_ip_address'] = self._get_primary_ip_address(
             primary_ip_address, params['ip_addresses'])
 
-        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region'])
+        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
 
         return self.server_mgr.create_server(params)
 
@@ -122,7 +118,6 @@ class ServerService(BaseService):
                     'tags': 'dict',
                     'asset_id': 'str',
                     'region_code': 'str',
-                    'region_type': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
@@ -144,7 +139,6 @@ class ServerService(BaseService):
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
         primary_ip_address = params.get('primary_ip_address')
-        region_type = params.get('region_type')
         region_code = params.get('region_code')
         cloud_service_group = params.get('cloud_service_group')
         cloud_service_type = params.get('cloud_service_type')
@@ -157,20 +151,21 @@ class ServerService(BaseService):
         if release_region:
             params.update({
                 'region_code': None,
-                'region_type': None,
                 'ref_region': None
             })
         else:
-            if region_type and region_code:
-                params['ref_region'] = f'{domain_id}.{region_type}.{region_code}'
-            elif region_type and not region_code:
-                del params['region_type']
-            elif not region_type and region_code:
-                del params['region_code']
+            if region_code:
+                params['ref_region'] = f'{domain_id}.{provider or server_vo.provider or "datacenter"}.{region_code}'
 
-        if cloud_service_group and cloud_service_type and (provider or server_vo.provider):
-            params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
-                                               f'{params["cloud_service_group"]}.{params["cloud_service_type"]}'
+        if cloud_service_group and cloud_service_type:
+            if provider or server_vo.provider:
+                params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
+                                                   f'{provider or server_vo.provider}.' \
+                                                   f'{params["cloud_service_group"]}.' \
+                                                   f'{params["cloud_service_type"]}'
+            else:
+                del params['cloud_service_group']
+                del params['cloud_service_type']
         elif cloud_service_group and not cloud_service_type:
             del params['cloud_service_group']
         elif not cloud_service_group and cloud_service_type:
@@ -194,7 +189,8 @@ class ServerService(BaseService):
                     primary_ip_address, server_vo.ip_addresses)
 
         server_data = server_vo.to_dict()
-        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool', 'ref_region']
+        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool',
+                        'ref_region', 'ref_cloud_service_type']
         params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
@@ -263,7 +259,7 @@ class ServerService(BaseService):
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'}, key_path='query.only')
     @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses',
-                          'server_type', 'os_type', 'provider', 'region_code', 'region_type',
+                          'server_type', 'os_type', 'provider', 'region_code',
                           'resource_group_id', 'project_id', 'domain_id'])
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -280,7 +276,6 @@ class ServerService(BaseService):
                     'provider': 'str',
                     'asset_id': 'str',
                     'region_code': 'str',
-                    'region_type': 'str',
                     'resource_group_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',

@@ -184,7 +184,7 @@ class TestServer(unittest.TestCase):
         self.projects.append(self.project)
         self.assertEqual(self.project.name, params['name'])
 
-    def _create_region(self, name=None, region_type='AWS', region_code=None):
+    def _create_region(self, name=None, provider='aws', region_code=None):
         if name is None:
             name = 'Region-' + random_string()[0:5]
 
@@ -194,7 +194,7 @@ class TestServer(unittest.TestCase):
         params = {
             'name': name,
             'region_code': region_code,
-            'region_type': region_type,
+            'provider': provider,
             'domain_id': self.domain.domain_id
         }
 
@@ -320,7 +320,6 @@ class TestServer(unittest.TestCase):
             },
             'project_id': self.project.project_id,
             'region_code': self.region.region_code,
-            'region_type': self.region.region_type,
             'domain_id': self.domain.domain_id,
             'tags': {
                 'tag_key': 'tag_value'
@@ -645,7 +644,6 @@ class TestServer(unittest.TestCase):
         params = {
             'server_id': self.server.server_id,
             'region_code': self.region.region_code,
-            'region_type': self.region.region_type,
             'domain_id': self.domain.domain_id
         }
 

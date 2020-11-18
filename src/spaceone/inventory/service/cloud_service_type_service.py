@@ -22,6 +22,7 @@ class CloudServiceTypeService(BaseService):
                     'name': 'str',
                     'group': 'str',
                     'provider': 'str',
+                    'service_code': 'str',
                     'is_primary': 'bool',
                     'is_major': 'bool',
                     'resource_type': 'str',
@@ -57,6 +58,7 @@ class CloudServiceTypeService(BaseService):
         Args:
             params (dict): {
                     'cloud_service_type_id': 'str',
+                    'service_code': 'str',
                     'is_primary': 'bool',
                     'is_major': 'bool',
                     'resource_type': 'str',
@@ -85,8 +87,10 @@ class CloudServiceTypeService(BaseService):
 
         # if not cloud_svc_type_vo.ref_cloud_service_type:
         if True:
-            params['ref_cloud_service_type'] = f'{domain_id}.{cloud_svc_type_vo.provider}.' \
-                                               f'{cloud_svc_type_vo.group}.{cloud_svc_type_vo.name}'
+            params['ref_cloud_service_type'] = f'{domain_id}.' \
+                                               f'{cloud_svc_type_vo.provider}.' \
+                                               f'{cloud_svc_type_vo.group}.' \
+                                               f'{cloud_svc_type_vo.name}'
 
         exclude_keys = ['cloud_service_type_id', 'domain_id', 'ref_cloud_service_type']
         params = data_mgr.merge_data_by_history(params, cloud_svc_type_vo.to_dict(), exclude_keys=exclude_keys)
@@ -161,8 +165,8 @@ class CloudServiceTypeService(BaseService):
 
     @transaction
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'domain_id'])
-    @append_keyword_filter(['cloud_service_type_id', 'name', 'provider', 'group'])
+    @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code', 'domain_id'])
+    @append_keyword_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code'])
     def list(self, params):
         """
         Args:
@@ -171,6 +175,7 @@ class CloudServiceTypeService(BaseService):
                     'name': 'str',
                     'group': 'str',
                     'provider': 'str',
+                    'service_code': 'str',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)'
                 }

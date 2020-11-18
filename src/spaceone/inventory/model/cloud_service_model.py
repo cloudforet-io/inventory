@@ -21,7 +21,6 @@ class CloudService(MongoModel):
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
     tags = DictField()
     region_code = StringField(max_length=255, default=None, null=True)
-    region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'), default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
@@ -39,7 +38,8 @@ class CloudService(MongoModel):
             'tags',
             'project_id',
             'region_code',
-            'region_type',
+            'cloud_service_group',
+            'cloud_service_type',
             'ref_cloud_service_type',
             'ref_region',
             'collection_info',
@@ -54,7 +54,6 @@ class CloudService(MongoModel):
             'cloud_service_type',
             'ref_cloud_service_type',
             'region_code',
-            'region_type',
             'ref_region',
             'project_id',
             'domain_id',
@@ -67,7 +66,6 @@ class CloudService(MongoModel):
             'cloud_service_group',
             'cloud_service_type',
             'region_code',
-            'region_type',
             'project_id'
         ],
         'reference_query_keys': {
@@ -95,7 +93,6 @@ class CloudService(MongoModel):
             'cloud_service_type',
             'ref_cloud_service_type',
             'region_code',
-            'region_type',
             'ref_region',
             'project_id',
             'domain_id',

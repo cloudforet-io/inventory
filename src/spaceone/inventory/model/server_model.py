@@ -55,7 +55,6 @@ class Server(MongoModel):
     disks = ListField(EmbeddedDocumentField(Disk))
     tags = DictField()
     region_code = StringField(max_length=255, default=None, null=True)
-    region_type = StringField(max_length=255, choices=('AWS', 'GOOGLE_CLOUD', 'AZURE', 'DATACENTER'), default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=40, default=None, null=True)
     domain_id = StringField(max_length=40)
@@ -83,7 +82,6 @@ class Server(MongoModel):
             'disks',
             'project_id',
             'region_code',
-            'region_type',
             'ref_region',
             'tags',
             'collection_info',
@@ -101,7 +99,6 @@ class Server(MongoModel):
             'cloud_service_type',
             'ref_cloud_service_type',
             'region_code',
-            'region_type',
             'ref_region',
             'project_id',
             'domain_id',
@@ -119,7 +116,6 @@ class Server(MongoModel):
             'cloud_service_group',
             'cloud_service_type',
             'region_code',
-            'region_type',
             'project_id',
         ],
         'reference_query_keys': {
@@ -148,7 +144,6 @@ class Server(MongoModel):
             'cloud_service_type',
             'ref_cloud_service_type',
             'region_code',
-            'region_type',
             'ref_region',
             'project_id',
             'domain_id',
