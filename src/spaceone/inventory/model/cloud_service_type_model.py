@@ -69,6 +69,9 @@ class CloudServiceType(MongoModel):
             'resource_type',
             'labels',
             'domain_id',
-            'collection_info.state'
+            'collection_info.state',
+            'collection_info.collectors',
+            'collection_info.service_accounts',
+            'collection_info.secrets'
         ]
     }

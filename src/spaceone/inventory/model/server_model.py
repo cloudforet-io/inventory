@@ -147,7 +147,10 @@ class Server(MongoModel):
             'ref_region',
             'project_id',
             'domain_id',
-            'collection_info.state'
+            'collection_info.state',
+            'collection_info.collectors',
+            'collection_info.service_accounts',
+            'collection_info.secrets'
         ]
     }
 
