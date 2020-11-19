@@ -12,6 +12,7 @@ from spaceone.inventory.info.collector_info import PluginInfo
 from spaceone.inventory.manager.collector_manager.repository_manager import RepositoryManager
 
 _LOGGER = logging.getLogger(__name__)
+_KEYWORD_FILTER = ['collector_id', 'name', 'provider']
 
 
 @authentication_handler
@@ -123,7 +124,7 @@ class CollectorService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @append_query_filter(['collector_id', 'name', 'state', 'priority', 'plugin_id', 'domain_id'])
-    @append_keyword_filter(['collector_id', 'name', 'provider'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         query = params.get('query', {})
@@ -132,6 +133,7 @@ class CollectorService(BaseService):
     @transaction
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """
         Args:

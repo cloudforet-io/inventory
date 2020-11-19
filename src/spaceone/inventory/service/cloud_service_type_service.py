@@ -3,6 +3,8 @@ from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTy
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.error import *
 
+_KEYWORD_FILTER = ['cloud_service_type_id', 'name', 'provider', 'group', 'service_code']
+
 
 @authentication_handler
 @authorization_handler
@@ -168,7 +170,7 @@ class CloudServiceTypeService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code', 'domain_id'])
-    @append_keyword_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
         Args:
@@ -193,6 +195,7 @@ class CloudServiceTypeService(BaseService):
     @transaction
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """
         Args:

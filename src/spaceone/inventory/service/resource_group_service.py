@@ -5,6 +5,7 @@ from spaceone.inventory.manager.resource_group_manager import ResourceGroupManag
 from spaceone.inventory.manager.identity_manager import IdentityManager
 
 _LOGGER = logging.getLogger(__name__)
+_KEYWORD_FILTER = ['resource_group_id', 'name']
 
 
 @authentication_handler
@@ -108,7 +109,7 @@ class ResourceGroupService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @append_query_filter(['resource_group_id', 'name', 'project_id', 'domain_id'])
-    @append_keyword_filter(['resource_group_id', 'name'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
         Args:
@@ -131,6 +132,7 @@ class ResourceGroupService(BaseService):
     @transaction
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """
         Args:

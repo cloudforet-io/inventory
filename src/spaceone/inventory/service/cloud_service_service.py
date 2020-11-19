@@ -6,8 +6,8 @@ from spaceone.inventory.manager.resource_group_manager import ResourceGroupManag
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.error import *
 
-_KEYWORD_FILTER = ['cloud_service_id', 'cloud_service_type', 'provider', 'cloud_service_group',
-                   'reference.resource_id', 'project_id']
+_KEYWORD_FILTER = ['cloud_service_id', 'provider', 'cloud_service_group', 'cloud_service_type',
+                   'reference.resource_id']
 
 
 @authentication_handler
@@ -84,8 +84,8 @@ class CloudServiceService(BaseService):
                     'metadata': 'dict',
                     'reference': 'dict',
                     'tags': 'dict',
-                    'project_id': 'str',
                     'region_code': 'str',
+                    'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
                     'release_region': 'bool'
@@ -233,9 +233,9 @@ class CloudServiceService(BaseService):
             params (dict): {
                     'cloud_service_id': 'str',
                     'state': 'str',
+                    'provider': 'str',
                     'cloud_service_type': 'str',
                     'cloud_service_group': 'str',
-                    'provider': 'str',
                     'region_code': 'str',
                     'resource_group_id': 'str',
                     'project_id': 'str',
@@ -257,6 +257,7 @@ class CloudServiceService(BaseService):
     @transaction
     @check_required(['query', 'domain_id'])
     @append_query_filter(['resource_group_id', 'domain_id'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """
         Args:

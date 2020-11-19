@@ -10,7 +10,8 @@ from spaceone.inventory.model.server_model import Server
 from spaceone.inventory.error import *
 
 _LOGGER = logging.getLogger(__name__)
-_KEYWORD_FILTER = ['server_id', 'name', 'ip_addresses', 'provider', 'reference.resource_id', 'project_id']
+_KEYWORD_FILTER = ['server_id', 'name', 'ip_addresses', 'provider', 'cloud_service_group',
+                   'cloud_service_type', 'reference.resource_id']
 
 
 @authentication_handler
@@ -36,13 +37,15 @@ class ServerService(BaseService):
                     'server_type': 'BAREMETAL | VM | HYPERVISOR | UNKNOWN',
                     'os_type': 'LINUX | WINDOWS',
                     'provider': 'str',
+                    'cloud_service_group': 'str',
+                    'cloud_service_type': 'str',
+                    'region_code': 'str',
                     'data': 'dict',
                     'metadata': 'dict',
-                    'reference': 'dict',
                     'nics': 'list',
                     'disks': 'list',
+                    'reference': 'dict',
                     'tags': 'dict',
-                    'region_code': 'str',
                     'project_id': 'str',
                     'domain_id': 'str'
                 }
@@ -110,14 +113,15 @@ class ServerService(BaseService):
                     'server_type': 'BAREMETAL | VM | HYPERVISOR | UNKNOWN',
                     'os_type': 'LINUX | WINDOWS',
                     'provider': 'str',
+                    'cloud_service_group': 'str',
+                    'cloud_service_type': 'str',
+                    'region_code': 'str',
                     'data': 'dict',
                     'metadata': 'dict',
-                    'reference': 'dict',
                     'nics': 'list',
                     'disks': 'list',
+                    'reference': 'dict',
                     'tags': 'dict',
-                    'asset_id': 'str',
-                    'region_code': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
@@ -274,7 +278,8 @@ class ServerService(BaseService):
                     'server_type': 'BAREMETAL | VM | HYPERVISOR | UNKNOWN',
                     'os_type': 'LINUX | WINDOWS',
                     'provider': 'str',
-                    'asset_id': 'str',
+                    'cloud_service_group': 'str',
+                    'cloud_service_type': 'str',
                     'region_code': 'str',
                     'resource_group_id': 'str',
                     'project_id': 'str',
@@ -296,6 +301,7 @@ class ServerService(BaseService):
     @transaction
     @check_required(['query', 'domain_id'])
     @append_query_filter(['resource_group_id', 'domain_id'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """
         Args:
