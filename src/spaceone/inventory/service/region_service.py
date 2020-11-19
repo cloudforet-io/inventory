@@ -4,6 +4,7 @@ from spaceone.inventory.error import *
 from spaceone.inventory.manager.region_manager import RegionManager
 
 _LOGGER = logging.getLogger(__name__)
+_KEYWORD_FILTER = ['region_id', 'name', 'region_code']
 
 
 @authentication_handler
@@ -98,7 +99,7 @@ class RegionService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @append_query_filter(['region_id', 'name', 'region_code', 'provider', 'domain_id'])
-    @append_keyword_filter(['region_id', 'name'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
         Args:
@@ -122,6 +123,7 @@ class RegionService(BaseService):
     @transaction
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
+    @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """
         Args:
