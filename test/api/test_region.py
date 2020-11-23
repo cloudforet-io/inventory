@@ -1,7 +1,9 @@
 import os
 import uuid
 import random
+import pprint
 import unittest
+
 from spaceone.core import utils, pygrpc
 from spaceone.core.unittest.runner import RichTestRunner
 from google.protobuf.json_format import MessageToDict
@@ -14,7 +16,7 @@ def random_string():
 class TestRegion(unittest.TestCase):
     config = utils.load_yaml_from_file(
         os.environ.get('SPACEONE_TEST_CONFIG_FILE', './config.yml'))
-
+    pp = pprint.PrettyPrinter(indent=4)
     identity_v1 = None
     inventory_v1 = None
     domain = None
@@ -113,6 +115,13 @@ class TestRegion(unittest.TestCase):
                 metadata=(('token', self.token),)
             )
 
+    def _print_data(self, message, description=None):
+        print()
+        if description:
+            print(f'[ {description} ]')
+
+        self.pp.pprint(MessageToDict(message, preserving_proto_field_name=True))
+
     def test_create_region(self, name=None, region_code='ap-northeast-2', provider='aws'):
         """ Create Region
         """
@@ -132,6 +141,7 @@ class TestRegion(unittest.TestCase):
             metadata=(('token', self.token),))
 
         self.regions.append(self.region)
+        self._print_data(self.region, 'test_create_region')
         self.assertEqual(self.region.name, name)
 
     def test_update_region_name(self):
@@ -146,6 +156,7 @@ class TestRegion(unittest.TestCase):
         self.region = self.inventory_v1.Region.update(
             param,
             metadata=(('token', self.token),))
+        self._print_data(self.region, 'test_update_region_name')
         self.assertEqual(self.region.name, name)
 
     def test_update_region_tags(self):
