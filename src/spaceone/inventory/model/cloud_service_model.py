@@ -43,6 +43,7 @@ class CloudService(MongoModel):
             'ref_cloud_service_type',
             'ref_region',
             'collection_info',
+            'updated_at',
             'deleted_at'
         ],
         'exact_fields': [
