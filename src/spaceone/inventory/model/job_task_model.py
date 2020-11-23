@@ -74,5 +74,7 @@ class JobTask(MongoModel):
             'service_account_id',
             'project_id',
             'domain_id',
+            'created_at',
+            'finished_at'
         ]
     }
