@@ -61,6 +61,8 @@ class Job(MongoModel):
             'collector',
             'project_id',
             'domain_id',
+            'created_at',
+            'finished_at'
         ]
     }
 

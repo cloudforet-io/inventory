@@ -80,6 +80,8 @@ class CloudServiceService(BaseService):
         Args:
             params (dict): {
                     'cloud_service_id': 'str',
+                    'cloud_service_group': 'str',
+                    'cloud_service_type': 'str',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
