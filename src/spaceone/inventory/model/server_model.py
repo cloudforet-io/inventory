@@ -85,6 +85,7 @@ class Server(MongoModel):
             'ref_region',
             'tags',
             'collection_info',
+            'updated_at',
             'deleted_at'
         ],
         'exact_fields': [

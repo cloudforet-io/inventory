@@ -16,7 +16,8 @@ class Region(MongoModel):
     meta = {
         'updatable_fields': [
             'name',
-            'tags'
+            'tags',
+            'updated_at'
         ],
         'exact_fields': [
             'region_id',

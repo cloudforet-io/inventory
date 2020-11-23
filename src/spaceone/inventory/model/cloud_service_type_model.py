@@ -32,7 +32,8 @@ class CloudServiceType(MongoModel):
             'labels',
             'ref_cloud_service_type',
             'tags',
-            'collection_info'
+            'collection_info',
+            'updated_at'
         ],
         'exact_fields': [
             'cloud_service_type_id',
