@@ -151,7 +151,9 @@ class Server(MongoModel):
             'collection_info.state',
             'collection_info.collectors',
             'collection_info.service_accounts',
-            'collection_info.secrets'
+            'collection_info.secrets',
+            'created_at',
+            'updated_at'
         ]
     }
 
