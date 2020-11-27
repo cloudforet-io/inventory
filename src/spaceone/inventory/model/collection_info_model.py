@@ -10,7 +10,7 @@ class ChangeHistory(EmbeddedDocument):
 
 
 class CollectionInfo(EmbeddedDocument):
-    state = StringField(max_length=20, default='MANUAL', choices=('MANUAL', 'ACTIVE', 'DISCONNECTED'))
+    state = StringField(max_length=20, default='MANUAL', choices=('MANUAL', 'ACTIVE', 'DISCONNECTED', 'DELETED'))
     collectors = ListField(StringField(max_length=40))
     service_accounts = ListField(StringField(max_length=40))
     secrets = ListField(StringField(max_length=40))

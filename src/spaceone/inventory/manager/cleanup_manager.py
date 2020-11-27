@@ -68,7 +68,7 @@ class CleanupManager(BaseManager):
         _LOGGER.debug(f'[update_collection_state] {resource_type}, {total_count}, {state} in {domain_id}')
 
 
-    def delete_resources_by_policy(self, resource_type, hour, method, domain_id):
+    def delete_resources_by_policy(self, resource_type, hour, state, domain_id):
         """ List resources
             state = DISCONNECTED
             updated_at < hour
@@ -98,7 +98,7 @@ class CleanupManager(BaseManager):
         mgr_name = RESOURCE_MAP[resource_type_name]
         mgr = self.locator.get_manager(mgr_name)
         try:
-            vos, total_count = mgr.delete_resources(query)
+            vos, total_count = mgr.delete_resources(query, state)
             _LOGGER.debug(f'[delete_resources_by_policy] {total_count}, {state} in {domain_id}')
             return vos, total_count
         except Exception as e:
