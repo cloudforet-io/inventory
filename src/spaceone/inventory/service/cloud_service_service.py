@@ -33,7 +33,7 @@ class CloudServiceService(BaseService):
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'region_code': 'str',
                     'project_id': 'str',
                     'domain_id': 'str'
@@ -85,7 +85,7 @@ class CloudServiceService(BaseService):
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'region_code': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
@@ -228,6 +228,7 @@ class CloudServiceService(BaseService):
     @change_only_key({'region_info': 'region'}, key_path='query.only')
     @append_query_filter(['cloud_service_id', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
                           'region_code', 'resource_group_id', 'project_id', 'domain_id'])
+    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """

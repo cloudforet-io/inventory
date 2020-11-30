@@ -51,11 +51,7 @@ class TestResourceGroup(unittest.TestCase):
     def _create_domain(cls):
         name = utils.random_string()
         param = {
-            'name': name,
-            'tags': {utils.random_string(): utils.random_string(), utils.random_string(): utils.random_string()},
-            'config': {
-                'aaa': 'bbbb'
-            }
+            'name': name
         }
 
         cls.domain = cls.identity_v1.Domain.create(param)
@@ -105,7 +101,6 @@ class TestResourceGroup(unittest.TestCase):
 
         params = {
             'name': name,
-            'tags': {'aa': 'bb'},
             'domain_id': self.domain.domain_id
         }
 
@@ -124,7 +119,6 @@ class TestResourceGroup(unittest.TestCase):
         params = {
             'name': name,
             'project_group_id': project_group_id,
-            'tags': {'aa': 'bb'},
             'domain_id': self.domain.domain_id
         }
 
@@ -309,19 +303,25 @@ class TestResourceGroup(unittest.TestCase):
     def test_update_resource_group_tags(self):
         self.test_create_resource_group()
 
-        tags = {
-            random_string(): random_string(),
-            random_string(): random_string()
-        }
+        tags = [
+            {
+                'key': random_string(),
+                'value': random_string()
+            }, {
+                'key': random_string(),
+                'value': random_string()
+            }
+        ]
         param = {
             'resource_group_id': self.resource_group.resource_group_id,
             'tags': tags,
-            'domain_id': self.domain.domain_id,
+            'domain_id': self.domain.domain_id
         }
         self.resource_group = self.inventory_v1.ResourceGroup.update(
             param,
             metadata=(('token', self.token),))
-        self.assertEqual(MessageToDict(self.resource_group.tags), tags)
+        resource_group_data = MessageToDict(self.resource_group)
+        self.assertEqual(resource_group_data['tags'], tags)
 
     def test_update_resource_group_release_project(self):
         self.test_create_resource_group(project_create=True)

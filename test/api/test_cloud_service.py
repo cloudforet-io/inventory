@@ -50,11 +50,7 @@ class TestCloudService(unittest.TestCase):
     def _create_domain(cls):
         name = utils.random_string()
         param = {
-            'name': name,
-            'tags': {utils.random_string(): utils.random_string(), utils.random_string(): utils.random_string()},
-            'config': {
-                'aaa': 'bbbb'
-            }
+            'name': name
         }
 
         cls.domain = cls.identity_v1.Domain.create(param)
@@ -479,16 +475,24 @@ class TestCloudService(unittest.TestCase):
     def test_update_cloud_service_tags(self):
         self.test_create_cloud_service()
 
-        tags = {
-            random_string(): random_string(),
-            random_string(): random_string()
+        tags = [
+            {
+                'key': random_string(),
+                'value': random_string()
+            }, {
+                'key': random_string(),
+                'value': random_string()
+            }
+        ]
+        param = {
+            'cloud_service_id': self.cloud_service.cloud_service_id,
+            'tags': tags,
+            'domain_id': self.domain.domain_id
         }
-        param = { 'cloud_service_id': self.cloud_service.cloud_service_id,
-                  'tags': tags,
-                  'domain_id': self.domain.domain_id,
-                }
+
         self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
-        self.assertEqual(MessageToDict(self.cloud_service.tags), tags)
+        cloud_service_data = MessageToDict(self.cloud_service)
+        self.assertEqual(cloud_service_data['tags'], tags)
 
     def test_get_cloud_service(self):
         cloud_service_type = 's3'

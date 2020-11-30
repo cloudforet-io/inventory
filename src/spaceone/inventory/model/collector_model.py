@@ -14,6 +14,11 @@ class PluginInfo(EmbeddedDocument):
     service_account_id = StringField(max_length=40, null=True)
 
 
+class CollectorTag(EmbeddedDocument):
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
+
+
 class Collector(MongoModel):
     collector_id = StringField(max_length=40, generate_id='collector', unique=True)
     name = StringField(max_length=255)
@@ -23,7 +28,7 @@ class Collector(MongoModel):
     capability = DictField()
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)
     priority = IntField(min_value=0, default=10, max_value=99)
-    tags = DictField()
+    tags = ListField(EmbeddedDocumentField(CollectorTag))
     project_id = StringField(max_length=40)
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
@@ -69,7 +74,8 @@ class Collector(MongoModel):
             'provider',
             'priority',
             'project_id',
-            'domain_id'
+            'domain_id',
+            ('tags.key', 'tags.value')
         ]
     }
 
@@ -122,6 +128,8 @@ class Schedule(MongoModel):
             'name'
         ],
         'indexes': [
-            'schedule_id'
+            'schedule_id',
+            'collector',
+            'domain_id'
         ]
     }

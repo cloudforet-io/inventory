@@ -30,7 +30,7 @@ class CloudServiceTypeService(BaseService):
                     'resource_type': 'str',
                     'metadata': 'dict',
                     'labels': 'list,
-                    'tags': 'dict',
+                    'tags': 'list',
                     'domain_id': 'str'
                 }
 
@@ -68,7 +68,7 @@ class CloudServiceTypeService(BaseService):
                     'resource_type': 'str',
                     'metadata': 'dict',
                     'labels': 'list',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'domain_id': 'str'
                 }
 
@@ -170,6 +170,7 @@ class CloudServiceTypeService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code', 'domain_id'])
+    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """

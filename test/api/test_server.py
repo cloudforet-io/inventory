@@ -153,7 +153,6 @@ class TestServer(unittest.TestCase):
 
         params = {
             'name': name,
-            'tags': {'aa': 'bb'},
             'domain_id': self.domain.domain_id
         }
 
@@ -172,7 +171,6 @@ class TestServer(unittest.TestCase):
         params = {
             'name': name,
             'project_group_id': project_group_id,
-            'tags': {'aa': 'bb'},
             'domain_id': self.domain.domain_id
         }
 
@@ -321,9 +319,12 @@ class TestServer(unittest.TestCase):
             'project_id': self.project.project_id,
             'region_code': self.region.region_code,
             'domain_id': self.domain.domain_id,
-            'tags': {
-                'tag_key': 'tag_value'
-            }
+            'tags': [
+                {
+                    'key': 'tags_key',
+                    'value': 'tag_value'
+                }
+            ]
         }
 
         metadata = (('token', self.token),)
@@ -709,10 +710,15 @@ class TestServer(unittest.TestCase):
         self.test_create_server()
 
         if tags is None:
-            tags = {
-                random_string(): random_string(),
-                random_string(): random_string()
-            }
+            tags = [
+                {
+                    'key': random_string(),
+                    'value': random_string()
+                }, {
+                    'key': random_string(),
+                    'value': random_string()
+                }
+            ]
 
         params = {
             'server_id': self.server.server_id,
@@ -725,7 +731,8 @@ class TestServer(unittest.TestCase):
             metadata=(('token', self.token),))
 
         self._print_data(self.server, 'test_update_server_tags')
-        self.assertEqual(MessageToDict(self.server.tags, preserving_proto_field_name=True), tags)
+        server_data = MessageToDict(self.server, preserving_proto_field_name=True)
+        self.assertEqual(server_data['tags'], tags)
 
     def test_get_server(self, name=None):
         if name is None:

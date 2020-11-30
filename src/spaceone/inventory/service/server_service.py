@@ -45,7 +45,7 @@ class ServerService(BaseService):
                     'nics': 'list',
                     'disks': 'list',
                     'reference': 'dict',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'project_id': 'str',
                     'domain_id': 'str'
                 }
@@ -121,7 +121,7 @@ class ServerService(BaseService):
                     'nics': 'list',
                     'disks': 'list',
                     'reference': 'dict',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
@@ -265,6 +265,7 @@ class ServerService(BaseService):
     @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses',
                           'server_type', 'os_type', 'provider', 'region_code',
                           'resource_group_id', 'project_id', 'domain_id'])
+    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
