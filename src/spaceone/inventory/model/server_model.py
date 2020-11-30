@@ -9,6 +9,11 @@ from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
 
+class NICTag(EmbeddedDocument):
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
+
+
 class NIC(EmbeddedDocument):
     device_index = IntField(default=0)
     device = StringField(max_length=50, default=None)
@@ -17,10 +22,15 @@ class NIC(EmbeddedDocument):
     cidr = StringField(default=None)
     mac_address = StringField(default=None)
     public_ip_address = StringField(default=None, max_length=100)
-    tags = DictField(default=None)
+    tags = ListField(EmbeddedDocumentField(NICTag))
 
     def to_dict(self):
         return self.to_mongo()
+
+
+class DiskTag(EmbeddedDocument):
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
 
 
 class Disk(EmbeddedDocument):
@@ -28,10 +38,15 @@ class Disk(EmbeddedDocument):
     device = StringField(max_length=50, default=None)
     disk_type = StringField(max_length=20, default=None)
     size = FloatField(default=None)
-    tags = DictField(default=None)
+    tags = ListField(EmbeddedDocumentField(DiskTag))
 
     def to_dict(self):
         return self.to_mongo()
+
+
+class ServerTag(EmbeddedDocument):
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
 
 
 class Server(MongoModel):
@@ -53,7 +68,7 @@ class Server(MongoModel):
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
     nics = ListField(EmbeddedDocumentField(NIC))
     disks = ListField(EmbeddedDocumentField(Disk))
-    tags = DictField()
+    tags = ListField(EmbeddedDocumentField(ServerTag))
     region_code = StringField(max_length=255, default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=40, default=None, null=True)
@@ -153,7 +168,9 @@ class Server(MongoModel):
             'collection_info.service_accounts',
             'collection_info.secrets',
             'created_at',
-            'updated_at'
+            'updated_at',
+            ('domain_id', 'provider', 'region_code', 'state', 'project_id'),
+            ('tags.key', 'tags.value')
         ]
     }
 

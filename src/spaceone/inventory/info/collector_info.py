@@ -1,6 +1,6 @@
 import logging
 import functools
-
+from spaceone.api.core.v1 import tag_pb2
 from spaceone.api.inventory.v1 import collector_pb2
 from spaceone.core.pygrpc.message_type import *
 
@@ -47,7 +47,7 @@ def CollectorInfo(vo, minimal=False):
             'priority': vo.priority,
             'created_at': change_timestamp_type(vo.created_at),
             'last_collected_at': change_timestamp_type(vo.last_collected_at),
-            'tags': change_struct_type(vo.tags),
+            'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in vo.tags],
             'domain_id': vo.domain_id
         })
 

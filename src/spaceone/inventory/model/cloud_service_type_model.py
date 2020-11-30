@@ -4,6 +4,11 @@ from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.collection_info_model import CollectionInfo
 
 
+class CloudServiceTypeTag(EmbeddedDocument):
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
+
+
 class CloudServiceType(MongoModel):
     cloud_service_type_id = StringField(max_length=40, generate_id='cloud-svc-type', unique=True)
     name = StringField(max_length=255, unique_with=['provider', 'group', 'domain_id'])
@@ -16,7 +21,7 @@ class CloudServiceType(MongoModel):
     resource_type = StringField(max_length=255)
     labels = ListField(StringField(max_length=255))
     metadata = DictField()
-    tags = DictField()
+    tags = ListField(EmbeddedDocumentField(CloudServiceTypeTag))
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
     created_at = DateTimeField(auto_now_add=True)
@@ -75,6 +80,7 @@ class CloudServiceType(MongoModel):
             'collection_info.service_accounts',
             'collection_info.secrets',
             'created_at',
-            'updated_at'
+            'updated_at',
+            ('tags.key', 'tags.value')
         ]
     }

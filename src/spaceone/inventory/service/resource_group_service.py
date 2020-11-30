@@ -27,7 +27,7 @@ class ResourceGroupService(BaseService):
                     'resources': 'list',
                     'project_id': 'str',
                     'options': 'dict',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'domain_id': 'str'
                 }
 
@@ -48,7 +48,7 @@ class ResourceGroupService(BaseService):
                     'project_id': 'str',
                     'release_project': 'bool',
                     'options': 'dict',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'domain_id': 'str'
                 }
 
@@ -109,6 +109,7 @@ class ResourceGroupService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @append_query_filter(['resource_group_id', 'name', 'project_id', 'domain_id'])
+    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """

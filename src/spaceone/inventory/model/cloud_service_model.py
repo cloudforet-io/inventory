@@ -9,6 +9,11 @@ from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
 
+class CloudServiceTag(EmbeddedDocument):
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
+
+
 class CloudService(MongoModel):
     cloud_service_id = StringField(max_length=40, generate_id='cloud-svc', unique=True)
     state = StringField(max_length=20, choices=('INSERVICE', 'DELETED'), default='INSERVICE')
@@ -19,7 +24,7 @@ class CloudService(MongoModel):
     data = DictField()
     metadata = DictField()
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
-    tags = DictField()
+    tags = ListField(EmbeddedDocumentField(CloudServiceTag))
     region_code = StringField(max_length=255, default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)
@@ -102,7 +107,9 @@ class CloudService(MongoModel):
             'collection_info.service_accounts',
             'collection_info.secrets',
             'created_at',
-            'updated_at'
+            'updated_at',
+            ('domain_id', 'provider', 'region_code', 'state', 'project_id'),
+            ('tags.key', 'tags.value')
         ]
     }
 

@@ -8,12 +8,17 @@ class Resource(EmbeddedDocument):
     keyword = StringField(default=None, null=True)
 
 
+class ResourceGroupTag(EmbeddedDocument):
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
+
+
 class ResourceGroup(MongoModel):
     resource_group_id = StringField(max_length=40, generate_id='rsc-grp', unique=True)
     name = StringField(max_length=255)
     resources = ListField(EmbeddedDocumentField(Resource))
     options = DictField()
-    tags = DictField()
+    tags = ListField(EmbeddedDocumentField(ResourceGroupTag))
     project_id = StringField(max_length=255)
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
@@ -44,5 +49,6 @@ class ResourceGroup(MongoModel):
             'resources.resource_type',
             'project_id',
             'domain_id',
+            ('tags.key', 'tags.value')
         ]
     }

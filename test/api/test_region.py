@@ -51,11 +51,7 @@ class TestRegion(unittest.TestCase):
     def _create_domain(cls):
         name = utils.random_string()
         param = {
-            'name': name,
-            'tags': {utils.random_string(): utils.random_string(), utils.random_string(): utils.random_string()},
-            'config': {
-                'aaa': 'bbbb'
-            }
+            'name': name
         }
 
         cls.domain = cls.identity_v1.Domain.create(param)
@@ -162,19 +158,25 @@ class TestRegion(unittest.TestCase):
     def test_update_region_tags(self):
         self.test_create_region(region_code='korea', provider='datacenter')
 
-        tags = {
-            random_string(): random_string(),
-            random_string(): random_string()
-        }
+        tags = [
+            {
+                'key': random_string(),
+                'value': random_string()
+            }, {
+                'key': random_string(),
+                'value': random_string()
+            }
+        ]
         param = {
             'region_id': self.region.region_id,
             'tags': tags,
-            'domain_id': self.domain.domain_id,
+            'domain_id': self.domain.domain_id
         }
         self.region = self.inventory_v1.Region.update(
             param,
             metadata=(('token', self.token),))
-        self.assertEqual(MessageToDict(self.region.tags), tags)
+        region_data = MessageToDict(self.region)
+        self.assertEqual(region_data['tags'], tags)
 
     def test_get_region(self):
         name = 'test-region'

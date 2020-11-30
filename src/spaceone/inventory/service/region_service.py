@@ -25,7 +25,7 @@ class RegionService(BaseService):
                     'name': 'str',
                     'region_code': 'str',
                     'provider': 'str',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'domain_id': 'str'
                 }
 
@@ -46,7 +46,7 @@ class RegionService(BaseService):
             params (dict): {
                     'region_id': 'str',
                     'name': 'str',
-                    'tags': 'dict',
+                    'tags': 'list',
                     'domain_id': 'str'
                 }
 
@@ -99,6 +99,7 @@ class RegionService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @append_query_filter(['region_id', 'name', 'region_code', 'provider', 'domain_id'])
+    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """

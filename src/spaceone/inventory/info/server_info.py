@@ -1,4 +1,5 @@
 import functools
+from spaceone.api.core.v1 import tag_pb2
 from spaceone.api.inventory.v1 import server_pb2
 from spaceone.core.pygrpc.message_type import *
 from spaceone.inventory.model.server_model import Server, NIC, Disk
@@ -16,7 +17,7 @@ def ServerNIC(nic_vo: NIC):
         'cidr': nic_vo.cidr,
         'mac_address': nic_vo.mac_address,
         'public_ip_address': nic_vo.public_ip_address,
-        'tags': change_struct_type(nic_vo.tags) if nic_vo.tags else None
+        'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in nic_vo.tags] if nic_vo.tags else None
     }
     return server_pb2.ServerNIC(**info)
 
@@ -27,7 +28,7 @@ def ServerDisk(disk_vo: Disk):
         'device': disk_vo.device,
         'disk_type': disk_vo.disk_type,
         'size': disk_vo.size,
-        'tags': change_struct_type(disk_vo.tags) if disk_vo.tags else None
+        'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in disk_vo.tags] if disk_vo.tags else None
     }
     return server_pb2.ServerDisk(**info)
 
@@ -55,7 +56,7 @@ def ServerInfo(server_vo: Server, minimal=False):
             'metadata': change_struct_type(server_vo.metadata),
             'nics': list(map(ServerNIC, server_vo.nics)),
             'disks': list(map(ServerDisk, server_vo.disks)),
-            'tags': change_struct_type(server_vo.tags),
+            'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in server_vo.tags],
             'collection_info': CollectionInfo(server_vo.collection_info.to_dict()),
             'region_code': server_vo.region_code,
             'domain_id': server_vo.domain_id,
