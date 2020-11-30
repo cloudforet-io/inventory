@@ -52,6 +52,18 @@ class CloudServiceService(BaseService):
         secret_project_id = self.transaction.get_meta('secret.project_id')
         region_code = params.get('region_code')
 
+        # Temporary Code for Tag Migration
+        tags = params.get('tags')
+
+        if isinstance(tags, dict):
+            change_tags = []
+            for key, value in tags.items():
+                change_tags.append({
+                    'key': key,
+                    'value': value
+                })
+            params['tags'] = change_tags
+
         if provider:
             params['provider'] = provider
 
@@ -112,6 +124,18 @@ class CloudServiceService(BaseService):
         cloud_service_type = params.get('cloud_service_type')
 
         cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], domain_id)
+
+        # Temporary Code for Tag Migration
+        tags = params.get('tags')
+
+        if isinstance(tags, dict):
+            change_tags = []
+            for key, value in tags.items():
+                change_tags.append({
+                    'key': key,
+                    'value': value
+                })
+            params['tags'] = change_tags
 
         if provider:
             params['provider'] = provider
