@@ -43,6 +43,18 @@ class CloudServiceTypeService(BaseService):
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
 
+        # Temporary Code for Tag Migration
+        tags = params.get('tags')
+
+        if isinstance(tags, dict):
+            change_tags = []
+            for key, value in tags.items():
+                change_tags.append({
+                    'key': key,
+                    'value': value
+                })
+            params['tags'] = change_tags
+
         if provider:
             params['provider'] = provider
 
@@ -80,11 +92,21 @@ class CloudServiceTypeService(BaseService):
         data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
-
         domain_id = params['domain_id']
 
         cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
                                                                            domain_id)
+        # Temporary Code for Tag Migration
+        tags = params.get('tags')
+
+        if isinstance(tags, dict):
+            change_tags = []
+            for key, value in tags.items():
+                change_tags.append({
+                    'key': key,
+                    'value': value
+                })
+            params['tags'] = change_tags
 
         if provider:
             params['provider'] = provider

@@ -70,6 +70,18 @@ class ServerService(BaseService):
 
         params['state'] = params.get('state', 'INSERVICE')
 
+        # Temporary Code for Tag Migration
+        tags = params.get('tags')
+
+        if isinstance(tags, dict):
+            change_tags = []
+            for key, value in tags.items():
+                change_tags.append({
+                    'key': key,
+                    'value': value
+                })
+            params['tags'] = change_tags
+
         if provider:
             params['provider'] = provider
 
@@ -148,6 +160,18 @@ class ServerService(BaseService):
         cloud_service_type = params.get('cloud_service_type')
 
         server_vo: Server = self.server_mgr.get_server(params['server_id'], params['domain_id'])
+
+        # Temporary Code for Tag Migration
+        tags = params.get('tags')
+
+        if isinstance(tags, dict):
+            change_tags = []
+            for key, value in tags.items():
+                change_tags.append({
+                    'key': key,
+                    'value': value
+                })
+            params['tags'] = change_tags
 
         if provider:
             params['provider'] = provider
