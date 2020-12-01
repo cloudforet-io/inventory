@@ -284,6 +284,7 @@ class CloudServiceService(BaseService):
     @transaction
     @check_required(['query', 'domain_id'])
     @append_query_filter(['resource_group_id', 'domain_id'])
+    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """

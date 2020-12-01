@@ -259,13 +259,19 @@ class TestServer(unittest.TestCase):
                 'mac_address': 'aa:bb:cc:dd:ee:ff',
                 'device': 'eth0',
                 'device_index': 0,
-                'public_ip_address': '1.1.1.1'
+                'public_ip_address': '1.1.1.1',
+                'tags': {
+                    'key': 'value'
+                }
             }],
             'disks': [{
                 'device_index': 0,
                 'device': '/dev/sda',
                 'size': 100.0,
-                'disk_type': 'ebs'
+                'disk_type': 'ebs',
+                'tags': {
+                    'key': 'value'
+                }
             }],
             'metadata': {
                 'view': {

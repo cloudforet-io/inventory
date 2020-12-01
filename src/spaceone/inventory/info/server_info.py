@@ -17,7 +17,7 @@ def ServerNIC(nic_vo: NIC):
         'cidr': nic_vo.cidr,
         'mac_address': nic_vo.mac_address,
         'public_ip_address': nic_vo.public_ip_address,
-        'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in nic_vo.tags] if nic_vo.tags else None
+        'tags': change_struct_type(nic_vo.tags) if nic_vo.tags else None
     }
     return server_pb2.ServerNIC(**info)
 
@@ -28,7 +28,7 @@ def ServerDisk(disk_vo: Disk):
         'device': disk_vo.device,
         'disk_type': disk_vo.disk_type,
         'size': disk_vo.size,
-        'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in disk_vo.tags] if disk_vo.tags else None
+        'tags': change_struct_type(disk_vo.tags) if disk_vo.tags else None
     }
     return server_pb2.ServerDisk(**info)
 
