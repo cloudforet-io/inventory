@@ -9,11 +9,6 @@ from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
 
-class NICTag(EmbeddedDocument):
-    key = StringField(max_length=255)
-    value = StringField(max_length=255)
-
-
 class NIC(EmbeddedDocument):
     device_index = IntField(default=0)
     device = StringField(max_length=50, default=None)
@@ -22,15 +17,10 @@ class NIC(EmbeddedDocument):
     cidr = StringField(default=None)
     mac_address = StringField(default=None)
     public_ip_address = StringField(default=None, max_length=100)
-    tags = ListField(EmbeddedDocumentField(NICTag))
+    tags = DictField()
 
     def to_dict(self):
         return self.to_mongo()
-
-
-class DiskTag(EmbeddedDocument):
-    key = StringField(max_length=255)
-    value = StringField(max_length=255)
 
 
 class Disk(EmbeddedDocument):
@@ -38,7 +28,7 @@ class Disk(EmbeddedDocument):
     device = StringField(max_length=50, default=None)
     disk_type = StringField(max_length=20, default=None)
     size = FloatField(default=None)
-    tags = ListField(EmbeddedDocumentField(DiskTag))
+    tags = DictField()
 
     def to_dict(self):
         return self.to_mongo()
