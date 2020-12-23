@@ -37,9 +37,9 @@ class Region(MongoModel):
             'region_code',
             'provider'
         ],
-        # 'ordering': [
-        #     'name'
-        # ],
+        'ordering': [
+            'name'
+        ],
         'indexes': [
             'region_id',
             'region_code',

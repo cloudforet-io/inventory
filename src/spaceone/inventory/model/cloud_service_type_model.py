@@ -58,11 +58,11 @@ class CloudServiceType(MongoModel):
             'resource_type',
             'collection_info.state'
         ],
-        # 'ordering': [
-        #     'provider',
-        #     'group',
-        #     'name'
-        # ],
+        'ordering': [
+            'provider',
+            'group',
+            'name'
+        ],
         'indexes': [
             'cloud_service_type_id',
             'name',
