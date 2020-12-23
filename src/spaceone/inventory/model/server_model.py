@@ -134,9 +134,9 @@ class Server(MongoModel):
                 'foreign_key': 'ref_region'
             }
         },
-        # 'ordering': [
-        #     'name'
-        # ],
+        'ordering': [
+            'name'
+        ],
         'indexes': [
             'server_id',
             'state',
