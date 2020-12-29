@@ -68,7 +68,7 @@ class CloudServiceType(MongoModel):
             'name',
             'provider',
             'group',
-            # 'ref_cloud_service_type',
+            'ref_cloud_service_type',
             'service_code',
             'is_primary',
             'is_major',
@@ -83,5 +83,4 @@ class CloudServiceType(MongoModel):
             'updated_at',
             ('tags.key', 'tags.value')
         ],
-        # 'auto_create_index': False
     }
