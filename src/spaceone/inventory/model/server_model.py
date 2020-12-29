@@ -160,7 +160,7 @@ class Server(MongoModel):
             'created_at',
             'updated_at',
             ('domain_id', 'provider', 'region_code', 'state', 'project_id'),
-            # ('tags.key', 'tags.value')
+            ('tags.key', 'tags.value')
         ]
     }
 
