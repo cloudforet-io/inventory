@@ -81,6 +81,6 @@ class CloudServiceType(MongoModel):
             'collection_info.secrets',
             'created_at',
             'updated_at',
-            ('tags.key', 'tags.value')
+            # ('tags.key', 'tags.value')
         ]
     }
