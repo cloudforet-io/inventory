@@ -409,7 +409,7 @@ class CollectingManager(BaseManager):
             _LOGGER.warning(f'[_process_single_result] assume new resource, create')
             self.job_task_mgr.add_error(job_task_id, domain_id,
                                    "Exception",
-                                   f"Match Query failed, may be DB proble: {e}",
+                                   f"Match Query failed, may be DB problem",
                                    {'resource_type': resource_type, 'resource_id': res_id}
                                    )
             total_count = ERROR
