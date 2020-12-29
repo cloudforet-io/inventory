@@ -161,7 +161,8 @@ class Server(MongoModel):
             'updated_at',
             ('domain_id', 'provider', 'region_code', 'state', 'project_id'),
             ('tags.key', 'tags.value')
-        ]
+        ],
+        'auto_create_index': False
     }
 
     def update(self, data):
