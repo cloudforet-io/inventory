@@ -82,5 +82,6 @@ class CloudServiceType(MongoModel):
             'created_at',
             'updated_at',
             ('tags.key', 'tags.value')
-        ]
+        ],
+        'auto_create_index': False
     }
