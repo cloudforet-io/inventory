@@ -46,6 +46,6 @@ class Region(MongoModel):
             'provider',
             'ref_region',
             'domain_id',
-            ('tags.key', 'tags.value')
+            # ('tags.key', 'tags.value')
         ]
     }
