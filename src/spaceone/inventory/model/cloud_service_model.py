@@ -97,7 +97,7 @@ class CloudService(MongoModel):
             'provider',
             'cloud_service_group',
             'cloud_service_type',
-            'ref_cloud_service_type',
+            # 'ref_cloud_service_type',
             'region_code',
             'ref_region',
             'project_id',
@@ -111,7 +111,7 @@ class CloudService(MongoModel):
             ('domain_id', 'provider', 'region_code', 'state', 'project_id'),
             ('tags.key', 'tags.value')
         ],
-        'auto_create_index': False
+        # 'auto_create_index': False
     }
 
     def update(self, data):

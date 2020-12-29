@@ -416,7 +416,7 @@ class CollectingManager(BaseManager):
 
         end = time.time()
         diff = end - start
-        _LOGGER.error(f'query time: {diff}')
+        _LOGGER.debug(f'query time: {diff}')
 
         #########################################
         # Create / Update to DB
@@ -427,7 +427,7 @@ class CollectingManager(BaseManager):
                 # Create
                 res_msg = svc.create(data)
                 diff = time.time() - end
-                _LOGGER.error(f'insert: {diff}')
+                _LOGGER.debug(f'insert: {diff}')
                 response = CREATED
 
             elif total_count == 1:
@@ -435,7 +435,7 @@ class CollectingManager(BaseManager):
                 data.update(res_info[0])
                 res_msg = svc.update(data)
                 diff = time.time() - end
-                _LOGGER.error(f'update: {diff}')
+                _LOGGER.debug(f'update: {diff}')
                 response = UPDATED
 
             elif total_count > 1:
@@ -692,7 +692,7 @@ class CollectingManager(BaseManager):
 
         for order in sorted(match_order):
             query = rule_matcher.make_query(order, match_rules, resource, domain_id)
-            _LOGGER.error(f'[_query_with_match_rules] query generated: {query}')
+            _LOGGER.debug(f'[_query_with_match_rules] query generated: {query}')
             found_resource, total_count = mgr.find_resources(query)
             if found_resource and total_count == 1:
                 return found_resource, total_count
