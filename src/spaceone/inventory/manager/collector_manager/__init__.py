@@ -197,6 +197,11 @@ class CollectorManager(BaseManager):
                                                         secret_id
                                                     )
             _LOGGER.debug(f'[collector] number of secret: {len(secret_list)}')
+            if len(secret_list) == 0:
+                # nothing to do
+                job_mgr.make_success_by_vo(created_job)
+                return created_job
+
         except Exception as e:
             _LOGGER.debug(f'[collect] failed in Secret Patch stage: {e}')
             job_mgr.add_error(created_job.job_id, domain_id,
