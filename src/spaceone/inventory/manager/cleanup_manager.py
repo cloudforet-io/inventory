@@ -55,8 +55,6 @@ class CleanupManager(BaseManager):
                             ]
                     )
         query = {'filter': my_filter_list}
-        print(my_filter_list)
-        print(query)
         _LOGGER.debug(f'[update_collection_state] query: {query}')
         if resource_type_name not in RESOURCE_MAP:
             _LOGGER.error(f'[update_collection_state] not found {resource_type_name}')
@@ -66,6 +64,46 @@ class CleanupManager(BaseManager):
         mgr = self.locator.get_manager(mgr_name)
         resources, total_count = mgr.update_collection_state(query, state)
         _LOGGER.debug(f'[update_collection_state] {resource_type}, {total_count}, {state} in {domain_id}')
+
+    def update_resources_state_by_job_id(self, resource_type, secret_id, collector_id, job_id, domain_id):
+        """ Delete resource which does not have
+            garbage_collection[collector_id] = job_id
+        """
+        resource_type_name, my_filter_list = self._parse_resource_type(resource_type)
+        my_filter_list.extend([
+                        {'k': f'garbage_collection.{collector_id}', 'v': job_id, 'o': 'not'},
+                        {'k': f'garbage_collection.{collector_id}', 'v': True, 'o': 'exists'},
+                        {'k': f'collection_info.secrets', 'v': [secret_id], 'o': 'in'}
+                    ])
+        mgr_name = RESOURCE_MAP[resource_type_name]
+        mgr = self.locator.get_manager(mgr_name)
+        if resource_type_name not in RESOURCE_MAP:
+            _LOGGER.error(f'[update_resources_state_by_job_id] not found {resource_type_name}')
+            return (0,0)
+
+        # DISCONNECTED -> DELETE
+        deleted = my_filter_list.copy()
+        deleted.extend([
+                        {'k': 'collection_info.state',  'v': 'DISCONNECTED', 'o': 'eq'},
+                    ])
+        query = {'filter': deleted}
+        _LOGGER.debug(f'[update_resources_state_by_job_id] delete query: {query}')
+        try:
+            vos, deleted_count = mgr.delete_resources(query, 'DELETED')
+        except Exception as e:
+            _LOGGER.error(f'[delete_resources] {e}')
+            return (disconnected_count, 0)
+
+        # ACTIVE -> DISCONNECTED
+        disconnected = my_filter_list.copy()
+        disconnected.extend([
+                        {'k': 'collection_info.state',  'v': 'ACTIVE', 'o': 'eq'},
+                    ])
+        query = {'filter': disconnected}
+        _LOGGER.debug(f'[update_resources_state_by_job_id] disconnected query: {query}')
+        resources, disconnected_count = mgr.update_collection_state(query, 'DISCONNECTED')
+
+        return (disconnected_count, deleted_count)
 
 
     def delete_resources_by_policy(self, resource_type, hour, state, domain_id):

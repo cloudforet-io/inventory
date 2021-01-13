@@ -22,6 +22,8 @@ def JobTaskInfo(job_task_vo: JobTask, minimal=False):
         'status': job_task_vo.status,
         'created_count': job_task_vo.created_count,
         'updated_count': job_task_vo.updated_count,
+        'disconnected_count': job_task_vo.disconnected_count,
+        'deleted_count': job_task_vo.deleted_count,
         'failure_count': job_task_vo.failure_count,
         'job_id': job_task_vo.job_id,
         'created_at': change_timestamp_type(job_task_vo.created_at),
