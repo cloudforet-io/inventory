@@ -230,6 +230,20 @@ class CollectingManager(BaseManager):
             ERROR = True
 
         finally:
+            # update collection_state which is not found
+            cleanup_mode = self._need_update_collection_state(plugin_info, filters)
+            _LOGGER.debug(f'[collecting_resources] #### cleanup support {cleanup_mode}')
+            if  cleanup_mode:
+                resource_types = self._get_supported_resource_types(plugin_info)
+                disconnected_count = 0
+                deleted_count = 0
+                for resource_type in resource_types:
+                    (a,b) = self._update_colleciton_state(resource_type, secret_id, kwargs['collector_id'], job_id, domain_id)
+                    disconnected_count += a
+                    deleted_count += b
+                _LOGGER.debug(f'[collecting_resources] disconnected, delete => {disconnected_count}, {deleted_count}')
+                stat['disconnected_count'] = disconnected_count
+                stat['deleted_count'] = deleted_count
             if self.use_db_queue and ERROR == False:
                 # WatchDog will finalize the task
                 # if ERROR occurred, there is no data to processing
@@ -244,6 +258,37 @@ class CollectingManager(BaseManager):
                 self.job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
         return True
+
+    def _get_supported_resource_types(self, plugin_info):
+        metadata = plugin_info.get('metadata', {})
+        return metadata.get('supported_resource_type', [])
+
+    def _need_update_collection_state(self, plugin_info, filters):
+        #
+        try:
+            if filters != {}:
+                return False
+            metadata = plugin_info.get('metadata',{})
+            supported_features = metadata.get('supported_features',[])
+            if 'update_collection_state' in supported_features:
+                return True
+            return False
+        except Exception as e:
+            _LOGGER.error(e)
+            return False
+
+    def _update_colleciton_state(self, resource_type, secret_id, collector_id, job_id, domain_id):
+        """ get cleanup manager
+        cleanup_mgr = self.locator
+        """
+        try:
+            cleanup_mgr = self.locator.get_manager('CleanupManager')
+            result = cleanup_mgr.update_resources_state_by_job_id(resource_type, secret_id, collector_id, job_id, domain_id)
+            _LOGGER.debug(f'[_update_colleciton_state] disconnected,deleted = {result}')
+            return result
+        except Exception as e:
+            _LOGGER.error(f'[_update_colleciton_state] failed {e}')
+            return (0,0)
 
     def _process_results(self, results, job_id, job_task_id, collector_id, secret_id, plugin_id, domain_id):
         # update meta

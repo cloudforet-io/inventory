@@ -61,6 +61,7 @@ class CollectionDataManager(BaseManager):
         }
 
         resource_data['collection_info'] = collection_info
+        resource_data['garbage_collection'] = {self.updated_by: self.job_id}
 
         return resource_data
 
@@ -174,8 +175,12 @@ class CollectionDataManager(BaseManager):
         if self.is_changed:
             self.merged_data['collection_info'] = updated_collection_info
 
+        # Garbage Collection
+        garbage_collection = old_data.get('garbage_collection', {})
+        garbage_collection[self.updated_by] = self.job_id
+        self.merged_data['garbage_collection'] = garbage_collection
+
         # _LOGGER.debug(f'[merged_data: data.compute] {self.merged_data.get("data", {}).get("compute")}')
-        # _LOGGER.debug('------------------')
 
         return self.merged_data
 

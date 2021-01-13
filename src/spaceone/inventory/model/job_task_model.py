@@ -14,6 +14,8 @@ class JobTask(MongoModel):
                         choices=('PENDING', 'CANCELED', 'IN_PROGRESS', 'SUCCESS', 'FAILURE'))
     created_count = IntField(default=0)
     updated_count = IntField(default=0)
+    deleted_count = IntField(default=0)
+    disconnected_count = IntField(default=0)
     failure_count = IntField(default=0)
     total_count = IntField(default=0)
     errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))
@@ -36,6 +38,8 @@ class JobTask(MongoModel):
             'project_id',
             'created_count',
             'updated_count',
+            'deleted_count',
+            'disconnected_count',
             'failure_count',
             'errors',
             'started_at',
@@ -56,6 +60,8 @@ class JobTask(MongoModel):
             'status',
             'created_count',
             'updated_count',
+            'deleted_count',
+            'disconnected_count',
             'failure_count',
             'job_id',
             'created_at',

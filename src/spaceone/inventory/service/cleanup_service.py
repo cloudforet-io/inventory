@@ -143,10 +143,10 @@ class CleanupService(BaseService):
     def _get_domain_config(self, name, domain_id):
         """ Get domain config with name
         """
-        cfg_mgr = self.locator.get_manager('ConfigManager')
-        policy_name = f'garbage_collection.inventory.{name}'
-
         try:
+            cfg_mgr = self.locator.get_manager('ConfigManager')
+            policy_name = f'garbage_collection.inventory.{name}'
+
             return cfg_mgr.get_domain_config(policy_name, domain_id)
         except Exception as e:
             _LOGGER.debug(f'[_get_domain_config] fail to get config {name} {domain_id}')
