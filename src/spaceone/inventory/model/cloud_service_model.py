@@ -30,6 +30,7 @@ class CloudService(MongoModel):
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
+    garbage_collection = DictField(default={})
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
@@ -48,6 +49,7 @@ class CloudService(MongoModel):
             'ref_cloud_service_type',
             'ref_region',
             'collection_info',
+            'garbage_collection',
             'updated_at',
             'deleted_at'
         ],
@@ -106,6 +108,7 @@ class CloudService(MongoModel):
             'collection_info.collectors',
             'collection_info.service_accounts',
             'collection_info.secrets',
+            'garbage_collection',
             'created_at',
             'updated_at',
             {

@@ -24,6 +24,7 @@ class CloudServiceType(MongoModel):
     tags = ListField(EmbeddedDocumentField(CloudServiceTypeTag))
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
+    garbage_collection = DictField(default={})
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
 
@@ -38,6 +39,7 @@ class CloudServiceType(MongoModel):
             'ref_cloud_service_type',
             'tags',
             'collection_info',
+            'garbage_collection',
             'updated_at'
         ],
         'exact_fields': [
@@ -79,6 +81,7 @@ class CloudServiceType(MongoModel):
             'collection_info.collectors',
             'collection_info.service_accounts',
             'collection_info.secrets',
+            'garbage_collection',
             'created_at',
             'updated_at',
             ('tags.key', 'tags.value')

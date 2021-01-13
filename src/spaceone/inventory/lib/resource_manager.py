@@ -57,7 +57,7 @@ class ResourceManager(object):
 
     def update_collection_state(self, query, state):
         self._check_resource_finder_state()
-        query['only'] = self.resource_keys + ['updated_at']
+        query['only'] = self.resource_keys + ['collection_info', 'updated_at']
 
         resources = []
         vos, total_count = getattr(self, self.query_method)(query)

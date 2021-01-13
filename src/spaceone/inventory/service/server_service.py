@@ -109,7 +109,6 @@ class ServerService(BaseService):
             primary_ip_address, params['ip_addresses'])
 
         params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
-
         return self.server_mgr.create_server(params)
 
     @transaction
