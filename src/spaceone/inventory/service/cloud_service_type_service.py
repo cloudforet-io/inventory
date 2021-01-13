@@ -191,7 +191,8 @@ class CloudServiceTypeService(BaseService):
 
     @transaction
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code', 'domain_id'])
+    @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code', 'resource_type',
+                          'is_primary', 'is_major', 'domain_id'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -203,6 +204,9 @@ class CloudServiceTypeService(BaseService):
                     'group': 'str',
                     'provider': 'str',
                     'service_code': 'str',
+                    'resource_type': 'str',
+                    'is_primary': 'str',
+                    'is_major': 'str',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)'
                 }
