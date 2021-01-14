@@ -46,7 +46,8 @@ def ServerInfo(server_vo: Server, minimal=False):
         'cloud_service_type': server_vo.cloud_service_type,
         'reference': server_pb2.ServerReference(
             **server_vo.reference.to_dict()) if server_vo.reference else None,
-        'project_id': server_vo.project_id
+        'project_id': server_vo.project_id,
+        'region_code': server_vo.region_code,
     }
 
     if not minimal:
@@ -58,7 +59,6 @@ def ServerInfo(server_vo: Server, minimal=False):
             'disks': list(map(ServerDisk, server_vo.disks)),
             'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in server_vo.tags],
             'collection_info': CollectionInfo(server_vo.collection_info.to_dict()),
-            'region_code': server_vo.region_code,
             'domain_id': server_vo.domain_id,
             'created_at': change_timestamp_type(server_vo.created_at),
             'updated_at': change_timestamp_type(server_vo.updated_at),

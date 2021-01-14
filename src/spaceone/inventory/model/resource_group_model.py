@@ -31,11 +31,6 @@ class ResourceGroup(MongoModel):
             'options',
             'tags'
         ],
-        'exact_fields': [
-            'resource_group_id',
-            'project_id',
-            'domain_id'
-        ],
         'minimal_fields': [
             'resource_group_id',
             'name',
@@ -50,5 +45,6 @@ class ResourceGroup(MongoModel):
             'project_id',
             'domain_id',
             ('tags.key', 'tags.value')
-        ]
+        ],
+        'auto_create_index': False
     }

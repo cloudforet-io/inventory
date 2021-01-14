@@ -45,16 +45,6 @@ class JobTask(MongoModel):
             'started_at',
             'finished_at'
         ],
-        'exact_fields': [
-            'job_task_id',
-            'status',
-            'job_id',
-            'secret_id',
-            'provider',
-            'service_account_id',
-            'project_id',
-            'domain_id',
-        ],
         'minimal_fields': [
             'job_task_id',
             'status',
@@ -82,5 +72,6 @@ class JobTask(MongoModel):
             'domain_id',
             'created_at',
             'finished_at'
-        ]
+        ],
+        'auto_create_index': False
     }

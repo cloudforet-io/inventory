@@ -10,7 +10,7 @@ class RegionTag(EmbeddedDocument):
 class Region(MongoModel):
     region_id = StringField(max_length=40, generate_id='region', unique=True)
     name = StringField(max_length=255)
-    region_code = StringField(max_length=255, unique_with=['provider', 'domain_id'])
+    region_code = StringField(max_length=255)#, unique_with=['provider', 'domain_id'])
     provider = StringField(max_length=255)
     ref_region = StringField(max_length=255)
     tags = ListField(EmbeddedDocumentField(RegionTag))
@@ -23,13 +23,6 @@ class Region(MongoModel):
             'name',
             'tags',
             'updated_at'
-        ],
-        'exact_fields': [
-            'region_id',
-            'region_code',
-            'provider',
-            'ref_region',
-            'domain_id'
         ],
         'minimal_fields': [
             'region_id',
@@ -47,5 +40,6 @@ class Region(MongoModel):
             'ref_region',
             'domain_id',
             ('tags.key', 'tags.value')
-        ]
+        ],
+        'auto_create_index': False
     }
