@@ -41,7 +41,7 @@ class ServerTag(EmbeddedDocument):
 
 class Server(MongoModel):
     server_id = StringField(max_length=40, generate_id='server', unique=True)
-    name = StringField(max_length=255, default='', unique_with='domain_id')
+    name = StringField(max_length=255, default='')
     state = StringField(max_length=20,
                         choices=('PENDING', 'INSERVICE', 'MAINTENANCE', 'CLOSED', 'DELETED'))
     primary_ip_address = StringField(max_length=100)
