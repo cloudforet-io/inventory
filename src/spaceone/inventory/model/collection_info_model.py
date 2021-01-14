@@ -8,8 +8,8 @@ class ChangeHistory(EmbeddedDocument):
     updated_by = StringField(max_length=40)
     updated_at = DateTimeField()
 
-# TODO
-# Delete jobs by mongo shell in EXP
+
+# TODO: Delete jobs by mongo shell in EXP
 class CollectionInfo(EmbeddedDocument):
     state = StringField(max_length=20, default='MANUAL', choices=('MANUAL', 'ACTIVE', 'DISCONNECTED', 'DELETED'))
     collectors = ListField(StringField(max_length=40))
