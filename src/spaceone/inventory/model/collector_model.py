@@ -69,10 +69,7 @@ class Collector(MongoModel):
             'domain_id',
             ('tags.key', 'tags.value')
         ],
-        'auto_create_index': False,
-        'auto_create_index_when_first_connection': True,
-        'case_insensitive_index': True,
-        'check_unique_field': True
+        'auto_create_index': False
     }
 
 

@@ -3,6 +3,7 @@ from mongoengine import *
 from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.collector_model import Collector
 
+
 class Error(EmbeddedDocument):
     error_code = StringField(max_length=128)
     message = StringField(max_length=2048)

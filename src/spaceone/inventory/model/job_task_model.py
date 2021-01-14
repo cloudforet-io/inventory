@@ -3,10 +3,12 @@ from datetime import datetime
 from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.job_model import Job
 
+
 class Error(EmbeddedDocument):
     error_code = StringField(max_length=128)
     message = StringField(max_length=2048)
     additional = DictField()
+
 
 class JobTask(MongoModel):
     job_task_id = StringField(max_length=40, generate_id='job_task', unique=True)
