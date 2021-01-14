@@ -1,3 +1,6 @@
+DATABASE_AUTO_CREATE_INDEX = True
+DATABASE_CASE_INSENSITIVE_INDEX = True
+DATABASE_CHECK_UNIQUE_FIELD = True
 DATABASES = {
     'default': {
         'db': 'inventory',

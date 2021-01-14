@@ -34,12 +34,6 @@ class Job(MongoModel):
             'finished_at',
             'mark_error',
         ],
-        'exact_fields': [
-            'job_id',
-            'status',
-            'project_id',
-            'domain_id',
-        ],
         'minimal_fields': [
             'job_id',
             'status',
@@ -63,6 +57,7 @@ class Job(MongoModel):
             'domain_id',
             'created_at',
             'finished_at'
-        ]
+        ],
+        'auto_create_index': False
     }
 

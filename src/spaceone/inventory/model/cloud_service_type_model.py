@@ -42,13 +42,6 @@ class CloudServiceType(MongoModel):
             'garbage_collection',
             'updated_at'
         ],
-        'exact_fields': [
-            'cloud_service_type_id',
-            'is_primary',
-            'is_major',
-            'domain_id',
-            'collection_info.state'
-        ],
         'minimal_fields': [
             'cloud_service_type_id',
             'name',
@@ -57,8 +50,7 @@ class CloudServiceType(MongoModel):
             'service_code',
             'is_primary',
             'is_major',
-            'resource_type',
-            'collection_info.state'
+            'resource_type'
         ],
         'ordering': [
             'provider',
@@ -86,4 +78,5 @@ class CloudServiceType(MongoModel):
             'updated_at',
             ('tags.key', 'tags.value')
         ],
+        'auto_create_index': False
     }

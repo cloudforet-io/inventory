@@ -43,22 +43,14 @@ class Collector(MongoModel):
             'tags',
             'last_collected_at'
         ],
-        'exact_fields': [
-            'collector_id',
-            'state',
-            'provider',
-            'priority',
-            'project_id',
-            'domain_id',
-        ],
         'minimal_fields': [
             'collector_id',
             'name',
             'state',
-            'plugin_info',
             'provider',
-            'is_public',
             'capability',
+            'plugin_info',
+            'is_public',
             'project_id'
 
         ],
@@ -76,7 +68,11 @@ class Collector(MongoModel):
             'project_id',
             'domain_id',
             ('tags.key', 'tags.value')
-        ]
+        ],
+        'auto_create_index': False,
+        'auto_create_index_when_first_connection': True,
+        'case_insensitive_index': True,
+        'check_unique_field': True
     }
 
 
@@ -99,17 +95,11 @@ class Schedule(MongoModel):
     domain_id = StringField(max_length=255)
 
     meta = {
-        'db_alias': 'default',
         'updatable_fields': [
             'name',
             'collect_mode',
             'schedule',
             'last_scheduled_at'
-        ],
-        'exact_fields': [
-            'schedule_id',
-            'name',
-            'domain_id',
         ],
         'minimal_fields': [
             'schedule_id',
@@ -131,5 +121,6 @@ class Schedule(MongoModel):
             'schedule_id',
             'collector',
             'domain_id'
-        ]
+        ],
+        'auto_create_index': False
     }

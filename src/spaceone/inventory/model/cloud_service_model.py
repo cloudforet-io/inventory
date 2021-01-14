@@ -53,26 +53,12 @@ class CloudService(MongoModel):
             'updated_at',
             'deleted_at'
         ],
-        'exact_fields': [
-            'cloud_service_id',
-            'state',
-            'reference.resource_id',
-            'provider',
-            'cloud_service_group',
-            'cloud_service_type',
-            'ref_cloud_service_type',
-            'region_code',
-            'ref_region',
-            'project_id',
-            'domain_id',
-            'collection_info.state'
-        ],
         'minimal_fields': [
             'cloud_service_id',
-            'reference.resource_id',
-            'provider',
             'cloud_service_group',
             'cloud_service_type',
+            'provider',
+            'reference.resource_id',
             'region_code',
             'project_id'
         ],
@@ -117,6 +103,7 @@ class CloudService(MongoModel):
             },
             ('tags.key', 'tags.value')
         ],
+        'auto_create_index': False
     }
 
     def update(self, data):

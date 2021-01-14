@@ -41,7 +41,7 @@ class ServerTag(EmbeddedDocument):
 
 class Server(MongoModel):
     server_id = StringField(max_length=40, generate_id='server', unique=True)
-    name = StringField(max_length=255, default='')
+    name = StringField(max_length=255, default='', unique_with='domain_id')
     state = StringField(max_length=20,
                         choices=('PENDING', 'INSERVICE', 'MAINTENANCE', 'CLOSED', 'DELETED'))
     primary_ip_address = StringField(max_length=100)
@@ -94,23 +94,6 @@ class Server(MongoModel):
             'garbage_collection',
             'updated_at',
             'deleted_at'
-        ],
-        'exact_fields': [
-            'server_id',
-            'state',
-            'primary_ip_address',
-            'server_type',
-            'os_type',
-            'reference.resource_id',
-            'provider',
-            'cloud_service_group',
-            'cloud_service_type',
-            'ref_cloud_service_type',
-            'region_code',
-            'ref_region',
-            'project_id',
-            'domain_id',
-            'collection_info.state'
         ],
         'minimal_fields': [
             'server_id',
@@ -168,6 +151,7 @@ class Server(MongoModel):
             },
             ('tags.key', 'tags.value')
         ],
+        'auto_create_index': False
     }
 
     def update(self, data):
