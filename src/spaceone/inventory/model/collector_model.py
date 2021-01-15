@@ -117,6 +117,5 @@ class Schedule(MongoModel):
             'schedule_id',
             'collector',
             'domain_id'
-        ],
-        'auto_create_index': False
+        ]
     }
