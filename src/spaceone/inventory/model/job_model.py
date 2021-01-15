@@ -58,7 +58,6 @@ class Job(MongoModel):
             'domain_id',
             'created_at',
             'finished_at'
-        ],
-        'auto_create_index': False
+        ]
     }
 

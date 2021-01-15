@@ -40,6 +40,5 @@ class Region(MongoModel):
             'ref_region',
             'domain_id',
             ('tags.key', 'tags.value')
-        ],
-        'auto_create_index': False
+        ]
     }
