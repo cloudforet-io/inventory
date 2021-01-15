@@ -150,8 +150,7 @@ class Server(MongoModel):
                 "name": "COMPOUND_INDEX_FOR_SEARCH"
             },
             ('tags.key', 'tags.value')
-        ],
-        'auto_create_index': False
+        ]
     }
 
     def update(self, data):
