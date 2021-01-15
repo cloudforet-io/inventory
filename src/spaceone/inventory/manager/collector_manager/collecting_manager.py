@@ -270,7 +270,7 @@ class CollectingManager(BaseManager):
                 return False
             metadata = plugin_info.get('metadata',{})
             supported_features = metadata.get('supported_features',[])
-            if 'update_collection_state' in supported_features:
+            if 'garbage_collection' in supported_features:
                 return True
             return False
         except Exception as e:

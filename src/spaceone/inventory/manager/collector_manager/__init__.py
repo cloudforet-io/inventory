@@ -80,6 +80,8 @@ class CollectorManager(BaseManager):
             repo_mgr.check_plugin_version(plugin_id, version, domain_id)
 
             plugin_info['version'] = version
+            metadata = self._call_plugin_init(plugin_info, domain_id)
+            plugin_info['metadata'] = metadata['metadata']
         if options:
             # Overwriting
             plugin_info['options'] = options
@@ -427,3 +429,21 @@ class CollectorManager(BaseManager):
             if project_id:
                 secret_info.update({'project_id': project_id})
         return secret_info
+
+    def _call_plugin_init(self, plugin_info, domain_id):
+        # Plugin Manager
+        plugin_mgr = self.locator.get_manager('PluginManager')
+
+        # init plugin
+        params  = {
+            'plugin_info': plugin_info,
+            'domain_id': domain_id
+        }
+        try:
+            plugin_metadata = plugin_mgr.init(params)
+            _LOGGER.debug(f'[_call_plugin_init] metadata: {plugin_metadata}')
+        except Exception as e:
+            _LOGGER.error(f'[_call_plugin_init] failed to call plugin.init, {e}')
+            raise ERROR_INIT_PLUGIN_FAILURE(params=params)
+
+        return plugin_metadata
