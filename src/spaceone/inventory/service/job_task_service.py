@@ -13,7 +13,7 @@ class JobTaskService(BaseService):
 
     @transaction
     @check_required(['domain_id'])
-    @append_query_filter(['job_task_id', 'state', 'job_id', 'secret_id', 'provider',
+    @append_query_filter(['job_task_id', 'status', 'job_id', 'secret_id', 'provider',
                           'service_account_id', 'project_id', 'domain_id'])
     @append_keyword_filter(['job_task_id'])
     def list(self, params):
@@ -21,7 +21,7 @@ class JobTaskService(BaseService):
         Args:
             params (dict): {
                     'job_task_id': 'str',
-                    'state': 'str',
+                    'status': 'str',
                     'job_id': 'str',
                     'secret_id': 'str',
                     'provider': 'str',

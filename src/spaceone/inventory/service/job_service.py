@@ -14,14 +14,14 @@ class JobService(BaseService):
     @transaction
     @check_required(['domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
-    @append_query_filter(['job_id', 'state', 'collector_id', 'project_id', 'domain_id'])
+    @append_query_filter(['job_id', 'status', 'collector_id', 'project_id', 'domain_id'])
     @append_keyword_filter(['job_id'])
     def list(self, params):
         """
         Args:
             params (dict): {
                     'job_id': 'str',
-                    'state': 'str',
+                    'status': 'str',
                     'collector_id': 'dict',
                     'project_id': 'str',
                     'domain_id  ': 'str',
