@@ -237,6 +237,11 @@ class CollectorService(BaseService):
     def list_schedules(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         query = params.get('query', {})
+
+        # Temporary code for DB migration
+        if 'only' in query:
+            query['only'] += ['collector_id']
+
         return collector_mgr.list_schedules(query)
 
     ############################
