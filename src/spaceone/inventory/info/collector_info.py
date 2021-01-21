@@ -88,6 +88,11 @@ def ScheduleInfo(vo, minimal=False):
             'last_scheduled_at': change_timestamp_type(vo.last_scheduled_at),
             'filter': change_struct_type(vo.filters)
         })
+
+    # Temporary code for DB migration
+    if not vo.collector_id and vo.collector:
+        vo.update({'collector_id': vo.collector.collector_id})
+
     return collector_pb2.ScheduleInfo(**info)
 
 
