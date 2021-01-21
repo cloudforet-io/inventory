@@ -33,8 +33,13 @@ class JobService(BaseService):
             total_count (int)
 
         """
+        query = params.get('query', {})
 
-        return self.job_mgr.list_jobs(params.get('query', {}))
+        # Temporary code for DB migration
+        if 'only' in query:
+            query['only'] += ['collector_id']
+
+        return self.job_mgr.list_jobs(query)
 
     @transaction
     @check_required(['query', 'domain_id'])

@@ -37,6 +37,10 @@ def JobInfo(job_vo: Job, minimal=False):
             'updated_at': change_timestamp_type(job_vo.updated_at),
         })
 
+        # Temporary code for DB migration
+        if not job_vo.collector_id and job_vo.collector:
+            job_vo.update({'collector_id': job_vo.collector.collector_id})
+
     return collector_pb2.JobInfo(**info)
 
 

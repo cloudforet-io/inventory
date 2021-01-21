@@ -83,6 +83,7 @@ class Schedule(MongoModel):
     schedule_id = StringField(max_length=40, generate_id='sched', unique=True)
     name = StringField(max_length=255)
     collector = ReferenceField('Collector', reverse_delete_rule=CASCADE)
+    collector_id = StringField(max_length=40)
     schedule = EmbeddedDocumentField(Scheduled, default=None, null=False)
     filters = DictField()
     collect_mode = StringField(max_length=8, default='ALL', choice=('ALL', 'CREATE', 'UPDATE'))
@@ -93,6 +94,7 @@ class Schedule(MongoModel):
     meta = {
         'updatable_fields': [
             'name',
+            'collector_id',
             'collect_mode',
             'schedule',
             'last_scheduled_at'
@@ -102,7 +104,8 @@ class Schedule(MongoModel):
             'name',
             'collect_mode',
             'schedule',
-            'collector'
+            'collector',
+            'collector_id'
         ],
         'change_query_keys': {
             'collector_id': 'collector.collector_id'

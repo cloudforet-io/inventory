@@ -19,6 +19,7 @@ class Job(MongoModel):
     remained_tasks = IntField(max_value=65000, default=0)          # Number of remained from collector, 0 means No remained_task
     errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))
     collector = ReferenceField('Collector', reverse_delete_rule=NULLIFY)
+    collector_id = StringField(max_length=40)
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
@@ -32,6 +33,7 @@ class Job(MongoModel):
             'total_tasks',
             'remained_tasks',
             'errors',
+            'collector_id',
             'finished_at',
             'mark_error',
         ],

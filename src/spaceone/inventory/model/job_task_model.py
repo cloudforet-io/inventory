@@ -13,7 +13,7 @@ class Error(EmbeddedDocument):
 class JobTask(MongoModel):
     job_task_id = StringField(max_length=40, generate_id='job_task', unique=True)
     status = StringField(max_length=20, default='PENDING',
-                        choices=('PENDING', 'CANCELED', 'IN_PROGRESS', 'SUCCESS', 'FAILURE'))
+                         choices=('PENDING', 'CANCELED', 'IN_PROGRESS', 'SUCCESS', 'FAILURE'))
     created_count = IntField(default=0)
     updated_count = IntField(default=0)
     deleted_count = IntField(default=0)
