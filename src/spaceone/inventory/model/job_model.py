@@ -56,6 +56,7 @@ class Job(MongoModel):
             'job_id',
             'status',
             'collector',
+            'collector_id',
             'project_id',
             'domain_id',
             'created_at',
