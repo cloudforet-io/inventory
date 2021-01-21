@@ -119,6 +119,7 @@ class Schedule(MongoModel):
         'indexes': [
             'schedule_id',
             'collector',
+            'collector_id',
             'domain_id'
         ]
     }
