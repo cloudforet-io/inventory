@@ -60,6 +60,9 @@ class JobTask(MongoModel):
             'started_at',
             'finished_at',
         ],
+        'change_query_keys': {
+            'user_projects': 'project_id'
+        },
         'ordering': [
             '-created_at'
         ],

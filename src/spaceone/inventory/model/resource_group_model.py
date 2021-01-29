@@ -36,6 +36,9 @@ class ResourceGroup(MongoModel):
             'name',
             'project_id'
         ],
+        'change_query_keys': {
+            'user_projects': 'project_id'
+        },
         'ordering': [
             'name'
         ],
