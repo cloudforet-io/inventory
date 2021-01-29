@@ -17,13 +17,14 @@ _KEYWORD_FILTER = ['collector_id', 'name', 'provider']
 
 @authentication_handler
 @authorization_handler
+@mutation_handler
 @event_handler
 class CollectorService(BaseService):
 
     def __init__(self, metadata):
         super().__init__(metadata)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['name', 'plugin_info', 'domain_id'])
     def create(self, params):
         """
@@ -56,7 +57,7 @@ class CollectorService(BaseService):
 
         return collector_mgr.create_collector(params)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def update(self, params):
         """
@@ -84,7 +85,7 @@ class CollectorService(BaseService):
             result = collector_mgr.update_plugin(collector_id, domain_id, merged_params['plugin_info']['version'], None)
         return result
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def delete(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -99,7 +100,7 @@ class CollectorService(BaseService):
 
         return collector_mgr.delete_collector(collector_id, domain_id)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def get(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -108,7 +109,7 @@ class CollectorService(BaseService):
         only = params.get('only')
         return collector_mgr.get_collector(collector_id, domain_id, only)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def enable(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -116,7 +117,7 @@ class CollectorService(BaseService):
         domain_id = params['domain_id']
         return collector_mgr.enable_collector(collector_id, domain_id)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def disable(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -124,7 +125,7 @@ class CollectorService(BaseService):
         domain_id = params['domain_id']
         return collector_mgr.disable_collector(collector_id, domain_id)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['domain_id'])
     @append_query_filter(['collector_id', 'name', 'state', 'priority', 'plugin_id', 'domain_id'])
     @change_tag_filter('tags')
@@ -134,7 +135,7 @@ class CollectorService(BaseService):
         query = params.get('query', {})
         return collector_mgr.list_collectors(query)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
     @change_tag_filter('tags')
@@ -155,14 +156,14 @@ class CollectorService(BaseService):
         query = params.get('query', {})
         return collector_mgr.stat_collectors(query)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def collect(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         job_info = collector_mgr.collect(params)
         return job_info
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def update_plugin(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -174,7 +175,7 @@ class CollectorService(BaseService):
         collector_vo = collector_mgr.update_plugin(collector_id, domain_id, version, options)
         return collector_vo
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def verify_plugin(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -186,7 +187,7 @@ class CollectorService(BaseService):
         # If you here, succeed verify
         #return {'status': True}
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'schedule', 'domain_id'])
     def add_schedule(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -199,7 +200,7 @@ class CollectorService(BaseService):
         scheduler_info = collector_mgr.add_schedule(params)
         return scheduler_info
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'schedule_id', 'domain_id'])
     def get_schedule(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -208,8 +209,7 @@ class CollectorService(BaseService):
         domain_id = params['domain_id']
         return collector_mgr.get_schedule(schedule_id, domain_id)
 
-
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'schedule_id', 'domain_id'])
     def update_schedule(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -220,7 +220,7 @@ class CollectorService(BaseService):
         collector_vo = collector_mgr.update_schedule_by_vo(params, schedule_vo)
         return collector_vo
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'schedule_id', 'domain_id'])
     def delete_schedule(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -229,7 +229,7 @@ class CollectorService(BaseService):
         domain_id = params['domain_id']
         return collector_mgr.delete_schedule(schedule_id, domain_id)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['collector_id', 'schedule_id', 'domain_id'])
@@ -361,11 +361,10 @@ def _make_query_minute(minute: int):
         'o': 'contain'
         }
 
+
 def _make_query_interval():
     return {
         'k': 'schedule.interval',
         'v': 0,
         'o': 'gt'
         }
-
-

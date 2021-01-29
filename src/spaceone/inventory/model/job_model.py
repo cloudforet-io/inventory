@@ -44,7 +44,8 @@ class Job(MongoModel):
             'finished_at',
         ],
         'change_query_keys': {
-            'collector_id': 'collector.collector_id'
+            'collector_id': 'collector.collector_id',
+            'user_projects': 'project_id'
         },
         'reference_query_keys': {
             'collector': Collector
