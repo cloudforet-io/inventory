@@ -4,6 +4,7 @@ from spaceone.inventory.manager.collector_manager.job_task_manager import JobTas
 
 @authentication_handler
 @authorization_handler
+@mutation_handler
 @event_handler
 class JobTaskService(BaseService):
 
@@ -11,10 +12,13 @@ class JobTaskService(BaseService):
         super().__init__(metadata)
         self.job_task_mgr: JobTaskManager = self.locator.get_manager('JobTaskManager')
 
-    @transaction
+    @transaction(append_meta={
+        'authorization.scope': 'PROJECT',
+        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
+    })
     @check_required(['domain_id'])
     @append_query_filter(['job_task_id', 'status', 'job_id', 'secret_id', 'provider',
-                          'service_account_id', 'project_id', 'domain_id'])
+                          'service_account_id', 'project_id', 'domain_id', 'user_projects'])
     @append_keyword_filter(['job_task_id'])
     def list(self, params):
         """
@@ -28,7 +32,8 @@ class JobTaskService(BaseService):
                     'service_account_id': 'str',
                     'project_id': 'str',
                     'domain_id  ': 'str',
-                    'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
+                    'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
+                    'user_projects': 'list', // from meta
                 }
 
         Returns:
@@ -39,16 +44,20 @@ class JobTaskService(BaseService):
 
         return self.job_task_mgr.list(params.get('query', {}))
 
-    @transaction
+    @transaction(append_meta={
+        'authorization.scope': 'PROJECT',
+        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
+    })
     @check_required(['query', 'domain_id'])
-    @append_query_filter(['domain_id'])
+    @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(['job_task_id'])
     def stat(self, params):
         """
         Args:
             params (dict): {
                 'domain_id': 'str',
-                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
+                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
+                'user_projects': 'list', // from meta
             }
 
         Returns:

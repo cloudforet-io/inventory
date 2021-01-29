@@ -109,6 +109,9 @@ class Server(MongoModel):
             'region_code',
             'project_id',
         ],
+        'change_query_keys': {
+            'user_projects': 'project_id'
+        },
         'reference_query_keys': {
             'ref_cloud_service_type': {
                 'model': CloudServiceType,

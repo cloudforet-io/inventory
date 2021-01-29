@@ -9,6 +9,7 @@ _KEYWORD_FILTER = ['region_id', 'name', 'region_code']
 
 @authentication_handler
 @authorization_handler
+@mutation_handler
 @event_handler
 class RegionService(BaseService):
 
@@ -16,7 +17,7 @@ class RegionService(BaseService):
         super().__init__(metadata)
         self.region_mgr: RegionManager = self.locator.get_manager('RegionManager')
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['name', 'region_code', 'provider', 'domain_id'])
     def create(self, params):
         """
@@ -50,7 +51,7 @@ class RegionService(BaseService):
         region_mgr: RegionManager = self.locator.get_manager('RegionManager')
         return region_mgr.create_region(params)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['region_id', 'domain_id'])
     def update(self, params):
         """
@@ -83,7 +84,7 @@ class RegionService(BaseService):
 
         return self.region_mgr.update_region_by_vo(params, region_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['region_id', 'domain_id'])
     def delete(self, params):
         """
@@ -102,7 +103,7 @@ class RegionService(BaseService):
 
         self.region_mgr.delete_region_by_vo(region_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['region_id', 'domain_id'])
     def get(self, params):
         """
@@ -120,7 +121,7 @@ class RegionService(BaseService):
 
         return self.region_mgr.get_region(params['region_id'], params['domain_id'], params.get('only'))
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['domain_id'])
     @append_query_filter(['region_id', 'name', 'region_code', 'provider', 'domain_id'])
     @change_tag_filter('tags')
@@ -145,7 +146,7 @@ class RegionService(BaseService):
 
         return self.region_mgr.list_regions(params.get('query', {}))
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
     @change_tag_filter('tags')

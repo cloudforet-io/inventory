@@ -16,6 +16,7 @@ _KEYWORD_FILTER = ['server_id', 'name', 'ip_addresses', 'provider', 'cloud_servi
 
 @authentication_handler
 @authorization_handler
+@mutation_handler
 @event_handler
 class ServerService(BaseService):
 
@@ -25,7 +26,10 @@ class ServerService(BaseService):
         self.region_mgr: RegionManager = self.locator.get_manager('RegionManager')
         self.identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
 
-    @transaction
+    @transaction(append_meta={
+        'authorization.scope': 'PROJECT',
+        'authorization.require_project_id': True
+    })
     @check_required(['domain_id'])
     def create(self, params):
         """
@@ -111,7 +115,7 @@ class ServerService(BaseService):
         params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
         return self.server_mgr.create_server(params)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
     def update(self, params):
         """
@@ -222,7 +226,7 @@ class ServerService(BaseService):
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
     def pin_data(self, params):
         """
@@ -246,7 +250,7 @@ class ServerService(BaseService):
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
     def delete(self, params: dict):
         """
@@ -263,7 +267,7 @@ class ServerService(BaseService):
 
         self.server_mgr.delete_server(params['server_id'], params['domain_id'])
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
     @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'})
     def get(self, params):
@@ -282,12 +286,15 @@ class ServerService(BaseService):
 
         return self.server_mgr.get_server(params['server_id'], params['domain_id'], params.get('only'))
 
-    @transaction
+    @transaction(append_meta={
+        'authorization.scope': 'PROJECT',
+        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
+    })
     @check_required(['domain_id'])
     @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'}, key_path='query.only')
     @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses',
                           'server_type', 'os_type', 'provider', 'region_code',
-                          'resource_group_id', 'project_id', 'domain_id'])
+                          'resource_group_id', 'project_id', 'domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -308,7 +315,8 @@ class ServerService(BaseService):
                     'resource_group_id': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
-                    'query': 'dict (spaceone.api.core.v1.Query)'
+                    'query': 'dict (spaceone.api.core.v1.Query)',
+                    'user_projects': 'list', // from meta
                 }
 
         Returns:
@@ -322,9 +330,12 @@ class ServerService(BaseService):
 
         return self.server_mgr.list_servers(query)
 
-    @transaction
+    @transaction(append_meta={
+        'authorization.scope': 'PROJECT',
+        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
+    })
     @check_required(['query', 'domain_id'])
-    @append_query_filter(['resource_group_id', 'domain_id'])
+    @append_query_filter(['resource_group_id', 'domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
@@ -333,7 +344,8 @@ class ServerService(BaseService):
             params (dict): {
                 'resource_group_id': 'str',
                 'domain_id': 'str',
-                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
+                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
+                'user_projects': 'list', // from meta
             }
 
         Returns:

@@ -8,6 +8,7 @@ _KEYWORD_FILTER = ['cloud_service_type_id', 'name', 'provider', 'group', 'servic
 
 @authentication_handler
 @authorization_handler
+@mutation_handler
 @event_handler
 class CloudServiceTypeService(BaseService):
 
@@ -15,7 +16,7 @@ class CloudServiceTypeService(BaseService):
         super().__init__(metadata)
         self.cloud_svc_type_mgr: CloudServiceTypeManager = self.locator.get_manager('CloudServiceTypeManager')
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['name', 'provider', 'group', 'domain_id'])
     def create(self, params):
         """
@@ -67,7 +68,7 @@ class CloudServiceTypeService(BaseService):
 
         return self.cloud_svc_type_mgr.create_cloud_service_type(params)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['cloud_service_type_id', 'domain_id'])
     def update(self, params):
         """
@@ -123,7 +124,7 @@ class CloudServiceTypeService(BaseService):
 
         return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(params, cloud_svc_type_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['cloud_service_id', 'keys', 'domain_id'])
     def pin_data(self, params):
         """
@@ -149,7 +150,7 @@ class CloudServiceTypeService(BaseService):
 
         return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(params, cloud_svc_type_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['cloud_service_type_id', 'domain_id'])
     def delete(self, params):
 
@@ -170,7 +171,7 @@ class CloudServiceTypeService(BaseService):
 
         self.cloud_svc_type_mgr.delete_cloud_service_type_by_vo(cloud_svc_type_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['cloud_service_type_id', 'domain_id'])
     def get(self, params):
         """
@@ -189,7 +190,7 @@ class CloudServiceTypeService(BaseService):
         return self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'], params['domain_id'],
                                                               params.get('only'))
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['domain_id'])
     @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code', 'resource_type',
                           'is_primary', 'is_major', 'domain_id'])
@@ -219,7 +220,7 @@ class CloudServiceTypeService(BaseService):
 
         return self.cloud_svc_type_mgr.list_cloud_service_types(params.get('query', {}))
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
     @change_tag_filter('tags')

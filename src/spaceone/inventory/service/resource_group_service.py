@@ -10,6 +10,7 @@ _KEYWORD_FILTER = ['resource_group_id', 'name']
 
 @authentication_handler
 @authorization_handler
+@mutation_handler
 @event_handler
 class ResourceGroupService(BaseService):
 
@@ -17,7 +18,10 @@ class ResourceGroupService(BaseService):
         super().__init__(metadata)
         self.resource_group_mgr: ResourceGroupManager = self.locator.get_manager('ResourceGroupManager')
 
-    @transaction
+    @transaction(append_meta={
+        'authorization.scope': 'PROJECT',
+        'authorization.require_project_id': True
+    })
     @check_required(['name', 'resources', 'domain_id'])
     def create(self, params):
         """
@@ -36,7 +40,7 @@ class ResourceGroupService(BaseService):
         """
         return self.resource_group_mgr.create_resource_group(params)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['resource_group_id', 'domain_id'])
     def update(self, params):
         """
@@ -69,7 +73,7 @@ class ResourceGroupService(BaseService):
         rg_vo = self.resource_group_mgr.get_resource_group(params['resource_group_id'], params['domain_id'])
         return self.resource_group_mgr.update_resource_group_by_vo(params, rg_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['resource_group_id', 'domain_id'])
     def delete(self, params):
         """
@@ -87,7 +91,7 @@ class ResourceGroupService(BaseService):
         rg_vo = self.resource_group_mgr.get_resource_group(params['resource_group_id'], params['domain_id'])
         self.resource_group_mgr.delete_resource_group_by_vo(rg_vo)
 
-    @transaction
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['resource_group_id', 'domain_id'])
     def get(self, params):
         """
@@ -106,9 +110,12 @@ class ResourceGroupService(BaseService):
         return self.resource_group_mgr.get_resource_group(params['resource_group_id'], params['domain_id'],
                                                           params.get('only'))
 
-    @transaction
+    @transaction(append_meta={
+        'authorization.scope': 'PROJECT',
+        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
+    })
     @check_required(['domain_id'])
-    @append_query_filter(['resource_group_id', 'name', 'project_id', 'domain_id'])
+    @append_query_filter(['resource_group_id', 'name', 'project_id', 'domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -119,7 +126,8 @@ class ResourceGroupService(BaseService):
                     'name': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
-                    'query': 'dict (spaceone.api.core.v1.Query)'
+                    'query': 'dict (spaceone.api.core.v1.Query)',
+                    'user_projects': 'list', // from meta
                 }
 
         Returns:
@@ -127,12 +135,14 @@ class ResourceGroupService(BaseService):
             total_count (int)
 
         """
-
         return self.resource_group_mgr.list_resource_groups(params.get('query', {}))
 
-    @transaction
+    @transaction(append_meta={
+        'authorization.scope': 'PROJECT',
+        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
+    })
     @check_required(['query', 'domain_id'])
-    @append_query_filter(['domain_id'])
+    @append_query_filter(['domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
@@ -140,7 +150,8 @@ class ResourceGroupService(BaseService):
         Args:
             params (dict): {
                 'domain_id': 'str',
-                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
+                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
+                'user_projects': 'list', // from meta
             }
 
         Returns:
