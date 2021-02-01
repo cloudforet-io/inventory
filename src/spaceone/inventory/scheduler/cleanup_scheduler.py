@@ -90,7 +90,7 @@ class CleanupScheduler(HourlyScheduler):
                         'service': 'inventory',
                         'resource': 'Cleanup',
                         'verb': 'list_domains',
-                        'authorization.skip': True,
+                        'authorization': True,
                         'domain_id': self.domain_id}
             cleanup_svc = self.locator.get_service('CleanupService', metadata)
             params = {}
@@ -136,7 +136,7 @@ class CleanupScheduler(HourlyScheduler):
                     'service': 'inventory',
                     'resource': 'Cleanup',
                     'verb': 'update_collection_state',
-                    'authorization.skip': True,
+                    'authorization': True,
                     'domain_id': self.domain_id}
         sched_job = {
             'locator': 'SERVICE',

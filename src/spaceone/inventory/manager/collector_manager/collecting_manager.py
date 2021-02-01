@@ -296,7 +296,7 @@ class CollectingManager(BaseManager):
         self.transaction.set_meta('job_task_id', job_task_id)
         self.transaction.set_meta('collector_id', collector_id)
         self.transaction.set_meta('secret.secret_id', secret_id)
-        self.transaction.set_meta('authorization.skip', True)
+        self.transaction.set_meta('authorization', False)
         if plugin_id:
             self.transaction.set_meta('plugin_id', plugin_id)
         if 'provider' in self.secret:
