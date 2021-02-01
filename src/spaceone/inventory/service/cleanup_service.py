@@ -21,7 +21,6 @@ DEFAULT_POLICY = {
 JOB_TIMEOUT = 2
 
 @authentication_handler
-@authorization_handler
 @event_handler
 class CleanupService(BaseService):
 
