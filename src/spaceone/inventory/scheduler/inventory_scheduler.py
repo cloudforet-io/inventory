@@ -150,7 +150,12 @@ class InventoryHourlyScheduler(HourlyScheduler):
         plugin_info = scheduler_vo.collector.plugin_info
         _LOGGER.debug(f'plugin_info: {plugin_info}')
         domain_id = scheduler_vo.domain_id
-        metadata = {'token': self.TOKEN, 'domain_id': self.domain_id}
+        metadata = {'token': self.TOKEN,
+                    'service': 'inventory',
+                    'resource': 'Collector',
+                    'verb': 'collect',
+                    'authorization.skip': False,
+                    'domain_id': self.domain_id}
         sched_job = {
             'locator': 'SERVICE',
             'name': 'CollectorService',
