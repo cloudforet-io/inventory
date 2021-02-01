@@ -297,6 +297,7 @@ class CollectingManager(BaseManager):
         self.transaction.set_meta('collector_id', collector_id)
         self.transaction.set_meta('secret.secret_id', secret_id)
         self.transaction.set_meta('authorization', False)
+        self.transaction.set_meta('mutation', False)
         if plugin_id:
             self.transaction.set_meta('plugin_id', plugin_id)
         if 'provider' in self.secret:
