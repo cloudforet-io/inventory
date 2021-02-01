@@ -154,7 +154,7 @@ class InventoryHourlyScheduler(HourlyScheduler):
                     'service': 'inventory',
                     'resource': 'Collector',
                     'verb': 'collect',
-                    'authorization.skip': False,
+                    'authorization': False,
                     'domain_id': self.domain_id}
         sched_job = {
             'locator': 'SERVICE',
