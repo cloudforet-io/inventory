@@ -86,7 +86,12 @@ class CleanupScheduler(HourlyScheduler):
                 # ERROR LOGGING
                 pass
             # Loop all domain, then find scheduled collector
-            metadata = {'token': self.TOKEN, 'domain_id': self.domain_id}
+            metadata = {'token': self.TOKEN,
+                        'service': 'inventory',
+                        'resource': 'Cleanup',
+                        'verb': 'list_domains',
+                        'authorization': True,
+                        'domain_id': self.domain_id}
             cleanup_svc = self.locator.get_service('CleanupService', metadata)
             params = {}
             resp = cleanup_svc.list_domains(params)
@@ -127,7 +132,12 @@ class CleanupScheduler(HourlyScheduler):
             jobs: SpaceONE Pipeline Template
         """
         _LOGGER.debug(f'[_create_job_request] domain: {domain}')
-        metadata = {'token': self.TOKEN, 'domain_id': self.domain_id}
+        metadata = {'token': self.TOKEN,
+                    'service': 'inventory',
+                    'resource': 'Cleanup',
+                    'verb': 'update_collection_state',
+                    'authorization': True,
+                    'domain_id': self.domain_id}
         sched_job = {
             'locator': 'SERVICE',
             'name': 'CleanupService',

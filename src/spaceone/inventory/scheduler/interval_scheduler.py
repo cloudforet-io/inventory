@@ -213,7 +213,12 @@ class InventoryIntervalScheduler(IntervalScheduler):
         """
         _LOGGER.debug(f'[_create_job_request] {interval_info}')
         domain_id = interval_info['domain_id']
-        metadata = {'token': self.TOKEN, 'domain_id': self.domain_id}
+        metadata = {'token': self.TOKEN,
+                    'service': 'inventory',
+                    'resource': 'Collector',
+                    'verb': 'collect',
+                    'authorization': True,
+                    'domain_id': self.domain_id}
         sched_job = {
             'locator': 'SERVICE',
             'name': 'CollectorService',
