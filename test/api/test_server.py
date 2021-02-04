@@ -1,29 +1,23 @@
 import os
-import uuid
 import unittest
 import pprint
 import random
-
 from google.protobuf.json_format import MessageToDict
+
 from spaceone.core import utils, pygrpc
 from spaceone.core.unittest.runner import RichTestRunner
-
-
-def random_string():
-    return uuid.uuid4().hex
 
 
 class TestServer(unittest.TestCase):
     config = utils.load_yaml_from_file(
         os.environ.get('SPACEONE_TEST_CONFIG_FILE', './config.yml'))
+
     pp = pprint.PrettyPrinter(indent=4)
     identity_v1 = None
     inventory_v1 = None
-    domain = None
-    domain_owner = None
     owner_id = None
     owner_pw = None
-    token = None
+    owner_token = None
 
     @classmethod
     def setUpClass(cls):
@@ -40,56 +34,56 @@ class TestServer(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestServer, cls).tearDownClass()
-        cls.identity_v1.DomainOwner.delete({
-            'domain_id': cls.domain.domain_id,
-            'owner_id': cls.owner_id
-        })
-        print(f'>> delete domain owner: {cls.owner_id}')
+        cls.identity_v1.DomainOwner.delete(
+            {
+                'domain_id': cls.domain.domain_id,
+                'owner_id': cls.owner_id
+            }, metadata=(('token', cls.owner_token),)
+        )
 
-        if cls.domain:
-            cls.identity_v1.Domain.delete({'domain_id': cls.domain.domain_id})
-            print(f'>> delete domain: {cls.domain.name} ({cls.domain.domain_id})')
+        cls.identity_v1.Domain.delete(
+            {
+                'domain_id': cls.domain.domain_id
+            }, metadata=(('token', cls.owner_token),)
+        )
 
     @classmethod
     def _create_domain(cls):
         name = utils.random_string()
-        param = {
+        params = {
             'name': name
         }
-
-        cls.domain = cls.identity_v1.Domain.create(param)
-        print(f'domain_id: {cls.domain.domain_id}')
-        print(f'domain_name: {cls.domain.name}')
+        cls.domain = cls.identity_v1.Domain.create(params)
 
     @classmethod
     def _create_domain_owner(cls):
-        cls.owner_id = utils.random_string()[0:10]
-        cls.owner_pw = 'qwerty'
+        cls.owner_id = utils.random_string() + '@mz.co.kr'
+        cls.owner_pw = utils.generate_password()
 
-        owner = cls.identity_v1.DomainOwner.create({
+        params = {
             'owner_id': cls.owner_id,
             'password': cls.owner_pw,
             'domain_id': cls.domain.domain_id
-        })
+        }
 
+        owner = cls.identity_v1.DomainOwner.create(
+            params
+        )
         cls.domain_owner = owner
-        print(f'owner_id: {cls.owner_id}')
-        print(f'owner_pw: {cls.owner_pw}')
 
     @classmethod
     def _issue_owner_token(cls):
         token_param = {
+            'user_type': 'DOMAIN_OWNER',
+            'user_id': cls.owner_id,
             'credentials': {
-                'user_type': 'DOMAIN_OWNER',
-                'user_id': cls.owner_id,
                 'password': cls.owner_pw
             },
             'domain_id': cls.domain.domain_id
         }
 
         issue_token = cls.identity_v1.Token.issue(token_param)
-        cls.token = issue_token.access_token
-        print(f'token: {cls.token}')
+        cls.owner_token = issue_token.access_token
 
     def setUp(self):
         self.servers = []
@@ -111,7 +105,7 @@ class TestServer(unittest.TestCase):
             self.inventory_v1.Server.delete(
                 {'server_id': server.server_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
             print(f'>> delete server: {server.name} ({server.server_id})')
 
@@ -119,7 +113,7 @@ class TestServer(unittest.TestCase):
             self.inventory_v1.Collector.delete(
                 {'collector_id': collector.collector_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
             print(f'>> delete collector: {collector.name} ({collector.collector_id})')
 
@@ -127,7 +121,7 @@ class TestServer(unittest.TestCase):
             self.inventory_v1.Region.delete(
                 {'region_id': region.region_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
             print(f'>> delete region: {region.name} ({region.region_id})')
 
@@ -135,7 +129,7 @@ class TestServer(unittest.TestCase):
             self.identity_v1.Project.delete(
                 {'project_id': project.project_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
             print(f'>> delete project: {project.name} ({project.project_id})')
 
@@ -143,13 +137,13 @@ class TestServer(unittest.TestCase):
             self.identity_v1.ProjectGroup.delete(
                 {'project_group_id': project_group.project_group_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
             print(f'>> delete project group: {project_group.name} ({project_group.project_group_id})')
 
     def _create_project_group(self, name=None):
         if name is None:
-            name = 'ProjectGroup-' + utils.random_string()[0:5]
+            name = 'ProjectGroup-' + utils.random_string()
 
         params = {
             'name': name,
@@ -158,7 +152,7 @@ class TestServer(unittest.TestCase):
 
         self.project_group = self.identity_v1.ProjectGroup.create(
             params,
-            metadata=(('token', self.token),)
+            metadata=(('token', self.owner_token),)
         )
 
         self.project_groups.append(self.project_group)
@@ -166,7 +160,7 @@ class TestServer(unittest.TestCase):
 
     def _create_project(self, project_group_id, name=None):
         if name is None:
-            name = 'Project-' + utils.random_string()[0:5]
+            name = 'Project-' + utils.random_string()
 
         params = {
             'name': name,
@@ -176,7 +170,7 @@ class TestServer(unittest.TestCase):
 
         self.project = self.identity_v1.Project.create(
             params,
-            metadata=(('token', self.token),)
+            metadata=(('token', self.owner_token),)
         )
 
         self.projects.append(self.project)
@@ -184,10 +178,10 @@ class TestServer(unittest.TestCase):
 
     def _create_region(self, name=None, provider='aws', region_code=None):
         if name is None:
-            name = 'Region-' + random_string()[0:5]
+            name = 'Region-' + utils.random_string()
 
         if region_code is None:
-            region_code = 'region-' + random_string()[0:5]
+            region_code = 'region-' + utils.random_string()
 
         params = {
             'name': name,
@@ -198,7 +192,7 @@ class TestServer(unittest.TestCase):
 
         self.region = self.inventory_v1.Region.create(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.regions.append(self.region)
         self.assertEqual(self.region.name, params['name'])
@@ -214,7 +208,7 @@ class TestServer(unittest.TestCase):
         """ Create Server
         """
         if name is None:
-            name = 'Server-' + random_string()[0:5]
+            name = 'Server-' + utils.random_string()
 
         self._create_project_group()
         self._create_project(self.project_group.project_group_id)
@@ -240,7 +234,7 @@ class TestServer(unittest.TestCase):
                     'memory': 8
                 },
                 'compute': {
-                    'instance_id': 'i-' + random_string()[0:12]
+                    'instance_id': 'i-' + utils.random_string()
                 },
                 'softwares': [{
                     'name': 'mysql',
@@ -333,7 +327,7 @@ class TestServer(unittest.TestCase):
             ]
         }
 
-        metadata = (('token', self.token),)
+        metadata = (('token', self.owner_token),)
         ext_meta = kwargs.get('meta')
 
         if ext_meta:
@@ -449,7 +443,7 @@ class TestServer(unittest.TestCase):
                 'domain_id': self.domain.domain_id
             },
             metadata=(
-                ('token', self.token),
+                ('token', self.owner_token),
                 ('job_id', utils.generate_id('job')),
                 # ('collector_id', utils.generate_id('collector')),
                 # ('plugin_id', utils.generate_id('plugin')),
@@ -472,7 +466,7 @@ class TestServer(unittest.TestCase):
                         'default_gateway': '192.168.0.1'
                     },
                     'compute': {
-                        'instance_id': 'i-' + random_string()[0:12],
+                        'instance_id': 'i-' + utils.random_string(),
                         'changed_key': 'changed_value'
                     },
                     'softwares': [{
@@ -525,7 +519,7 @@ class TestServer(unittest.TestCase):
                 'domain_id': self.domain.domain_id
             },
             metadata=(
-                ('token', self.token),
+                ('token', self.owner_token),
                 ('job_id', utils.generate_id('job')),
                 # ('plugin_id', utils.generate_id('plugin')),
                 # ('collector_id', utils.generate_id('collector')),
@@ -561,7 +555,7 @@ class TestServer(unittest.TestCase):
                 'domain_id': self.domain.domain_id
             },
             metadata=(
-                ('token', self.token),
+                ('token', self.owner_token),
             ))
 
         self._print_data(self.server, 'test_pin_server_data_1')
@@ -593,7 +587,7 @@ class TestServer(unittest.TestCase):
                 'domain_id': self.domain.domain_id
             },
             metadata=(
-                ('token', self.token),
+                ('token', self.owner_token),
                 ('collector_id', utils.generate_id('collector')),
                 ('service_account_id', utils.generate_id('sa')),
                 ('secret_id', utils.generate_id('secret')),
@@ -609,7 +603,7 @@ class TestServer(unittest.TestCase):
 
     def test_update_server_name(self, name=None):
         if name is None:
-            name = 'UpdateServer-' + random_string()[0:5]
+            name = 'UpdateServer-' + utils.random_string()
 
         self.test_create_server()
 
@@ -621,7 +615,7 @@ class TestServer(unittest.TestCase):
 
         self.server = self.inventory_v1.Server.update(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
         self.assertEqual(self.server.name, name)
 
     def test_update_server_data(self):
@@ -640,7 +634,7 @@ class TestServer(unittest.TestCase):
 
         self.server = self.inventory_v1.Server.update(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self._print_data(self.server, 'test_update_server_data')
         self.assertEqual(self.server.data['base'], params['data']['base'])
@@ -656,7 +650,7 @@ class TestServer(unittest.TestCase):
 
         self.server = self.inventory_v1.Server.update(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self._print_data(self.server, 'test_update_server_region')
         self.assertEqual(self.server.region_code, self.region.region_code)
@@ -672,7 +666,7 @@ class TestServer(unittest.TestCase):
 
         self.server = self.inventory_v1.Server.update(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self._print_data(self.server, 'test_release_server_pool')
         self.assertEqual(self.server.region_code, '')
@@ -689,7 +683,7 @@ class TestServer(unittest.TestCase):
 
         self.server = self.inventory_v1.Server.update(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self._print_data(self.server, 'test_update_server_project')
         self.assertEqual(self.server.project_id, self.project.project_id)
@@ -707,7 +701,7 @@ class TestServer(unittest.TestCase):
 
         self.server = self.inventory_v1.Server.update(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self._print_data(self.server, 'test_release_server_project')
         self.assertEqual(self.server.project_id, '')
@@ -718,11 +712,11 @@ class TestServer(unittest.TestCase):
         if tags is None:
             tags = [
                 {
-                    'key': random_string(),
-                    'value': random_string()
+                    'key': utils.random_string(),
+                    'value': utils.random_string()
                 }, {
-                    'key': random_string(),
-                    'value': random_string()
+                    'key': utils.random_string(),
+                    'value': utils.random_string()
                 }
             ]
 
@@ -734,7 +728,7 @@ class TestServer(unittest.TestCase):
 
         self.server = self.inventory_v1.Server.update(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self._print_data(self.server, 'test_update_server_tags')
         server_data = MessageToDict(self.server, preserving_proto_field_name=True)
@@ -742,7 +736,7 @@ class TestServer(unittest.TestCase):
 
     def test_get_server(self, name=None):
         if name is None:
-            name = 'GetServer-' + random_string()[0:5]
+            name = 'GetServer-' + utils.random_string()
 
         self.test_create_server(name)
 
@@ -752,7 +746,7 @@ class TestServer(unittest.TestCase):
         }
         self.server = self.inventory_v1.Server.get(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.assertEqual(self.server.name, name)
 
@@ -767,12 +761,12 @@ class TestServer(unittest.TestCase):
 
         result = self.inventory_v1.Server.list(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.assertEqual(1, result.total_count)
 
     def test_list_server_name(self):
-        name = 'ListServers-' + random_string()[0:5]
+        name = 'ListServers-' + utils.random_string()
 
         self.test_create_server(name)
         self.test_create_server(name)
@@ -784,7 +778,7 @@ class TestServer(unittest.TestCase):
 
         result = self.inventory_v1.Server.list(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.assertEqual(2, result.total_count)
 
@@ -809,7 +803,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.list(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self.assertEqual(len(self.servers), result.total_count)
 
@@ -835,7 +829,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.list(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
         self.assertEqual(len(self.servers), result.total_count)
 
     def test_list_region_code(self):
@@ -855,7 +849,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.list(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
         self.assertEqual(len(self.servers), result.total_count)
 
     def test_list_minimal(self):
@@ -871,7 +865,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.list(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
         self.assertEqual(len(self.servers), result.total_count)
 
     def test_list_server_specific_field(self):
@@ -891,7 +885,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.list(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result.results[0], 'test_list_server_specific_field')
         self.assertEqual(self.server.server_id, result.results[0].server_id)
@@ -913,7 +907,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.list(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_list_server_by_timediff')
         self.assertEqual(result.total_count, 1)
@@ -925,7 +919,7 @@ class TestServer(unittest.TestCase):
             self.inventory_v1.Server.delete(
                 {'server_id': server.server_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
 
         params = {
@@ -942,7 +936,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.list(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self.servers = []
 
@@ -994,7 +988,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.stat(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_stat_server')
 
@@ -1037,7 +1031,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.stat(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_stat_server_by_collector')
 
@@ -1066,7 +1060,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.stat(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_stat_server_by_service_account')
 
@@ -1090,7 +1084,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.stat(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_stat_server_vm_count')
 
@@ -1123,7 +1117,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.stat(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_stat_server_total_count')
 
@@ -1142,7 +1136,7 @@ class TestServer(unittest.TestCase):
         }
 
         result = self.inventory_v1.Server.stat(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_stat_server_distinct')
 
