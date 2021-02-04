@@ -1,34 +1,29 @@
 import os
-import uuid
-import random
-import pprint
 import unittest
+import pprint
+import random
+from google.protobuf.json_format import MessageToDict
 
 from spaceone.core import utils, pygrpc
 from spaceone.core.unittest.runner import RichTestRunner
-from google.protobuf.json_format import MessageToDict
-
-
-def random_string():
-    return uuid.uuid4().hex
 
 
 class TestRegion(unittest.TestCase):
     config = utils.load_yaml_from_file(
         os.environ.get('SPACEONE_TEST_CONFIG_FILE', './config.yml'))
+
     pp = pprint.PrettyPrinter(indent=4)
     identity_v1 = None
     inventory_v1 = None
-    domain = None
-    domain_owner = None
     owner_id = None
     owner_pw = None
-    token = None
+    owner_token = None
 
     @classmethod
     def setUpClass(cls):
         super(TestRegion, cls).setUpClass()
         endpoints = cls.config.get('ENDPOINTS', {})
+
         cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1')
         cls.inventory_v1 = pygrpc.client(endpoint=endpoints.get('inventory', {}).get('v1'), version='v1')
 
@@ -39,61 +34,56 @@ class TestRegion(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestRegion, cls).tearDownClass()
-        cls.identity_v1.DomainOwner.delete({
-            'domain_id': cls.domain.domain_id,
-            'owner_id': cls.owner_id
-        })
+        cls.identity_v1.DomainOwner.delete(
+            {
+                'domain_id': cls.domain.domain_id,
+                'owner_id': cls.owner_id
+            }, metadata=(('token', cls.owner_token),)
+        )
 
-        if cls.domain:
-            cls.identity_v1.Domain.delete({'domain_id': cls.domain.domain_id})
+        cls.identity_v1.Domain.delete(
+            {
+                'domain_id': cls.domain.domain_id
+            }, metadata=(('token', cls.owner_token),)
+        )
 
     @classmethod
     def _create_domain(cls):
         name = utils.random_string()
-        param = {
+        params = {
             'name': name
         }
-
-        cls.domain = cls.identity_v1.Domain.create(param)
-        print(f'domain_id: {cls.domain.domain_id}')
-        print(f'domain_name: {cls.domain.name}')
+        cls.domain = cls.identity_v1.Domain.create(params)
 
     @classmethod
     def _create_domain_owner(cls):
-        cls.owner_id = utils.random_string()[0:10]
-        cls.owner_pw = 'qwerty'
+        cls.owner_id = utils.random_string() + '@mz.co.kr'
+        cls.owner_pw = utils.generate_password()
 
-        param = {
+        params = {
             'owner_id': cls.owner_id,
             'password': cls.owner_pw,
-            'name': 'Steven' + utils.random_string()[0:5],
-            'timezone': 'utc+9',
-            'email': 'Steven' + utils.random_string()[0:5] + '@mz.co.kr',
-            'mobile': '+821026671234',
             'domain_id': cls.domain.domain_id
         }
 
         owner = cls.identity_v1.DomainOwner.create(
-            param
+            params
         )
         cls.domain_owner = owner
-        print(f'owner_id: {cls.owner_id}')
-        print(f'owner_pw: {cls.owner_pw}')
 
     @classmethod
     def _issue_owner_token(cls):
         token_param = {
+            'user_type': 'DOMAIN_OWNER',
+            'user_id': cls.owner_id,
             'credentials': {
-                'user_type': 'DOMAIN_OWNER',
-                'user_id': cls.owner_id,
                 'password': cls.owner_pw
             },
             'domain_id': cls.domain.domain_id
         }
 
         issue_token = cls.identity_v1.Token.issue(token_param)
-        cls.token = issue_token.access_token
-        print(f'token: {cls.token}')
+        cls.owner_token = issue_token.access_token
 
     def setUp(self):
         self.regions = []
@@ -108,7 +98,7 @@ class TestRegion(unittest.TestCase):
             self.inventory_v1.Region.delete(
                 {'region_id': region.region_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
 
     def _print_data(self, message, description=None):
@@ -123,7 +113,7 @@ class TestRegion(unittest.TestCase):
         """
 
         if not name:
-            name = random_string()
+            name = utils.random_string()
 
         params = {
             'name': name,
@@ -134,7 +124,7 @@ class TestRegion(unittest.TestCase):
 
         self.region = self.inventory_v1.Region.create(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.regions.append(self.region)
         self._print_data(self.region, 'test_create_region')
@@ -143,7 +133,7 @@ class TestRegion(unittest.TestCase):
     def test_update_region_name(self):
         self.test_create_region(region_code='korea', provider='aws')
 
-        name = random_string()
+        name = utils.random_string()
         param = {
             'region_id': self.region.region_id,
             'name': name,
@@ -151,7 +141,7 @@ class TestRegion(unittest.TestCase):
         }
         self.region = self.inventory_v1.Region.update(
             param,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
         self._print_data(self.region, 'test_update_region_name')
         self.assertEqual(self.region.name, name)
 
@@ -160,11 +150,11 @@ class TestRegion(unittest.TestCase):
 
         tags = [
             {
-                'key': random_string(),
-                'value': random_string()
+                'key': utils.random_string(),
+                'value': utils.random_string()
             }, {
-                'key': random_string(),
-                'value': random_string()
+                'key': utils.random_string(),
+                'value': utils.random_string()
             }
         ]
         param = {
@@ -174,7 +164,7 @@ class TestRegion(unittest.TestCase):
         }
         self.region = self.inventory_v1.Region.update(
             param,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
         region_data = MessageToDict(self.region)
         self.assertEqual(region_data['tags'], tags)
 
@@ -188,7 +178,7 @@ class TestRegion(unittest.TestCase):
         }
         self.region = self.inventory_v1.Region.get(
             param,
-            metadata=(('token', self.token),)
+            metadata=(('token', self.owner_token),)
         )
         self.assertEqual(self.region.name, name)
 
@@ -203,7 +193,7 @@ class TestRegion(unittest.TestCase):
 
         regions = self.inventory_v1.Region.list(
             param,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.assertEqual(1, regions.total_count)
 
@@ -218,7 +208,7 @@ class TestRegion(unittest.TestCase):
 
         regions = self.inventory_v1.Region.list(
             param,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.assertEqual(1, regions.total_count)
 
@@ -233,7 +223,7 @@ class TestRegion(unittest.TestCase):
 
         regions = self.inventory_v1.Region.list(
             param,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.assertEqual(2, regions.total_count)
 
@@ -258,7 +248,7 @@ class TestRegion(unittest.TestCase):
 
         regions = self.inventory_v1.Region.list(
             param,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         self.assertEqual(1, regions.total_count)
 
@@ -282,7 +272,7 @@ class TestRegion(unittest.TestCase):
 
         regions = self.inventory_v1.Region.list(
             param,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
         self.assertEqual(len(self.regions), regions.total_count)
 
     def test_stat_region(self):
@@ -312,7 +302,7 @@ class TestRegion(unittest.TestCase):
 
         result = self.inventory_v1.Region.stat(
             params,
-            metadata=(('token', self.token),))
+            metadata=(('token', self.owner_token),))
 
         print(result)
 
