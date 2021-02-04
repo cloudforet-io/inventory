@@ -1,14 +1,11 @@
 import os
-import uuid
 import unittest
 import pprint
-from spaceone.core import utils, pygrpc
-from spaceone.core.unittest.runner import RichTestRunner
+import random
 from google.protobuf.json_format import MessageToDict
 
-
-def random_string():
-    return uuid.uuid4().hex
+from spaceone.core import utils, pygrpc
+from spaceone.core.unittest.runner import RichTestRunner
 
 
 class TestCloudService(unittest.TestCase):
@@ -18,16 +15,15 @@ class TestCloudService(unittest.TestCase):
     pp = pprint.PrettyPrinter(indent=4)
     identity_v1 = None
     inventory_v1 = None
-    domain = None
-    domain_owner = None
     owner_id = None
     owner_pw = None
-    token = None
+    owner_token = None
 
     @classmethod
     def setUpClass(cls):
         super(TestCloudService, cls).setUpClass()
         endpoints = cls.config.get('ENDPOINTS', {})
+
         cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1')
         cls.inventory_v1 = pygrpc.client(endpoint=endpoints.get('inventory', {}).get('v1'), version='v1')
 
@@ -38,61 +34,56 @@ class TestCloudService(unittest.TestCase):
     @classmethod
     def tearDownClass(cls):
         super(TestCloudService, cls).tearDownClass()
-        cls.identity_v1.DomainOwner.delete({
-            'domain_id': cls.domain.domain_id,
-            'owner_id': cls.owner_id
-        })
+        cls.identity_v1.DomainOwner.delete(
+            {
+                'domain_id': cls.domain.domain_id,
+                'owner_id': cls.owner_id
+            }, metadata=(('token', cls.owner_token),)
+        )
 
-        if cls.domain:
-            cls.identity_v1.Domain.delete({'domain_id': cls.domain.domain_id})
-
+        cls.identity_v1.Domain.delete(
+            {
+                'domain_id': cls.domain.domain_id
+            }, metadata=(('token', cls.owner_token),)
+        )
+        
     @classmethod
     def _create_domain(cls):
         name = utils.random_string()
-        param = {
+        params = {
             'name': name
         }
-
-        cls.domain = cls.identity_v1.Domain.create(param)
-        print(f'domain_id: {cls.domain.domain_id}')
-        print(f'domain_name: {cls.domain.name}')
+        cls.domain = cls.identity_v1.Domain.create(params)
 
     @classmethod
     def _create_domain_owner(cls):
-        cls.owner_id = utils.random_string()[0:10]
-        cls.owner_pw = 'qwerty'
+        cls.owner_id = utils.random_string() + '@mz.co.kr'
+        cls.owner_pw = utils.generate_password()
 
-        param = {
+        params = {
             'owner_id': cls.owner_id,
             'password': cls.owner_pw,
-            'name': 'Steven' + utils.random_string()[0:5],
-            'timezone': 'utc+9',
-            'email': 'Steven' + utils.random_string()[0:5] + '@mz.co.kr',
-            'mobile': '+821026671234',
             'domain_id': cls.domain.domain_id
         }
 
         owner = cls.identity_v1.DomainOwner.create(
-            param
+            params
         )
         cls.domain_owner = owner
-        print(f'owner_id: {cls.owner_id}')
-        print(f'owner_pw: {cls.owner_pw}')
 
     @classmethod
     def _issue_owner_token(cls):
         token_param = {
+            'user_type': 'DOMAIN_OWNER',
+            'user_id': cls.owner_id,
             'credentials': {
-                'user_type': 'DOMAIN_OWNER',
-                'user_id': cls.owner_id,
                 'password': cls.owner_pw
             },
             'domain_id': cls.domain.domain_id
         }
 
         issue_token = cls.identity_v1.Token.issue(token_param)
-        cls.token = issue_token.access_token
-        print(f'token: {cls.token}')
+        cls.owner_token = issue_token.access_token
 
     def setUp(self):
         self.region = None
@@ -106,28 +97,28 @@ class TestCloudService(unittest.TestCase):
             self.inventory_v1.CloudService.delete(
                 {'cloud_service_id': cloud_svc.cloud_service_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
 
         if self.region is not None:
             self.inventory_v1.Region.delete(
                 {'region_id': self.region.region_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
 
         if self.project is not None:
             self.identity_v1.Project.delete(
                 {'project_id': self.project.project_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
 
         if self.project_group is not None:
             self.identity_v1.ProjectGroup.delete(
                 {'project_group_id': self.project_group.project_group_id,
                  'domain_id': self.domain.domain_id},
-                metadata=(('token', self.token),)
+                metadata=(('token', self.owner_token),)
             )
 
     def _create_region(self, name=None, provider='aws', region_code=None):
@@ -135,10 +126,10 @@ class TestCloudService(unittest.TestCase):
         """
 
         if not name:
-            name = random_string()
+            name = utils.random_string()
 
         if region_code is None:
-            region_code = 'region-' + random_string()[0:5]
+            region_code = 'region-' + utils.random_string()
 
         params = {
             'name': name,
@@ -147,28 +138,28 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.region = self.inventory_v1.Region.create(params, metadata=(('token', self.token),))
+        self.region = self.inventory_v1.Region.create(params, metadata=(('token', self.owner_token),))
 
     def _create_project_group(self, name=None):
         """ Create Project Group
         """
 
         if not name:
-            name = random_string()
+            name = utils.random_string()
 
         params = {
             'name': name,
             'domain_id': self.domain.domain_id
         }
 
-        self.project_group = self.identity_v1.ProjectGroup.create(params, metadata=(('token', self.token),))
+        self.project_group = self.identity_v1.ProjectGroup.create(params, metadata=(('token', self.owner_token),))
 
     def _create_project(self, name=None, project_group=None):
         """ Create Project
         """
 
         if not name:
-            name = random_string()
+            name = utils.random_string()
 
         if not project_group:
             self._create_project_group()
@@ -180,7 +171,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.project = self.identity_v1.Project.create(params, metadata=(('token', self.token),))
+        self.project = self.identity_v1.Project.create(params, metadata=(('token', self.owner_token),))
 
     def _print_data(self, message, description=None):
         print()
@@ -195,19 +186,19 @@ class TestCloudService(unittest.TestCase):
         """
 
         if cloud_service_type is None:
-            cloud_service_type = random_string()
+            cloud_service_type = utils.random_string()
 
         if provider is None:
-            provider = random_string()
+            provider = utils.random_string()
 
         if group is None:
-            group = random_string()
+            group = utils.random_string()
 
         if data is None:
             data = {
-                random_string(): random_string(),
-                random_string(): random_string(),
-                random_string(): random_string()
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string()
             }
 
         if metadata is None:
@@ -242,7 +233,7 @@ class TestCloudService(unittest.TestCase):
             },
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.owner_token),))
         self._print_data(self.cloud_service, 'test_create_cloud_service')
 
         self.cloud_services.append(self.cloud_service)
@@ -253,26 +244,26 @@ class TestCloudService(unittest.TestCase):
         """
 
         if cloud_service_type is None:
-            cloud_service_type = random_string()
+            cloud_service_type = utils.random_string()
 
         if provider is None:
-            provider = random_string()
+            provider = utils.random_string()
 
-        group = random_string()
+        group = utils.random_string()
 
         params = {
             'provider': provider,
             'cloud_service_type': cloud_service_type,
             'cloud_service_group': group,
             'data': {
-                random_string(): random_string(),
-                random_string(): random_string(),
-                random_string(): random_string()
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string()
             },
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.owner_token),))
         self.cloud_services.append(self.cloud_service)
         self.assertEqual(self.cloud_service.cloud_service_group, group)
 
@@ -281,13 +272,13 @@ class TestCloudService(unittest.TestCase):
         """
 
         if cloud_service_type is None:
-            cloud_service_type = random_string()
+            cloud_service_type = utils.random_string()
 
         if cloud_service_group is None:
-            cloud_service_group = random_string()
+            cloud_service_group = utils.random_string()
 
         if provider is None:
-            provider = random_string()
+            provider = utils.random_string()
 
         self._create_region()
 
@@ -296,15 +287,15 @@ class TestCloudService(unittest.TestCase):
             'cloud_service_type': cloud_service_type,
             'cloud_service_group': cloud_service_group,
             'data': {
-                random_string(): random_string(),
-                random_string(): random_string(),
-                random_string(): random_string()
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string()
             },
             'region_code': self.region.region_code,
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.owner_token),))
 
         self._print_data(self.cloud_service, 'test_create_cloud_service_region_code')
 
@@ -321,7 +312,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
         self._print_data(self.cloud_service, 'test_update_cloud_service_project_id_1')
         self.assertEqual(self.cloud_service.project_id, self.project.project_id)
 
@@ -332,7 +323,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
         self._print_data(self.cloud_service, 'test_update_cloud_service_project_id_2')
         self.assertEqual(self.cloud_service.project_id, self.project.project_id)
 
@@ -346,7 +337,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
         self._print_data(self.cloud_service, 'test_update_cloud_service_release_project_1')
 
         param = {
@@ -355,7 +346,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
         self._print_data(self.cloud_service, 'test_update_cloud_service_release_project_2')
 
         self.assertEqual(self.cloud_service.project_id, '')
@@ -370,7 +361,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
 
         self._print_data(self.cloud_service, 'test_update_cloud_service_region_code')
         self.assertEqual(self.cloud_service.region_code, self.region.region_code)
@@ -385,7 +376,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
         self._print_data(self.cloud_service, 'test_update_cloud_service_region_code')
 
         param = {
@@ -394,7 +385,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
         self._print_data(self.cloud_service, 'test_update_cloud_service_release_region')
 
         self.assertEqual(self.cloud_service.region_code, '')
@@ -459,7 +450,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
 
         self._print_data(self.cloud_service, 'test_update_cloud_service_data')
 
@@ -477,11 +468,11 @@ class TestCloudService(unittest.TestCase):
 
         tags = [
             {
-                'key': random_string(),
-                'value': random_string()
+                'key': utils.random_string(),
+                'value': utils.random_string()
             }, {
-                'key': random_string(),
-                'value': random_string()
+                'key': utils.random_string(),
+                'value': utils.random_string()
             }
         ]
         param = {
@@ -490,7 +481,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
         cloud_service_data = MessageToDict(self.cloud_service)
         self.assertEqual(cloud_service_data['tags'], tags)
 
@@ -503,7 +494,7 @@ class TestCloudService(unittest.TestCase):
             'cloud_service_id': self.cloud_service.cloud_service_id,
             'domain_id': self.domain.domain_id
         }
-        self.cloud_service = self.inventory_v1.CloudService.get(param, metadata=(('token', self.token),))
+        self.cloud_service = self.inventory_v1.CloudService.get(param, metadata=(('token', self.owner_token),))
         self.assertEqual(self.cloud_service.provider, provider)
 
     def test_list_cloud_service_types(self):
@@ -516,7 +507,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        cloud_services = self.inventory_v1.CloudService.list(param, metadata=(('token', self.token),))
+        cloud_services = self.inventory_v1.CloudService.list(param, metadata=(('token', self.owner_token),))
 
         self.assertEqual(1, cloud_services.total_count)
 
@@ -533,7 +524,7 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        cloud_svcs = self.inventory_v1.CloudService.list(param, metadata=(('token', self.token),))
+        cloud_svcs = self.inventory_v1.CloudService.list(param, metadata=(('token', self.owner_token),))
 
         self.assertEqual(1, cloud_svcs.total_count)
 
@@ -558,11 +549,11 @@ class TestCloudService(unittest.TestCase):
             }
         }
 
-        cloud_services = self.inventory_v1.CloudService.list(param, metadata=(('token', self.token),))
+        cloud_services = self.inventory_v1.CloudService.list(param, metadata=(('token', self.owner_token),))
         self.assertEqual(len(self.cloud_services), cloud_services.total_count)
 
     def test_list_query_2(self):
-        group = random_string()
+        group = utils.random_string()
 
         self.test_create_cloud_service(group=group)
         self.test_create_cloud_service(group=group)
@@ -577,11 +568,11 @@ class TestCloudService(unittest.TestCase):
             'cloud_service_group': group
         }
 
-        cloud_services = self.inventory_v1.CloudService.list(param, metadata=(('token', self.token),))
+        cloud_services = self.inventory_v1.CloudService.list(param, metadata=(('token', self.owner_token),))
         self.assertEqual(4, cloud_services.total_count)
 
     def test_list_query_minimal(self):
-        group = random_string()
+        group = utils.random_string()
 
         self.test_create_cloud_service(group=group)
         self.test_create_cloud_service(group=group)
@@ -597,7 +588,7 @@ class TestCloudService(unittest.TestCase):
             }
         }
 
-        response = self.inventory_v1.CloudService.list(param, metadata=(('token', self.token),))
+        response = self.inventory_v1.CloudService.list(param, metadata=(('token', self.owner_token),))
         self.assertEqual(len(response.results), response.total_count)
 
     def test_stat_cloud_service(self):
@@ -626,7 +617,7 @@ class TestCloudService(unittest.TestCase):
         }
 
         result = self.inventory_v1.CloudService.stat(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_stat_cloud_service')
 
@@ -645,7 +636,7 @@ class TestCloudService(unittest.TestCase):
         }
 
         result = self.inventory_v1.CloudService.stat(
-            params, metadata=(('token', self.token),))
+            params, metadata=(('token', self.owner_token),))
 
         self._print_data(result, 'test_stat_cloud_service_distinct')
 
