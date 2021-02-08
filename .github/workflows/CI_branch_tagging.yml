@@ -77,8 +77,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           ref: ${{ env.BRANCH }}
-      - name: delete CI workflow
-        run: rm -rf .github
       - name: git config
         run: |
           git config user.name github-actions
