@@ -78,6 +78,7 @@ jobs:
         with:
           ref: ${{ env.BRANCH }}
       - name: git config
+        if: needs.condition_check.outputs.NOT_FIRST_TAG == 'false'
         run: |
           git config user.name github-actions
           git config user.email github-actions@github.com
