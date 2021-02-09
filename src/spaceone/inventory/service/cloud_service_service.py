@@ -233,7 +233,6 @@ class CloudServiceService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
-    @change_only_key({'region_info': 'region'})
     def get(self, params):
         """
         Args:
@@ -256,7 +255,6 @@ class CloudServiceService(BaseService):
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
     @check_required(['domain_id'])
-    @change_only_key({'region_info': 'region'}, key_path='query.only')
     @append_query_filter(['cloud_service_id', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
                           'region_code', 'resource_group_id', 'project_id', 'domain_id', 'user_projects'])
     @change_tag_filter('tags')

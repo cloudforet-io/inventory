@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 
 from google.protobuf.json_format import MessageToDict
@@ -28,7 +27,10 @@ class ConfigConnector(BaseConnector):
             self.client = pygrpc.client(endpoint=f'{e.get("hostname")}:{e.get("port")}', version=k)
 
     def get_domain_config(self, name, domain_id):
-        return MessageToDict(self.client.DomainConfig.get({'name': name, 'domain_id': domain_id},
-                                                  metadata=self.transaction.get_connection_meta()),
-                             preserving_proto_field_name=True)
-
+        return MessageToDict(
+            self.client.DomainConfig.get(
+                {'name': name, 'domain_id': domain_id},
+                metadata=self.transaction.get_connection_meta()
+            ),
+            preserving_proto_field_name=True
+        )

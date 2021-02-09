@@ -6,8 +6,6 @@ from spaceone.core.error import *
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.manager.region_manager import RegionManager
-from spaceone.inventory.manager.zone_manager import ZoneManager
-from spaceone.inventory.manager.pool_manager import PoolManager
 from spaceone.inventory.info.collector_info import PluginInfo
 from spaceone.inventory.manager.collector_manager.repository_manager import RepositoryManager
 
