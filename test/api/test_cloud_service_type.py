@@ -1,7 +1,6 @@
 import os
 import unittest
 import pprint
-import random
 from google.protobuf.json_format import MessageToDict
 
 from spaceone.core import utils, pygrpc
@@ -431,7 +430,7 @@ class TestCloudServiceType(unittest.TestCase):
         params = {
             'domain_id': self.domain.domain_id,
             'query': {
-                'aggregate': {
+                'aggregate': [{
                     'group': {
                         'keys': [{
                             'key': 'cloud_service_type_id',
@@ -442,11 +441,12 @@ class TestCloudServiceType(unittest.TestCase):
                             'name': 'Count'
                         }]
                     }
-                },
-                'sort': {
-                    'name': 'Id',
-                    'desc': True
-                }
+                }, {
+                    'sort': {
+                        'key': 'Id',
+                        'desc': True
+                    }
+                }]
             }
         }
 

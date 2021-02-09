@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 
 from google.protobuf.json_format import MessageToDict

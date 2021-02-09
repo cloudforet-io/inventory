@@ -88,8 +88,6 @@ class TestRegion(unittest.TestCase):
     def setUp(self):
         self.regions = []
         self.region = None
-        self.zones = []
-        self.zone = None
         self.users = []
         self.user = None
 
@@ -281,7 +279,7 @@ class TestRegion(unittest.TestCase):
         params = {
             'domain_id': self.domain.domain_id,
             'query': {
-                'aggregate': {
+                'aggregate': [{
                     'group': {
                         'keys': [{
                             'key': 'region_id',
@@ -292,11 +290,12 @@ class TestRegion(unittest.TestCase):
                             'name': 'Count'
                         }]
                     }
-                },
-                'sort': {
-                    'name': 'Count',
-                    'desc': True
-                }
+                }, {
+                    'sort': {
+                        'key': 'Count',
+                        'desc': True
+                    }
+                }]
             }
         }
 

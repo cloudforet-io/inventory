@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import logging
 
 from google.protobuf.json_format import MessageToDict
@@ -64,7 +63,7 @@ class CollectorPluginConnector(BaseConnector):
         except Exception as e:
             raise ERROR_AUTHENTICATION_FAILURE_PLUGIN(messsage=str(e))
 
-    def collect(self, options, secret_data, filter, region_id=None, zone_id=None, pool_id=None):
+    def collect(self, options, secret_data, filter, region_id=None):
         """ Collector Data base on param
 
         Unary/Stream Between This and Plugin

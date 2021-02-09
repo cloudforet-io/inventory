@@ -23,12 +23,6 @@ _LOGGER = logging.getLogger(__name__)
 # add here for collector
 ######################################################################
 RESOURCE_MAP = {
-    'SERVER': 'ServerManager',
-    'NETWORK': 'NetworkManager',
-    'NETWORK_POLICY': 'NetworkPolicyManager',
-    'SUBNET': 'SubnetManager',
-    'CLOUD_SERVICE': 'CloudServiceManager',
-    'CLOUD_SERVICE_TYPE': 'CloudServiceTypeManager',
     'inventory.Server': 'ServerManager',
     'inventory.FilterCache': 'FilterManager',
     'inventory.CloudService': 'CloudServiceManager',
@@ -37,12 +31,6 @@ RESOURCE_MAP = {
 }
 
 SERVICE_MAP = {
-    'SERVER': 'ServerService',
-    'NETWORK': 'NetworkService',
-    'NETWORK_POLICY': 'NetworkService',
-    'SUBNET': 'NetworkService',
-    'CLOUD_SERVICE': 'CloudServiceService',
-    'CLOUD_SERVICE_TYPE': 'CloudServiceTypeService',
     'inventory.Server': 'ServerService',
     'inventory.FilterCache': 'CollectorService',
     'inventory.CloudService': 'CloudServiceService',
