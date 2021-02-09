@@ -220,7 +220,7 @@ class ServerService(BaseService):
                     primary_ip_address, server_vo.ip_addresses)
 
         server_data = server_vo.to_dict()
-        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_pool',
+        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_region',
                         'ref_region', 'ref_cloud_service_type']
         params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
 
@@ -269,7 +269,6 @@ class ServerService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
-    @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'})
     def get(self, params):
         """
         Args:
@@ -291,7 +290,6 @@ class ServerService(BaseService):
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
     @check_required(['domain_id'])
-    @change_only_key({'region_info': 'region', 'zone_info': 'zone', 'pool_info': 'pool'}, key_path='query.only')
     @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses',
                           'server_type', 'os_type', 'provider', 'region_code',
                           'resource_group_id', 'project_id', 'domain_id', 'user_projects'])

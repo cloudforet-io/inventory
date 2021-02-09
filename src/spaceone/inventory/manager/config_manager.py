@@ -5,6 +5,7 @@ from spaceone.inventory.connector.config_connector import ConfigConnector
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class ConfigManager(BaseManager):
 
     def __init__(self, *args, **kwargs):

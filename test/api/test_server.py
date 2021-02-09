@@ -668,7 +668,7 @@ class TestServer(unittest.TestCase):
             params,
             metadata=(('token', self.owner_token),))
 
-        self._print_data(self.server, 'test_release_server_pool')
+        self._print_data(self.server, 'test_release_server_region')
         self.assertEqual(self.server.region_code, '')
 
     def test_update_server_project(self):
@@ -949,7 +949,7 @@ class TestServer(unittest.TestCase):
         params = {
             'domain_id': self.domain.domain_id,
             'query': {
-                'aggregate': {
+                'aggregate': [{
                     'group': {
                         'keys': [{
                             'key': 'name',
@@ -975,11 +975,12 @@ class TestServer(unittest.TestCase):
                             'name': 'All Reference Resource ID'
                         }]
                     }
-                },
-                'sort': {
-                    'name': 'Server Count',
-                    'desc': True
-                },
+                }, {
+                    'sort': {
+                        'key': 'Server Count',
+                        'desc': True
+                    }
+                }],
                 'page': {
                     'start': 2,
                     'limit': 1
@@ -998,12 +999,15 @@ class TestServer(unittest.TestCase):
         params = {
             'domain_id': self.domain.domain_id,
             'query': {
-                'aggregate': {
-                    'unwind': [{
+                'aggregate': [{
+                    'unwind': {
                        'path': 'nics'
-                    }, {
+                    }
+                }, {
+                    'unwind': {
                         'path': 'nics.ip_addresses'
-                    }],
+                    }
+                }, {
                     'group': {
                         'keys': [{
                             'key': 'nics.ip_addresses.ip_address',
@@ -1026,7 +1030,7 @@ class TestServer(unittest.TestCase):
                             'name': 'All Reference Resource ID'
                         }]
                     }
-                }
+                }]
             }
         }
 
@@ -1041,10 +1045,11 @@ class TestServer(unittest.TestCase):
         params = {
             'domain_id': self.domain.domain_id,
             'query': {
-                'aggregate': {
-                    'unwind': [{
+                'aggregate': [{
+                    'unwind': {
                         "path": "collection_info.service_accounts"
-                    }],
+                    }
+                }, {
                     'group': {
                         'keys': [{
                             'key': 'collection_info.service_accounts',
@@ -1055,7 +1060,7 @@ class TestServer(unittest.TestCase):
                             'name': 'Server Count'
                         }]
                     }
-                }
+                }]
             }
         }
 
@@ -1075,11 +1080,11 @@ class TestServer(unittest.TestCase):
                     "value": "VM",
                     "operator": "eq"
                 }],
-                'aggregate': {
+                'aggregate': [{
                     'count': {
                         'name': 'VM Server Count'
                     }
-                }
+                }]
             }
         }
 
@@ -1094,7 +1099,7 @@ class TestServer(unittest.TestCase):
         params = {
             'domain_id': self.domain.domain_id,
             'query': {
-                'aggregate': {
+                'aggregate': [{
                     'group': {
                         'keys': [{
                             'key': 'created_at',
@@ -1108,7 +1113,7 @@ class TestServer(unittest.TestCase):
                             'name': 'Server Total Count'
                         }]
                     }
-                },
+                }],
                 'page': {
                     'start': 2,
                     'limit': 3
