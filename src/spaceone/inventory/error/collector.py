@@ -87,3 +87,7 @@ class ERROR_RESOURCE_KEYS_NOT_DEFINED(ERROR_BASE):
 
 class ERROR_TOO_MANY_MATCH(ERROR_BASE):
     _message = "match_key: {match_key}, matched_resources: {resources}, more: {more}"
+
+
+class ERROR_UNSUPPORTED_SCHEDULE(ERROR_BASE):
+    _message = "supported schedules: {supported}, requested: {requested}"

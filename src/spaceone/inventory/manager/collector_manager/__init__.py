@@ -404,6 +404,27 @@ class CollectorManager(BaseManager):
         self.transaction.add_rollback(_rollback, schedule_vo.to_dict())
         return schedule_vo.update(params)
 
+    def is_supported_schedule(self, collector_vo, schedule):
+        """ Check metadata.supported_schedule
+        ex) metadata.supported_schedule: ["hours", "interval", "cron"]
+        """
+        collector_dict = collector_vo.to_dict()
+        plugin_info = collector_dict['plugin_info']
+        metadata = plugin_info.get('metadata', None)
+        if metadata == None:
+            _LOGGER.warning(f'[is_supported_schedule] no metadata: {plugin_info}')
+            return True
+        supported_schedule = metadata.get('supported_schedules', None)
+        _LOGGER.debug(f'[is_supported_schedule] supported: {plugin_info}')
+        if supported_schedule == None:
+            _LOGGER.warning(f'[is_supported_schedule] no schedule: {plugin_info}')
+            return True
+        requested = schedule.keys()
+        _LOGGER.debug(f'[is_supported_schedule] requested: {requested}')
+        if (set(requested).issubset(set(supported_schedule))):
+            return True
+        raise ERROR_UNSUPPORTED_SCHEDULE(supported=supported_schedule, requested=requested)
+
     def _check_filter(self, params):
         """ Schedule request may have filter
         Change filter -> filters, since mongodb does not support filter as member key
