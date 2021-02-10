@@ -195,6 +195,9 @@ class CollectorService(BaseService):
         collector_vo = collector_mgr.get_collector(collector_id, domain_id)
         params['collector'] = collector_vo
 
+        # Check schedule type
+        collector_mgr.is_supported_schedule(collector_vo, params['schedule'])
+
         scheduler_info = collector_mgr.add_schedule(params)
         return scheduler_info
 
