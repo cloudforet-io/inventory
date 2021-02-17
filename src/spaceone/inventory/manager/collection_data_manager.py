@@ -133,9 +133,9 @@ class CollectionDataManager(BaseManager):
         pinned_keys = collection_info.get('pinned_keys', [])
         state = collection_info['state']
 
-        # _LOGGER.debug('------------------')
-        # _LOGGER.debug(f'Update Mode: {self.update_mode}')
-        # _LOGGER.debug(f'[update_request_data: data.compute] {self.merged_data.get("data", {}).get("compute")}')
+        _LOGGER.debug('------------------')
+        _LOGGER.debug(f'Update Mode: {self.update_mode}')
+        _LOGGER.debug(f'[update_request_data: data.power_state] {self.merged_data.get("data", {}).get("power_state")}')
 
         if self.updated_by != 'manual':
             if self.updated_by not in all_secrets:
@@ -180,7 +180,7 @@ class CollectionDataManager(BaseManager):
         garbage_collection[self.updated_by] = self.job_id
         self.merged_data['garbage_collection'] = garbage_collection
 
-        # _LOGGER.debug(f'[merged_data: data.compute] {self.merged_data.get("data", {}).get("compute")}')
+        _LOGGER.debug(f'[merged_data: data.power_state] {self.merged_data.get("data", {}).get("power_state")}')
 
         return self.merged_data
 
@@ -194,10 +194,10 @@ class CollectionDataManager(BaseManager):
 
                 if self.update_mode == 'MERGE':
                     new_value = self._merge_old_and_new_value(old_value, new_value)
-                # _LOGGER.debug(' ')
-                # _LOGGER.debug(f'[_merge_data_from_history] {key}: {old_value} -> {new_value}')
-                # _LOGGER.debug(f'[_merge_data_from_history] check priority: {new_priority <= old_priority and new_value != old_value}')
-                # _LOGGER.debug(' ')
+                _LOGGER.debug(' ')
+                _LOGGER.debug(f'[_merge_data_from_history] {key}: {old_value} -> {new_value}')
+                _LOGGER.debug(f'[_merge_data_from_history] check priority: {new_priority <= old_priority and new_value != old_value}')
+                _LOGGER.debug(' ')
 
                 if new_priority <= old_priority and new_value != old_value:
                     history_info['diff'] = self._get_history_diff(old_value, new_value)
