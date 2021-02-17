@@ -200,8 +200,7 @@ class CollectionDataManager(BaseManager):
                 if self.update_mode == 'MERGE':
                     new_value = self._merge_old_and_new_value(old_value, new_value)
 
-                _LOGGER.debug(f'[_merge_data_from_history] check priority: {new_priority <= old_priority and new_value != old_value}')
-                _LOGGER.debug(' ')
+                _LOGGER.debug(f'[_merge_data_from_history] is update: {new_priority <= old_priority and new_value != old_value}')
 
                 if new_priority <= old_priority and new_value != old_value:
                     history_info['diff'] = self._get_history_diff(old_value, new_value)
