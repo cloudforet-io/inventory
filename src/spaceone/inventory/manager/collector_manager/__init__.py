@@ -242,7 +242,10 @@ class CollectorManager(BaseManager):
 
         # Loop all secret_list
         self.secret_mgr = self.locator.get_manager('SecretManager')
+        secret_len = len(secret_list)
+        count = 0
         for secret_id in secret_list:
+            count += 1
             # Do collect per secret
             try:
                 # Make Pipeline, then push
@@ -270,13 +273,13 @@ class CollectorManager(BaseManager):
 
                 if task and queue_name:
                     # Push to queue
-                    _LOGGER.debug('####### Asynchronous collect ########')
+                    _LOGGER.warning(f'####### Asynchronous collect {count}/{secret_len} ########')
                     validate(task, schema=SPACEONE_TASK_SCHEMA)
                     json_task = json.dumps(task)
                     queue.put(queue_name, json_task)
                 else:
                     # Do synchronus collect
-                    _LOGGER.debug('####### Synchronous collect ########')
+                    _LOGGER.warning(f'####### Synchronous collect {count}/{secret_len} ########')
                     collecting_mgr = self.locator.get_manager('CollectingManager')
                     collecting_mgr.collecting_resources(**req_params)
 
@@ -287,6 +290,7 @@ class CollectorManager(BaseManager):
                                   e.message,
                                   {'secret_id': secret_id}
                                   )
+                _LOGGER.error(f'####### collect failed {count}/{secret_len} ##########')
                 _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
 
 

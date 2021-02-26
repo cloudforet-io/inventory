@@ -221,7 +221,7 @@ class CollectingManager(BaseManager):
             # update collection_state which is not found
             cleanup_mode = self._need_update_collection_state(plugin_info, filters)
             _LOGGER.debug(f'[collecting_resources] #### cleanup support {cleanup_mode}')
-            if  cleanup_mode:
+            if  cleanup_mode and JOB_TASK_STATE == 'SUCCESS':
                 resource_types = self._get_supported_resource_types(plugin_info)
                 disconnected_count = 0
                 deleted_count = 0
@@ -232,6 +232,9 @@ class CollectingManager(BaseManager):
                 _LOGGER.debug(f'[collecting_resources] disconnected, delete => {disconnected_count}, {deleted_count}')
                 stat['disconnected_count'] = disconnected_count
                 stat['deleted_count'] = deleted_count
+            else:
+                _LOGGER.debug(f'[collecting_resources] skip garbage_colleciton, {cleanup_mode}, {JOB_TASK_STATE}')
+
             if self.use_db_queue and ERROR == False:
                 # WatchDog will finalize the task
                 # if ERROR occurred, there is no data to processing
@@ -344,6 +347,7 @@ class CollectingManager(BaseManager):
 
             except Exception as e:
                 _LOGGER.error(f'[_process_results] failed single result {e}')
+                failure += 1
 
         # Add watchdog for stat finalizing
         if self.use_db_queue:
