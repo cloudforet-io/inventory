@@ -278,7 +278,7 @@ jobs:
           valueFile: 'deploy/helm/config/version.yaml'
           propertyPath: ${{ env.ORGANIZATION }}
           value: spaceone
-          repository: spaceone-dev/deploy-test
+          repository: spaceone-dev/spaceone
           message: 'Update ${{ env.SERVICE }} REPO to spaceone'
           token: ${{ secrets.SPACEONE_ADMIN_TOKEN }}
 
