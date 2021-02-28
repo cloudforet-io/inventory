@@ -187,7 +187,7 @@ jobs:
 
   helm:
     if: github.repository_owner == 'spaceone-dev' && needs.condition_check.outputs.NOT_FIRST_TAG == 'false'
-    needs: [docker]
+    needs: [condition_check, update_local_version_file]
     runs-on: ubuntu-latest
     env:
       VERSION: ${{ needs.condition_check.outputs.TAG }}
@@ -284,7 +284,7 @@ jobs:
 
   notify_to_slack:
     if: github.repository_owner == 'spaceone-dev'
-    needs: [condition_check, update_local_version_file, pypi, docker]
+    needs: [condition_check, update_local_version_file, pypi, docker, helm]
     runs-on: ubuntu-latest
     steps:
       - name: Slack
