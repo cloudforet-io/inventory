@@ -1,0 +1,13 @@
+{{ if .Values.developer }}
+{{ if not (lookup "v1" "ConfigMap" .Release.Namespace "shared-conf" ) }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: shared-conf
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+data:
+  shared.yaml: |-
+{{- toYaml .Values.global.shared | nindent 4 }}
+{{ end }}
+{{ end }}
+

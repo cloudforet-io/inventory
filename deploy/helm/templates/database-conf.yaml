@@ -1,0 +1,13 @@
+{{ if .Values.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-database-conf
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  annotations:
+    spaceone.auto-deploy-flag: {{ print .Values.database | sha256sum }}
+data:
+  database.yaml: |-
+{{- toYaml .Values.database | nindent 4 }}
+{{ end }}
+
