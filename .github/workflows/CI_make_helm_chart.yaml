@@ -1,8 +1,8 @@
-name: "Create Helm Chart"
+name: "Make Helm Chart"
 on:
   workflow_dispatch:
   repository_dispatch:
-    types: [create_helm_chart]
+    types: [make_helm_chart]
 
 jobs:
   helm:
@@ -46,7 +46,7 @@ jobs:
           repository: spaceone-dev/charts
           ref: gh-pages
           token: ${{ secrets.PAT_TOKEN }}
-      - name: Update index.yaml
+      - name: Update Helm repository index.yaml
         run: |
           git config --global user.email admin@spaceone.dev
           git config --global user.name admin-spaceone
