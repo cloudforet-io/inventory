@@ -8,8 +8,7 @@ worker: false
 name: inventory
 replicas: 1
 image:
-    repository: spaceone
-    name: inventory
+    name: spaceone/inventory
     version: latest
 imagePullPolicy: IfNotPresent
 
