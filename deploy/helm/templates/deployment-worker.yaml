@@ -28,7 +28,7 @@ spec:
       terminationGracePeriodSeconds: {{ .Values.gracePeriod }}
       containers:
         - name: {{ .Values.name }}-worker
-          image: {{ .Values.image.repository }}/{{ .Values.image.name }}:{{ .Values.image.version }}
+          image: {{ .Values.image.name }}:{{ .Values.image.version }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
           command: ['spaceone', 'scheduler', 'spaceone.{{ regexReplaceAll "-" .Values.name "_" }}']
           volumeMounts:
