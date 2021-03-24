@@ -198,7 +198,7 @@ class CollectingManager(BaseManager):
                 JOB_TASK_STATE = 'FAILURE'
 
         except ERROR_BASE as e:
-            _LOGGER.error(f'[collecting_resources] {e}')
+            _LOGGER.error(f'[collecting_resources] {e}', exc_info=True)
             self.job_task_mgr.add_error(job_task_id, domain_id,
                                    e.error_code,
                                    e.message,
@@ -208,7 +208,7 @@ class CollectingManager(BaseManager):
             ERROR = True
 
         except Exception as e:
-            _LOGGER.error(f'[collecting_resources] {e}')
+            _LOGGER.error(f'[collecting_resources] {e}', exc_info=True)
             self.job_task_mgr.add_error(job_task_id, domain_id,
                                    'ERROR_COLLECTOR_COLLECTING',
                                    e,
