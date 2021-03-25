@@ -1,13 +1,13 @@
 import functools
 import logging
-from spaceone.api.core.v1 import tag_pb2
 from spaceone.api.inventory.v1 import region_pb2
 from spaceone.core.pygrpc.message_type import *
+from spaceone.core import utils
 from spaceone.inventory.model.region_model import Region
 
 __all__ = ['RegionInfo', 'RegionsInfo']
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
 
 def RegionInfo(region_vo: Region, minimal=False):
@@ -20,9 +20,9 @@ def RegionInfo(region_vo: Region, minimal=False):
 
     if not minimal:
         info.update({
-            'created_at': change_timestamp_type(region_vo.created_at),
-            'updated_at': change_timestamp_type(region_vo.updated_at),
-            'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in region_vo.tags],
+            'created_at': utils.datetime_to_iso8601(region_vo.created_at),
+            'updated_at': utils.datetime_to_iso8601(region_vo.updated_at),
+            'tags': change_struct_type(utils.tags_to_dict(region_vo.tags)),
             'domain_id': region_vo.domain_id
         })
 

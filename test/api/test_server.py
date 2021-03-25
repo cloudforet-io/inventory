@@ -319,12 +319,9 @@ class TestServer(unittest.TestCase):
             'project_id': self.project.project_id,
             'region_code': self.region.region_code,
             'domain_id': self.domain.domain_id,
-            'tags': [
-                {
-                    'key': 'tags_key',
-                    'value': 'tag_value'
-                }
-            ]
+            'tags': {
+                'tag_key': 'tag_value'
+            }
         }
 
         metadata = (('token', self.owner_token),)
@@ -637,7 +634,8 @@ class TestServer(unittest.TestCase):
             metadata=(('token', self.owner_token),))
 
         self._print_data(self.server, 'test_update_server_data')
-        self.assertEqual(self.server.data['base'], params['data']['base'])
+        server_data = MessageToDict(self.server)
+        self.assertEqual(server_data['data']['base'], params['data']['base'])
 
     def test_update_server_region(self):
         self.test_create_server()
@@ -710,15 +708,10 @@ class TestServer(unittest.TestCase):
         self.test_create_server()
 
         if tags is None:
-            tags = [
-                {
-                    'key': utils.random_string(),
-                    'value': utils.random_string()
-                }, {
-                    'key': utils.random_string(),
-                    'value': utils.random_string()
-                }
-            ]
+            tags = {
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string()
+            }
 
         params = {
             'server_id': self.server.server_id,

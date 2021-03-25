@@ -1,13 +1,13 @@
 import functools
 import logging
-from spaceone.api.core.v1 import tag_pb2
 from spaceone.api.inventory.v1 import resource_group_pb2
 from spaceone.core.pygrpc.message_type import *
+from spaceone.core import utils
 from spaceone.inventory.model.resource_group_model import ResourceGroup, Resource
 
 __all__ = ['ResourceGroupInfo', 'ResourceGroupsInfo']
 
-_LOGGER = logging.getLogger()
+_LOGGER = logging.getLogger(__name__)
 
 
 def ResourceInfo(resource: Resource):
@@ -30,9 +30,9 @@ def ResourceGroupInfo(rg_vo: ResourceGroup, minimal=False):
         info.update({
             'resources': list(map(ResourceInfo, rg_vo.resources)),
             'options': change_struct_type(rg_vo.options),
-            'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in rg_vo.tags],
+            'tags': change_struct_type(utils.tags_to_dict(rg_vo.tags)),
             'domain_id': rg_vo.domain_id,
-            'created_at': change_timestamp_type(rg_vo.created_at),
+            'created_at': utils.datetime_to_iso8601(rg_vo.created_at),
         })
 
     return resource_group_pb2.ResourceGroupInfo(**info)

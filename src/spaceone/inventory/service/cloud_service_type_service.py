@@ -1,4 +1,5 @@
 from spaceone.core.service import *
+from spaceone.core import utils
 from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.error import *
@@ -31,7 +32,7 @@ class CloudServiceTypeService(BaseService):
                     'resource_type': 'str',
                     'metadata': 'dict',
                     'labels': 'list,
-                    'tags': 'list',
+                    'tags': 'list or dict',
                     'domain_id': 'str'
                 }
 
@@ -45,16 +46,9 @@ class CloudServiceTypeService(BaseService):
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
 
         # Temporary Code for Tag Migration
-        tags = params.get('tags')
-
-        if isinstance(tags, dict):
-            change_tags = []
-            for key, value in tags.items():
-                change_tags.append({
-                    'key': key,
-                    'value': value
-                })
-            params['tags'] = change_tags
+        if 'tags' in params:
+            if isinstance(params['tags'], dict):
+                params['tags'] = utils.dict_to_tags(params['tags'])
 
         if provider:
             params['provider'] = provider
@@ -81,7 +75,7 @@ class CloudServiceTypeService(BaseService):
                     'resource_type': 'str',
                     'metadata': 'dict',
                     'labels': 'list',
-                    'tags': 'list',
+                    'tags': 'list or dict',
                     'domain_id': 'str'
                 }
 
@@ -98,16 +92,9 @@ class CloudServiceTypeService(BaseService):
         cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
                                                                            domain_id)
         # Temporary Code for Tag Migration
-        tags = params.get('tags')
-
-        if isinstance(tags, dict):
-            change_tags = []
-            for key, value in tags.items():
-                change_tags.append({
-                    'key': key,
-                    'value': value
-                })
-            params['tags'] = change_tags
+        if 'tags' in params:
+            if isinstance(params['tags'], dict):
+                params['tags'] = utils.dict_to_tags(params['tags'])
 
         if provider:
             params['provider'] = provider

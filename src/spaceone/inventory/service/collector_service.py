@@ -1,11 +1,10 @@
 import logging
 from google.protobuf.json_format import MessageToDict
-
 from spaceone.core.service import *
 from spaceone.core.error import *
+from spaceone.core import utils
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.collector_manager import CollectorManager
-from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.info.collector_info import PluginInfo
 from spaceone.inventory.manager.collector_manager.repository_manager import RepositoryManager
 
@@ -31,7 +30,7 @@ class CollectorService(BaseService):
                 'name': 'str',
                 'plugin_info': 'dict',
                 'priority': 'int',
-                'tags': 'list',
+                'tags': 'dict',
                 'is_public': 'bool',
                 'project_id': 'str',
                 'domain_id': 'str'
@@ -40,6 +39,10 @@ class CollectorService(BaseService):
         Returns:
             collector_vo (object)
         """
+
+        if 'tags' in params:
+            params['tags'] = utils.dict_to_tags(params['tags'])
+
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         is_public = params.get('is_public', True)
         project_id = params.get('project_id', None)
@@ -60,11 +63,21 @@ class CollectorService(BaseService):
     def update(self, params):
         """
         Args:
-            - name
-            - priority
-            - tags
-            - plugin_info(dict)
+            params (dict): {
+                'collector_id': 'str',
+                'name': 'str',
+                'priority': 'int',
+                'tags': 'dict',
+                'domain_id': 'str'
+            }
+
+        Returns:
+            collector_vo (object)
         """
+
+        if 'tags' in params:
+            params['tags'] = utils.dict_to_tags(params['tags'])
+
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         collector_id = params['collector_id']
         domain_id = params['domain_id']

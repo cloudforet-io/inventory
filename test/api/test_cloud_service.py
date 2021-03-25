@@ -465,15 +465,10 @@ class TestCloudService(unittest.TestCase):
     def test_update_cloud_service_tags(self):
         self.test_create_cloud_service()
 
-        tags = [
-            {
-                'key': utils.random_string(),
-                'value': utils.random_string()
-            }, {
-                'key': utils.random_string(),
-                'value': utils.random_string()
-            }
-        ]
+        tags = {
+            utils.random_string(): utils.random_string(),
+            utils.random_string(): utils.random_string()
+        }
         param = {
             'cloud_service_id': self.cloud_service.cloud_service_id,
             'tags': tags,

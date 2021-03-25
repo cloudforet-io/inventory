@@ -1,5 +1,6 @@
 import logging
 from spaceone.core.service import *
+from spaceone.core import utils
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.region_manager import RegionManager
 
@@ -37,16 +38,9 @@ class RegionService(BaseService):
         params['ref_region'] = f'{params["domain_id"]}.{params["provider"]}.{params["region_code"]}'
 
         # Temporary Code for Tag Migration
-        tags = params.get('tags')
-
-        if isinstance(tags, dict):
-            change_tags = []
-            for key, value in tags.items():
-                change_tags.append({
-                    'key': key,
-                    'value': value
-                })
-            params['tags'] = change_tags
+        if 'tags' in params:
+            if isinstance(params['tags'], dict):
+                params['tags'] = utils.dict_to_tags(params['tags'])
 
         region_mgr: RegionManager = self.locator.get_manager('RegionManager')
         return region_mgr.create_region(params)
@@ -71,16 +65,9 @@ class RegionService(BaseService):
         region_vo = self.region_mgr.get_region(params['region_id'], params['domain_id'])
 
         # Temporary Code for Tag Migration
-        tags = params.get('tags')
-
-        if isinstance(tags, dict):
-            change_tags = []
-            for key, value in tags.items():
-                change_tags.append({
-                    'key': key,
-                    'value': value
-                })
-            params['tags'] = change_tags
+        if 'tags' in params:
+            if isinstance(params['tags'], dict):
+                params['tags'] = utils.dict_to_tags(params['tags'])
 
         return self.region_mgr.update_region_by_vo(params, region_vo)
 

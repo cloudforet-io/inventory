@@ -1,7 +1,7 @@
 import functools
-from spaceone.api.core.v1 import tag_pb2
 from spaceone.api.inventory.v1 import cloud_service_type_pb2
 from spaceone.core.pygrpc.message_type import *
+from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
 from spaceone.inventory.info.collection_info import CollectionInfo
 
@@ -24,11 +24,11 @@ def CloudServiceTypeInfo(cloud_svc_type_vo: CloudServiceType, minimal=False):
         info.update({
             'metadata': change_struct_type(cloud_svc_type_vo.metadata),
             'labels': change_list_value_type(cloud_svc_type_vo.labels),
-            'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in cloud_svc_type_vo.tags],
+            'tags': change_struct_type(utils.tags_to_dict(cloud_svc_type_vo.tags)),
             'domain_id': cloud_svc_type_vo.domain_id,
             'collection_info': CollectionInfo(cloud_svc_type_vo.collection_info.to_dict()),
-            'created_at': change_timestamp_type(cloud_svc_type_vo.created_at),
-            'updated_at': change_timestamp_type(cloud_svc_type_vo.updated_at)
+            'created_at': utils.datetime_to_iso8601(cloud_svc_type_vo.created_at),
+            'updated_at': utils.datetime_to_iso8601(cloud_svc_type_vo.updated_at)
         })
 
     return cloud_service_type_pb2.CloudServiceTypeInfo(**info)
