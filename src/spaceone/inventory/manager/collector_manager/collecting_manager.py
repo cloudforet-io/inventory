@@ -28,6 +28,7 @@ RESOURCE_MAP = {
     'inventory.CloudService': 'CloudServiceManager',
     'inventory.CloudServiceType': 'CloudServiceTypeManager',
     'inventory.Region': 'RegionManager',
+    'inventory.ErrorResource': 'CollectingManager',
 }
 
 SERVICE_MAP = {
@@ -36,6 +37,7 @@ SERVICE_MAP = {
     'inventory.CloudService': 'CloudServiceService',
     'inventory.CloudServiceType': 'CloudServiceTypeService',
     'inventory.Region': 'RegionService',
+    'inventory.ErrorResource': 'CollectorService',
 }
 
 DB_QUEUE_NAME = 'db_q'
@@ -383,7 +385,8 @@ class CollectingManager(BaseManager):
         # update meta
         domain_id = params['domain_id']
         resource_type = resource['resource_type']
-        data = resource['resource']
+        state = resource.get('state', 'None')
+        data = resource.get('resource', {})
 
         options = resource.get('options', None)
         update_mode = None
@@ -415,11 +418,28 @@ class CollectingManager(BaseManager):
         response = ERROR
         res_id = "Unknown"
 
+        ##################################
+        # Error Resource
+        ##################################
+        if resource_type == "inventory.ErrorResource" and state == "FAILURE":
+            # add error
+            message = resource.get('message', 'No message from plugin')
+            _LOGGER.error(f'[_process_single_result] Error resource: {resource}')
+            self.job_task_mgr.add_error(job_task_id, domain_id,
+                                   "ERROR_PLUGIN",
+                                   message,
+                                   data
+                                   )
+            if self.use_db_queue:
+                self._update_job_task_stat_to_cache(job_id, job_task_id, ERROR, domain_id)
+            return ERROR
+
+
         if match_rules == {}:
             # There may be no match rule, collector error
             _LOGGER.error(f'[_process_single_result] may be bug, no match rule: {resource}')
             self.job_task_mgr.add_error(job_task_id, domain_id,
-                                   "Exception",
+                                   "EROR_MATCH_RULE",
                                    f"No match rule found: {resource}",
                                    {'resource_type': resource_type, 'resource_id': res_id}
                                    )
