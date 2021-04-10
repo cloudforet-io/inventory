@@ -52,6 +52,9 @@ spec:
               mountPath: /opt/spaceone/{{ .Values.name }}/config/application.yaml
               subPath: application.yaml
               readOnly: true
+{{- if .Values.volumeMounts.application }}
+{{- toYaml .Values.volumeMounts.application | nindent 12 }}
+{{- end }}
           env:
             - name: SPACEONE_CONFIG_FILE
               value: /opt/spaceone/{{ .Values.name }}/config/config.yaml

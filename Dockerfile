@@ -5,6 +5,7 @@ ENV SPACEONE_PORT 50051
 ENV SERVER_TYPE grpc
 ENV PKG_DIR /tmp/pkg
 ENV SRC_DIR /tmp/src
+ENV PYTHONPATH /opt/spaceone/extensions/
 
 COPY pkg/*.txt ${PKG_DIR}/
 
