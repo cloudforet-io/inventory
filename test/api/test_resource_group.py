@@ -292,15 +292,10 @@ class TestResourceGroup(unittest.TestCase):
     def test_update_resource_group_tags(self):
         self.test_create_resource_group()
 
-        tags = [
-            {
-                'key': utils.random_string(),
-                'value': utils.random_string()
-            }, {
-                'key': utils.random_string(),
-                'value': utils.random_string()
-            }
-        ]
+        tags = {
+            utils.random_string(): utils.random_string(),
+            utils.random_string(): utils.random_string()
+        }
         param = {
             'resource_group_id': self.resource_group.resource_group_id,
             'tags': tags,

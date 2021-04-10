@@ -146,15 +146,10 @@ class TestRegion(unittest.TestCase):
     def test_update_region_tags(self):
         self.test_create_region(region_code='korea', provider='datacenter')
 
-        tags = [
-            {
-                'key': utils.random_string(),
-                'value': utils.random_string()
-            }, {
-                'key': utils.random_string(),
-                'value': utils.random_string()
-            }
-        ]
+        tags = {
+            utils.random_string(): utils.random_string(),
+            utils.random_string(): utils.random_string()
+        }
         param = {
             'region_id': self.region.region_id,
             'tags': tags,

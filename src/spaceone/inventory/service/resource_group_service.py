@@ -1,5 +1,6 @@
 import logging
 from spaceone.core.service import *
+from spaceone.core import utils
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
@@ -31,13 +32,17 @@ class ResourceGroupService(BaseService):
                     'resources': 'list',
                     'project_id': 'str',
                     'options': 'dict',
-                    'tags': 'list',
+                    'tags': 'dict',
                     'domain_id': 'str'
                 }
 
         Returns:
             resource_group_vo (object)
         """
+
+        if 'tags' in params:
+            params['tags'] = utils.dict_to_tags(params['tags'])
+
         return self.resource_group_mgr.create_resource_group(params)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
@@ -52,7 +57,7 @@ class ResourceGroupService(BaseService):
                     'project_id': 'str',
                     'release_project': 'bool',
                     'options': 'dict',
-                    'tags': 'list',
+                    'tags': 'dict',
                     'domain_id': 'str'
                 }
 
@@ -69,6 +74,9 @@ class ResourceGroupService(BaseService):
         elif project_id:
             identity_mgr.get_project(project_id, params['domain_id'])
             params['project_id'] = project_id
+
+        if 'tags' in params:
+            params['tags'] = utils.dict_to_tags(params['tags'])
 
         rg_vo = self.resource_group_mgr.get_resource_group(params['resource_group_id'], params['domain_id'])
         return self.resource_group_mgr.update_resource_group_by_vo(params, rg_vo)

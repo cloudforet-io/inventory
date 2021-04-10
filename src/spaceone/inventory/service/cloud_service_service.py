@@ -1,4 +1,5 @@
 from spaceone.core.service import *
+from spaceone.core import utils
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
@@ -31,13 +32,14 @@ class CloudServiceService(BaseService):
         """
         Args:
             params (dict): {
+                    'name': 'str',
                     'cloud_service_type': 'str',
                     'cloud_service_group': 'str',
                     'provider': 'str',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
-                    'tags': 'list',
+                    'tags': 'list or dict',
                     'region_code': 'str',
                     'project_id': 'str',
                     'domain_id': 'str'
@@ -57,16 +59,9 @@ class CloudServiceService(BaseService):
         region_code = params.get('region_code')
 
         # Temporary Code for Tag Migration
-        tags = params.get('tags')
-
-        if isinstance(tags, dict):
-            change_tags = []
-            for key, value in tags.items():
-                change_tags.append({
-                    'key': key,
-                    'value': value
-                })
-            params['tags'] = change_tags
+        if 'tags' in params:
+            if isinstance(params['tags'], dict):
+                params['tags'] = utils.dict_to_tags(params['tags'])
 
         if provider:
             params['provider'] = provider
@@ -96,12 +91,13 @@ class CloudServiceService(BaseService):
         Args:
             params (dict): {
                     'cloud_service_id': 'str',
+                    'name': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
-                    'tags': 'list',
+                    'tags': 'list or dict',
                     'region_code': 'str',
                     'project_id': 'str',
                     'domain_id': 'str',
@@ -130,16 +126,9 @@ class CloudServiceService(BaseService):
         cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], domain_id)
 
         # Temporary Code for Tag Migration
-        tags = params.get('tags')
-
-        if isinstance(tags, dict):
-            change_tags = []
-            for key, value in tags.items():
-                change_tags.append({
-                    'key': key,
-                    'value': value
-                })
-            params['tags'] = change_tags
+        if 'tags' in params:
+            if isinstance(params['tags'], dict):
+                params['tags'] = utils.dict_to_tags(params['tags'])
 
         if provider:
             params['provider'] = provider
@@ -255,7 +244,7 @@ class CloudServiceService(BaseService):
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_id', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
+    @append_query_filter(['cloud_service_id', 'name', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
                           'region_code', 'resource_group_id', 'project_id', 'domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
@@ -264,6 +253,7 @@ class CloudServiceService(BaseService):
         Args:
             params (dict): {
                     'cloud_service_id': 'str',
+                    'name': 'str',
                     'state': 'str',
                     'provider': 'str',
                     'cloud_service_type': 'str',

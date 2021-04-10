@@ -1,7 +1,7 @@
 import functools
-
 from spaceone.api.inventory.v1 import job_task_pb2, collector_pb2
 from spaceone.core.pygrpc.message_type import *
+from spaceone.core import utils
 from spaceone.inventory.model.job_task_model import JobTask
 
 __all__ = ['JobTaskInfo', 'JobTasksInfo']
@@ -26,9 +26,9 @@ def JobTaskInfo(job_task_vo: JobTask, minimal=False):
         'deleted_count': job_task_vo.deleted_count,
         'failure_count': job_task_vo.failure_count,
         'job_id': job_task_vo.job_id,
-        'created_at': change_timestamp_type(job_task_vo.created_at),
-        'started_at': change_timestamp_type(job_task_vo.started_at),
-        'finished_at': change_timestamp_type(job_task_vo.finished_at)
+        'created_at': utils.datetime_to_iso8601(job_task_vo.created_at),
+        'started_at': utils.datetime_to_iso8601(job_task_vo.started_at),
+        'finished_at': utils.datetime_to_iso8601(job_task_vo.finished_at)
     }
 
     if not minimal:

@@ -1,8 +1,8 @@
 import logging
 import functools
-from spaceone.api.core.v1 import tag_pb2
 from spaceone.api.inventory.v1 import collector_pb2
 from spaceone.core.pygrpc.message_type import *
+from spaceone.core import utils
 
 __all__ = ['CollectorInfo', 'CollectorsInfo', 'VerifyInfo', 'ScheduleInfo', 'SchedulesInfo']
 
@@ -45,9 +45,9 @@ def CollectorInfo(vo, minimal=False):
     if not minimal:
         info.update({
             'priority': vo.priority,
-            'created_at': change_timestamp_type(vo.created_at),
-            'last_collected_at': change_timestamp_type(vo.last_collected_at),
-            'tags': [tag_pb2.Tag(key=tag.key, value=tag.value) for tag in vo.tags],
+            'created_at': utils.datetime_to_iso8601(vo.created_at),
+            'last_collected_at': utils.datetime_to_iso8601(vo.last_collected_at),
+            'tags': change_struct_type(utils.tags_to_dict(vo.tags)),
             'domain_id': vo.domain_id
         })
 
@@ -84,8 +84,8 @@ def ScheduleInfo(vo, minimal=False):
 
     if not minimal:
         info.update({
-            'created_at': change_timestamp_type(vo.created_at),
-            'last_scheduled_at': change_timestamp_type(vo.last_scheduled_at),
+            'created_at': utils.datetime_to_iso8601(vo.created_at),
+            'last_scheduled_at': utils.datetime_to_iso8601(vo.last_scheduled_at),
             'filter': change_struct_type(vo.filters)
         })
 

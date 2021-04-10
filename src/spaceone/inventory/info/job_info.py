@@ -1,7 +1,7 @@
 import functools
-
 from spaceone.api.inventory.v1 import collector_pb2, job_pb2
 from spaceone.core.pygrpc.message_type import *
+from spaceone.core import utils
 from spaceone.inventory.model.job_model import Job
 from spaceone.inventory.info.collector_info import CollectorInfo
 
@@ -21,8 +21,8 @@ def JobInfo(job_vo: Job, minimal=False):
     info = {
         'job_id': job_vo.job_id,
         'status': job_vo.status,
-        'created_at': change_timestamp_type(job_vo.created_at),
-        'finished_at': change_timestamp_type(job_vo.finished_at),
+        'created_at': utils.datetime_to_iso8601(job_vo.created_at),
+        'finished_at': utils.datetime_to_iso8601(job_vo.finished_at),
     }
 
     if not minimal:
@@ -34,7 +34,7 @@ def JobInfo(job_vo: Job, minimal=False):
             'collector_info': CollectorInfo(job_vo.collector, minimal=True) if job_vo.collector else None,
             'project_id': job_vo.project_id,
             'domain_id': job_vo.domain_id,
-            'updated_at': change_timestamp_type(job_vo.updated_at),
+            'updated_at': utils.datetime_to_iso8601(job_vo.updated_at),
         })
 
         # Temporary code for DB migration

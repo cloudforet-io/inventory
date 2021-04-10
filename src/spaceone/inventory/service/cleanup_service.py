@@ -1,8 +1,5 @@
 import logging
-
 from spaceone.core.service import *
-from spaceone.inventory.manager.cleanup_manager import CleanupManager
-from spaceone.inventory.manager.config_manager import ConfigManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -20,12 +17,10 @@ DEFAULT_POLICY = {
 
 JOB_TIMEOUT = 2
 
+
 @authentication_handler
 @event_handler
 class CleanupService(BaseService):
-
-    def __init__(self, metadata):
-        super().__init__(metadata)
 
     @transaction
     @append_query_filter([])

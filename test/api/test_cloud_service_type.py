@@ -222,7 +222,8 @@ class TestCloudServiceType(unittest.TestCase):
 
         self.cloud_service_type = self.inventory_v1.CloudServiceType.create(params, metadata=(('token', self.owner_token),))
         self.cloud_service_types.append(self.cloud_service_type)
-        self.assertEqual(self.cloud_service_type.labels, labels)
+
+        self.assertEqual(MessageToDict(self.cloud_service_type.labels), labels)
 
     def test_create_duplicate_cloud_service_type(self):
         name = utils.random_string()
@@ -319,15 +320,10 @@ class TestCloudServiceType(unittest.TestCase):
     def test_update_cloud_service_type_tags(self):
         self.test_create_cloud_service_type()
 
-        tags = [
-            {
-                'key': utils.random_string(),
-                'value': utils.random_string()
-            }, {
-                'key': utils.random_string(),
-                'value': utils.random_string()
-            }
-        ]
+        tags = {
+            utils.random_string(): utils.random_string(),
+            utils.random_string(): utils.random_string()
+        }
         param = {
             'cloud_service_type_id': self.cloud_service_type.cloud_service_type_id,
             'tags': tags,

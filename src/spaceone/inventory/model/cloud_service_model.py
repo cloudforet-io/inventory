@@ -16,6 +16,7 @@ class CloudServiceTag(EmbeddedDocument):
 
 class CloudService(MongoModel):
     cloud_service_id = StringField(max_length=40, generate_id='cloud-svc', unique=True)
+    name = StringField(max_length=255, default='')
     state = StringField(max_length=20, choices=('INSERVICE', 'DELETED'), default='INSERVICE')
     provider = StringField(max_length=255)
     cloud_service_group = StringField(max_length=255)
@@ -37,6 +38,7 @@ class CloudService(MongoModel):
 
     meta = {
         'updatable_fields': [
+            'name',
             'data',
             'state',
             'metadata',
@@ -55,6 +57,7 @@ class CloudService(MongoModel):
         ],
         'minimal_fields': [
             'cloud_service_id',
+            'name',
             'cloud_service_group',
             'cloud_service_type',
             'provider',
