@@ -11,6 +11,7 @@ __all__ = ['CloudServiceInfo', 'CloudServicesInfo']
 def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
     info = {
         'cloud_service_id': cloud_svc_vo.cloud_service_id,
+        'name': cloud_svc_vo.name,
         'cloud_service_group': cloud_svc_vo.cloud_service_group,
         'cloud_service_type': cloud_svc_vo.cloud_service_type,
         'provider': cloud_svc_vo.provider,

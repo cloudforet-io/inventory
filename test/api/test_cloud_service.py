@@ -179,10 +179,13 @@ class TestCloudService(unittest.TestCase):
 
         self.pp.pprint(MessageToDict(message, preserving_proto_field_name=True))
 
-    def test_create_cloud_service(self, cloud_service_type=None, provider=None, data=None, group=None,
+    def test_create_cloud_service(self, name=None, cloud_service_type=None, provider=None, data=None, group=None,
                                   metadata=None):
         """ Create Cloud Service
         """
+
+        if name is None:
+            name = utils.random_string()
 
         if cloud_service_type is None:
             cloud_service_type = utils.random_string()
@@ -219,6 +222,7 @@ class TestCloudService(unittest.TestCase):
             }
 
         params = {
+            'name': name,
             'cloud_service_type': cloud_service_type,
             'provider': provider,
             'cloud_service_group': group,
@@ -300,6 +304,21 @@ class TestCloudService(unittest.TestCase):
 
         self.cloud_services.append(self.cloud_service)
         self.assertEqual(self.cloud_service.region_code, self.region.region_code)
+
+    def test_update_cloud_service_name(self):
+        self.test_create_cloud_service()
+
+        name = utils.random_string()
+
+        param = {
+            'cloud_service_id': self.cloud_service.cloud_service_id,
+            'name': name,
+            'domain_id': self.domain.domain_id
+        }
+
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
+        self._print_data(self.cloud_service, 'test_update_cloud_service_name')
+        self.assertEqual(self.cloud_service.name, name)
 
     def test_update_cloud_service_project_id(self):
         self._create_project()
@@ -388,7 +407,6 @@ class TestCloudService(unittest.TestCase):
         self._print_data(self.cloud_service, 'test_update_cloud_service_release_region')
 
         self.assertEqual(self.cloud_service.region_code, '')
-
 
     def test_update_cloud_service_data(self):
         old_data = {

@@ -32,6 +32,7 @@ class CloudServiceService(BaseService):
         """
         Args:
             params (dict): {
+                    'name': 'str',
                     'cloud_service_type': 'str',
                     'cloud_service_group': 'str',
                     'provider': 'str',
@@ -90,6 +91,7 @@ class CloudServiceService(BaseService):
         Args:
             params (dict): {
                     'cloud_service_id': 'str',
+                    'name': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
                     'data': 'dict',
@@ -242,7 +244,7 @@ class CloudServiceService(BaseService):
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_id', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
+    @append_query_filter(['cloud_service_id', 'name', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
                           'region_code', 'resource_group_id', 'project_id', 'domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
@@ -251,6 +253,7 @@ class CloudServiceService(BaseService):
         Args:
             params (dict): {
                     'cloud_service_id': 'str',
+                    'name': 'str',
                     'state': 'str',
                     'provider': 'str',
                     'cloud_service_type': 'str',
