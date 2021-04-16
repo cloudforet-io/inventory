@@ -111,17 +111,17 @@ class CollectorManager(BaseManager):
     def delete_collector(self, collector_id, domain_id):
         # Cascade Delete (Job, Schedule)
         # Delete Related Job
-        try:
-            job_mgr = self.locator.get_manager('JobManager')
-            job_mgr.delete_by_collector_id(collector_id, domain_id)
-        except Exception as e:
-            _LOGGER.error(f'[delete_collector] fail to delete job, collector_id: {collector_id}, {e}')
+        # try:
+        #     job_mgr = self.locator.get_manager('JobManager')
+        #     job_mgr.delete_by_collector_id(collector_id, domain_id)
+        # except Exception as e:
+        #     _LOGGER.error(f'[delete_collector] fail to delete job, collector_id: {collector_id}, {e}')
 
-        try:
-            schedule_mgr = self.locator.get_manager('ScheduleManager')
-            schedule_mgr.delete_by_collector_id(collector_id, domain_id)
-        except Exception as e:
-            _LOGGER.error(f'[delete_collector] fail to delete schedule, collector_id: {collector_id}, {e}')
+        # try:
+        #     schedule_mgr = self.locator.get_manager('ScheduleManager')
+        #     schedule_mgr.delete_by_collector_id(collector_id, domain_id)
+        # except Exception as e:
+        #     _LOGGER.error(f'[delete_collector] fail to delete schedule, collector_id: {collector_id}, {e}')
 
         self.collector_db.delete_collector(collector_id=collector_id, domain_id=domain_id)
 

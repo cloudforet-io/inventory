@@ -102,12 +102,6 @@ class CollectorService(BaseService):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         collector_id = params['collector_id']
         domain_id = params['domain_id']
-        try:
-            # Delete Schedule also
-            schedule_mgr = self.locator.get_manager('ScheduleManager')
-            schedule_mgr.delete_by_collector_id(collector_id, domain_id)
-        except Exception as e:
-            _LOGGER.error(f'[delete] failed to delete schedule by collector_id: {collector_id}')
 
         return collector_mgr.delete_collector(collector_id, domain_id)
 
