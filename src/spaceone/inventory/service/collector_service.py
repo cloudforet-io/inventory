@@ -313,25 +313,29 @@ class CollectorService(BaseService):
         """ if there is plugin_info at params,
         We need to merge plugin_info with plugin_info_vo
         """
-        plugin_info = PluginInfo(plugin_info_vo)
-        dict_plugin_info = MessageToDict(plugin_info, preserving_proto_field_name=True)
 
-        #dict_plugin_info = plugin_info_vo.to_dict()
-        new_plugin_info = params.get('plugin_info', {})
-        # Check version
-        db_version = dict_plugin_info['version']
-        req_version = new_plugin_info['version']
-        version_check = False
-        if db_version != req_version:
-            # update metadata
-            version_check = True
+        if 'plugin_info' in params:
+            plugin_info = PluginInfo(plugin_info_vo)
+            dict_plugin_info = MessageToDict(plugin_info, preserving_proto_field_name=True)
 
-        # new_plugin_info.update(dict_plugin_info)
-        dict_plugin_info.update(new_plugin_info)
+            #dict_plugin_info = plugin_info_vo.to_dict()
+            new_plugin_info = params.get('plugin_info', {})
+            # Check version
+            db_version = dict_plugin_info['version']
+            req_version = new_plugin_info['version']
+            version_check = False
+            if db_version != req_version:
+                # update metadata
+                version_check = True
 
-        new_params = params.copy()
-        new_params['plugin_info'] = dict_plugin_info
-        return (new_params, version_check)
+            # new_plugin_info.update(dict_plugin_info)
+            dict_plugin_info.update(new_plugin_info)
+
+            new_params = params.copy()
+            new_params['plugin_info'] = dict_plugin_info
+            return new_params, version_check
+        else:
+            return params, False
 
     def _get_plugin(self, plugin_info, domain_id):
         plugin_id = plugin_info['plugin_id']
