@@ -147,3 +147,15 @@ volumeMounts:
     application_rest: []
     application_scheduler: []
     application_worker: []
+
+####################################
+# pod spec (append more pod spec)
+# example nodeSelect
+#
+# pod:
+#   spec:
+#     nodeSelector:
+#       application: my-node-group
+####################################
+pod:
+    spec: {}
