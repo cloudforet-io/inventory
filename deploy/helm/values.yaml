@@ -136,3 +136,12 @@ service:
           port: 50051
           targetPort: 50051
           protocol: TCP
+
+################################
+# volumeMount per deployment
+################################
+volumeMounts:
+    application_grpc: []
+    application_rest: []
+    application_scheduler: []
+    application_worker: []
