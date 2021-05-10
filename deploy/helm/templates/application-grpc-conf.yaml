@@ -1,0 +1,13 @@
+{{ if .Values.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.name }}-application-grpc-conf
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  annotations:
+    spaceone.auto-deploy-flag: {{ print .Values.application_grpc | sha256sum }}
+data:
+  application.yaml: |-
+{{- toYaml .Values.application_grpc | nindent 4 }}
+{{ end }}
+

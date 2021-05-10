@@ -1,0 +1,10 @@
+{{- if .Values.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rest-nginx-conf
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+data:
+  nginx.conf: |-
+{{ .Files.Get "config/nginx.conf" | nindent 4 }}
+{{- end }}

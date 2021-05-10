@@ -1,36 +1,38 @@
 {{- if .Values.enabled }}
-{{- if .Values.worker }}
+{{- if .Values.rest }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
 {{ include "spaceone.labels" . | indent 4 }}
     spaceone.service: {{ .Values.name }}
-  name: {{ .Values.name }}-worker
+  name: {{ .Values.name }}-rest
   namespace: {{ .Values.global.namespace | default .Release.Namespace }}
 spec:
   replicas: {{ .Values.replicas_worker | default .Values.replicas }}
   revisionHistoryLimit: 3
   selector:
     matchLabels:
-      spaceone.service: {{ .Values.name }}-worker
+      spaceone.service: {{ .Values.name }}-rest
   template:
     metadata:
       annotations:
         spaceone.deployment.tool: helm
         spaceone.database-flag: {{ print .Values.database | sha256sum }}
         spaceone.shared-flag: {{ print .Values.global.shared | sha256sum }}
-        spaceone.application-flag: {{ print .Values.application_worker | sha256sum }}
+        spaceone.application-flag: {{ print .Values.application_rest | sha256sum }}
       labels:
 {{ include "spaceone.labels" . | indent 8 }}
-        spaceone.service: {{ .Values.name }}-worker
+        spaceone.service: {{ .Values.name }}-rest
     spec:
       terminationGracePeriodSeconds: {{ .Values.gracePeriod }}
       containers:
-        - name: {{ .Values.name }}-worker
+        - name: {{ .Values.name }}-fastapi
           image: {{ .Values.image.name }}:{{ .Values.image.version }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
-          command: ['spaceone', 'scheduler', 'spaceone.{{ regexReplaceAll "-" .Values.name "_" }}']
+          command: ['spaceone', 'rest', 'spaceone.{{ regexReplaceAll "-" .Values.name "_" }}', '-p', '8000']
+          ports:
+            - containerPort: 8000
           volumeMounts:
             - name: default-conf
               mountPath: /opt/spaceone/{{ .Values.name }}/config/config.yaml
@@ -52,12 +54,35 @@ spec:
               mountPath: /opt/spaceone/{{ .Values.name }}/config/application.yaml
               subPath: application.yaml
               readOnly: true
-{{- if .Values.volumeMounts.application_worker }}
-{{- toYaml .Values.volumeMounts.application_worker | nindent 12 }}
+{{- if .Values.volumeMounts.application_rest }}
+{{- toYaml .Values.volumeMounts.application_rest | nindent 12 }}
 {{- end }}
           env:
             - name: SPACEONE_CONFIG_FILE
               value: /opt/spaceone/{{ .Values.name }}/config/config.yaml
+
+        - name: {{ .Values.name }}-nginx
+          image: 'nginx:stable'
+          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: default-conf
+              mountPath: /opt/spaceone/{{ .Values.name }}/config/config.yaml
+              subPath: config.yaml
+              readOnly: true
+            - name: timezone
+              mountPath: /etc/localtime
+            - name: log-volume
+              mountPath: /var/log/spaceone
+            - name: rest-nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            - name: rest-nginx-proxy-conf
+              mountPath: /etc/nginx/conf.d
+              readOnly: true
+
 
 {{- if .Values.sidecar }}
 {{- toYaml .Values.sidecar | nindent 8 }}
@@ -68,7 +93,7 @@ spec:
 {{- end }}
 
       volumes:
-        - name: default-conf 
+        - name: default-conf
           configMap:
             name: {{ .Values.name }}-conf
         - name: database-conf
@@ -79,7 +104,13 @@ spec:
             name: shared-conf
         - name: application-conf
           configMap:
-            name: {{ .Values.name }}-application-worker-conf
+            name: {{ .Values.name }}-application-rest-conf
+        - name: rest-nginx-conf
+          configMap:
+            name: rest-nginx-conf
+        - name: rest-nginx-proxy-conf
+          configMap:
+            name: rest-nginx-proxy-conf
 
 {{- if .Values.volumes }}
 {{- toYaml .Values.volumes | nindent 8 }}

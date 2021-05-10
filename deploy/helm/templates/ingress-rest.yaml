@@ -1,0 +1,24 @@
+{{- if .Values.enabled }}
+{{- if .Values.rest }}
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: {{ .Values.name }}-rest
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+  annotations:
+    {{- range $key, $value := .Values.ingress.annotations }}
+      {{- if not (eq $key "nil") }}
+    {{ $key }}: {{ $value | quote }}
+      {{- end }}
+    {{- end }}
+spec:
+  rules:
+  - http:
+      paths:
+      - path: {{ .Values.ingress.path }}
+        backend:
+          serviceName: {{ .Values.name }}-rest
+          servicePort: {{ .Values.ingress.servicePort }}
+{{- end }}
+{{- end }}
+

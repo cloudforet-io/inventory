@@ -1,0 +1,25 @@
+{{- if .Values.enabled }}
+{{- if .Values.rest }}
+apiVersion: v1
+kind: Service
+metadata:
+  annotations:
+    {{- range $key, $value := .Values.service.rest.annotations }}
+      {{- if not (eq $key "nil") }}
+    {{ $key }}: {{ $value | quote }}
+      {{- end }}
+    {{- end }}
+  labels:
+{{ include "spaceone.labels" . | indent 4 }}
+    spaceone.service: {{ .Values.name }}-rest
+  name: {{ .Values.name }}-rest
+  namespace: {{ .Values.global.namespace | default .Release.Namespace }}
+spec:
+  ports:
+{{ toYaml .Values.service.rest.ports | indent 4 }}
+  selector:
+    spaceone.service: {{ .Values.name }}-rest
+  sessionAffinity: None
+  type: {{ .Values.service.rest.type }}
+{{- end }}
+{{- end }}
