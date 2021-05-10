@@ -105,10 +105,10 @@ spec:
         - name: application-conf
           configMap:
             name: {{ .Values.name }}-application-rest-conf
-        - name: rest-nginx-conf
+        - name: {{ .Values.name }}-rest-nginx-conf
           configMap:
             name: rest-nginx-conf
-        - name: rest-nginx-proxy-conf
+        - name: {{ .Values.name }}-rest-nginx-proxy-conf
           configMap:
             name: rest-nginx-proxy-conf
 

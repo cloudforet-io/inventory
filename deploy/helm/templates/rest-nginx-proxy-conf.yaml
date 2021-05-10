@@ -1,10 +1,12 @@
 {{- if .Values.enabled }}
+{{- if .Values.rest }}
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: rest-nginx-proxy-conf
+  name: {{ .Values.name }}-rest-nginx-proxy-conf
   namespace: {{ .Values.global.namespace | default .Release.Namespace }}
 data:
   proxy.conf: |-
 {{ .Files.Get "config/proxy.conf" | nindent 4 }}
+{{- end }}
 {{- end }}
