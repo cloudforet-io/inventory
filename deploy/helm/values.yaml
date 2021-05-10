@@ -2,9 +2,11 @@
 # DEFAULT 
 ###############################
 enabled: true
+grpc: true
 developer: false
 scheduler: false
 worker: false
+grpc: false
 name: inventory
 replicas: 1
 image:
