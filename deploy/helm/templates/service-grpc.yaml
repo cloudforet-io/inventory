@@ -13,15 +13,15 @@ metadata:
   labels:
 {{ include "spaceone.labels" . | indent 4 }}
     spaceone.service: {{ .Values.name }}
-  name: {{ .Values.name }}
+  name: {{ .Values.name }}-grpc
   namespace: {{ .Values.global.namespace | default .Release.Namespace }}
 spec:
   ports:
-{{ toYaml .Values.service.ports | indent 4 }}
+{{ toYaml .Values.service.grpc.ports | indent 4 }}
   selector:
     spaceone.service: {{ .Values.name }}
   sessionAffinity: None
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.grpc.type }}
 
 {{- end }}
 {{- end }}
