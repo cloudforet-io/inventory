@@ -75,11 +75,11 @@ spec:
               mountPath: /etc/localtime
             - name: log-volume
               mountPath: /var/log/spaceone
-            - name: rest-nginx-conf
+            - name: {{ .Values.name }}-rest-nginx-conf
               mountPath: /etc/nginx/nginx.conf
               subPath: nginx.conf
               readOnly: true
-            - name: rest-nginx-proxy-conf
+            - name: {{ .Values.name }}-rest-nginx-proxy-conf
               mountPath: /etc/nginx/conf.d
               readOnly: true
 
