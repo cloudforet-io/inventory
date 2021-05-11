@@ -13,7 +13,7 @@ metadata:
   labels:
 {{ include "spaceone.labels" . | indent 4 }}
     spaceone.service: {{ .Values.name }}
-  name: {{ .Values.name }}-grpc
+  name: {{ .Values.name }}
   namespace: {{ .Values.global.namespace | default .Release.Namespace }}
 spec:
   ports:
