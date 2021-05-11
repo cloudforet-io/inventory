@@ -130,14 +130,15 @@ global:
     
 # Service
 service:
-    type: ClusterIP
-    annotations:
-        nil: nil
-    ports:
-        - name: grpc
-          port: 50051
-          targetPort: 50051
-          protocol: TCP
+    grpc:
+        type: ClusterIP
+        annotations:
+            nil: nil
+        ports:
+            - name: grpc
+              port: 50051
+              targetPort: 50051
+              protocol: TCP
 
 ################################
 # volumeMount per deployment
