@@ -7,6 +7,9 @@ from spaceone.inventory.info.collection_info import CollectionInfo
 
 __all__ = ['CloudServiceInfo', 'CloudServicesInfo']
 
+############# for memory profiling
+from memory_profiler import profile
+
 
 def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
     info = {
@@ -37,6 +40,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
     return cloud_service_pb2.CloudServiceInfo(**info)
 
 
+@profile
 def CloudServicesInfo(cloud_svc_vos, total_count, **kwargs):
     return cloud_service_pb2.CloudServicesInfo(results=list(
         map(functools.partial(CloudServiceInfo, **kwargs), cloud_svc_vos)), total_count=total_count)

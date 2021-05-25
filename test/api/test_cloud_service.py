@@ -200,7 +200,48 @@ class TestCloudService(unittest.TestCase):
             data = {
                 utils.random_string(): utils.random_string(),
                 utils.random_string(): utils.random_string(),
-                utils.random_string(): utils.random_string()
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): utils.random_string(),
+                utils.random_string(): {
+                    utils.random_string(): utils.random_string(),
+                    utils.random_string(): utils.random_string(),
+                    utils.random_string(): utils.random_string(),
+                    utils.random_string(): utils.random_string(),
+                    utils.random_string(): utils.random_string(),
+                    utils.random_string(): {
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                    },
+                    utils.random_string(): [
+                        utils.random_string(),
+                        utils.random_string(),
+                        utils.random_string(),
+                        utils.random_string(),
+                        utils.random_string(),
+                        utils.random_string(),
+                        utils.random_string(),
+                        utils.random_string(),
+                        utils.random_string(),
+                        utils.random_string()
+                    ],
+                    utils.random_string(): {
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                        utils.random_string(): utils.random_string(),
+                    },
+                }
             }
 
         if metadata is None:
@@ -541,21 +582,29 @@ class TestCloudService(unittest.TestCase):
         self.assertEqual(1, cloud_svcs.total_count)
 
     def test_list_query(self):
-        self.test_create_cloud_service()
-        self.test_create_cloud_service()
-        self.test_create_cloud_service()
-        self.test_create_cloud_service()
-        self.test_create_cloud_service()
-        self.test_create_cloud_service()
+        for x in range(0, 1000):
+            self.test_create_cloud_service()
+
+        # self.test_create_cloud_service()
+        # self.test_create_cloud_service()
+        # self.test_create_cloud_service()
+        # self.test_create_cloud_service()
+        # self.test_create_cloud_service()
+        # self.test_create_cloud_service()
 
         param = {
             'domain_id': self.domain.domain_id,
             'query': {
                 'filter': [
+                    # {
+                    #     'k': 'cloud_service_id',
+                    #     'v': list(map(lambda cloud_service: cloud_service.cloud_service_id, self.cloud_services)),
+                    #     'o': 'in'
+                    # }
                     {
-                        'k': 'cloud_service_id',
-                        'v': list(map(lambda cloud_service: cloud_service.cloud_service_id, self.cloud_services)),
-                        'o': 'in'
+                        'k': 'domain_id',
+                        'v': self.domain.domain_id,
+                        'o': 'eq'
                     }
                 ]
             }
