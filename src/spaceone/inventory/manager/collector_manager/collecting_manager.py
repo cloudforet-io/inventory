@@ -149,7 +149,7 @@ class CollectingManager(BaseManager):
             # Update JobTask (In-progress)
             self._update_job_task(job_task_id, 'IN_PROGRESS', domain_id, secret=self.secret)
         except Exception as e:
-            _LOGGER.error(f'[collecing_resources] fail to update job_task: {e}')
+            _LOGGER.error(f'[collecting_resources] fail to update job_task: {e}')
 
         ##########################################################
         # Call method
