@@ -28,7 +28,8 @@ class CollectorPluginConnector(BaseConnector):
         e = parse_endpoint(endpoint_str)
         protocol = e['scheme']
         if protocol == 'grpc':
-            self.client = pygrpc.client(endpoint="%s:%s" % (e['hostname'], e['port']), version='plugin')
+            self.client = pygrpc.client(endpoint="%s:%s" % (e['hostname'], e['port']), version='plugin',
+                                        max_message_length=1024*1024*32)
         elif protocol == 'http':
             # TODO:
             pass
