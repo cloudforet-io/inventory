@@ -34,22 +34,22 @@ class PluginConnector(BaseConnector):
         if len(self.config['endpoint']) > 1:
             raise ERROR_WRONG_CONFIGURATION(key='too many endpoint')
 
-    def get_plugin_endpoint(self, plugin_id, version, domain_id, labels={}):
+    def get_plugin_endpoint(self, plugin_id, version, domain_id, upgrade_mode='AUTO'):
         """
         Returns: endpoint (message)
         """
         params = {
             'plugin_id': plugin_id,
             'version': version,
-            'labels': labels,
+            'upgrade_mode': upgrade_mode,
             'domain_id': domain_id
         }
 
         meta: list = self.transaction.get_connection_meta()
         #meta.append(('token', self.system_key), )
         #_LOGGER.debug('[get_plugin_endpoint] meta:%s' % meta)
-        endpoint = self.client.Plugin.get_plugin_endpoint(
+        response = self.client.Plugin.get_plugin_endpoint(
             params,
             metadata=meta
         )
-        return endpoint
+        return response

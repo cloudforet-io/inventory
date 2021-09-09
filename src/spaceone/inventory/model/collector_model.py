@@ -12,6 +12,10 @@ class PluginInfo(EmbeddedDocument):
     secret_group_id = StringField(max_length=40, null=True)
     provider = StringField(max_length=40, null=True)
     service_account_id = StringField(max_length=40, null=True)
+    upgrade_mode = StringField(max_length=20, default='AUTO', choices=('AUTO', 'MANUAL'))
+
+    def to_dict(self):
+        return dict(self.to_mongo())
 
 
 class CollectorTag(EmbeddedDocument):

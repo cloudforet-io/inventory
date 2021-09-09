@@ -694,7 +694,7 @@ class CollectingManager(BaseManager):
         """
         connector = self.locator.get_connector('CollectorPluginConnector')
         # get endpoint
-        endpoint = self._get_endpoint(plugin_info, domain_id)
+        endpoint, updated_version = self._get_endpoint(plugin_info, domain_id)
         _LOGGER.debug('[collect] endpoint: %s' % endpoint)
         connector.initialize(endpoint)
 
@@ -721,12 +721,12 @@ class CollectingManager(BaseManager):
         # Call Plugin Service
         plugin_id = plugin_info['plugin_id']
         version = plugin_info['version']
+        upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
 
         plugin_connector = self.locator.get_connector('PluginConnector')
-        # TODO: label match
+        response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
 
-        endpoint = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id)
-        return endpoint
+        return response['endpoint'], response.get('updated_version')
 
     def _query_with_match_rules(self, resource, match_rules, domain_id, mgr):
         """ match resource based on match_rules
