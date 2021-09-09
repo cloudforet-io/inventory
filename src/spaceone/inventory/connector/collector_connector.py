@@ -4,7 +4,7 @@ from google.protobuf.json_format import MessageToDict
 
 from spaceone.core import pygrpc
 from spaceone.core.connector import BaseConnector
-from spaceone.core.utils import parse_endpoint
+from spaceone.core.utils import parse_grpc_endpoint
 from spaceone.inventory.error import *
 
 _LOGGER = logging.getLogger(__name__)
@@ -21,23 +21,13 @@ class CollectorPluginConnector(BaseConnector):
         Args:
             endpoint (message): endpoint message
         """
-        if endpoint is None:
-            raise ERROR_GRPC_CONFIGURATION
-        endpoint_str_temp = endpoint.endpoint
-        endpoint_str = endpoint_str_temp.replace('"', '')
-        e = parse_endpoint(endpoint_str)
-        protocol = e['scheme']
-        if protocol == 'grpc':
-            self.client = pygrpc.client(endpoint="%s:%s" % (e['hostname'], e['port']), version='plugin',
-                                        max_message_length=1024*1024*32)
-        elif protocol == 'http':
-            # TODO:
-            pass
+        e = parse_grpc_endpoint(endpoint)
+        self.client = pygrpc.client(endpoint=e['endpoint'], ssl_enabled=e['ssl_enabled'], max_message_length=1024*1024*32)
 
         if self.client is None:
             _LOGGER.error(f'[initialize] Cannot access gRPC server. '
                           f'(host: {e.get("hostname")}, port: {e.get("port")}, version: plugin)')
-            raise ERROR_GRPC_CONFIGURATION
+            raise ERROR_GRPC_CONFIGURATION(endpoint=endpoint)
 
     def init(self, options):
         params = {

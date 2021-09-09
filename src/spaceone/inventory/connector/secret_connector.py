@@ -2,7 +2,7 @@ import logging
 
 from spaceone.core.connector import BaseConnector
 from spaceone.core import pygrpc
-from spaceone.core.utils import parse_endpoint
+from spaceone.core.utils import parse_grpc_endpoint
 from spaceone.core.error import *
 
 __all__ = ['SecretConnector']
@@ -19,9 +19,9 @@ class SecretConnector(BaseConnector):
         if len(self.config['endpoint']) > 1:
             raise ERROR_WRONG_CONFIGURATION(key='too many endpoint')
 
-        for (k, v) in self.config['endpoint'].items():
-            e = parse_endpoint(v)
-            self.client = pygrpc.client(endpoint=f'{e.get("hostname")}:{e.get("port")}', version=k)
+        for version, uri in self.config['endpoint'].items():
+            e = parse_grpc_endpoint(uri)
+            self.client = pygrpc.client(endpoint=e['endpoint'], ssl_enabled=e['ssl_enabled'])
 
     def get_secret(self, secret_id, domain_id):
         return self.client.Secret.get({'secret_id': secret_id, 'domain_id': domain_id},

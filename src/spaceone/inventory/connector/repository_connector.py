@@ -4,7 +4,7 @@ from google.protobuf.json_format import MessageToDict
 
 from spaceone.core.connector import BaseConnector
 from spaceone.core import pygrpc
-from spaceone.core.utils import parse_endpoint
+from spaceone.core.utils import parse_grpc_endpoint
 from spaceone.core.error import *
 
 __all__ = ['RepositoryConnector']
@@ -21,8 +21,8 @@ class RepositoryConnector(BaseConnector):
 
     def _init_client(self):
         for version, uri in self.config['endpoint'].items():
-            e = parse_endpoint(uri)
-            self.client = pygrpc.client(endpoint=f'{e.get("hostname")}:{e.get("port")}', version=version)
+            e = parse_grpc_endpoint(uri)
+            self.client = pygrpc.client(endpoint=e['endpoint'], ssl_enabled=e['ssl_enabled'])
 
     def _check_config(self):
         if 'endpoint' not in self.config:
