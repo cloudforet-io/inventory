@@ -726,7 +726,7 @@ class CollectingManager(BaseManager):
         plugin_connector = self.locator.get_connector('PluginConnector')
         response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
 
-        return response['endpoint'], response.get('updated_version')
+        return response.endpoint, response.updated_version
 
     def _query_with_match_rules(self, resource, match_rules, domain_id, mgr):
         """ match resource based on match_rules
