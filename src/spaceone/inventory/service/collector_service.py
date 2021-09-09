@@ -339,11 +339,11 @@ class CollectorService(BaseService):
 
     def _get_plugin(self, plugin_info, domain_id):
         plugin_id = plugin_info['plugin_id']
-        version = plugin_info['version']
+        # version = plugin_info['version']
 
         repo_mgr: RepositoryManager = self.locator.get_manager('RepositoryManager')
         plugin_info = repo_mgr.get_plugin(plugin_id, domain_id)
-        repo_mgr.check_plugin_version(plugin_id, version, domain_id)
+        # repo_mgr.check_plugin_version(plugin_id, version, domain_id)
 
         return plugin_info
 

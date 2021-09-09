@@ -40,13 +40,13 @@ class PluginManager(BaseManager):
     def verify_by_plugin_info(self, plugin_info, domain_id, secret_id=None):
         self._check_plugin_info(plugin_info)
         plugin_id = plugin_info['plugin_id']
-        version   = plugin_info['version']
-        labels    = plugin_info.get('labels', {})
-        options   = plugin_info.get('options', {})
+        version = plugin_info['version']
+        options = plugin_info.get('options', {})
+        upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
 
         secret_id_list = self.get_secrets_from_plugin_info(plugin_info, domain_id, secret_id)
 
-        endpoint = self.get_endpoint(plugin_id, version, domain_id, labels)
+        endpoint, updated_version = self.get_endpoint(plugin_id, version, domain_id, upgrade_mode)
         _LOGGER.debug(f'[verify] endpoint: {endpoint} of plugin: {plugin_id}, {version}, {len(secret_id_list)}')
         verified = False
         for secret_id in secret_id_list:
@@ -76,11 +76,13 @@ class PluginManager(BaseManager):
         _LOGGER.debug(f'[verify] secret_id_list: {secret_id_list}')
         return secret_id_list
 
-    def get_endpoint(self, plugin_id, version, domain_id, labels={}):
+    def get_endpoint(self, plugin_id, version, domain_id, upgrade_mode='AUTO'):
         """ Get plugin endpoint
         """
         plugin_connector = self.locator.get_connector('PluginConnector')
-        return plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, labels)
+        response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
+
+        return response['endpoint'], response.get('updated_version')
 
     def init_plugin(self, endpoint, options):
         """ Init plugin
@@ -152,15 +154,16 @@ class PluginManager(BaseManager):
     def _init_by_plugin_info(self, plugin_info, domain_id):
         self._check_plugin_info(plugin_info)
         plugin_id = plugin_info['plugin_id']
-        version   = plugin_info['version']
-        options   = plugin_info.get('options', {})
-        labels    = plugin_info.get('labels', {})
+        version = plugin_info['version']
+        options = plugin_info.get('options', {})
+        upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
 
-        endpoint = self.get_endpoint(plugin_id, version, domain_id, labels)
-        _LOGGER.debug(f'[verify] endpoint: {endpoint} of plugin: {plugin_id}, {version}')
+        endpoint, updated_version = self.get_endpoint(plugin_id, version, domain_id, upgrade_mode)
+
+        _LOGGER.debug(f'[verify] endpoint: {endpoint} of plugin: {plugin_id}')
         plugin_meta = self.init_plugin(endpoint, options)
         _LOGGER.debug(f'[_init_by_plugin_info] metadata: {plugin_meta}')
-        return plugin_meta
+        return plugin_meta, updated_version
 
 
 def is_member(item, seq):

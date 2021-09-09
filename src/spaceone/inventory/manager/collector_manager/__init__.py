@@ -56,11 +56,13 @@ class CollectorManager(BaseManager):
 
         # init plugin
         try:
-            #updated_params = plugin_mgr.verify(params)
-            plugin_metadata = plugin_mgr.init(params)
+            plugin_metadata, updated_version = plugin_mgr.init(params)
             _LOGGER.debug(f'[create_collector] metadata: {plugin_metadata}')
             plugin_info = params.get('plugin_info', {})
-            #plugin_info['options'] = updated_params['options']
+
+            if updated_version is not None:
+                plugin_info['version'] = updated_version
+
             plugin_info['metadata'] = plugin_metadata['metadata']
             params2 = {'plugin_info': plugin_info}
             collector_vo = self.update_collector_by_vo(collector_vo, params2)
@@ -80,8 +82,12 @@ class CollectorManager(BaseManager):
             repo_mgr.check_plugin_version(plugin_id, version, domain_id)
 
             plugin_info['version'] = version
-            metadata = self._call_plugin_init(plugin_info, domain_id)
-            plugin_info['metadata'] = metadata['metadata']
+            plugin_metadata, updated_version = self._call_plugin_init(plugin_info, domain_id)
+
+            if updated_version is not None:
+                plugin_info['version'] = updated_version
+
+            plugin_info['metadata'] = plugin_metadata['metadata']
         if options:
             # Overwriting
             plugin_info['options'] = options
@@ -181,6 +187,22 @@ class CollectorManager(BaseManager):
         if collector_dict['state'] == 'DISABLED':
             raise ERROR_COLLECTOR_STATE(state='DISABLED')
 
+        plugin_info = collector_dict['plugin_info']
+        plugin_id = plugin_info['plugin_id']
+        version = plugin_info['version']
+        options = plugin_info.get('options', {})
+        upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
+
+        plugin_mgr: PluginManager = self.locator.get_manager('PluginManager')
+        endpoint, updated_version = plugin_mgr.get_endpoint(plugin_id, version, domain_id, upgrade_mode)
+
+        if updated_version:
+            _LOGGER.debug(f'[collect] upgrade plugin version: {version} -> {updated_version}')
+            response = plugin_mgr.init_plugin(endpoint, options)
+            plugin_info['version'] = updated_version
+            plugin_info['metadata'] = response['metadata']
+            collector_vo = collector_vo.update({'plugin_info': plugin_info})
+
         # TODO: get Queue from config
 
         # Create Job
@@ -193,11 +215,7 @@ class CollectorManager(BaseManager):
         try:
             secret_id = params.get('secret_id', None)
             plugin_mgr = self.locator.get_manager('PluginManager')
-            secret_list = plugin_mgr.get_secrets_from_plugin_info(
-                                                        collector_dict['plugin_info'],
-                                                        domain_id,
-                                                        secret_id
-                                                    )
+            secret_list = plugin_mgr.get_secrets_from_plugin_info(plugin_info, domain_id, secret_id)
             _LOGGER.debug(f'[collector] number of secret: {len(secret_list)}')
             if len(secret_list) == 0:
                 # nothing to do
@@ -217,10 +235,7 @@ class CollectorManager(BaseManager):
         try:
             filter_mgr = self.locator.get_manager('FilterManager')
             filters = params.get('filter', {})
-            plugin_info = collector_dict['plugin_info']
-            collect_filter, secret_list = filter_mgr.get_collect_filter(filters,
-                                                                        plugin_info,
-                                                                        secret_list)
+            collect_filter, secret_list = filter_mgr.get_collect_filter(filters, plugin_info, secret_list)
             _LOGGER.debug(f'[collector] filter from API: {filters}')
             _LOGGER.debug(f'[collector] filter for collector: {collect_filter}')
             _LOGGER.debug(f'[collector] number of secret after filter transform: {len(secret_list)}')
@@ -460,15 +475,15 @@ class CollectorManager(BaseManager):
         plugin_mgr = self.locator.get_manager('PluginManager')
 
         # init plugin
-        params  = {
+        params = {
             'plugin_info': plugin_info,
             'domain_id': domain_id
         }
         try:
-            plugin_metadata = plugin_mgr.init(params)
+            plugin_metadata, updated_version = plugin_mgr.init(params)
             _LOGGER.debug(f'[_call_plugin_init] metadata: {plugin_metadata}')
         except Exception as e:
             _LOGGER.error(f'[_call_plugin_init] failed to call plugin.init, {e}')
             raise ERROR_INIT_PLUGIN_FAILURE(params=params)
 
-        return plugin_metadata
+        return plugin_metadata, updated_version

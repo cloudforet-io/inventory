@@ -25,7 +25,8 @@ def PluginInfo(vo, minimal=False):
             'secret_id': vo.secret_id,
             'secret_group_id': vo.secret_group_id,
             'provider': vo.provider,
-            'service_account_id': vo.service_account_id
+            'service_account_id': vo.service_account_id,
+            'upgrade_mode': vo.upgrade_mode
         })
     return collector_pb2.PluginInfo(**info)
 
