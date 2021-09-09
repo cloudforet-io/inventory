@@ -38,7 +38,6 @@ class PluginManager(BaseManager):
         return self.verify_by_plugin_info(plugin_info, domain_id)
 
     def verify_by_plugin_info(self, plugin_info, domain_id, secret_id=None):
-        self._check_plugin_info(plugin_info)
         plugin_id = plugin_info['plugin_id']
         version = plugin_info['version']
         options = plugin_info.get('options', {})
@@ -63,8 +62,6 @@ class PluginManager(BaseManager):
         raise ERROR_VERIFY_PLUGIN_FAILURE(params=plugin_info)
 
     def get_secrets_from_plugin_info(self, plugin_info, domain_id, secret_id=None):
-        self._check_plugin_info(plugin_info)
-
         secret_id_list = self._get_secret_id_list(plugin_info, domain_id)
         if secret_id:
             if is_member(secret_id, secret_id_list):
@@ -97,26 +94,6 @@ class PluginManager(BaseManager):
         connector = self.locator.get_connector('CollectorPluginConnector')
         connector.initialize(endpoint)
         return connector.verify(options, secret_data)
-
-    def _check_plugin_info(self, plugin_info):
-        """ Plugin Info has
-            - plugin_id (mendatory)
-            - version   (mendatory)
-            - labels    (optional)
-            - options   (optional)
-            - secret_group_id   (optional)
-            - secret_id         (optional)
-            - provider          (optional)
-
-        Returns: True
-        Raise: ERROR_PLUGIN_PARAMETER
-        """
-        mendatory = ['plugin_id', 'version']
-        for item in mendatory:
-            if item not in plugin_info:
-                raise ERROR_NO_PLUGIN_PARAMETER(param=item)
-
-        return True
 
     def _get_secret_id_list(self, plugin_info, domain_id):
         """
@@ -152,9 +129,8 @@ class PluginManager(BaseManager):
         return secret_data.data
 
     def _init_by_plugin_info(self, plugin_info, domain_id):
-        self._check_plugin_info(plugin_info)
         plugin_id = plugin_info['plugin_id']
-        version = plugin_info['version']
+        version = plugin_info.get('version')
         options = plugin_info.get('options', {})
         upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
 
