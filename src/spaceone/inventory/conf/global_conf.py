@@ -32,6 +32,10 @@ CONNECTORS = {
     },
     'CollectorPluginConnector': {
     },
+    'RepositoryConnector': {
+    },
+    'ConfigConnector': {
+    },
 }
 
 ENDPOINTS = {}

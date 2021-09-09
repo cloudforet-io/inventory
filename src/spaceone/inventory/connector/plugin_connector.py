@@ -3,7 +3,7 @@ import logging
 from spaceone.core import pygrpc
 from spaceone.core.connector import BaseConnector
 from spaceone.core.error import ERROR_WRONG_CONFIGURATION
-from spaceone.core.utils import parse_endpoint
+from spaceone.core.utils import parse_grpc_endpoint
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -16,16 +16,9 @@ class PluginConnector(BaseConnector):
         self._init_client()
 
     def _init_client(self):
-        for k, v in self.config['endpoint'].items():
-            # parse endpoint
-            e = parse_endpoint(v)
-            self.protocol = e['scheme']
-            if self.protocol == 'grpc':
-                # create grpc client
-                self.client = pygrpc.client(endpoint="%s:%s" % (e['hostname'], e['port']), version=k)
-            elif self.protocol == 'http':
-                # TODO:
-                pass
+        for version, uri in self.config['endpoint'].items():
+            e = parse_grpc_endpoint(uri)
+            self.client = pygrpc.client(endpoint=e['endpoint'], ssl_enabled=e['ssl_enabled'])
 
     def _check_config(self):
         _LOGGER.debug(f'[_check_config] config: {self.config}')
