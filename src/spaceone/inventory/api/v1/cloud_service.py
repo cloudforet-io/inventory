@@ -1,8 +1,8 @@
 from spaceone.api.inventory.v1 import cloud_service_pb2, cloud_service_pb2_grpc
 from spaceone.core.pygrpc import BaseAPI
 
-############# for memory profiling
-from memory_profiler import profile
+# ############# for memory profiling
+# from memory_profiler import profile
 
 
 class CloudService(BaseAPI, cloud_service_pb2_grpc.CloudServiceServicer):
@@ -41,7 +41,7 @@ class CloudService(BaseAPI, cloud_service_pb2_grpc.CloudServiceServicer):
         with self.locator.get_service('CloudServiceService', metadata) as cloud_svc_service:
             return self.locator.get_info('CloudServiceInfo', cloud_svc_service.get(params))
 
-    @profile
+    # @profile
     def list(self, request, context):
         params, metadata = self.parse_request(request, context)
 
