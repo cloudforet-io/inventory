@@ -71,26 +71,26 @@ class CollectorManager(BaseManager):
             _LOGGER.debug(f'[create_collector] failed plugin init: {e}')
             raise ERROR_VERIFY_PLUGIN_FAILURE(params=params)
 
-    def update_plugin(self, collector_id, domain_id, version, options):
+    def update_plugin(self, collector_id, domain_id, version, options, upgrade_mode):
         collector_vo = self.get_collector(collector_id, domain_id)
-        collector_dict = collector_vo.to_dict()
-        plugin_info = collector_dict['plugin_info']
+        plugin_info = collector_vo.plugin_info.to_dict()
+
         if version:
-            # Update plugin_version
-            plugin_id = plugin_info['plugin_id']
-            repo_mgr = self.locator.get_manager('RepositoryManager')
-            repo_mgr.check_plugin_version(plugin_id, version, domain_id)
-
             plugin_info['version'] = version
-            plugin_metadata, updated_version = self._call_plugin_init(plugin_info, domain_id)
 
-            if updated_version is not None:
-                plugin_info['version'] = updated_version
-
-            plugin_info['metadata'] = plugin_metadata['metadata']
         if options:
-            # Overwriting
             plugin_info['options'] = options
+
+        if upgrade_mode:
+            plugin_info['upgrade_mode'] = upgrade_mode
+
+        plugin_metadata, updated_version = self._call_plugin_init(plugin_info, domain_id)
+
+        if updated_version:
+            plugin_info['version'] = updated_version
+
+        plugin_info['metadata'] = plugin_metadata
+
         params = {
             'plugin_info': plugin_info
         }
