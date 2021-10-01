@@ -87,14 +87,22 @@ class CollectorService(BaseService):
             raise ERROR_NO_COLLECTOR(collector_id=collector_id, domain_id=domain_id)
 
         # If plugin_info exists, we need deep merge with previous information
-        (merged_params, version_check) = self._get_merged_params(params, collector_vo.plugin_info)
-        _LOGGER.debug(f'[update] params: {params}')
-        _LOGGER.debug(f'[update] merged_params: {merged_params}')
+        # (merged_params, version_check) = self._get_merged_params(params, collector_vo.plugin_info)
+        # _LOGGER.debug(f'[update] params: {params}')
+        # _LOGGER.debug(f'[update] merged_params: {merged_params}')
 
-        result = collector_mgr.update_collector_by_vo(collector_vo, merged_params)
-        if version_check:
-            result = collector_mgr.update_plugin(collector_id, domain_id, merged_params['plugin_info']['version'], None)
-        return result
+        if 'plugin_info' in params:
+            original_plugin_info = collector_vo.plugin_info.to_dict()
+
+            version = params['plugin_info'].get('version', original_plugin_info['version'])
+            options = params['plugin_info'].get('options', original_plugin_info['options'])
+            upgrade_mode = params['plugin_info'].get('upgrade_mode', original_plugin_info['upgrade_mode'])
+
+            collector_mgr.update_plugin(collector_id, domain_id, version, options, upgrade_mode)
+
+            del params['plugin_info']
+
+        return collector_mgr.update_collector_by_vo(collector_vo, params)
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
@@ -174,10 +182,12 @@ class CollectorService(BaseService):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         collector_id = params['collector_id']
         domain_id = params['domain_id']
-        version = params.get('version', None)
-        options = params.get('options', None)
+        version = params.get('version')
+        options = params.get('options')
+        upgrade_mode = params.get('upgrade_mode')
         #updated_option = collector_mgr.verify_plugin(collector_id, secret_id, domain_id)
-        collector_vo = collector_mgr.update_plugin(collector_id, domain_id, version, options)
+        collector_vo = collector_mgr.update_plugin(collector_id, domain_id, version, options, upgrade_mode)
+
         return collector_vo
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
@@ -305,37 +315,6 @@ class CollectorService(BaseService):
 
         _LOGGER.debug(f'[scheduled_collectors] query: {query}')
         return collector_mgr.list_schedules(query)
-
-    ###############
-    # Internal
-    ###############
-    def _get_merged_params(self, params, plugin_info_vo):
-        """ if there is plugin_info at params,
-        We need to merge plugin_info with plugin_info_vo
-        """
-
-        if 'plugin_info' in params:
-            plugin_info = PluginInfo(plugin_info_vo)
-            dict_plugin_info = MessageToDict(plugin_info, preserving_proto_field_name=True)
-
-            #dict_plugin_info = plugin_info_vo.to_dict()
-            new_plugin_info = params.get('plugin_info', {})
-            # Check version
-            db_version = dict_plugin_info['version']
-            req_version = new_plugin_info['version']
-            version_check = False
-            if db_version != req_version:
-                # update metadata
-                version_check = True
-
-            # new_plugin_info.update(dict_plugin_info)
-            dict_plugin_info.update(new_plugin_info)
-
-            new_params = params.copy()
-            new_params['plugin_info'] = dict_plugin_info
-            return new_params, version_check
-        else:
-            return params, False
 
     def _get_plugin(self, plugin_info, domain_id):
         plugin_id = plugin_info['plugin_id']
