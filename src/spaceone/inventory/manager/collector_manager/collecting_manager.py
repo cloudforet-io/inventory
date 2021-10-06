@@ -534,6 +534,7 @@ class CollectingManager(BaseManager):
 
         # Get proper manager
         # Create new manager or service, since transaction is variable
+        _LOGGER.debug(f'>>>> meta: {self.transaction.meta}')
         svc = self.locator.get_service(SERVICE_MAP[resource_type], metadata=self.transaction.meta)
         mgr = self.locator.get_manager(RESOURCE_MAP[resource_type])
         return (svc, mgr)
