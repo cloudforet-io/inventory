@@ -20,7 +20,7 @@ class SecretManager(BaseManager):
     def get_secret_ids_from_provider(self, provider, domain_id):
         # secret_connector = self.locator.get_connector('SecretConnector')
         # secrets = secret_connector.list_secrets_by_provider(provider, domain_id)
-        secrets = self.secret_connect.dispatch('Secret.list', {'provider': provider, 'domain_id': domain_id})
+        secrets = self.secret_connector.dispatch('Secret.list', {'provider': provider, 'domain_id': domain_id})
 
         result = []
         for secret in secrets.results:
@@ -31,7 +31,7 @@ class SecretManager(BaseManager):
     def get_secret_ids_from_secret_group_id(self, secret_group_id, domain_id):
         # secret_connector = self.locator.get_connector('SecretConnector')
         # secrets = secret_connector.list_secrets_by_secret_group_id(secret_group_id, domain_id)
-        secrets = self.secret_connect.dispatch('Secret.list',
+        secrets = self.secret_connector.dispatch('Secret.list',
                                                {'secret_group_id': secret_group_id, 'domain_id': domain_id})
 
         result = []
@@ -46,7 +46,7 @@ class SecretManager(BaseManager):
         """
         # secret_connector = self.locator.get_connector('SecretConnector')
         # secret_data = secret_connector.get_secret_data(secret_id, domain_id)
-        secrets = self.secret_connect.dispatch('Secret.get_data', {'secret_id': secret_id, 'domain_id': domain_id})
+        secrets = self.secret_connector.dispatch('Secret.get_data', {'secret_id': secret_id, 'domain_id': domain_id})
 
         secret_data_dict = MessageToDict(secret_data, preserving_proto_field_name=True)
         _LOGGER.debug(f'[get_secret_data] secret_data.keys: {list(secret_data_dict)}')
@@ -58,7 +58,7 @@ class SecretManager(BaseManager):
         """
         # secret_connector = self.locator.get_connector('SecretConnector')
         # secret = secret_connector.get_secret(secret_id, domain_id)
-        secrets = self.secret_connect.dispatch('Secret.get', {'secret_id': secret_id, 'domain_id': domain_id})
+        secrets = self.secret_connector.dispatch('Secret.get', {'secret_id': secret_id, 'domain_id': domain_id})
 
         secret_dict = MessageToDict(secret, preserving_proto_field_name=True)
         _LOGGER.debug(f'[get_provider] secret: {secret}')
@@ -70,7 +70,7 @@ class SecretManager(BaseManager):
         """
         # secret_connector = self.locator.get_connector('SecretConnector')
         # secret = secret_connector.get_secret(secret_id, domain_id)
-        secrets = self.secret_connect.dispatch('Secret.get', {'secret_id': secret_id, 'domain_id': domain_id})
+        secrets = self.secret_connector.dispatch('Secret.get', {'secret_id': secret_id, 'domain_id': domain_id})
 
         secret_dict = MessageToDict(secret, preserving_proto_field_name=True)
         _LOGGER.debug(f'[get_secret] secret: {secret_dict}')
