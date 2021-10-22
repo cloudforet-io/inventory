@@ -8,6 +8,7 @@ mongomock
 python-consul
 spaceone-core
 spaceone-api
+boto3
 
 # For Memory Profiling
 memory_profiler
