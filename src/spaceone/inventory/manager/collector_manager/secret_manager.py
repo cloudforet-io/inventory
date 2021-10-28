@@ -32,7 +32,7 @@ class SecretManager(BaseManager):
         # secret_connector = self.locator.get_connector('SecretConnector')
         # secrets = secret_connector.list_secrets_by_secret_group_id(secret_group_id, domain_id)
         secrets = self.secret_connector.dispatch('Secret.list',
-                                               {'secret_group_id': secret_group_id, 'domain_id': domain_id})
+                                                 {'secret_group_id': secret_group_id, 'domain_id': domain_id})
 
         result = []
         for secret in secrets.get('results', []):

@@ -126,7 +126,7 @@ class PluginManager(BaseManager):
         """
         secret_mgr = self.locator.get_manager('SecretManager')
         secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
-        return secret_data.data
+        return secret_data.get('data', {})
 
     def _init_by_plugin_info(self, plugin_info, domain_id):
         plugin_id = plugin_info['plugin_id']

@@ -156,7 +156,7 @@ class CollectingManager(BaseManager):
         ##########################################################
         try:
             _LOGGER.debug('[collect] Before call collect')
-            results = connector.collect(plugin_info['options'], secret_data.data, collect_filter)
+            results = connector.collect(plugin_info['options'], secret_data.get('data', {}), collect_filter)
             _LOGGER.debug('[collect] generator: %s' % results)
 
         except ERROR_BASE as e:
