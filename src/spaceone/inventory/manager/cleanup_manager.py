@@ -28,10 +28,7 @@ class CleanupManager(BaseManager):
         super().__init__(*args, **kwargs)
 
     def list_domains(self, query):
-        # identity_connector = self.locator.get_connector('IdentityConnector')
         identity_conn: SpaceConnector = self.locator.get_connector('SpaceConnector', service='identity')
-
-        # return identity_conn.list_domains(query)
         return identity_conn.dispatch('Domain.list', {'query': query})
 
     def update_collection_state(self, resource_type, hour, state, domain_id):
@@ -46,11 +43,11 @@ class CleanupManager(BaseManager):
          - inventory.CloudService?provider=aws&cloud_service_group=DynamoDB
         """
         updated_at = datetime.utcnow() - timedelta(hours=hour)
-       #query = {}
+        #query = {}
         #query = {'filter': [{'k': 'domain_id',  'v': domain_id, 'o': 'eq'}]}
         resource_type_name, my_filter_list = self._parse_resource_type(resource_type)
 
-        print(my_filter_list)
+        # print(my_filter_list)
         my_filter_list.extend(
                             [{'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
                             {'k': 'domain_id',  'v': domain_id, 'o': 'eq'},
