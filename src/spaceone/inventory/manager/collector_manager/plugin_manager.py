@@ -76,16 +76,26 @@ class PluginManager(BaseManager):
     def get_endpoint(self, plugin_id, version, domain_id, upgrade_mode='AUTO'):
         """ Get plugin endpoint
         """
-        plugin_connector = self.locator.get_connector('PluginConnector')
-        response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
+        # plugin_connector = self.locator.get_connector('PluginConnector')
+        plugin_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='plugin')
 
-        return response.endpoint, response.updated_version
+        # response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
+        response = plugin_connector.dispatch('Plugin.get_plugin_endpoint', {
+            'plugin_id': plugin_id,
+            'version': version,
+            'upgrade_mode': upgrade_mode,
+            'domain_id': domain_id
+        })
+
+        return response.get('endpoint'), response.get('updated_version', 'MANUAL')
 
     def init_plugin(self, endpoint, options):
         """ Init plugin
         """
-        connector = self.locator.get_connector('CollectorPluginConnector')
-        connector.initialize(endpoint)
+        # connector = self.locator.get_connector('CollectorPluginConnector')
+        connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='plugin')
+
+        # connector.initialize(endpoint)
         return connector.init(options)
 
     def verify_plugin(self, endpoint, options, secret_data):
