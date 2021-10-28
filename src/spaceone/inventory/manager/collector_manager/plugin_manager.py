@@ -92,10 +92,8 @@ class PluginManager(BaseManager):
     def init_plugin(self, endpoint, options):
         """ Init plugin
         """
-        # connector = self.locator.get_connector('CollectorPluginConnector')
-        connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='plugin')
-
-        # connector.initialize(endpoint)
+        connector = self.locator.get_connector('CollectorPluginConnector')
+        connector.initialize(endpoint)
         return connector.init(options)
 
     def verify_plugin(self, endpoint, options, secret_data):
