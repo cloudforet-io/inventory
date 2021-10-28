@@ -723,10 +723,18 @@ class CollectingManager(BaseManager):
         version = plugin_info['version']
         upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
 
-        plugin_connector = self.locator.get_connector('PluginConnector')
-        response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
+        # plugin_connector = self.locator.get_connector('PluginConnector')
+        plugin_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='plugin')
 
-        return response.endpoint, response.updated_version
+        # response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
+        response = plugin_connector.dispatch('Plugin.get_plugin_endpoint', {
+            'plugin_id': plugin_id,
+            'version': version,
+            'upgrade_mode': upgrade_mode,
+            'domain_id': domain_id
+        })
+
+        return response.get('endpoint'), response.get('updated_version')
 
     def _query_with_match_rules(self, resource, match_rules, domain_id, mgr):
         """ match resource based on match_rules
