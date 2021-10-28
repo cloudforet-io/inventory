@@ -248,7 +248,7 @@ class FilterManager(BaseManager):
                               'resource_key': 'data.compute.instance_id'},
                              {'change_key': 'region_name',
                               'resource_key': 'data.compute.region'}],
-	    """
+	        """
             filter_element = filter_format_by_key[query['key']]
             change_rules = filter_element['change_rules']
             del query['key']
