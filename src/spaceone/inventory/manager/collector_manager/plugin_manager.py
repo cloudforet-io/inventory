@@ -76,10 +76,8 @@ class PluginManager(BaseManager):
     def get_endpoint(self, plugin_id, version, domain_id, upgrade_mode='AUTO'):
         """ Get plugin endpoint
         """
-        # plugin_connector = self.locator.get_connector('PluginConnector')
         plugin_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='plugin')
 
-        # response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
         response = plugin_connector.dispatch('Plugin.get_plugin_endpoint', {
             'plugin_id': plugin_id,
             'version': version,
