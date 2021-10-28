@@ -43,6 +43,7 @@ CONNECTORS = {
             'plugin': 'grpc://plugin:50051',
             'repository': 'grpc://repository:50051',
             'secret': 'grpc://secret:50051',
+            'config': 'grpc://config:50051',
         }
     },
 }

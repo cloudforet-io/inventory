@@ -28,8 +28,11 @@ class CleanupManager(BaseManager):
         super().__init__(*args, **kwargs)
 
     def list_domains(self, query):
-        identity_connector = self.locator.get_connector('IdentityConnector')
-        return identity_connector.list_domains(query)
+        # identity_connector = self.locator.get_connector('IdentityConnector')
+        identity_conn: SpaceConnector = self.locator.get_connector('SpaceConnector', service='identity')
+
+        # return identity_conn.list_domains(query)
+        return identity_conn.dispatch('Domain.list', {'query': query})
 
     def update_collection_state(self, resource_type, hour, state, domain_id):
         """ List resource which is updated before N hours
@@ -104,7 +107,6 @@ class CleanupManager(BaseManager):
         resources, disconnected_count = mgr.update_collection_state(query, 'DISCONNECTED')
 
         return (disconnected_count, deleted_count)
-
 
     def delete_resources_by_policy(self, resource_type, hour, state, domain_id):
         """ List resources
