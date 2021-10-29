@@ -85,6 +85,10 @@ class PluginManager(BaseManager):
             'domain_id': domain_id
         })
 
+        print("----- Plugin.get_plugin_endpoint Response -----")
+        print(response)
+        print("------------------------------------")
+
         return response.get('endpoint'), response.get('updated_version', 'MANUAL')
 
     def init_plugin(self, endpoint, options):
