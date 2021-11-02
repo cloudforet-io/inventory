@@ -1,3 +1,8 @@
+"""
+Deprecated:
+  Not used. Integrated with SpaceConnector.
+"""
+
 import logging
 
 from spaceone.core.connector import BaseConnector

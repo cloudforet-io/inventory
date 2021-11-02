@@ -1,3 +1,8 @@
+"""
+Deprecated:
+  Not used. Integrated with SpaceConnector.
+"""
+
 import logging
 
 from google.protobuf.json_format import MessageToDict
