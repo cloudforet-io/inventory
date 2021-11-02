@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import json
 import time
@@ -10,6 +8,7 @@ from spaceone.core import config, cache
 from spaceone.core import queue
 from spaceone.core.error import *
 from spaceone.core.manager import BaseManager
+from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.inventory.error import *
 from spaceone.inventory.lib import rule_matcher
 
@@ -723,10 +722,8 @@ class CollectingManager(BaseManager):
         version = plugin_info['version']
         upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
 
-        # plugin_connector = self.locator.get_connector('PluginConnector')
         plugin_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='plugin')
 
-        # response = plugin_connector.get_plugin_endpoint(plugin_id, version, domain_id, upgrade_mode)
         response = plugin_connector.dispatch('Plugin.get_plugin_endpoint', {
             'plugin_id': plugin_id,
             'version': version,

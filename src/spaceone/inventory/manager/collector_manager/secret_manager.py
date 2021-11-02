@@ -1,9 +1,7 @@
 import logging
 
-from google.protobuf.json_format import MessageToDict
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
-
 
 _LOGGER = logging.getLogger(__name__)
 
