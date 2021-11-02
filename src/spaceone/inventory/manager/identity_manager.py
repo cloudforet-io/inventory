@@ -1,4 +1,5 @@
 from spaceone.core.manager import BaseManager
+from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.inventory.connector.identity_connector import IdentityConnector
 
 

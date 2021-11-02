@@ -1,6 +1,7 @@
 import logging
 
 from spaceone.core.manager import BaseManager
+from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.inventory.connector.config_connector import ConfigConnector
 
 _LOGGER = logging.getLogger(__name__)

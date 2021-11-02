@@ -4,6 +4,7 @@ import re
 from datetime import datetime, timedelta
 
 from spaceone.core.manager import BaseManager
+from spaceone.core.connector.space_connector import SpaceConnector
 
 _LOGGER = logging.getLogger(__name__)
 
