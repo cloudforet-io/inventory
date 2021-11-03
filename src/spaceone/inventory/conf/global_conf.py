@@ -24,17 +24,7 @@ HANDLERS = {
 }
 
 CONNECTORS = {
-    'IdentityConnector': {
-    },
-    'SecretConnector': {
-    },
-    'PluginConnector': {
-    },
     'CollectorPluginConnector': {
-    },
-    'RepositoryConnector': {
-    },
-    'ConfigConnector': {
     },
     'SpaceConnector': {
         'backend': 'spaceone.core.connector.space_connector.SpaceConnector',
