@@ -17,11 +17,13 @@ class SecretManager(BaseManager):
 
     def get_secret_ids_from_provider(self, provider, domain_id):
         secrets = self.secret_connector.dispatch('Secret.list', {'provider': provider, 'domain_id': domain_id})
+        _LOGGER.debug(f'[get_secret_ids_from_provider] secrets: {secrets}, by {provider}')
 
         result = []
         for secret in secrets.get('results', []):
             result.append(secret.get('secret_id'))
-        _LOGGER.debug(f'[get_secret_ids_from_provider] found: {secrets["total_count"]}, by {provider}')
+
+        # _LOGGER.debug(f'[get_secret_ids_from_provider] found: {secrets["total_count"]}, by {provider}')
         return result
 
     def get_secret_ids_from_secret_group_id(self, secret_group_id, domain_id):
