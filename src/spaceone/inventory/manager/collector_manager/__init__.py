@@ -481,9 +481,9 @@ class CollectorManager(BaseManager):
         }
         try:
             plugin_metadata, updated_version = plugin_mgr.init(params)
-            _LOGGER.debug(f'[_call_plugin_init] metadata: {plugin_metadata}')
+            _LOGGER.debug(f'[_call_plugin_init] metadata: {plugin_metadata.get("metadata")}')
         except Exception as e:
             _LOGGER.error(f'[_call_plugin_init] failed to call plugin.init, {e}')
             raise ERROR_INIT_PLUGIN_FAILURE(params=params)
 
-        return plugin_metadata, updated_version
+        return plugin_metadata.get("metadata", {}), updated_version
