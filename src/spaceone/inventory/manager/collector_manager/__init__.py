@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import logging
 import json
 
@@ -29,6 +27,7 @@ __ALL__ = ['CollectorManager', 'CollectingManager', 'CollectorDB', 'FilterManage
            'ScheduleManager', 'JobManager', 'SecretManager']
 
 _LOGGER = logging.getLogger(__name__)
+
 
 class CollectorManager(BaseManager):
 
@@ -111,8 +110,12 @@ class CollectorManager(BaseManager):
             return plugin_mgr.verify_by_plugin_info(new_plugin_info, domain_id, secret_id)
         except Exception as e:
             _LOGGER.debug(f'[verify_plugin] failed plugin verify: {e}')
-            raise ERROR_VERIFY_PLUGIN_FAILURE(params={'collector_id': collector_id,
-                                                        'secret_id': secret_id})
+            raise ERROR_VERIFY_PLUGIN_FAILURE(
+                params={
+                    'collector_id': collector_id,
+                    'secret_id': secret_id
+                }
+            )
 
     def delete_collector(self, collector_id, domain_id):
         # Cascade Delete (Job, Schedule)
@@ -134,7 +137,8 @@ class CollectorManager(BaseManager):
     def get_collector(self, collector_id, domain_id, only=None):
         return self.collector_db.get_collector(collector_id=collector_id, domain_id=domain_id, only=only)
 
-    def update_collector_by_vo(self, collector_vo, params):
+    @staticmethod
+    def update_collector_by_vo(collector_vo, params):
         """ Update collector
         Get collector_vo, then update with this
         """
@@ -153,7 +157,6 @@ class CollectorManager(BaseManager):
             plugin_info['metadata'] = plugin_metadata
             collector_vo = self.update_collector_by_vo(collector_vo, {'plugin_info': plugin_info})
         return collector_vo
-
 
     def disable_collector(self, collector_id, domain_id, plugin_init=True):
         collector_vo =self.collector_db.disable_collector(collector_id=collector_id, domain_id=domain_id)
@@ -293,7 +296,7 @@ class CollectorManager(BaseManager):
                     json_task = json.dumps(task)
                     queue.put(queue_name, json_task)
                 else:
-                    # Do synchronus collect
+                    # Do synchronous collect
                     _LOGGER.warning(f'####### Synchronous collect {count}/{secret_len} ########')
                     collecting_mgr = self.locator.get_manager('CollectingManager')
                     collecting_mgr.collecting_resources(**req_params)
@@ -307,7 +310,6 @@ class CollectorManager(BaseManager):
                                   )
                 _LOGGER.error(f'####### collect failed {count}/{secret_len} ##########')
                 _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
-
 
             except Exception as e:
                 # Do not exit, just book-keeping
@@ -329,7 +331,8 @@ class CollectorManager(BaseManager):
         params = {'last_collected_at': datetime.utcnow()}
         self.update_collector_by_vo(collector_vo, params)
 
-    def _get_queue_name(self, name='collect_queue'):
+    @staticmethod
+    def _get_queue_name(name='collect_queue'):
         """ Return queue
         """
         try:
@@ -338,7 +341,8 @@ class CollectorManager(BaseManager):
             _LOGGER.warning(f'[_get_queue_name] name: {name} is not configured')
             return None
 
-    def _create_task(self, req_params, domain_id):
+    @staticmethod
+    def _create_task(req_params, domain_id):
         """ Create Pipeline Task
         """
         try:
@@ -360,7 +364,8 @@ class CollectorManager(BaseManager):
             _LOGGER.warning(f'[_create_task] failed asynchronous collect, {e}')
             return None
 
-    def _make_collecting_parameters(self, **kwargs):
+    @staticmethod
+    def _make_collecting_parameters(**kwargs):
         """ Make parameters for collecting_resources
 
         Args:
@@ -423,28 +428,30 @@ class CollectorManager(BaseManager):
         self.transaction.add_rollback(_rollback, schedule_vo.to_dict())
         return schedule_vo.update(params)
 
-    def is_supported_schedule(self, collector_vo, schedule):
+    @staticmethod
+    def is_supported_schedule(collector_vo, schedule):
         """ Check metadata.supported_schedule
         ex) metadata.supported_schedule: ["hours", "interval", "cron"]
         """
         collector_dict = collector_vo.to_dict()
         plugin_info = collector_dict['plugin_info']
         metadata = plugin_info.get('metadata', None)
-        if metadata == None:
+        if metadata is None:
             _LOGGER.warning(f'[is_supported_schedule] no metadata: {plugin_info}')
             return True
         supported_schedule = metadata.get('supported_schedules', None)
         _LOGGER.debug(f'[is_supported_schedule] supported: {plugin_info}')
-        if supported_schedule == None:
+        if supported_schedule is None:
             _LOGGER.warning(f'[is_supported_schedule] no schedule: {plugin_info}')
             return True
         requested = schedule.keys()
         _LOGGER.debug(f'[is_supported_schedule] requested: {requested}')
-        if (set(requested).issubset(set(supported_schedule))):
+        if set(requested).issubset(set(supported_schedule)):
             return True
         raise ERROR_UNSUPPORTED_SCHEDULE(supported=supported_schedule, requested=requested)
 
-    def _check_filter(self, params):
+    @staticmethod
+    def _check_filter(params):
         """ Schedule request may have filter
         Change filter -> filters, since mongodb does not support filter as member key
         """

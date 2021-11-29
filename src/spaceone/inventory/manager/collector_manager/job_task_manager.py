@@ -11,6 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 MAX_MESSAGE_LENGTH = 2000
 
+
 class JobTaskManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
@@ -107,9 +108,6 @@ class JobTaskManager(BaseManager):
         _LOGGER.debug(f'[update_job_status] job_task_id: {job_task_id}, status: {status}')
         return job_task_vo.update(params)
 
-    def update_created(self, job_task_id):
-        job_task_vo = self.get(job_task_id, domain_id)
-        #job_task_vo.update({'created': created
     def make_inprogress(self, job_task_id, domain_id, secret=None, stat=None):
         """ Make state to in-progress
         """
@@ -131,11 +129,13 @@ class JobTaskManager(BaseManager):
         job_state_machine.failure()
         self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
 
+
 PENDING = 'PENDING'
 CANCELED = 'CANCELED'
 INPROGRESS = 'IN_PROGRESS'
 SUCCESS = 'SUCCESS'
 FAILURE = 'FAILURE'
+
 
 class JobTaskState(metaclass=abc.ABCMeta):
     def __init__(self):
@@ -145,12 +145,14 @@ class JobTaskState(metaclass=abc.ABCMeta):
     def handle(self):
         pass
 
+
 class PendingState(JobTaskState):
     def handle(self):
         pass
 
     def __str__(self):
         return PENDING
+
 
 class CanceledState(JobTaskState):
     def handle(self):
@@ -159,12 +161,14 @@ class CanceledState(JobTaskState):
     def __str__(self):
         return CANCELED
 
+
 class InprogressState(JobTaskState):
     def handle(self):
         pass
 
     def __str__(self):
         return INPROGRESS
+
 
 class SuccessState(JobTaskState):
     def handle(self):
@@ -173,6 +177,7 @@ class SuccessState(JobTaskState):
     def __str__(self):
         return SUCCESS
 
+
 class FailureState(JobTaskState):
     def handle(self):
         pass
@@ -180,13 +185,15 @@ class FailureState(JobTaskState):
     def __str__(self):
         return FAILURE
 
+
 STATE_DIC = {
-    'PENDING'       : PendingState(),
-    'CANCELED'      : CanceledState(),
-    'IN_PROGRESS'   : InprogressState(),
-    'SUCCESS'       : SuccessState(),
-    'FAILURE'       : FailureState()
+    'PENDING': PendingState(),
+    'CANCELED': CanceledState(),
+    'IN_PROGRESS': InprogressState(),
+    'SUCCESS': SuccessState(),
+    'FAILURE': FailureState()
 }
+
 
 class JobTaskStateMachine():
     def __init__(self, job_task_vo):

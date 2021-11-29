@@ -58,7 +58,7 @@ class PluginManager(BaseManager):
             except Exception as e:
                 _LOGGER.debug(f'[verify] {e}')
                 _LOGGER.warn(f'[verify] fail to verify with secret: {secret_id}')
-        if verified and verified_options != None:
+        if verified and verified_options:
             return verified_options
         raise ERROR_VERIFY_PLUGIN_FAILURE(params=plugin_info)
 

@@ -1,9 +1,8 @@
 import logging
 
-from google.protobuf.json_format import MessageToDict
-
 from spaceone.core import cache
 from spaceone.core.manager import BaseManager
+from spaceone.inventory.error import *
 from spaceone.inventory.manager.collector_manager.collecting_manager import RESOURCE_MAP
 
 _LOGGER = logging.getLogger(__name__)
@@ -13,63 +12,76 @@ class FilterManager(BaseManager):
     """
     Transform filter for collector
     """
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.CONSTANT_FILTER_CACHE_TIMEOUT = 86400      # 24 hours
+        self.CONSTANT_FILTER_CACHE_TIMEOUT = 86400  # 24 hours
 
     #####################################################
     # TODO: result of _get_collect_filter, and secret_id
     """ I want to know the founded result from _get_collect_filter must be related with secret_id
     If resource is not collected by this secret_id, I don't want to make collect call
     """
+
     def get_collect_filter(self, filters, plugin_info, secret_id_list=[]):
         """ Create new filters for Collect plugin's parameter
             filter_format(filters) -> new_filter
 
         Args:
-            filter_format(list): filter_format from plugin.options.filter_format or None
             filters(dict): filters from Client request
+            plugin_info(dict)
+            secret_id_list(list)
 
         Returns:
             new_filter: new filters for Plugin(Collector) query
             related_secret_id_list : list of secret matched on query
 
         Example:
-	    'filter_format': [{'change_rules': [{'change_key': 'instance_id',
-					      'resource_key': 'data.compute.instance_id'},
-					     {'change_key': 'region_name',
-					      'resource_key': 'data.compute.region'}],
-			    'key': 'project_id',
-			    'name': 'Project ID',
-			    'resource_type': 'SERVER',
-			    'search_key': 'identity.Project.project_id',
-			    'type': 'str'},
-			   {'change_rules': [{'change_key': 'instance_id',
-					      'resource_key': 'data.compute.instance_id'},
-					     {'change_key': 'region_name',
-					      'resource_key': 'data.compute.region'}],
-			    'key': 'collection_info.service_accounts',
-			    'name': 'Service Account ID',
-			    'resource_type': 'SERVER',
-			    'search_key': 'identity.ServiceAccount.service_account_id',
-			    'type': 'str'},
-			   {'change_rules': [{'change_key': 'instance_id',
-					      'resource_key': 'data.compute.instance_id'},
-					     {'change_key': 'region_name',
-					      'resource_key': 'data.compute.region'}],
-			    'key': 'server_id',
-			    'name': 'Server ID',
-			    'resource_type': 'SERVER',
-			    'search_key': 'inventory.Server.server_id',
-			    'type': 'list'},
-			   {'key': 'instance_id',
-			    'name': 'Instance ID',
-			    'resource_type': 'CUSTOM',
-			    'type': 'list'},
-			   {'key': 'region_name',
-			    'name': 'Region',
-			    'resource_type': 'CUSTOM',
-			    'type': 'list'}],
+            'filter_format': [
+                {
+                    'change_rules': [
+                        {'change_key': 'instance_id', 'resource_key': 'data.compute.instance_id'},
+                        {'change_key': 'region_name', 'resource_key': 'data.compute.region'}
+                    ],
+                    'key': 'project_id',
+                    'name': 'Project ID',
+                    'resource_type': 'SERVER',
+                    'search_key': 'identity.Project.project_id',
+                    'type': 'str'
+                },
+                {
+                    'change_rules': [
+                        {'change_key': 'instance_id', 'resource_key': 'data.compute.instance_id'},
+                        {'change_key': 'region_name', 'resource_key': 'data.compute.region'}
+                    ],
+                    'key': 'collection_info.service_accounts',
+                    'name': 'Service Account ID',
+                    'resource_type': 'SERVER',
+                    'search_key': 'identity.ServiceAccount.service_account_id',
+                    'type': 'str'
+                },
+                {
+                    'change_rules': [
+                        {'change_key': 'instance_id', 'resource_key': 'data.compute.instance_id'},
+                        {'change_key': 'region_name', 'resource_key': 'data.compute.region'}
+                    ],
+                    'key': 'server_id',
+                    'name': 'Server ID',
+                    'resource_type': 'SERVER',
+                    'search_key': 'inventory.Server.server_id',
+                    'type': 'list'
+                },
+                {
+                    'key': 'instance_id',
+                    'name': 'Instance ID',
+                    'resource_type': 'CUSTOM',
+                    'type': 'list'
+                },
+                {
+                    'key': 'region_name',
+                    'name': 'Region',
+                    'resource_type': 'CUSTOM',
+                    'type': 'list'}],
 
             filters:
                 {
@@ -85,6 +97,9 @@ class FilterManager(BaseManager):
                     'instance_type': 'm4.xlarge'
                 }
             related_secret_id_list: ['secret-12343', 'secret-254555' ...]
+            :param filters:
+            :param secret_id_list:
+            :param plugin_info:
 
         """
 
@@ -113,7 +128,7 @@ class FilterManager(BaseManager):
         for filter_key, filter_value in filters.items():
             if filter_key not in filter_format_by_key:
                 _LOGGER.error(f'[_get_collect_filter] unsupported filter_key: {filter_key}')
-                # Strict error raise, for reducing too heavy requst
+                # Strict error raise, for reducing too heavy request
                 raise ERROR_UNSUPPORTED_FILTER_KEY(key=filter_key, value=filter_value)
 
         query_filter, custom_keys = self._prepare_query_filter(filters, filter_format_by_key)
@@ -151,7 +166,8 @@ class FilterManager(BaseManager):
         _LOGGER.debug(f'[cache_filter] {key} : {data}')
         cache.set(key, data, expire=self.CONSTANT_FILTER_CACHE_TIMEOUT)
 
-    def _get_filer_cache(self, collector_id, secret_id):
+    @staticmethod
+    def _get_filer_cache(collector_id, secret_id):
         key = f'collector-filter:{collector_id}:{secret_id}'
         try:
             data = cache.get(key)
@@ -191,7 +207,8 @@ class FilterManager(BaseManager):
             query_filter[filter_key] = v_list
         return query_filter, custom_keys
 
-    def _make_query_per_resources(self, query_filter, filter_format_by_key):
+    @staticmethod
+    def _make_query_per_resources(query_filter, filter_format_by_key):
         # Make query per Resource
         query_per_resources = {}
         """
@@ -202,29 +219,29 @@ class FilterManager(BaseManager):
             }
         """
         for query_key, query in query_filter.items():
-                    res_type = filter_format_by_key[query_key]['resource_type']
-                    query_string = query_per_resources.get(res_type, {'key': query_key, 'filter': [], 'filter_or': []})
-                    if len(query) == 1:
-                        query_string['filter'].extend(query)
-                    elif len(query) > 1:
-                        query_string['filter_or'].extend(query)
-                    else:
-                        _LOGGER.debug(f'[_get_collector_filter] wrong query: {query}')
-                    query_per_resources[res_type] = query_string
+            res_type = filter_format_by_key[query_key]['resource_type']
+            query_string = query_per_resources.get(res_type, {'key': query_key, 'filter': [], 'filter_or': []})
+            if len(query) == 1:
+                query_string['filter'].extend(query)
+            elif len(query) > 1:
+                query_string['filter_or'].extend(query)
+            else:
+                _LOGGER.debug(f'[_get_collector_filter] wrong query: {query}')
+            query_per_resources[res_type] = query_string
         return query_per_resources
 
     def _search_resources(self, query_per_resources, filter_format_by_key, secret_id_list):
         """
         # Search Resource by Resource's Manager
 
-        Returns: tuple of tranformed query, secret_id_list
-                 tranformed_query {
+        Returns: tuple of transformed query, secret_id_list
+                 transformed_query {
                     'instance_id': [list of value],
                 }
                  related_secret_id_list : [list of secrets]
         """
         result = {}
-        #secret_id_list = []
+        # secret_id_list = []
         for res_type, query in query_per_resources.items():
             """ Example
             query: {'key': 'zone_id',
@@ -244,11 +261,11 @@ class FilterManager(BaseManager):
                 continue
 
             """
-           {'change_rules': [{'change_key': 'instance_id',
+            {'change_rules': [{'change_key': 'instance_id',
                               'resource_key': 'data.compute.instance_id'},
                              {'change_key': 'region_name',
                               'resource_key': 'data.compute.region'}],
-	        """
+            """
             filter_element = filter_format_by_key[query['key']]
             change_rules = filter_element['change_rules']
             del query['key']
@@ -257,7 +274,7 @@ class FilterManager(BaseManager):
             try:
                 _LOGGER.debug(f'[_search_resources] query: {query}, key={change_rules}')
                 value_list, filtered_secret_id_list = mgr.query_resources(query, change_rules)
-                _LOGGER.debug(f'[_search_resources] filered: {value_list}')
+                _LOGGER.debug(f'[_search_resources] filtered: {value_list}')
                 result.update(value_list)
                 secret_id_list = _intersection(secret_id_list, filtered_secret_id_list)
             except Exception as e:
@@ -267,7 +284,8 @@ class FilterManager(BaseManager):
 
         return result, secret_id_list
 
-    def _append_custom_keys(self, new_filter, filters, custom_keys):
+    @staticmethod
+    def _append_custom_keys(new_filter, filters, custom_keys):
         """
         Args: {'key':'instance_id', 'name':'Instance ID', 'type':'list', 'resource_type': 'CUSTOM'}
 
@@ -295,7 +313,8 @@ class FilterManager(BaseManager):
         _LOGGER.debug(f'[_append_custom_keys] updated_filter: {updated_filter}')
         return updated_filter
 
-    def _make_query_for_manager(self, key, value, filter_element):
+    @staticmethod
+    def _make_query_for_manager(key, value, filter_element):
         """
         Args:
             key(str): key for query
@@ -325,7 +344,7 @@ class FilterManager(BaseManager):
                 'o': 'eq'
             })
         else:
-            _LOGGER.error(f'Unspported filter_element, {filter_element}, supported type: list | str')
+            _LOGGER.error(f'Unsupported filter_element, {filter_element}, supported type: list | str')
         return query_filter
 
 

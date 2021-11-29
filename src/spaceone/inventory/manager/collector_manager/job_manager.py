@@ -11,6 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 
 MAX_MESSAGE_LENGTH = 2000
 
+
 class JobManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
@@ -61,17 +62,17 @@ class JobManager(BaseManager):
 
         return job_vo
 
-    def increase_total_tasks_by_vo(self, job_vo):
+    def increase_total_tasks_by_vo(self, job_vo: Job):
         job_vo = job_vo.increment('total_tasks')
         _LOGGER.debug(f'[increase_total_tasks] {job_vo.job_id} : {job_vo.total_tasks}')
         return job_vo
 
-    def increase_remained_tasks_by_vo(self, job_vo):
+    def increase_remained_tasks_by_vo(self, job_vo: Job):
         job_vo = job_vo.increment('remained_tasks')
         _LOGGER.debug(f'[increase_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
         return job_vo
 
-    def decrease_remained_tasks_by_vo(self, job_vo):
+    def decrease_remained_tasks_by_vo(self, job_vo: Job):
         job_vo = job_vo.decrement('remained_tasks')
         _LOGGER.debug(f'[decrease_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
 
@@ -82,7 +83,7 @@ class JobManager(BaseManager):
             self.make_error_by_vo(job_vo)
 
         if job_vo.remained_tasks < 0:
-            _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {remained_tasks}')
+            _LOGGER.debug(f'[decrease_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
             raise ERROR_JOB_UPDATE(param='remained_tasks')
         return job_vo
 
@@ -112,7 +113,7 @@ class JobManager(BaseManager):
                 self.make_error_by_vo(job_vo)
 
         if job_vo.remained_tasks < 0:
-            _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {remained_tasks}')
+            _LOGGER.debug(f'[decrease_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
             raise ERROR_JOB_UPDATE(param='remained_tasks')
         return job_vo
 
@@ -124,6 +125,7 @@ class JobManager(BaseManager):
             'additional': dict
         }
         """
+
         message = repr(msg)
         error_info = {
             'error_code': error_code,
@@ -155,10 +157,11 @@ class JobManager(BaseManager):
         for job in jobs:
             self.make_timeout_by_vo(job)
 
-    ###############
-    # Update by VO
-    ###############
-    def _update_job_status_by_vo(self, job_vo, status):
+    @staticmethod
+    def _update_job_status_by_vo(job_vo, status):
+        ###############
+        # Update by VO
+        ###############
         params = {'status': status}
         if status == 'SUCCESS' or status == 'TIMEOUT' or status == 'ERROR' or status == 'CANCELED':
             params.update({'finished_at': datetime.utcnow()})
@@ -265,12 +268,14 @@ class JobManager(BaseManager):
             del params['filter']
         return params
 
+
 CREATED = 'CREATED'
 INPROGRESS = 'IN_PROGRESS'
 CANCELED = 'CANCELED'
 SUCCESS = 'SUCCESS'
 ERROR = 'ERROR'
 TIMEOUT = 'TIMEOUT'
+
 
 class JobState(metaclass=abc.ABCMeta):
     def __init__(self):
@@ -280,12 +285,14 @@ class JobState(metaclass=abc.ABCMeta):
     def handle(self):
         pass
 
+
 class InprogressState(JobState):
     def handle(self):
         pass
 
     def __str__(self):
         return INPROGRESS
+
 
 class CreatedState(JobState):
     def handle(self):
@@ -294,12 +301,14 @@ class CreatedState(JobState):
     def __str__(self):
         return CREATED
 
+
 class CanceledState(JobState):
     def handle(self):
         pass
 
     def __str__(self):
         return CANCELED
+
 
 class SuccessState(JobState):
     def handle(self):
@@ -308,12 +317,14 @@ class SuccessState(JobState):
     def __str__(self):
         return SUCCESS
 
+
 class ErrorState(JobState):
     def handle(self):
         pass
 
     def __str__(self):
         return ERROR
+
 
 class TimeoutState(JobState):
     def handle(self):
@@ -322,14 +333,16 @@ class TimeoutState(JobState):
     def __str__(self):
         return TIMEOUT
 
+
 STATE_DIC = {
-    'CREATED'       : CreatedState(),
-    'IN_PROGRESS'   : InprogressState(),
-    'CANCELED'      : CanceledState(),
-    'SUCCESS'       : SuccessState(),
-    'ERROR'       : ErrorState(),
-    'TIMEOUT'       : TimeoutState()
+    'CREATED': CreatedState(),
+    'IN_PROGRESS': InprogressState(),
+    'CANCELED': CanceledState(),
+    'SUCCESS': SuccessState(),
+    'ERROR': ErrorState(),
+    'TIMEOUT': TimeoutState()
 }
+
 
 class JobStateMachine():
     def __init__(self, job_vo):

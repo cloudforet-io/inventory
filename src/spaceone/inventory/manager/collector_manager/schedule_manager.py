@@ -4,10 +4,11 @@ from spaceone.core.manager import BaseManager
 
 _LOGGER = logging.getLogger(__name__)
 
-
 """
 Schedule
 """
+
+
 class ScheduleManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -38,8 +39,8 @@ class ScheduleManager(BaseManager):
         """
         query = {
             'filter': [
-                    {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
-                    {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
+                {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
             ]
         }
         schedule_vos, total_count = self.list_schedules(query)
