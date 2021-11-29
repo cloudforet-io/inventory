@@ -357,14 +357,14 @@ class JobStateMachine():
         elif isinstance(self._status, (ErrorState)):
             pass
         else:
-            raise ERROR_JOB_STATE_CHANGE(action='inprogress', job_id=self.job_id, status=str(self._status))
+            raise ERROR_JOB_STATE_CHANGE(action='INPROGRESS', job_id=self.job_id, status=str(self._status))
         return self.get_status()
 
     def canceled(self):
         if isinstance(self._status, (CreatedState, InprogressState)):
             self._status = CanceledState()
         else:
-            raise ERROR_JOB_STATE_CHANGE(action='canceled', job_id=self.job_id, status=str(self._status))
+            raise ERROR_JOB_STATE_CHANGE(action='CANCELED', job_id=self.job_id, status=str(self._status))
         return self.get_status()
 
     def success(self):
@@ -375,14 +375,14 @@ class JobStateMachine():
         elif isinstance(self._status, (ErrorState)):
             pass
         else:
-            raise ERROR_JOB_STATE_CHANGE(action='success', job_id=self.job_id, status=str(self._status))
+            raise ERROR_JOB_STATE_CHANGE(action='SUCCESS', job_id=self.job_id, status=str(self._status))
         return self.get_status()
 
     def timeout(self):
         if isinstance(self._status, (CreatedState, InprogressState)):
             self._status = TimeoutState()
         else:
-            raise ERROR_JOB_STATE_CHANGE(action='timeout', job_id=self.job_id, status=str(self._status))
+            raise ERROR_JOB_STATE_CHANGE(action='TIMEOUT', job_id=self.job_id, status=str(self._status))
         return self.get_status()
 
     def error(self):

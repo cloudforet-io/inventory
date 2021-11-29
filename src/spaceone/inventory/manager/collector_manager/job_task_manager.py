@@ -204,14 +204,14 @@ class JobTaskStateMachine():
         if isinstance(self._state, (PendingState, InprogressState, SuccessState, FailureState)):
             self._state = InprogressState()
         else:
-            raise ERROR_JOB_STATE_CHANGE(action='inprogress', job_task_id=self.job_task_id, state=str(self._state))
+            raise ERROR_JOB_STATE_CHANGE(action='INPROGRESS', job_task_id=self.job_task_id, status=str(self._state))
         return self.get_state()
 
     def success(self):
         if isinstance(self._state, (InprogressState)):
             self._state = SuccessState()
         else:
-            raise ERROR_JOB_STATE_CHANGE(action='success', job_task_id=self.job_task_id, state=str(self._state))
+            raise ERROR_JOB_STATE_CHANGE(action='SUCCESS', job_task_id=self.job_task_id, status=str(self._state))
         return self.get_state()
 
     def failure(self):
