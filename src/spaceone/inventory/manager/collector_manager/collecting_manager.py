@@ -338,7 +338,7 @@ class CollectingManager(BaseManager):
                     _LOGGER.debug(f'[_process_results] use db queue: {idx}')
                     # Create Asynchronous Task
                     pushed = self._create_db_update_task(res_dict, params)
-                    if pushed == False:
+                    if pushed is False:
                         failure += 1
                     continue
 
@@ -347,6 +347,8 @@ class CollectingManager(BaseManager):
                 # If you here, processing in worker
                 #####################################
                 res_state = self._process_single_result(res_dict, params)
+
+                _LOGGER.debug(f'>>>>  res_state: {res_state}')
                 if res_state == NOT_COUNT:
                     pass
                 elif res_state == CREATED:

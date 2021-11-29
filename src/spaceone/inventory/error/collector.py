@@ -30,7 +30,7 @@ class ERROR_AUTHENTICATION_FAILURE_PLUGIN(ERROR_BASE):
 
 
 class ERROR_JOB_STATE_CHANGE(ERROR_BASE):
-    _message = 'Job {job_id} state change: {state} -> {action}'
+    _message = 'Job {job_id} state change: {status} -> {action}'
 
 
 class ERROR_COLLECT_FILTER(ERROR_BASE):
