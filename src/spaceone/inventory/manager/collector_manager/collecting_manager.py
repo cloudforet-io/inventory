@@ -51,20 +51,21 @@ WATCHDOG_WAITING_TIME = 30  # wait 30 seconds, before watchdog works
 #################################################
 # Collecting Resource and Update DB
 #################################################
+
 class CollectingManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.secret = None  # secret info for update meta
+        self.use_db_queue = False
         self.initialize()
         self.job_mgr = self.locator.get_manager('JobManager')
         self.job_task_mgr = self.locator.get_manager('JobTaskManager')
-        self.use_db_queue = False
         self.db_queue = DB_QUEUE_NAME
 
     def initialize(self):
         _LOGGER.debug(f'[initialize] initialize Worker configuration')
-        queues = config.get_global('QUEUES')
+        queues = config.get_global('QUEUES', {})
         if DB_QUEUE_NAME in queues:
             self.use_db_queue = True
 
@@ -236,7 +237,7 @@ class CollectingManager(BaseManager):
                 stat['disconnected_count'] = disconnected_count
                 stat['deleted_count'] = deleted_count
             else:
-                _LOGGER.debug(f'[collecting_resources] skip garbage_colleciton, {cleanup_mode}, {JOB_TASK_STATE}')
+                _LOGGER.debug(f'[collecting_resources] skip garbage_collection, {cleanup_mode}, {JOB_TASK_STATE}')
 
             _LOGGER.debug("=====")
             _LOGGER.debug("self.use_db_queue", self.use_db_queue)
