@@ -7,6 +7,7 @@ __ALL__ = ['CollectorDB']
 
 _LOGGER = logging.getLogger(__name__)
 
+
 class CollectorDB(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
