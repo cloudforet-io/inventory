@@ -238,7 +238,12 @@ class CollectingManager(BaseManager):
             else:
                 _LOGGER.debug(f'[collecting_resources] skip garbage_colleciton, {cleanup_mode}, {JOB_TASK_STATE}')
 
-            if self.use_db_queue and ERROR == False:
+            _LOGGER.debug("=====")
+            _LOGGER.debug("self.use_db_queue", self.use_db_queue)
+            _LOGGER.debug("ERROR", ERROR)
+            _LOGGER.debug("stat", stat)
+            _LOGGER.debug("=====")
+            if self.use_db_queue and ERROR is False:
                 # WatchDog will finalize the task
                 # if ERROR occurred, there is no data to processing
                 pass
@@ -249,6 +254,7 @@ class CollectingManager(BaseManager):
                 # Update Statistics of JobTask
                 self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, stat=stat)
                 # Update Job
+                _LOGGER.debug("== decrease_remained_tasks ==", kwargs['job_id'])
                 self.job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
         return True
