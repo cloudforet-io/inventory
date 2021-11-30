@@ -526,13 +526,14 @@ class CollectingManager(BaseManager):
                 e.message,
                 {'resource_type': resource_type, 'resource_id': res_id}
             )
+            response = ERROR
 
         except Exception as e:
             # TODO: create error message
             _LOGGER.debug(f'[_process_single_result] service error: {svc}, {e}')
             response = ERROR
         finally:
-            if response not in [CREATED, UPDATED]:
+            if response in [CREATED, UPDATED]:
                 if resource_type in ['inventory.CloudServiceType', 'inventory.Region']:
                     response = NOT_COUNT
             return response
