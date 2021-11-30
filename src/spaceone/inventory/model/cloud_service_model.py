@@ -105,8 +105,7 @@ class CloudService(MongoModel):
             'updated_at',
             {
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
-                           'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type',
-                           'reference.resource_id'],
+                           'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],
                 "name": "COMPOUND_INDEX_FOR_SEARCH"
             },
             ('tags.key', 'tags.value')
