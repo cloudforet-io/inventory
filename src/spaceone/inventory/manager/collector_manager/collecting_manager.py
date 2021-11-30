@@ -1,6 +1,7 @@
 import logging
 import json
 import time
+from pympler.tracker import SummaryTracker
 
 from google.protobuf.json_format import MessageToDict
 
@@ -89,6 +90,9 @@ class CollectingManager(BaseManager):
                 'use_cache': bool
             }
         """
+
+        tracker = SummaryTracker()
+
 
         # Check Job State first, if job state is canceled, stop process
         job_task_id = kwargs['job_task_id']
@@ -258,6 +262,8 @@ class CollectingManager(BaseManager):
                 _LOGGER.debug(f"== decrease_remained_tasks == {kwargs['job_id']}")
                 self.job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
+        print("[collecting_resources] system tracker")
+        tracker.print_diff()
         return True
 
     @staticmethod
