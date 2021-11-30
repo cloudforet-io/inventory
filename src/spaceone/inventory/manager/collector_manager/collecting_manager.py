@@ -246,7 +246,7 @@ class CollectingManager(BaseManager):
             _LOGGER.debug("=====")
             if self.use_db_queue and ERROR is False:
                 # WatchDog will finalize the task
-                # if ERROR occurred, there is no data to processing
+                # if ERROR occurred, there is no data to proncessing
                 pass
             else:
                 if self.use_db_queue:
@@ -348,7 +348,6 @@ class CollectingManager(BaseManager):
                 #####################################
                 res_state = self._process_single_result(res_dict, params)
 
-                _LOGGER.debug(f'>>>>  res_state: {res_state}')
                 if res_state == NOT_COUNT:
                     pass
                 elif res_state == CREATED:

@@ -101,7 +101,7 @@ class JobManager(BaseManager):
         return job_vo
 
     def decrease_remained_tasks(self, job_id, domain_id):
-        job_vo = self.get(job_id, domain_id)
+        job_vo: Job = self.get(job_id, domain_id)
         job_vo = job_vo.decrement('remained_tasks')
         _LOGGER.debug(f'[decrease_remained_tasks] {job_id}, {job_vo.remained_tasks} / {job_vo.total_tasks}')
 
