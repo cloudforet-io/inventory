@@ -1,7 +1,6 @@
 import logging
 import json
 import time
-from pympler.tracker import SummaryTracker
 
 from google.protobuf.json_format import MessageToDict
 
@@ -90,9 +89,6 @@ class CollectingManager(BaseManager):
                 'use_cache': bool
             }
         """
-
-        tracker = SummaryTracker()
-
 
         # Check Job State first, if job state is canceled, stop process
         job_task_id = kwargs['job_task_id']
@@ -243,14 +239,9 @@ class CollectingManager(BaseManager):
             else:
                 _LOGGER.debug(f'[collecting_resources] skip garbage_collection, {cleanup_mode}, {JOB_TASK_STATE}')
 
-            _LOGGER.debug("=====")
-            _LOGGER.debug(f"self.use_db_queue: {self.use_db_queue}")
-            _LOGGER.debug(f"ERROR: {ERROR}")
-            _LOGGER.debug(f"stat: {stat}")
-            _LOGGER.debug("=====")
             if self.use_db_queue and ERROR is False:
                 # WatchDog will finalize the task
-                # if ERROR occurred, there is no data to proncessing
+                # if ERROR occurred, there is no data to processing
                 pass
             else:
                 if self.use_db_queue:
@@ -259,11 +250,9 @@ class CollectingManager(BaseManager):
                 # Update Statistics of JobTask
                 self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, stat=stat)
                 # Update Job
-                _LOGGER.debug(f"== decrease_remained_tasks == {kwargs['job_id']}")
                 self.job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
         print("[collecting_resources] system tracker")
-        tracker.print_diff()
         return True
 
     @staticmethod
@@ -543,8 +532,9 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(f'[_process_single_result] service error: {svc}, {e}')
             response = ERROR
         finally:
-            if resource_type == 'inventory.CloudServiceType':
-                response = NOT_COUNT
+            if response not in [CREATED, UPDATED]:
+                if resource_type in ['inventory.CloudServiceType', 'inventory.Region']:
+                    response = NOT_COUNT
             return response
 
     def _get_resource_map(self, resource_type):
