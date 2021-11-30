@@ -33,6 +33,10 @@ class ERROR_JOB_STATE_CHANGE(ERROR_BASE):
     _message = 'Job {job_id} state change: {status} -> {action}'
 
 
+class ERROR_JOB_TASK_STATE_CHANGE(ERROR_BASE):
+    _message = 'Job task {job_task_id} state change: {status} -> {action}'
+
+
 class ERROR_COLLECT_FILTER(ERROR_BASE):
     _message = 'collect failed, plugin_info: {plugin_info}, filter: {param}'
 

@@ -1,6 +1,7 @@
 import logging
 import json
 import time
+from pympler.tracker import SummaryTracker
 
 from google.protobuf.json_format import MessageToDict
 
@@ -89,6 +90,9 @@ class CollectingManager(BaseManager):
                 'use_cache': bool
             }
         """
+
+        tracker = SummaryTracker()
+
 
         # Check Job State first, if job state is canceled, stop process
         job_task_id = kwargs['job_task_id']
@@ -246,7 +250,7 @@ class CollectingManager(BaseManager):
             _LOGGER.debug("=====")
             if self.use_db_queue and ERROR is False:
                 # WatchDog will finalize the task
-                # if ERROR occurred, there is no data to processing
+                # if ERROR occurred, there is no data to proncessing
                 pass
             else:
                 if self.use_db_queue:
@@ -258,6 +262,8 @@ class CollectingManager(BaseManager):
                 _LOGGER.debug(f"== decrease_remained_tasks == {kwargs['job_id']}")
                 self.job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
+        print("[collecting_resources] system tracker")
+        tracker.print_diff()
         return True
 
     @staticmethod
@@ -348,7 +354,6 @@ class CollectingManager(BaseManager):
                 #####################################
                 res_state = self._process_single_result(res_dict, params)
 
-                _LOGGER.debug(f'>>>>  res_state: {res_state}')
                 if res_state == NOT_COUNT:
                     pass
                 elif res_state == CREATED:
