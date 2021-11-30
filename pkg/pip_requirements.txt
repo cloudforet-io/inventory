@@ -11,4 +11,4 @@ spaceone-api
 boto3
 
 # For Memory Profiling
-memory_profiler
+pympler
