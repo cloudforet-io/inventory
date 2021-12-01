@@ -59,6 +59,7 @@ class ServerService(BaseService):
 
         """
 
+        _LOGGER.debug('test debug code')
         data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
