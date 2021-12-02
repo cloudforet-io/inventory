@@ -1,7 +1,6 @@
 from spaceone.core.service import *
 from spaceone.core import utils
 from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
-from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
 from spaceone.inventory.error import *
 
 _KEYWORD_FILTER = ['cloud_service_type_id', 'name', 'provider', 'group', 'service_code']
@@ -41,8 +40,6 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
-
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
 
         # Temporary Code for Tag Migration
@@ -58,7 +55,7 @@ class CloudServiceTypeService(BaseService):
         params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
                                            f'{params["group"]}.{params["name"]}'
 
-        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_cloud_service_type'])
+        params['cloud_service_type_key'] = f'{params["provider"]}:{params["group"]}:{params["name"]}'
 
         return self.cloud_svc_type_mgr.create_cloud_service_type(params)
 
@@ -84,8 +81,6 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
-
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         domain_id = params['domain_id']
 
@@ -99,41 +94,9 @@ class CloudServiceTypeService(BaseService):
         if provider:
             params['provider'] = provider
 
-        # if not cloud_svc_type_vo.ref_cloud_service_type:
-        if True:
-            params['ref_cloud_service_type'] = f'{domain_id}.' \
-                                               f'{cloud_svc_type_vo.provider}.' \
-                                               f'{cloud_svc_type_vo.group}.' \
+        if not cloud_svc_type_vo.cloud_service_type_key:
+            params['cloud_service_type_key'] = f'{cloud_svc_type_vo.provider}.{cloud_svc_type_vo.group}.' \
                                                f'{cloud_svc_type_vo.name}'
-
-        exclude_keys = ['cloud_service_type_id', 'domain_id', 'ref_cloud_service_type']
-        params = data_mgr.merge_data_by_history(params, cloud_svc_type_vo.to_dict(), exclude_keys=exclude_keys)
-
-        return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(params, cloud_svc_type_vo)
-
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['cloud_service_id', 'keys', 'domain_id'])
-    def pin_data(self, params):
-        """
-        Args:
-            params (dict): {
-                    'cloud_service_type_id': 'str',
-                    'keys': 'list',
-                    'domain_id': 'str'
-                }
-
-        Returns:
-            cloud_service_vo (object)
-
-        """
-
-        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
-
-        cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
-                                                                           params['domain_id'])
-
-        params['collection_info'] = data_mgr.update_pinned_keys(params['keys'],
-                                                                cloud_svc_type_vo.collection_info.to_dict())
 
         return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(params, cloud_svc_type_vo)
 
@@ -179,8 +142,8 @@ class CloudServiceTypeService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'service_code', 'resource_type',
-                          'is_primary', 'is_major', 'domain_id'])
+    @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'cloud_service_type_key',
+                          'service_code', 'is_primary', 'is_major', 'resource_type', 'domain_id'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -191,10 +154,11 @@ class CloudServiceTypeService(BaseService):
                     'name': 'str',
                     'group': 'str',
                     'provider': 'str',
+                    'cloud_service_type_key': 'str',
                     'service_code': 'str',
-                    'resource_type': 'str',
                     'is_primary': 'str',
                     'is_major': 'str',
+                    'resource_type': 'str',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)'
                 }

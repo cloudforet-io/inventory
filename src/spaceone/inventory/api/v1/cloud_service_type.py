@@ -19,12 +19,6 @@ class CloudServiceType(BaseAPI, cloud_service_type_pb2_grpc.CloudServiceTypeServ
         with self.locator.get_service('CloudServiceTypeService', metadata) as cloud_svc_type_service:
             return self.locator.get_info('CloudServiceTypeInfo', cloud_svc_type_service.update(params))
 
-    def pin_data(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('CloudServiceTypeService', metadata) as cloud_svc_type_service:
-            return self.locator.get_info('CloudServiceTypeInfo', cloud_svc_type_service.pin_data(params))
-
     def delete(self, request, context):
         params, metadata = self.parse_request(request, context)
 

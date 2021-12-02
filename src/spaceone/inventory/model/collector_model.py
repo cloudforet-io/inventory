@@ -91,9 +91,9 @@ class Schedule(MongoModel):
     schedule = EmbeddedDocumentField(Scheduled, default=None, null=False)
     filters = DictField()
     collect_mode = StringField(max_length=8, default='ALL', choice=('ALL', 'CREATE', 'UPDATE'))
+    domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
     last_scheduled_at = DateTimeField()
-    domain_id = StringField(max_length=255)
 
     meta = {
         'updatable_fields': [

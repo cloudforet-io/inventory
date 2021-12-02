@@ -21,6 +21,7 @@ class JobTask(MongoModel):
     failure_count = IntField(default=0)
     total_count = IntField(default=0)
     errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))
+    job = ReferenceField('Job', default=None, null=True, reverse_delete_rule=CASCADE)
     job_id = StringField(max_length=40)
     secret_id = StringField(max_length=40)
     provider = StringField(max_length=40, default=None, null=True)

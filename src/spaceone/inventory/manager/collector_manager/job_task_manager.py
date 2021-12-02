@@ -25,9 +25,11 @@ class JobTaskManager(BaseManager):
 
         params = {
             'job_id': job_vo.job_id,
+            'job': job_vo,
             'domain_id': domain_id
         }
         params.update(secret_info)
+
         job_task_vo: JobTask = self.job_task_model.create(params)
 
         self.transaction.add_rollback(_rollback, job_task_vo)

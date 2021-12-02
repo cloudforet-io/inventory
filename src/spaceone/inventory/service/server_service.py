@@ -36,10 +36,11 @@ class ServerService(BaseService):
         Args:
             params (dict): {
                     'name': 'str',
-                    'state': 'PENDING | INSERVICE',
                     'primary_ip_address': 'str',
-                    'server_type': 'BAREMETAL | VM | HYPERVISOR | UNKNOWN',
                     'os_type': 'LINUX | WINDOWS',
+                    'account': 'str',
+                    'type': 'str',
+                    'size': 'float',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
@@ -68,11 +69,9 @@ class ServerService(BaseService):
         domain_id = params['domain_id']
         nics = params.get('nics', [])
         primary_ip_address = params.get('primary_ip_address')
-        region_code = params.get('region_code')
         cloud_service_group = params.get('cloud_service_group')
         cloud_service_type = params.get('cloud_service_type')
-
-        params['state'] = params.get('state', 'INSERVICE')
+        region_code = params.get('region_code')
 
         # Temporary Code for Tag Migration
         if 'tags' in params:
@@ -82,8 +81,8 @@ class ServerService(BaseService):
         if provider:
             params['provider'] = provider
 
-        if region_code:
-            params['ref_region'] = f'{domain_id}.{provider or "datacenter"}.{region_code}'
+        if region_code and provider:
+            params['ref_region'] = f'{domain_id}.{provider}.{region_code}'
 
         if cloud_service_group and cloud_service_type and provider:
             params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
@@ -116,10 +115,11 @@ class ServerService(BaseService):
             params (dict): {
                     'server_id': 'str',
                     'name': 'str',
-                    'state': 'INSERVICE | MAINTENANCE | CLOSED',
                     'primary_ip_address': 'str',
-                    'server_type': 'BAREMETAL | VM | HYPERVISOR | UNKNOWN',
                     'os_type': 'LINUX | WINDOWS',
+                    'account': 'str',
+                    'type': 'str',
+                    'size': 'float',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
@@ -152,8 +152,6 @@ class ServerService(BaseService):
         release_project = params.get('release_project', False)
         primary_ip_address = params.get('primary_ip_address')
         region_code = params.get('region_code')
-        cloud_service_group = params.get('cloud_service_group')
-        cloud_service_type = params.get('cloud_service_type')
 
         server_vo: Server = self.server_mgr.get_server(params['server_id'], params['domain_id'])
 
@@ -172,21 +170,7 @@ class ServerService(BaseService):
             })
         else:
             if region_code:
-                params['ref_region'] = f'{domain_id}.{provider or server_vo.provider or "datacenter"}.{region_code}'
-
-        if cloud_service_group and cloud_service_type:
-            if provider or server_vo.provider:
-                params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
-                                                   f'{provider or server_vo.provider}.' \
-                                                   f'{params["cloud_service_group"]}.' \
-                                                   f'{params["cloud_service_type"]}'
-            else:
-                del params['cloud_service_group']
-                del params['cloud_service_type']
-        elif cloud_service_group and not cloud_service_type:
-            del params['cloud_service_group']
-        elif not cloud_service_group and cloud_service_type:
-            del params['cloud_service_type']
+                params['ref_region'] = f'{domain_id}.{provider or server_vo.provider}.{region_code}'
 
         if release_project:
             params['project_id'] = None
@@ -206,8 +190,7 @@ class ServerService(BaseService):
                     primary_ip_address, server_vo.ip_addresses)
 
         server_data = server_vo.to_dict()
-        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_region',
-                        'ref_region', 'ref_cloud_service_type']
+        exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_region', 'ref_region']
         params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
 
         return self.server_mgr.update_server_by_vo(params, server_vo)
@@ -287,17 +270,18 @@ class ServerService(BaseService):
             params (dict): {
                     'server_id': 'str',
                     'name': 'str',
-                    'state': 'INSERVICE | MAINTENANCE | CLOSED | DELETED',
+                    'state': 'str',
                     'primary_ip_address': 'str',
                     'ip_addresses': 'str',
-                    'server_type': 'BAREMETAL | VM | HYPERVISOR | UNKNOWN',
-                    'os_type': 'LINUX | WINDOWS',
+                    'os_type': 'str',
+                    'account': 'str',
+                    'type': 'str',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
                     'region_code': 'str',
-                    'resource_group_id': 'str',
                     'project_id': 'str',
+                    'resource_group_id': 'str',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)',
                     'user_projects': 'list', // from meta
@@ -424,4 +408,4 @@ class ServerService(BaseService):
                 else:
                     return all_ip_addresses[0]
 
-        raise ERROR_REQUIRED_IP_ADDRESS()
+        return None

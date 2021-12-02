@@ -19,7 +19,6 @@ def ChangeHistoryInfo(change_history):
 
 def CollectionInfo(data):
     info = {
-        'state': data.get('state'),
         'collectors': data.get('collectors', []),
         'service_accounts': data.get('service_accounts', []),
         'secrets': data.get('secrets', []),

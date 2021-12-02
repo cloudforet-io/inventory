@@ -17,13 +17,13 @@ class CloudServiceTag(EmbeddedDocument):
 class CloudService(MongoModel):
     cloud_service_id = StringField(max_length=40, generate_id='cloud-svc', unique=True)
     name = StringField(max_length=255, default='')
-    state = StringField(max_length=20, choices=('INSERVICE', 'DELETED'), default='INSERVICE')
+    state = StringField(max_length=20, choices=('ACTIVE', 'DELETED'), default='ACTIVE')
     account = StringField(max_length=255, default=None, null=True)
     type = StringField(max_length=255, default=None, null=True)
-    size = StringField(max_length=255, default=None, null=True)
-    provider = StringField(max_length=255)
+    size = FloatField(max_length=255, default=None, null=True)
     cloud_service_group = StringField(max_length=255)
     cloud_service_type = StringField(max_length=255)
+    provider = StringField(max_length=255)
     ref_cloud_service_type = StringField(max_length=255)
     data = DictField()
     metadata = DictField()
@@ -34,11 +34,10 @@ class CloudService(MongoModel):
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
-    garbage_collection = DictField(default={})
-    launched_at = DateTimeField(default=None, null=True)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
+    launched_at = DateTimeField(default=None, null=True)
 
     meta = {
         'updatable_fields': [
@@ -55,13 +54,10 @@ class CloudService(MongoModel):
             'region_code',
             'cloud_service_group',
             'cloud_service_type',
-            'ref_cloud_service_type',
-            'ref_region',
             'collection_info',
-            'garbage_collection',
-            'launched_at',
             'updated_at',
-            'deleted_at'
+            'deleted_at',
+            'launched_at'
         ],
         'minimal_fields': [
             'cloud_service_id',
@@ -94,7 +90,6 @@ class CloudService(MongoModel):
             'state',
             'account',
             'type',
-            'size',
             'reference.resource_id',
             'data.power_state.status',
             'provider',
@@ -105,14 +100,12 @@ class CloudService(MongoModel):
             'ref_region',
             'project_id',
             'domain_id',
-            'collection_info.state',
             'collection_info.collectors',
             'collection_info.service_accounts',
             'collection_info.secrets',
-            'garbage_collection',
-            'launched_at',
             'created_at',
             'updated_at',
+            'launched_at',
             {
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],
