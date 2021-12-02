@@ -49,6 +49,9 @@ class Server(MongoModel):
     server_type = StringField(max_length=20, default='UNKNOWN',
                               choices=('UNKNOWN', 'BAREMETAL', 'VM', 'HYPERVISOR'))
     os_type = StringField(max_length=20, choices=('LINUX', 'WINDOWS'))
+    account = StringField(max_length=255, default=None, null=True)
+    type = StringField(max_length=255, default=None, null=True)
+    size = StringField(max_length=255, default=None, null=True)
     provider = StringField(max_length=40)
     cloud_service_group = StringField(max_length=255, default=None, null=True)
     cloud_service_type = StringField(max_length=255, default=None, null=True)
@@ -65,6 +68,7 @@ class Server(MongoModel):
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
     garbage_collection = DictField(default={})
+    launched_at = DateTimeField(default=None, null=True)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
@@ -77,6 +81,9 @@ class Server(MongoModel):
             'ip_addresses',
             'server_type',
             'os_type',
+            'account',
+            'type',
+            'size',
             'provider',
             'cloud_service_group',
             'cloud_service_type',
@@ -92,6 +99,7 @@ class Server(MongoModel):
             'tags',
             'collection_info',
             'garbage_collection',
+            'launched_at',
             'updated_at',
             'deleted_at'
         ],
@@ -131,6 +139,9 @@ class Server(MongoModel):
             'primary_ip_address',
             'server_type',
             'os_type',
+            'account',
+            'type',
+            'size',
             'reference.resource_id',
             'data.power_state.status',
             'provider',

@@ -18,6 +18,9 @@ class CloudService(MongoModel):
     cloud_service_id = StringField(max_length=40, generate_id='cloud-svc', unique=True)
     name = StringField(max_length=255, default='')
     state = StringField(max_length=20, choices=('INSERVICE', 'DELETED'), default='INSERVICE')
+    account = StringField(max_length=255, default=None, null=True)
+    type = StringField(max_length=255, default=None, null=True)
+    size = StringField(max_length=255, default=None, null=True)
     provider = StringField(max_length=255)
     cloud_service_group = StringField(max_length=255)
     cloud_service_type = StringField(max_length=255)
@@ -32,6 +35,7 @@ class CloudService(MongoModel):
     domain_id = StringField(max_length=40)
     collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
     garbage_collection = DictField(default={})
+    launched_at = DateTimeField(default=None, null=True)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
@@ -41,6 +45,9 @@ class CloudService(MongoModel):
             'name',
             'data',
             'state',
+            'account',
+            'type',
+            'size',
             'metadata',
             'reference',
             'tags',
@@ -52,6 +59,7 @@ class CloudService(MongoModel):
             'ref_region',
             'collection_info',
             'garbage_collection',
+            'launched_at',
             'updated_at',
             'deleted_at'
         ],
@@ -79,13 +87,14 @@ class CloudService(MongoModel):
             }
         },
         'ordering': [
-            'provider',
-            'cloud_service_group',
-            'cloud_service_type'
+            'name'
         ],
         'indexes': [
             'cloud_service_id',
             'state',
+            'account',
+            'type',
+            'size',
             'reference.resource_id',
             'data.power_state.status',
             'provider',
@@ -101,6 +110,7 @@ class CloudService(MongoModel):
             'collection_info.service_accounts',
             'collection_info.secrets',
             'garbage_collection',
+            'launched_at',
             'created_at',
             'updated_at',
             {
