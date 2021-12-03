@@ -23,7 +23,7 @@ class TestCloudService(unittest.TestCase):
         super(TestCloudService, cls).setUpClass()
         endpoints = cls.config.get('ENDPOINTS', {})
 
-        cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1')
+        cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1', ssl_enabled=True)
         cls.inventory_v1 = pygrpc.client(endpoint=endpoints.get('inventory', {}).get('v1'), version='v1')
 
         cls._create_domain()
@@ -582,7 +582,7 @@ class TestCloudService(unittest.TestCase):
         self.assertEqual(1, cloud_svcs.total_count)
 
     def test_list_query(self):
-        for x in range(0, 1000):
+        for x in range(0, 10):
             self.test_create_cloud_service()
 
         # self.test_create_cloud_service()

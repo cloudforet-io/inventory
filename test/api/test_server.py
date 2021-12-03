@@ -24,7 +24,7 @@ class TestServer(unittest.TestCase):
         super(TestServer, cls).setUpClass()
         endpoints = cls.config.get('ENDPOINTS', {})
 
-        cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1')
+        cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1', ssl_enabled=True)
         cls.inventory_v1 = pygrpc.client(endpoint=endpoints.get('inventory', {}).get('v1'), version='v1')
 
         cls._create_domain()
@@ -223,7 +223,6 @@ class TestServer(unittest.TestCase):
             'provider': 'aws',
             'cloud_service_group': 'EC2',
             'cloud_service_type': 'Instance',
-            "server_type": "VM",
             'data': {
                 'os': {
                     'os_distro': 'ubuntu18.04',
@@ -491,7 +490,6 @@ class TestServer(unittest.TestCase):
                         }
                     }
                 },
-                'server_type': 'BAREMETAL',
                 "metadata": {
                     'view': {
                         'sub_data': {
@@ -535,7 +533,6 @@ class TestServer(unittest.TestCase):
         # self.assertEqual(server_data['reference']['resource_id'], 'resource-yyyy')
         # self.assertEqual(server_data['data']['platform']['type'], 'AWS')
         # self.assertEqual(server_data['data']['softwares'][0]['name'], 'mysql')
-        # self.assertEqual(server_data['server_type'], 'BAREMETAL')
 
     def test_pin_server_data(self, name=None):
         """ Create Server by Collector
@@ -1062,20 +1059,20 @@ class TestServer(unittest.TestCase):
 
         self._print_data(result, 'test_stat_server_by_service_account')
 
-    def test_stat_server_vm_count(self):
+    def test_stat_server_linux_count(self):
         self.test_list_query()
 
         params = {
             'domain_id': self.domain.domain_id,
             'query': {
                 "filter": [{
-                    "key": "server_type",
-                    "value": "VM",
+                    "key": "os_type",
+                    "value": "LINUX",
                     "operator": "eq"
                 }],
                 'aggregate': [{
                     'count': {
-                        'name': 'VM Server Count'
+                        'name': 'Linux Server Count'
                     }
                 }]
             }

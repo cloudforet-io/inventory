@@ -23,7 +23,7 @@ class TestCloudServiceType(unittest.TestCase):
         super(TestCloudServiceType, cls).setUpClass()
         endpoints = cls.config.get('ENDPOINTS', {})
 
-        cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1')
+        cls.identity_v1 = pygrpc.client(endpoint=endpoints.get('identity', {}).get('v1'), version='v1', ssl_enabled=True)
         cls.inventory_v1 = pygrpc.client(endpoint=endpoints.get('inventory', {}).get('v1'), version='v1')
 
         cls._create_domain()
@@ -123,17 +123,17 @@ class TestCloudServiceType(unittest.TestCase):
             'resource_type': 'inventory.Server',
             'is_primary': True,
             'is_major': True,
-            # 'metadata': {
-            #     'view': {
-            #         'search': [{
-            #             'name': 'Provider',
-            #             'key': 'provider'
-            #         }, {
-            #             'name': 'Project',
-            #             'key': 'project'
-            #         }]
-            #     }
-            # },
+            'metadata': {
+                'view': {
+                    'search': [{
+                        'name': 'Provider',
+                        'key': 'provider'
+                    }, {
+                        'name': 'Project',
+                        'key': 'project'
+                    }]
+                }
+            },
             'domain_id': self.domain.domain_id
         }
 
