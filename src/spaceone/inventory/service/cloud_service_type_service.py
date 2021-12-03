@@ -55,7 +55,7 @@ class CloudServiceTypeService(BaseService):
         params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
                                            f'{params["group"]}.{params["name"]}'
 
-        params['cloud_service_type_key'] = f'{params["provider"]}:{params["group"]}:{params["name"]}'
+        params['cloud_service_type_key'] = f'{params["provider"]}.{params["group"]}.{params["name"]}'
 
         return self.cloud_svc_type_mgr.create_cloud_service_type(params)
 
@@ -90,9 +90,6 @@ class CloudServiceTypeService(BaseService):
         if 'tags' in params:
             if isinstance(params['tags'], dict):
                 params['tags'] = utils.dict_to_tags(params['tags'])
-
-        if provider:
-            params['provider'] = provider
 
         if not cloud_svc_type_vo.cloud_service_type_key:
             params['cloud_service_type_key'] = f'{cloud_svc_type_vo.provider}.{cloud_svc_type_vo.group}.' \

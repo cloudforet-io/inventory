@@ -36,11 +36,8 @@ class CollectionDataManager(BaseManager):
         all_service_accounts = []
         all_secrets = []
 
-        if self.updated_by == 'manual':
-            state = 'MANUAL'
-        else:
+        if self.updated_by != 'manual':
             all_collectors.append(self.updated_by)
-            state = 'ACTIVE'
 
             if self.service_account_id:
                 all_service_accounts.append(self.service_account_id)
@@ -53,7 +50,6 @@ class CollectionDataManager(BaseManager):
         self._create_data_history(resource_data)
 
         collection_info = {
-            'state': state,
             'collectors': sorted(all_collectors),
             'service_accounts': sorted(all_service_accounts),
             'secrets': sorted(all_secrets),
@@ -131,7 +127,6 @@ class CollectionDataManager(BaseManager):
         all_service_accounts = collection_info.get('service_accounts', [])
         all_secrets = collection_info.get('secrets', [])
         pinned_keys = collection_info.get('pinned_keys', [])
-        state = collection_info['state']
 
         # _LOGGER.debug('------------------')
         # _LOGGER.debug(f'Update Mode: {self.update_mode}')
@@ -151,10 +146,6 @@ class CollectionDataManager(BaseManager):
                 all_secrets.append(self.secret_id)
                 self.is_changed = True
 
-            if state != 'ACTIVE':
-                state = 'ACTIVE'
-                self.is_changed = True
-
         resource_data = self._change_metadata_path(resource_data)
         resource_data = self._exclude_data_by_pinned_keys(resource_data, pinned_keys)
 
@@ -165,7 +156,6 @@ class CollectionDataManager(BaseManager):
         self._merge_data_from_history(old_data)
 
         updated_collection_info = {
-            'state': state,
             'collectors': sorted(list(set(all_collectors))),
             'service_accounts': sorted(list(set(all_service_accounts))),
             'secrets': sorted(list(set(all_secrets))),

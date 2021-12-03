@@ -4,7 +4,7 @@ from spaceone.core.model.mongo_model import MongoModel
 
 class CollectionState(MongoModel):
     collector_id = StringField(max_length=40)
-    job_id = StringField(max_length=40)
+    job_task_id = StringField(max_length=40)
     resource_id = StringField(max_length=40)
     disconnected_count = IntField(default=0)
     collector = ReferenceField('Collector', default=None, null=True, reverse_delete_rule=CASCADE)
@@ -17,13 +17,13 @@ class CollectionState(MongoModel):
 
     meta = {
         'updatable_fields': [
-            'job_id',
+            'job_task_id',
             'disconnected_count',
             'updated_at'
         ],
         'indexes': [
             'collector_id',
-            'job_id',
+            'job_task_id',
             'resource_id',
             'disconnected_count',
             'collector',
