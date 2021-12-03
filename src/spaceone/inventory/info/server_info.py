@@ -39,20 +39,22 @@ def ServerInfo(server_vo: Server, minimal=False):
         'name': server_vo.name,
         'state': server_vo.state,
         'primary_ip_address': server_vo.primary_ip_address,
-        'server_type': server_vo.server_type,
         'os_type': server_vo.os_type,
         'provider': server_vo.provider,
         'cloud_service_group': server_vo.cloud_service_group,
         'cloud_service_type': server_vo.cloud_service_type,
+        'region_code': server_vo.region_code,
         'reference': server_pb2.ServerReference(
             **server_vo.reference.to_dict()) if server_vo.reference else None,
         'project_id': server_vo.project_id,
-        'region_code': server_vo.region_code,
     }
 
     if not minimal:
         info.update({
-            'ip_addresses': change_list_value_type(server_vo.ip_addresses),
+            'ip_addresses': server_vo.ip_addresses,
+            'account': server_vo.account,
+            'type': server_vo.type,
+            'size': server_vo.size,
             'data': change_struct_type(server_vo.data),
             'metadata': change_struct_type(server_vo.metadata),
             'nics': list(map(ServerNIC, server_vo.nics)),
@@ -62,7 +64,8 @@ def ServerInfo(server_vo: Server, minimal=False):
             'domain_id': server_vo.domain_id,
             'created_at': utils.datetime_to_iso8601(server_vo.created_at),
             'updated_at': utils.datetime_to_iso8601(server_vo.updated_at),
-            'deleted_at': utils.datetime_to_iso8601(server_vo.deleted_at)
+            'deleted_at': utils.datetime_to_iso8601(server_vo.deleted_at),
+            'launched_at': utils.datetime_to_iso8601(server_vo.launched_at)
         })
 
     return server_pb2.ServerInfo(**info)

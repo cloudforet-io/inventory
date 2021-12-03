@@ -35,7 +35,7 @@ class RegionService(BaseService):
             region_vo (object)
         """
         params['provider'] = params.get('provider', 'datacenter')
-        params['ref_region'] = f'{params["domain_id"]}.{params["provider"]}.{params["region_code"]}'
+        params['region_key'] = f'{params["provider"]}.{params["region_code"]}'
 
         # Temporary Code for Tag Migration
         if 'tags' in params:

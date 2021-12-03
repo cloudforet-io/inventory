@@ -32,10 +32,13 @@ class CloudServiceService(BaseService):
         """
         Args:
             params (dict): {
-                    'name': 'str',
                     'cloud_service_type': 'str',
                     'cloud_service_group': 'str',
                     'provider': 'str',
+                    'name': 'str',
+                    'account': 'str',
+                    'type': 'str',
+                    'size': 'float',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
@@ -92,8 +95,9 @@ class CloudServiceService(BaseService):
             params (dict): {
                     'cloud_service_id': 'str',
                     'name': 'str',
-                    'cloud_service_group': 'str',
-                    'cloud_service_type': 'str',
+                    'account': 'str',
+                    'type': 'str',
+                    'size': 'float',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
@@ -120,8 +124,6 @@ class CloudServiceService(BaseService):
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
         region_code = params.get('region_code')
-        cloud_service_group = params.get('cloud_service_group')
-        cloud_service_type = params.get('cloud_service_type')
 
         cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], domain_id)
 
@@ -140,7 +142,7 @@ class CloudServiceService(BaseService):
             })
         else:
             if region_code:
-                params['ref_region'] = f'{domain_id}.{provider or cloud_svc_vo.provider or "datacenter"}.{region_code}'
+                params['ref_region'] = f'{domain_id}.{provider or cloud_svc_vo.provider}.{region_code}'
 
         if release_project:
             params['project_id'] = None
@@ -149,29 +151,8 @@ class CloudServiceService(BaseService):
         elif secret_project_id:
             params['project_id'] = secret_project_id
 
-        # if not cloud_svc_vo.ref_cloud_service_type:
-        #     params['ref_cloud_service_type'] = f'{cloud_svc_vo.domain_id}.' \
-        #                                        f'{cloud_svc_vo.provider}.' \
-        #                                        f'{cloud_svc_vo.cloud_service_group}.' \
-        #                                        f'{cloud_svc_vo.cloud_service_type}'
-
-        if cloud_service_group and cloud_service_type:
-            if provider or cloud_svc_vo.provider:
-                params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
-                                                   f'{provider or cloud_svc_vo.provider}.' \
-                                                   f'{params["cloud_service_group"]}.' \
-                                                   f'{params["cloud_service_type"]}'
-            else:
-                del params['cloud_service_group']
-                del params['cloud_service_type']
-        elif cloud_service_group and not cloud_service_type:
-            del params['cloud_service_group']
-        elif not cloud_service_group and cloud_service_type:
-            del params['cloud_service_type']
-
         cloud_svc_data = cloud_svc_vo.to_dict()
-        exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_region',
-                        'ref_region', 'ref_cloud_service_type']
+        exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_region', 'ref_region']
         params = data_mgr.merge_data_by_history(params, cloud_svc_data, exclude_keys=exclude_keys)
 
         return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
@@ -244,8 +225,9 @@ class CloudServiceService(BaseService):
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_id', 'name', 'state', 'cloud_service_type', 'cloud_service_group', 'provider',
-                          'region_code', 'resource_group_id', 'project_id', 'domain_id', 'user_projects'])
+    @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'type', 'cloud_service_type',
+                          'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
+                          'domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -255,6 +237,8 @@ class CloudServiceService(BaseService):
                     'cloud_service_id': 'str',
                     'name': 'str',
                     'state': 'str',
+                    'account': 'str',
+                    'type': 'str',
                     'provider': 'str',
                     'cloud_service_type': 'str',
                     'cloud_service_group': 'str',

@@ -20,10 +20,11 @@ def RegionInfo(region_vo: Region, minimal=False):
 
     if not minimal:
         info.update({
-            'created_at': utils.datetime_to_iso8601(region_vo.created_at),
-            'updated_at': utils.datetime_to_iso8601(region_vo.updated_at),
+            'region_key': region_vo.region_key,
             'tags': change_struct_type(utils.tags_to_dict(region_vo.tags)),
-            'domain_id': region_vo.domain_id
+            'domain_id': region_vo.domain_id,
+            'created_at': utils.datetime_to_iso8601(region_vo.created_at),
+            'updated_at': utils.datetime_to_iso8601(region_vo.updated_at)
         })
 
     return region_pb2.RegionInfo(**info)

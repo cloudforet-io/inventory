@@ -1,11 +1,9 @@
 import logging
-from google.protobuf.json_format import MessageToDict
 from spaceone.core.service import *
 from spaceone.core.error import *
 from spaceone.core import utils
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.collector_manager import CollectorManager
-from spaceone.inventory.info.collector_info import PluginInfo
 from spaceone.inventory.manager.collector_manager.repository_manager import RepositoryManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -300,7 +298,7 @@ class CollectorService(BaseService):
             filter_query.append(_make_query_hour(schedule['hour']))
 
         elif 'minute' in schedule:
-            # find pluings which has minute rule
+            # find plugins which has minute rule
             filter_query.append(_make_query_minute(schedule['minute']))
 
         elif 'interval' in schedule:
