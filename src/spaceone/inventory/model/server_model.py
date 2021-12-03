@@ -67,7 +67,7 @@ class Server(MongoModel):
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
-    launched_at = DateTimeField(default=None, null=True)
+    launched_at = StringField(default=None, null=True)
 
     meta = {
         'updatable_fields': [

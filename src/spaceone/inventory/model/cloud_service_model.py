@@ -37,7 +37,7 @@ class CloudService(MongoModel):
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
-    launched_at = DateTimeField(default=None, null=True)
+    launched_at = StringField(default=None, null=True)
 
     meta = {
         'updatable_fields': [
@@ -105,7 +105,6 @@ class CloudService(MongoModel):
             'collection_info.secrets',
             'created_at',
             'updated_at',
-            'launched_at',
             {
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],

@@ -65,7 +65,7 @@ def ServerInfo(server_vo: Server, minimal=False):
             'created_at': utils.datetime_to_iso8601(server_vo.created_at),
             'updated_at': utils.datetime_to_iso8601(server_vo.updated_at),
             'deleted_at': utils.datetime_to_iso8601(server_vo.deleted_at),
-            'launched_at': utils.datetime_to_iso8601(server_vo.launched_at)
+            'launched_at': server_vo.launched_at
         })
 
     return server_pb2.ServerInfo(**info)
