@@ -34,7 +34,7 @@ class RegionService(BaseService):
         Returns:
             region_vo (object)
         """
-        params['provider'] = params.get('provider', 'datacenter')
+
         params['region_key'] = f'{params["provider"]}.{params["region_code"]}'
 
         # Temporary Code for Tag Migration
@@ -42,8 +42,7 @@ class RegionService(BaseService):
             if isinstance(params['tags'], dict):
                 params['tags'] = utils.dict_to_tags(params['tags'])
 
-        region_mgr: RegionManager = self.locator.get_manager('RegionManager')
-        return region_mgr.create_region(params)
+        return self.region_mgr.create_region(params)
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['region_id', 'domain_id'])
@@ -68,6 +67,9 @@ class RegionService(BaseService):
         if 'tags' in params:
             if isinstance(params['tags'], dict):
                 params['tags'] = utils.dict_to_tags(params['tags'])
+
+        if not region_vo.region_key:
+            params['region_key'] = f'{region_vo.provider}.{region_vo.region_code}'
 
         return self.region_mgr.update_region_by_vo(params, region_vo)
 
