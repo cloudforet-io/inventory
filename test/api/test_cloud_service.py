@@ -294,6 +294,7 @@ class TestCloudService(unittest.TestCase):
         """
         self._create_project_group()
         self._create_project(project_group=self.project_group)
+
         self.test_create_cloud_service(name, meta=(
             ('job_id', utils.generate_id('job')),
             ('job_task_id', utils.generate_id('job-task')),
@@ -471,7 +472,7 @@ class TestCloudService(unittest.TestCase):
 
         self.assertEqual(self.cloud_service.region_code, '')
 
-    def test_update_cloud_service_data(self):
+    def test_update_cloud_service_data(self, **kwargs):
         old_data = {
             'a': 'b',
             'c': 'd',
@@ -495,7 +496,7 @@ class TestCloudService(unittest.TestCase):
             }
         }
 
-        self.test_create_cloud_service(data=old_data, metadata=old_metadata)
+        self.test_create_cloud_service(data=old_data, metadata=old_metadata, **kwargs)
 
         data = {
             'a': 'xxx',
@@ -530,7 +531,13 @@ class TestCloudService(unittest.TestCase):
             'domain_id': self.domain.domain_id
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=(('token', self.owner_token),))
+        metadata = (('token', self.owner_token),)
+        ext_meta = kwargs.get('meta')
+
+        if ext_meta:
+            metadata += ext_meta
+
+        self.cloud_service = self.inventory_v1.CloudService.update(param, metadata=metadata)
 
         self._print_data(self.cloud_service, 'test_update_cloud_service_data')
 
@@ -542,6 +549,17 @@ class TestCloudService(unittest.TestCase):
         }
 
         self.assertEqual(MessageToDict(self.cloud_service.data), result_data)
+
+    def test_update_cloud_service_data_by_collector(self):
+        self.test_update_cloud_service_data(meta=(
+            ('job_id', utils.generate_id('job')),
+            ('job_task_id', utils.generate_id('job-task')),
+            ('collector_id', utils.generate_id('collector')),
+            ('plugin_id', utils.generate_id('plugin')),
+            ('secret.secret_id', utils.generate_id('secret')),
+            ('secret.service_account_id', utils.generate_id('sa')),
+            ('secret.provider', 'aws')
+        ))
 
     def test_update_cloud_service_tags(self):
         self.test_create_cloud_service()
