@@ -14,6 +14,7 @@ class CollectionStateManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.collector_id = self.transaction.get_meta('collector_id')
         self.job_task_id = self.transaction.get_meta('job_task_id')
+        self.secret_id = self.transaction.get_meta('secret.secret_id')
         self.collection_state_model: CollectionState = self.locator.get_model('CollectionState')
 
     def create_collection_state(self, resource_id, resource_type, domain_id):
@@ -22,10 +23,11 @@ class CollectionStateManager(BaseManager):
                          f'collector_id = {state_vo.collector_id}')
             state_vo.terminate()
 
-        if self.collector_id and self.job_task_id:
+        if self.collector_id and self.job_task_id and self.secret_id:
             state_data = {
                 'collector_id': self.collector_id,
                 'job_task_id': self.job_task_id,
+                'secret_id': self.secret_id,
                 'resource_id': resource_id,
                 'resource_type': resource_type,
                 'domain_id': domain_id
@@ -54,9 +56,9 @@ class CollectionStateManager(BaseManager):
             self.update_collection_state_by_vo(params, state_vo)
 
     def get_collection_state(self, resource_id, domain_id):
-        if self.collector_id:
-            state_vos = self.collection_state_model.filter(collector_id=self.collector_id, resource_id=resource_id,
-                                                           domain_id=domain_id)
+        if self.collector_id and self.secret_id:
+            state_vos = self.collection_state_model.filter(collector_id=self.collector_id, secret_id=self.secret_id,
+                                                           resource_id=resource_id, domain_id=domain_id)
 
             if state_vos.count() > 0:
                 return state_vos[0]
