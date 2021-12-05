@@ -29,6 +29,7 @@ DEFAULT_DELETE_POLICIES = {
     'inventory.CloudServiceType': 48,  # 48 Hours
     'inventory.Region': 48,  # 48 Hours
 }
+DEFAULT_DISCONNECTED_STATE_DELETE_POLICY = 3  # 3 Count
 
 HANDLERS = {
 }

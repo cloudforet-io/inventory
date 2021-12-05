@@ -3,8 +3,9 @@ import re
 
 from datetime import datetime, timedelta
 
+from spaceone.core import config
 from spaceone.core.manager import BaseManager
-from spaceone.core.connector.space_connector import SpaceConnector
+from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -31,82 +32,97 @@ class CleanupManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    # def list_domains(self, query):
-    #     identity_conn: SpaceConnector = self.locator.get_connector('SpaceConnector', service='identity')
-    #     return identity_conn.dispatch('Domain.list', {'query': query})
-    #
-    # def update_collection_state(self, resource_type, hour, state, domain_id):
-    #     """ List resource which is updated before N hours
-    #
-    #     Args:
-    #         resource_type: str
-    #
-    #     Example of resource type
-    #      - inventory.Server
-    #      - inventory.Server?data.aws.lifecycle=spot
-    #      - inventory.CloudService?provider=aws&cloud_service_group=DynamoDB
-    #     """
-    #     updated_at = datetime.utcnow() - timedelta(hours=hour)
-    #     resource_type_name, my_filter_list = self._parse_resource_type(resource_type)
-    #
-    #     # print(my_filter_list)
-    #     my_filter_list.extend(
-    #         [
-    #             {'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
-    #             {'k': 'domain_id',  'v': domain_id, 'o': 'eq'},
-    #             {'k': 'collection_info.state',  'v': ['DISCONNECTED', 'MANUAL'], 'o': 'not_in'},
-    #         ]
-    #     )
-    #     query = {'filter': my_filter_list}
-    #     _LOGGER.debug(f'[update_collection_state] query: {query}')
-    #     if resource_type_name not in RESOURCE_MAP:
-    #         _LOGGER.error(f'[update_collection_state] not found {resource_type_name}')
-    #         return
-    #
-    #     mgr_name = RESOURCE_MAP[resource_type_name]
-    #     mgr = self.locator.get_manager(mgr_name)
-    #     resources, total_count = mgr.update_collection_state(query, state)
-    #     _LOGGER.debug(f'[update_collection_state] {resource_type}, {total_count}, {state} in {domain_id}')
+    def _increment_disconnected_count_by_collector(self, state_mgr, collector_id, job_task_id, domain_id):
+        updated_at = datetime.utcnow() - timedelta(hours=1)
 
-    def update_resources_state_by_job_id(self, resource_type, secret_id, collector_id, job_id, domain_id):
-        """ Delete resource which does not have
-            garbage_collection[collector_id] = job_id
+        query = {
+            'filter': [
+                {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
+                {'k': 'job_task_id', 'v': job_task_id, 'o': 'not'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
+                {'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
+            ]
+        }
+
+        state_vos, total_count = state_mgr.list_collection_states(query)
+        state_vos.increment('disconnected_count')
+
+        return total_count
+
+    def _delete_resources_by_collector(self, state_mgr, collector_id, domain_id):
+        disconnected_count = config.get_global('DEFAULT_DISCONNECTED_STATE_DELETE_POLICY', 3)
+
+        query = {
+            'filter': [
+                {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
+                {'k': 'disconnected_count', 'v': disconnected_count, 'o': 'gte'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
+            ]
+        }
+
+        state_vos, total_count = state_mgr.list_collection_states(query)
+        server_ids = []
+        cloud_service_ids = []
+        for state_vo in state_vos:
+            if state_vo.resource_type == 'inventory.Server':
+                server_ids.append(state_vo.resource_id)
+            elif state_vo.resource_type == 'inventory.CloudService':
+                cloud_service_ids.append(state_vo.resource_id)
+
+        total_deleted_count = 0
+
+        if len(server_ids) > 0:
+            server_mgr = self.locator.get_manager('ServerManager')
+
+            query = {
+                'filter': [
+                    {'k': 'server_id', 'v': server_ids, 'o': 'in'},
+                    {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
+                ]
+            }
+
+            try:
+                deleted_count = server_mgr.delete_resources(query)
+                _LOGGER.debug(f'[_delete_resources_by_collector] delete server {deleted_count} in {domain_id}')
+                total_deleted_count += deleted_count
+            except Exception as e:
+                _LOGGER.error(f'[_delete_resources_by_collector] delete server error: {e}', exc_info=True)
+
+        if len(cloud_service_ids) > 0:
+            cloud_svc_mgr = self.locator.get_manager('CloudServiceManager')
+
+            query = {
+                'filter': [
+                    {'k': 'cloud_service_id', 'v': cloud_service_ids, 'o': 'in'},
+                    {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
+                ]
+            }
+
+            try:
+                deleted_count = cloud_svc_mgr.delete_resources(query)
+                _LOGGER.debug(f'[_delete_resources_by_collector] delete cloud service {deleted_count} in {domain_id}')
+                total_deleted_count += deleted_count
+            except Exception as e:
+                _LOGGER.error(f'[_delete_resources_by_collector] delete cloud service error: {e}', exc_info=True)
+
+        return total_deleted_count
+
+    def update_collection_state(self, resource_type, collector_id, job_task_id, domain_id):
+        """ Delete resource which does not have same job_task_id
         """
-        resource_type_name, my_filter_list = self._parse_resource_type(resource_type)
-        my_filter_list.extend([
-                        {'k': f'garbage_collection.{collector_id}', 'v': job_id, 'o': 'not'},
-                        {'k': f'garbage_collection.{collector_id}', 'v': True, 'o': 'exists'},
-                        {'k': f'collection_info.secrets', 'v': [secret_id], 'o': 'in'}
-                    ])
-        mgr_name = RESOURCE_MAP[resource_type_name]
-        mgr = self.locator.get_manager(mgr_name)
-        if resource_type_name not in RESOURCE_MAP:
-            _LOGGER.error(f'[update_resources_state_by_job_id] not found {resource_type_name}')
-            return (0,0)
 
-        # DISCONNECTED -> DELETE
-        deleted = my_filter_list.copy()
-        deleted.extend([
-                        {'k': 'collection_info.state',  'v': 'DISCONNECTED', 'o': 'eq'},
-                    ])
-        query = {'filter': deleted}
-        _LOGGER.debug(f'[update_resources_state_by_job_id] delete query: {query}')
-        try:
-            vos, deleted_count = mgr.delete_resources(query, 'DELETED')
-        except Exception as e:
-            _LOGGER.error(f'[delete_resources] {e}')
-            return (disconnected_count, 0)
+        resource_type_name, _filter = self._parse_resource_type(resource_type)
 
-        # ACTIVE -> DISCONNECTED
-        disconnected = my_filter_list.copy()
-        disconnected.extend([
-                        {'k': 'collection_info.state',  'v': 'ACTIVE', 'o': 'eq'},
-                    ])
-        query = {'filter': disconnected}
-        _LOGGER.debug(f'[update_resources_state_by_job_id] disconnected query: {query}')
-        resources, disconnected_count = mgr.update_collection_state(query, 'DISCONNECTED')
+        if resource_type_name in ['inventory.CloudService', 'inventory.Server']:
+            state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+            disconnected = self._increment_disconnected_count_by_collector(state_mgr, collector_id, job_task_id,
+                                                                           domain_id)
+            deleted = self._delete_resources_by_collector(state_mgr, collector_id, domain_id)
 
-        return (disconnected_count, deleted_count)
+            return disconnected, deleted
+
+        else:
+            return 0, 0
 
     def delete_resources_by_policy(self, resource_type, hour, domain_id):
         """ List resources

@@ -110,7 +110,7 @@ class ServerService(BaseService):
 
         # Create Collection State
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-        state_mgr.create_collection_state(server_vo.server_id, domain_id)
+        state_mgr.create_collection_state(server_vo.server_id, 'inventory.Server', domain_id)
 
         return server_vo
 
@@ -209,7 +209,7 @@ class ServerService(BaseService):
         if state_vo:
             state_mgr.reset_collection_state(state_vo)
         else:
-            state_mgr.create_collection_state(server_id, domain_id)
+            state_mgr.create_collection_state(server_id, 'inventory.Server', domain_id)
 
         return server_vo
 

@@ -88,7 +88,7 @@ class CloudServiceService(BaseService):
 
         # Create Collection State
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-        state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, domain_id)
+        state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, 'inventory.CloudService', domain_id)
 
         return cloud_svc_vo
 
@@ -168,7 +168,7 @@ class CloudServiceService(BaseService):
         if state_vo:
             state_mgr.reset_collection_state(state_vo)
         else:
-            state_mgr.create_collection_state(cloud_service_id, domain_id)
+            state_mgr.create_collection_state(cloud_service_id, 'inventory.CloudService', domain_id)
 
         return cloud_svc_vo
 
