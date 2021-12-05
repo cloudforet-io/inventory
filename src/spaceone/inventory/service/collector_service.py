@@ -3,6 +3,7 @@ from spaceone.core.service import *
 from spaceone.core.error import *
 from spaceone.core import utils
 from spaceone.inventory.error import *
+from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.manager.collector_manager.repository_manager import RepositoryManager
 
@@ -106,10 +107,12 @@ class CollectorService(BaseService):
     @check_required(['collector_id', 'domain_id'])
     def delete(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
-        collector_id = params['collector_id']
-        domain_id = params['domain_id']
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
 
-        return collector_mgr.delete_collector(collector_id, domain_id)
+        collector_mgr.delete_collector(params['collector_id'], params['domain_id'])
+
+        # Cascade Delete (Collection State)
+        state_vos = state_mgr.delete_collection_state_by_collector_id(params['collector_id'], params['domain_id'])
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])

@@ -344,6 +344,7 @@ class TestServer(unittest.TestCase):
         self._create_project(project_group_id=self.project_group.project_group_id)
         self.test_create_server(name, meta=(
             ('job_id', utils.generate_id('job')),
+            ('job_task_id', utils.generate_id('job-task')),
             ('collector_id', utils.generate_id('collector')),
             ('plugin_id', utils.generate_id('plugin')),
             ('secret.secret_id', utils.generate_id('secret')),

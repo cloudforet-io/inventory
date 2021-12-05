@@ -92,9 +92,10 @@ class CollectingManager(BaseManager):
 
         # Check Job State first, if job state is canceled, stop process
         job_task_id = kwargs['job_task_id']
-
         job_id = kwargs['job_id']
-        job_vo = self.job_mgr.get(job_id, domain_id)
+        collector_id = kwargs['collector_id']
+
+        # job_vo = self.job_mgr.get(job_id, domain_id)
         if self.job_mgr.should_cancel(job_id, domain_id):
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             self._update_job_task(job_task_id, 'FAILURE', domain_id)
@@ -108,7 +109,7 @@ class CollectingManager(BaseManager):
             # use_cache
             use_cache = kwargs['use_cache']
             if use_cache:
-                key = f'collector-filter:{kwargs["collector_id"]}:{secret_id}'
+                key = f'collector-filter:{collector_id}:{secret_id}'
                 value = cache.get(key)
                 _LOGGER.debug(f'[collecting_resources] cache -> {key}: {value}')
                 if value:
@@ -195,8 +196,7 @@ class CollectingManager(BaseManager):
         ERROR = False
         plugin_id = plugin_info.get('plugin_id', None)
         try:
-            stat = self._process_results(results, job_id, job_task_id, kwargs['collector_id'],
-                                         secret_id, plugin_id, domain_id)
+            stat = self._process_results(results, job_id, job_task_id, collector_id, secret_id, plugin_id, domain_id)
             if stat['failure_count'] > 0:
                 JOB_TASK_STATE = 'FAILURE'
 
@@ -226,16 +226,17 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(f'[collecting_resources] #### cleanup support {cleanup_mode}')
             if cleanup_mode and JOB_TASK_STATE == 'SUCCESS':
                 resource_types = self._get_supported_resource_types(plugin_info)
-                disconnected_count = 0
-                deleted_count = 0
+                total_disconnected_count = 0
+                total_deleted_count = 0
                 for resource_type in resource_types:
-                    (a, b) = self._update_collection_state(resource_type, secret_id, kwargs['collector_id'], job_id,
-                                                           domain_id)
-                    disconnected_count += a
-                    deleted_count += b
-                _LOGGER.debug(f'[collecting_resources] disconnected, delete => {disconnected_count}, {deleted_count}')
-                stat['disconnected_count'] = disconnected_count
-                stat['deleted_count'] = deleted_count
+                    disconnected, deleted = self._update_collection_state(resource_type, collector_id, job_task_id,
+                                                                          domain_id)
+                    total_disconnected_count += disconnected
+                    total_deleted_count += deleted
+                _LOGGER.debug(f'[collecting_resources] disconnected = {total_disconnected_count}, '
+                              f'deleted = {total_deleted_count}')
+                stat['disconnected_count'] = total_disconnected_count
+                stat['deleted_count'] = total_deleted_count
             else:
                 _LOGGER.debug(f'[collecting_resources] skip garbage_collection, {cleanup_mode}, {JOB_TASK_STATE}')
 
@@ -274,19 +275,20 @@ class CollectingManager(BaseManager):
             _LOGGER.error(e)
             return False
 
-    def _update_collection_state(self, resource_type, secret_id, collector_id, job_id, domain_id):
+    def _update_collection_state(self, resource_type, collector_id, job_task_id, domain_id):
         """ get cleanup manager
         cleanup_mgr = self.locator
         """
         try:
             cleanup_mgr = self.locator.get_manager('CleanupManager')
-            result = cleanup_mgr.update_resources_state_by_job_id(resource_type, secret_id, collector_id, job_id,
-                                                                  domain_id)
-            _LOGGER.debug(f'[_update_collection_state] disconnected,deleted = {result}')
-            return result
+            disconnected, deleted = cleanup_mgr.update_collection_state(resource_type, collector_id, job_task_id,
+                                                                        domain_id)
+            _LOGGER.debug(f'[_update_collection_state] collector_id = {collector_id}, job_task_id = {job_task_id}, '
+                          f'disconnected = {disconnected}, deleted = {deleted}')
+            return disconnected, deleted
         except Exception as e:
-            _LOGGER.error(f'[_update_collection_state] failed {e}')
-            return (0, 0)
+            _LOGGER.error(f'[_update_collection_state] failed: {e}')
+            return 0, 0
 
     def _process_results(self, results, job_id, job_task_id, collector_id, secret_id, plugin_id, domain_id):
         # update meta

@@ -180,7 +180,7 @@ class TestCloudService(unittest.TestCase):
         self.pp.pprint(MessageToDict(message, preserving_proto_field_name=True))
 
     def test_create_cloud_service(self, name=None, cloud_service_type=None, provider=None, data=None, group=None,
-                                  metadata=None):
+                                  metadata=None, **kwargs):
         """ Create Cloud Service
         """
 
@@ -277,11 +277,33 @@ class TestCloudService(unittest.TestCase):
             },
         }
 
-        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=(('token', self.owner_token),))
+        metadata = (('token', self.owner_token),)
+        ext_meta = kwargs.get('meta')
+
+        if ext_meta:
+            metadata += ext_meta
+
+        self.cloud_service = self.inventory_v1.CloudService.create(params, metadata=metadata)
         self._print_data(self.cloud_service, 'test_create_cloud_service')
 
         self.cloud_services.append(self.cloud_service)
         self.assertEqual(self.cloud_service.provider, provider)
+
+    def test_create_cloud_service_by_collector(self, name=None):
+        """ Create Server by Collector
+        """
+        self._create_project_group()
+        self._create_project(project_group=self.project_group)
+        self.test_create_cloud_service(name, meta=(
+            ('job_id', utils.generate_id('job')),
+            ('job_task_id', utils.generate_id('job-task')),
+            ('collector_id', utils.generate_id('collector')),
+            ('plugin_id', utils.generate_id('plugin')),
+            ('secret.secret_id', utils.generate_id('secret')),
+            ('secret.service_account_id', utils.generate_id('sa')),
+            ('secret.project_id', self.project.project_id),
+            ('secret.provider', 'aws')
+        ))
 
     def test_create_cloud_service_group(self, cloud_service_type=None, provider=None):
         """ Create Cloud Service with cloud service group

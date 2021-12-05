@@ -1,9 +1,11 @@
 import logging
+from datetime import datetime
 
 from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.lib.resource_manager import ResourceManager
+from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,10 +40,13 @@ class CloudServiceManager(BaseManager, ResourceManager):
             cloud_svc_vo.update(old_data)
 
         self.transaction.add_rollback(_rollback, cloud_svc_vo.to_dict())
-        return cloud_svc_vo.update(params)
+        cloud_svc_vo: CloudService = cloud_svc_vo.update(params)
+
+        return cloud_svc_vo
 
     def delete_cloud_service(self, cloud_service_id, domain_id):
-        self.delete_cloud_service_by_vo(self.get_cloud_service(cloud_service_id, domain_id))
+        cloud_svc_vo = self.get_cloud_service(cloud_service_id, domain_id)
+        cloud_svc_vo.delete()
 
     def get_cloud_service(self, cloud_service_id, domain_id, only=None):
         return self.cloud_svc_model.get(cloud_service_id=cloud_service_id, domain_id=domain_id, only=only)
@@ -56,9 +61,24 @@ class CloudServiceManager(BaseManager, ResourceManager):
         query = self._append_state_query(query)
         return self.cloud_svc_model.stat(**query)
 
-    @staticmethod
-    def delete_cloud_service_by_vo(cloud_svc_vo):
-        cloud_svc_vo.delete()
+    def delete_resources(self, query):
+        query['only'] = self.resource_keys + ['updated_at']
+
+        vos, total_count = self.list_cloud_services(query)
+
+        resource_ids = []
+        for vo in vos:
+            resource_ids.append(vo.cloud_service_id)
+
+        vos.update({
+            'state': 'DELETED',
+            'deleted_at': datetime.utcnow()
+        })
+
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        state_mgr.delete_collection_state_by_resource_ids(resource_ids)
+
+        return total_count
 
     @staticmethod
     def _append_state_query(query):

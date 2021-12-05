@@ -74,25 +74,14 @@ class ResourceManager(object):
 
         return resources, total_count
 
-    def delete_resources(self, query, state):
+    def delete_resources(self, query):
         self._check_resource_finder_state()
         query['only'] = self.resource_keys + ['updated_at']
 
-        resources = []
         vos, total_count = getattr(self, self.query_method)(query)
+        vos.delete()
 
-        for vo in vos:
-            data = {}
-            for key in self.resource_keys:
-                data[key] = getattr(vo, key)
-            try:
-                self._update_collection_state_by_vo(vo, state)
-            except Exception as e:
-                pass
-            resources.append(data)
-            vo.delete()
-
-        return resources, total_count
+        return total_count
 
     def _update_collection_state_by_vo(self, resource_vo, state):
         def _rollback(old_data):

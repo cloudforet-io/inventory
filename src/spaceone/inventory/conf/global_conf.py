@@ -19,6 +19,18 @@ CACHES = {
     }
 }
 
+# Garbage Collection Policies
+JOB_TIMEOUT = 2  # 2 Hours
+JOB_TERMINATION_TIME = 2 * 30  # 2 Months
+RESOURCE_TERMINATION_TIME = 6 * 30  # 6 Months
+DEFAULT_DELETE_POLICIES = {
+    'inventory.Server': 48,  # 48 Hours
+    'inventory.CloudService': 48,  # 48 Hours
+    'inventory.CloudServiceType': 48,  # 48 Hours
+    'inventory.Region': 48,  # 48 Hours
+}
+DEFAULT_DISCONNECTED_STATE_DELETE_POLICY = 3  # 3 Count
+
 HANDLERS = {
 }
 
@@ -44,4 +56,4 @@ SCHEDULERS = {}
 WORKERS = {}
 TOKEN = ""
 TOKEN_INFO = {}
-collect_queue = ""      # Queue name for asynchronous collect
+collect_queue = ""  # Queue name for asynchronous collect
