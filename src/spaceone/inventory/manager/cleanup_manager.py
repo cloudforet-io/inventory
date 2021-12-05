@@ -40,11 +40,13 @@ class CleanupManager(BaseManager):
                 {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
                 # {'k': 'job_task_id', 'v': job_task_id, 'o': 'not'},
                 {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
-                {'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
+                # {'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
             ]
         }
 
+        _LOGGER.debug(f'[_increment_disconnected_count_by_collector] query: {query}')
         state_vos, total_count = state_mgr.list_collection_states(query)
+        _LOGGER.debug(f'[_increment_disconnected_count_by_collector] total_count: {total_count}')
         state_vos.increment('disconnected_count')
 
         return total_count
