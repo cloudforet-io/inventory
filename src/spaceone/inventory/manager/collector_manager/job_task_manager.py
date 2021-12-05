@@ -138,6 +138,12 @@ class JobTaskManager(BaseManager):
         job_state_machine.failure()
         self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
 
+    def make_canceled(self, job_task_id, domain_id, secret=None, stat=None):
+        job_task_vo = self.get(job_task_id, domain_id)
+        job_state_machine = JobTaskStateMachine(job_task_vo)
+        job_state_machine.canceled()
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+
 
 PENDING = 'PENDING'
 CANCELED = 'CANCELED'
@@ -204,7 +210,7 @@ STATE_DIC = {
 }
 
 
-class JobTaskStateMachine():
+class JobTaskStateMachine(object):
     def __init__(self, job_task_vo):
         self.job_task_id = job_task_vo.job_task_id
         self._state = STATE_DIC[job_task_vo.status]
@@ -225,6 +231,10 @@ class JobTaskStateMachine():
 
     def failure(self):
         self._state = FailureState()
+        return self.get_state()
+
+    def canceled(self):
+        self._state = CanceledState()
         return self.get_state()
 
     def get_state(self):

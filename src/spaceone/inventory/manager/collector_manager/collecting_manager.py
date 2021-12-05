@@ -101,7 +101,8 @@ class CollectingManager(BaseManager):
         if self.job_mgr.should_cancel(job_id, domain_id) \
                 or self.job_task_mgr.check_duplicate_job_tasks(collector_id, secret_id, domain_id):
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            self._update_job_task(job_task_id, 'FAILURE', domain_id)
+            self._update_job_task(job_task_id, 'CANCELED', domain_id)
+            self.job_mgr.mark_error(job_id, domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
         # Create proper connector
@@ -593,6 +594,8 @@ class CollectingManager(BaseManager):
             self.job_task_mgr.make_success(job_task_id, domain_id, secret_info, stat)
         elif state == 'FAILURE':
             self.job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
+        elif state == 'CANCELED':
+            self.job_task_mgr.make_canceled(job_task_id, domain_id, secret_info, stat)
         else:
             _LOGGER.error(f'[_update_job_task] undefined state: {state}')
             self.job_task_mgr.make_failure(job_task_id, domain_id, secret_info, stat)
