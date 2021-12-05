@@ -13,6 +13,7 @@ from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
 
 from spaceone.inventory.error import *
 
+from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.collector_manager.collecting_manager import CollectingManager
 from spaceone.inventory.manager.collector_manager.collector_db import CollectorDB
 from spaceone.inventory.manager.collector_manager.filter_manager import FilterManager
@@ -118,20 +119,6 @@ class CollectorManager(BaseManager):
             )
 
     def delete_collector(self, collector_id, domain_id):
-        # Cascade Delete (Job, Schedule)
-        # Delete Related Job
-        # try:
-        #     job_mgr = self.locator.get_manager('JobManager')
-        #     job_mgr.delete_by_collector_id(collector_id, domain_id)
-        # except Exception as e:
-        #     _LOGGER.error(f'[delete_collector] fail to delete job, collector_id: {collector_id}, {e}')
-
-        # try:
-        #     schedule_mgr = self.locator.get_manager('ScheduleManager')
-        #     schedule_mgr.delete_by_collector_id(collector_id, domain_id)
-        # except Exception as e:
-        #     _LOGGER.error(f'[delete_collector] fail to delete schedule, collector_id: {collector_id}, {e}')
-
         self.collector_db.delete_collector(collector_id=collector_id, domain_id=domain_id)
 
     def get_collector(self, collector_id, domain_id, only=None):
@@ -159,7 +146,7 @@ class CollectorManager(BaseManager):
         return collector_vo
 
     def disable_collector(self, collector_id, domain_id, plugin_init=True):
-        collector_vo =self.collector_db.disable_collector(collector_id=collector_id, domain_id=domain_id)
+        collector_vo = self.collector_db.disable_collector(collector_id=collector_id, domain_id=domain_id)
         return collector_vo
 
     def list_collectors(self, query):

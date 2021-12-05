@@ -105,7 +105,9 @@ class ServerService(BaseService):
             primary_ip_address, params['ip_addresses'])
 
         params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
-        return self.server_mgr.create_server(params)
+        server_vo = self.server_mgr.create_server(params)
+
+        return server_vo
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
@@ -296,7 +298,9 @@ class ServerService(BaseService):
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
 
-        return self.server_mgr.list_servers(query)
+        server_vos, total_count = self.server_mgr.list_servers(query)
+
+        return server_vos, total_count
 
     @transaction(append_meta={
         'authorization.scope': 'PROJECT',

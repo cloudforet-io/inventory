@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import consul
 import datetime
 import logging
@@ -19,7 +18,7 @@ def _get_domain_id_from_token(token):
     return decoded_token['did']
 
 
-WAIT_QUEUE_INITIALIZED = 10     # seconds for waiting queue initilization
+WAIT_QUEUE_INITIALIZED = 10     # seconds for waiting queue initialization
 INTERVAL = 10
 MAX_COUNT = 10
 
@@ -56,7 +55,7 @@ class CleanupScheduler(HourlyScheduler):
         cur = datetime.datetime.now()
         count = {
             'previous': cur,            # Last check_count time
-            'index': 0,                # index
+            'index': 0,                 # index
             'hour': cur.hour,           # previous hour
             'started_at': 0,            # start time of push_token
             'ended_at': 0               # end time of execution in this tick
@@ -81,22 +80,25 @@ class CleanupScheduler(HourlyScheduler):
 
     def list_domains(self):
         try:
-            ok = self.check_count()
-            if ok == False:
+            if self.check_count() is False:
                 # ERROR LOGGING
                 pass
+
             # Loop all domain, then find scheduled collector
-            metadata = {'token': self.TOKEN,
-                        'service': 'inventory',
-                        'resource': 'Cleanup',
-                        'verb': 'list_domains',
-                        'authorization': True,
-                        'domain_id': self.domain_id}
+            metadata = {
+                'token': self.TOKEN,
+                'service': 'inventory',
+                'resource': 'Cleanup',
+                'verb': 'list_domains',
+                'domain_id': self.domain_id
+            }
+
             cleanup_svc = self.locator.get_service('CleanupService', metadata)
-            params = {}
-            resp = cleanup_svc.list_domains(params)
-            _LOGGER.debug(f'[list_domain] num of domains: {resp["total_count"]}')
-            return resp['results']
+            response = cleanup_svc.list_domains({})
+
+            _LOGGER.debug(f'[list_domain] num of domains: {response.get("total_count")}')
+            return response.get('results', [])
+
         except Exception as e:
             _LOGGER.error(e)
             return []
@@ -131,53 +133,78 @@ class CleanupScheduler(HourlyScheduler):
         Returns:
             jobs: SpaceONE Pipeline Template
         """
+
         _LOGGER.debug(f'[_create_job_request] domain: {domain}')
-        metadata = {'token': self.TOKEN,
-                    'service': 'inventory',
-                    'resource': 'Cleanup',
-                    'verb': 'update_collection_state',
-                    'authorization': True,
-                    'domain_id': self.domain_id}
-        sched_job = {
-            'locator': 'SERVICE',
-            'name': 'CleanupService',
-            'metadata': metadata,
-            'method': 'update_collection_state',
-            'params': {'params': {
-                            'options': {},
-                            'domain_id': domain['domain_id']
-                            }
-                       }
-            }
+        metadata = {
+            'token': self.TOKEN,
+            'service': 'inventory',
+            'resource': 'Cleanup',
+            'verb': 'update_job_state',
+            'domain_id': self.domain_id
+        }
 
         update_job_state = {
             'locator': 'SERVICE',
             'name': 'CleanupService',
             'metadata': metadata,
             'method': 'update_job_state',
-            'params': {'params': {
-                            'options': {},
-                            'domain_id': domain['domain_id']
-                            }
-                       }
+            'params': {
+                'params': {
+                    'options': {},
+                    'domain_id': domain['domain_id']
+                }
             }
+        }
 
+        metadata['verb'] = 'delete_resources'
         delete_resources = {
             'locator': 'SERVICE',
             'name': 'CleanupService',
             'metadata': metadata,
             'method': 'delete_resources',
-            'params': {'params': {
-                            'options': {},
-                            'domain_id': domain['domain_id']
-                            }
-                       }
+            'params': {
+                'params': {
+                    'options': {},
+                    'domain_id': domain['domain_id']
+                }
+            }
         }
 
-        stp = {'name': 'inventory_cleanup_schedule',
-               'version': 'v1',
-               'executionEngine': 'BaseWorker',
-               'stages': [sched_job, update_job_state, delete_resources]}
+        metadata['verb'] = 'terminate_jobs'
+        terminate_jobs = {
+            'locator': 'SERVICE',
+            'name': 'CleanupService',
+            'metadata': metadata,
+            'method': 'terminate_jobs',
+            'params': {
+                'params': {
+                    'options': {},
+                    'domain_id': domain['domain_id']
+                }
+            }
+        }
+
+        metadata['verb'] = 'terminate_resources'
+        terminate_resources = {
+            'locator': 'SERVICE',
+            'name': 'CleanupService',
+            'metadata': metadata,
+            'method': 'terminate_resources',
+            'params': {
+                'params': {
+                    'options': {
+                    },
+                    'domain_id': domain['domain_id']
+                }
+            }
+        }
+
+        stp = {
+            'name': 'inventory_cleanup_schedule',
+            'version': 'v1',
+            'executionEngine': 'BaseWorker',
+            'stages': [update_job_state, delete_resources, terminate_jobs, terminate_resources]
+        }
 
         _LOGGER.debug(f'[_create_job_request] tasks: {stp}')
         return stp

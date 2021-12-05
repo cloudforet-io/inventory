@@ -82,10 +82,10 @@ class CloudServiceService(BaseService):
                                            f'{params["cloud_service_group"]}.' \
                                            f'{params["cloud_service_type"]}'
 
-        params = data_mgr.create_new_history(params,
-                                             exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
+        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
+        cloud_svc_vo = self.cloud_svc_mgr.create_cloud_service(params)
 
-        return self.cloud_svc_mgr.create_cloud_service(params)
+        return cloud_svc_vo
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
@@ -196,10 +196,7 @@ class CloudServiceService(BaseService):
 
         """
 
-        cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'],
-                                                            params['domain_id'])
-
-        self.cloud_svc_mgr.delete_cloud_service_by_vo(cloud_svc_vo)
+        self.cloud_svc_mgr.delete_cloud_service(params['cloud_service_id'], params['domain_id'])
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])

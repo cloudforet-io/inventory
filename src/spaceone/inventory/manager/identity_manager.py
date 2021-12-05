@@ -20,3 +20,6 @@ class IdentityManager(BaseManager):
 
     def list_projects(self, query, domain_id):
         return self.identity_conn.dispatch('Project.list', {'query': query, 'domain_id': domain_id})
+
+    def list_domains(self, query):
+        return self.identity_conn.dispatch('Domain.list', {'query': query})

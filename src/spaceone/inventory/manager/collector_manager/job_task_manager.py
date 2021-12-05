@@ -25,7 +25,6 @@ class JobTaskManager(BaseManager):
 
         params = {
             'job_id': job_vo.job_id,
-            'job': job_vo,
             'domain_id': domain_id
         }
         params.update(secret_info)
