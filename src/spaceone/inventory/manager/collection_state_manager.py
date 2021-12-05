@@ -17,6 +17,11 @@ class CollectionStateManager(BaseManager):
         self.collection_state_model: CollectionState = self.locator.get_model('CollectionState')
 
     def create_collection_state(self, resource_id, domain_id):
+        def _rollback(state_vo: CollectionState):
+            _LOGGER.info(f'[ROLLBACK] Delete Collection State : resource_id = {state_vo.resource_id}, '
+                         f'collector_id = {state_vo.collector_id}')
+            state_vo.terminate()
+
         if self.collector_id and self.job_task_id:
             state_data = {
                 'collector_id': self.collector_id,
@@ -24,7 +29,8 @@ class CollectionStateManager(BaseManager):
                 'resource_id': resource_id,
                 'domain_id': domain_id
             }
-            self.collection_state_model.create(state_data)
+            state_vo = self.collection_state_model.create(state_data)
+            self.transaction.add_rollback(_rollback, state_vo)
 
     def delete_collection_state_by_resource_id(self, resource_id, domain_id):
         state_vos = self.collection_state_model.filter(resource_id=resource_id, domain_id=domain_id)
