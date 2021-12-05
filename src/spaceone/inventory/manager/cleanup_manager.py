@@ -32,12 +32,13 @@ class CleanupManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def _increment_disconnected_count_by_collector(self, state_mgr, collector_id, job_task_id, domain_id):
+    def _increment_disconnected_count_by_collector(self, state_mgr, collector_id, secret_id, job_task_id, domain_id):
         updated_at = datetime.utcnow() - timedelta(hours=1)
 
         query = {
             'filter': [
                 {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
+                {'k': 'secret_id', 'v': secret_id, 'o': 'eq'},
                 # {'k': 'job_task_id', 'v': job_task_id, 'o': 'not'},
                 {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
                 # {'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
@@ -109,22 +110,15 @@ class CleanupManager(BaseManager):
 
         return total_deleted_count
 
-    def update_collection_state(self, resource_type, collector_id, job_task_id, domain_id):
+    def update_collection_state(self, collector_id, secret_id, job_task_id, domain_id):
         """ Delete resource which does not have same job_task_id
         """
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        disconnected_count = self._increment_disconnected_count_by_collector(state_mgr, collector_id, secret_id,
+                                                                             job_task_id, domain_id)
+        deleted_count = self._delete_resources_by_collector(state_mgr, collector_id, domain_id)
 
-        resource_type_name, _filter = self._parse_resource_type(resource_type)
-
-        if resource_type_name in ['inventory.CloudService', 'inventory.Server']:
-            state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-            disconnected = self._increment_disconnected_count_by_collector(state_mgr, collector_id, job_task_id,
-                                                                           domain_id)
-            deleted = self._delete_resources_by_collector(state_mgr, collector_id, domain_id)
-
-            return disconnected, deleted
-
-        else:
-            return 0, 0
+        return disconnected_count, deleted_count
 
     def delete_resources_by_policy(self, resource_type, hour, domain_id):
         """ List resources
