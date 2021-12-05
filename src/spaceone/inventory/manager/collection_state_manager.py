@@ -53,7 +53,7 @@ class CollectionStateManager(BaseManager):
                 'job_task_id': self.job_task_id
             }
 
-            # self.update_collection_state_by_vo(params, state_vo)
+            self.update_collection_state_by_vo(params, state_vo)
 
     def get_collection_state(self, resource_id, domain_id):
         if self.collector_id and self.secret_id:
