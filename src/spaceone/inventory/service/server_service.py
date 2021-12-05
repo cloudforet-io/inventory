@@ -5,6 +5,7 @@ from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
+from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.server_manager import ServerManager
 from spaceone.inventory.model.server_model import Server
 from spaceone.inventory.error import *
@@ -107,6 +108,10 @@ class ServerService(BaseService):
         params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
         server_vo = self.server_mgr.create_server(params)
 
+        # Create Collection State
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        state_mgr.create_collection_state(server_vo.server_id, domain_id)
+
         return server_vo
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
@@ -149,13 +154,14 @@ class ServerService(BaseService):
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
 
+        server_id = params['server_id']
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
         primary_ip_address = params.get('primary_ip_address')
         region_code = params.get('region_code')
 
-        server_vo: Server = self.server_mgr.get_server(params['server_id'], params['domain_id'])
+        server_vo: Server = self.server_mgr.get_server(server_id, domain_id)
 
         # Temporary Code for Tag Migration
         if 'tags' in params:
@@ -195,7 +201,17 @@ class ServerService(BaseService):
         exclude_keys = ['server_id', 'domain_id', 'release_project', 'release_region', 'ref_region']
         params = data_mgr.merge_data_by_history(params, server_data, exclude_keys=exclude_keys)
 
-        return self.server_mgr.update_server_by_vo(params, server_vo)
+        server_vo = self.server_mgr.update_server_by_vo(params, server_vo)
+
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        state_vo = state_mgr.get_collection_state(server_id, domain_id)
+
+        if state_vo:
+            state_mgr.reset_collection_state(state_vo)
+        else:
+            state_mgr.create_collection_state(server_id, domain_id)
+
+        return server_vo
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
@@ -236,7 +252,14 @@ class ServerService(BaseService):
 
         """
 
-        self.server_mgr.delete_server(params['server_id'], params['domain_id'])
+        server_id = params['server_id']
+        domain_id = params['domain_id']
+
+        self.server_mgr.delete_server(server_id, domain_id)
+
+        # Cascade Delete Collection State
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        state_mgr.delete_collection_state_by_resource_id(server_id, domain_id)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])

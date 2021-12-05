@@ -5,6 +5,7 @@ from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
+from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.error import *
 
 _KEYWORD_FILTER = ['cloud_service_id', 'provider', 'cloud_service_group', 'cloud_service_type',
@@ -85,6 +86,10 @@ class CloudServiceService(BaseService):
         params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
         cloud_svc_vo = self.cloud_svc_mgr.create_cloud_service(params)
 
+        # Create Collection State
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, domain_id)
+
         return cloud_svc_vo
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
@@ -120,12 +125,13 @@ class CloudServiceService(BaseService):
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
 
+        cloud_service_id = params['cloud_service_id']
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
         region_code = params.get('region_code')
 
-        cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], domain_id)
+        cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
 
         # Temporary Code for Tag Migration
         if 'tags' in params:
@@ -155,7 +161,16 @@ class CloudServiceService(BaseService):
         exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_region', 'ref_region']
         params = data_mgr.merge_data_by_history(params, cloud_svc_data, exclude_keys=exclude_keys)
 
-        return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
+        cloud_svc_vo = self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
+
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        state_vo = state_mgr.get_collection_state(cloud_service_id, domain_id)
+        if state_vo:
+            state_mgr.reset_collection_state(state_vo)
+        else:
+            state_mgr.create_collection_state(cloud_service_id, domain_id)
+
+        return cloud_svc_vo
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'keys', 'domain_id'])
@@ -196,7 +211,14 @@ class CloudServiceService(BaseService):
 
         """
 
-        self.cloud_svc_mgr.delete_cloud_service(params['cloud_service_id'], params['domain_id'])
+        cloud_service_id = params['cloud_service_id']
+        domain_id = params['domain_id']
+
+        self.cloud_svc_mgr.delete_cloud_service(cloud_service_id, domain_id)
+
+        # Cascade Delete Collection State
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        state_mgr.delete_collection_state_by_resource_id(cloud_service_id, domain_id)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])

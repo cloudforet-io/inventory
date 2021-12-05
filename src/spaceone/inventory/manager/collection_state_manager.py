@@ -34,15 +34,33 @@ class CollectionStateManager(BaseManager):
             state_vo = self.collection_state_model.create(state_data)
             self.transaction.add_rollback(_rollback, state_vo)
 
-    def is_exists_collection_state(self, resource_id, domain_id):
+    def update_collection_state_by_vo(self, params, state_vo):
+        def _rollback(old_data):
+            _LOGGER.info(f'[ROLLBACK] Revert Collection State : resource_id={state_vo.resource_id}, '
+                         f'collector_id={state_vo.collector_id}')
+            state_vo.update(old_data)
+
+        self.transaction.add_rollback(_rollback, state_vo.to_dict())
+        return state_vo.update(params)
+
+    def reset_collection_state(self, state_vo):
+        if self.job_task_id:
+            params = {
+                'disconnected_count': 0,
+                'job_task_id': self.job_task_id
+            }
+
+            self.update_collection_state_by_vo(params, state_vo)
+
+    def get_collection_state(self, resource_id, domain_id):
         if self.collector_id:
             state_vos = self.collection_state_model.filter(collector_id=self.collector_id, resource_id=resource_id,
                                                            domain_id=domain_id)
 
             if state_vos.count() > 0:
-                return True
+                return state_vos[0]
 
-        return False
+        return None
 
     def delete_collection_state_by_resource_id(self, resource_id, domain_id):
         _LOGGER.debug(f'[delete_collection_state_by_resource_id] delete collection state: {resource_id}')

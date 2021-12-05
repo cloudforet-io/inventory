@@ -28,10 +28,6 @@ class CloudServiceManager(BaseManager, ResourceManager):
         cloud_svc_vo: CloudService = self.cloud_svc_model.create(params)
         self.transaction.add_rollback(_rollback, cloud_svc_vo)
 
-        # Create Collection State
-        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-        state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, params['domain_id'])
-
         return cloud_svc_vo
 
     def update_cloud_service(self, params):
@@ -46,20 +42,11 @@ class CloudServiceManager(BaseManager, ResourceManager):
         self.transaction.add_rollback(_rollback, cloud_svc_vo.to_dict())
         cloud_svc_vo: CloudService = cloud_svc_vo.update(params)
 
-        # Temporary code to create collection state
-        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-        if not state_mgr.is_exists_collection_state(cloud_svc_vo.cloud_service_id, cloud_svc_vo.domain_id):
-            state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, cloud_svc_vo.domain_id)
-
         return cloud_svc_vo
 
     def delete_cloud_service(self, cloud_service_id, domain_id):
         cloud_svc_vo = self.get_cloud_service(cloud_service_id, domain_id)
         cloud_svc_vo.delete()
-
-        # Cascade Delete Collection State
-        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-        state_mgr.delete_collection_state_by_resource_id(cloud_service_id, domain_id)
 
     def get_cloud_service(self, cloud_service_id, domain_id, only=None):
         return self.cloud_svc_model.get(cloud_service_id=cloud_service_id, domain_id=domain_id, only=only)

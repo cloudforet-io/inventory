@@ -3,9 +3,9 @@ from datetime import datetime
 
 from spaceone.core import utils
 from spaceone.core.manager import BaseManager
+from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.model.server_model import Server
 from spaceone.inventory.lib.resource_manager import ResourceManager
-from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.error import *
 
 _LOGGER = logging.getLogger(__name__)
@@ -28,10 +28,6 @@ class ServerManager(BaseManager, ResourceManager):
         server_vo: Server = self.server_model.create(params)
         self.transaction.add_rollback(_rollback, server_vo)
 
-        # Create Collection State
-        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-        state_mgr.create_collection_state(server_vo.server_id, params['domain_id'])
-
         return server_vo
 
     def update_server(self, params):
@@ -44,22 +40,11 @@ class ServerManager(BaseManager, ResourceManager):
             server_vo.update(old_data)
 
         self.transaction.add_rollback(_rollback, server_vo.to_dict())
-        server_vo: Server = server_vo.update(params)
-
-        # Temporary code to create collection state
-        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-        if not state_mgr.is_exists_collection_state(server_vo.server_id, server_vo.domain_id):
-            state_mgr.create_collection_state(server_vo.server_id, server_vo.domain_id)
-
-        return server_vo
+        return server_vo.update(params)
 
     def delete_server(self, server_id, domain_id):
         server_vo: Server = self.get_server(server_id, domain_id)
         server_vo.delete()
-
-        # Cascade Delete Collection State
-        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
-        state_mgr.delete_collection_state_by_resource_id(server_id, domain_id)
 
     def get_server(self, server_id, domain_id, only=None):
         return self.server_model.get(server_id=server_id, domain_id=domain_id, only=only)
@@ -88,6 +73,7 @@ class ServerManager(BaseManager, ResourceManager):
             'deleted_at': datetime.utcnow()
         })
 
+        # Cascade Delete Collection State
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
         state_mgr.delete_collection_state_by_resource_ids(resource_ids)
 
