@@ -512,7 +512,7 @@ class CollectingManager(BaseManager):
                 additional['cloud_service_type'] = data.get('cloud_service_type')
                 additional['provider'] = data.get('provider')
 
-            elif total_count == 1:
+            if total_count == 1:
                 if resource_type == 'inventory.Server':
                     additional['resource_id'] = data.get('server_id')
                 elif resource_type == 'inventory.CloudService':
