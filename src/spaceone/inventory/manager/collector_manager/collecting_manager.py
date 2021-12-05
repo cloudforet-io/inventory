@@ -134,6 +134,7 @@ class CollectingManager(BaseManager):
                 e.message,
                 {'resource_type': 'secret.Secret', 'resource_id': secret_id}
             )
+            self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
 
@@ -146,6 +147,7 @@ class CollectingManager(BaseManager):
                 e,
                 {'resource_type': 'secret.Secret', 'resource_id': secret_id}
             )
+            self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
 
@@ -171,6 +173,7 @@ class CollectingManager(BaseManager):
                 e.error_code,
                 e.message
             )
+            self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
 
@@ -181,6 +184,7 @@ class CollectingManager(BaseManager):
                 'ERROR_COLLECTOR_COLLECTING',
                 e
             )
+            self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
 
@@ -216,7 +220,7 @@ class CollectingManager(BaseManager):
                 domain_id,
                 'ERROR_COLLECTOR_COLLECTING',
                 e
-        )
+            )
             JOB_TASK_STATE = 'FAILURE'
             ERROR = True
 
