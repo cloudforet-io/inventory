@@ -25,6 +25,7 @@ class JobTaskManager(BaseManager):
 
         params = {
             'job_id': job_vo.job_id,
+            'collector_id': job_vo.collector_id,
             'domain_id': domain_id
         }
         params.update(secret_info)
@@ -47,6 +48,14 @@ class JobTaskManager(BaseManager):
     def delete(self, job_task_id, domain_id):
         job_task_vo = self.get(job_task_id, domain_id)
         job_task_vo.delete()
+
+    def check_duplicate_job_tasks(self, collector_id, secret_id, domain_id):
+        job_task_vos = self.job_task_model.filter(collector_id=collector_id, secret_id=secret_id, domain_id=domain_id,
+                                                  status='IN_PROGRESS')
+        if job_task_vos.count() > 0:
+            return True
+
+        return False
 
     def add_error(self, job_task_id, domain_id, error_code, msg, additional=None):
         message = repr(msg)

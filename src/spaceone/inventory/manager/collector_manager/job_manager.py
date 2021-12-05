@@ -233,7 +233,7 @@ class JobManager(BaseManager):
         """
         job_vo = self.get(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
-        if job_state_machine.get_status()  == CANCELED:
+        if job_state_machine.get_status() == CANCELED:
             return True
         return False
 
@@ -244,7 +244,7 @@ class JobManager(BaseManager):
         job_state_machine = JobStateMachine(job_vo)
         job_status = job_state_machine.get_status()
 
-        if job_status  == CANCELED or job_status == TIMEOUT:
+        if job_status == CANCELED or job_status == TIMEOUT:
             return True
         return False
 

@@ -9,6 +9,8 @@ from spaceone.core import queue
 from spaceone.core.error import *
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
+from spaceone.inventory.manager.collector_manager.job_manager import JobManager
+from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
 from spaceone.inventory.error import *
 from spaceone.inventory.lib import rule_matcher
 
@@ -59,8 +61,8 @@ class CollectingManager(BaseManager):
         self.secret = None  # secret info for update meta
         self.use_db_queue = False
         self.initialize()
-        self.job_mgr = self.locator.get_manager('JobManager')
-        self.job_task_mgr = self.locator.get_manager('JobTaskManager')
+        self.job_mgr: JobManager = self.locator.get_manager('JobManager')
+        self.job_task_mgr: JobTaskManager = self.locator.get_manager('JobTaskManager')
         self.db_queue = DB_QUEUE_NAME
 
     def initialize(self):
@@ -96,7 +98,8 @@ class CollectingManager(BaseManager):
         collector_id = kwargs['collector_id']
 
         # job_vo = self.job_mgr.get(job_id, domain_id)
-        if self.job_mgr.should_cancel(job_id, domain_id):
+        if self.job_mgr.should_cancel(job_id, domain_id) \
+                or self.job_task_mgr.check_duplicate_job_tasks(collector_id, secret_id, domain_id):
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             self._update_job_task(job_task_id, 'FAILURE', domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
