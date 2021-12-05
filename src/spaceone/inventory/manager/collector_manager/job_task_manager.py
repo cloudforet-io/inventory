@@ -62,7 +62,8 @@ class JobTaskManager(BaseManager):
         job_task_vo.append('errors', error_info)
         _LOGGER.debug(f'[add_error] {job_task_id}: {error_info}')
 
-        self.make_failure(job_task_id, domain_id)
+        # self.make_failure(job_task_id, domain_id)
+
         # Update Job Failure
         job_mgr = self.locator.get_manager('JobManager')
         job_mgr.mark_error(job_task_vo.job_id, domain_id)
