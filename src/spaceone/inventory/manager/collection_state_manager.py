@@ -29,14 +29,28 @@ class CollectionStateManager(BaseManager):
                 'resource_id': resource_id,
                 'domain_id': domain_id
             }
+
+            _LOGGER.debug(f'[create_collection_state] create collection state: {state_data}')
             state_vo = self.collection_state_model.create(state_data)
             self.transaction.add_rollback(_rollback, state_vo)
 
+    def is_exists_collection_state(self, resource_id, domain_id):
+        if self.collector_id:
+            state_vos = self.collection_state_model.filter(collector_id=self.collector_id, resource_id=resource_id,
+                                                           domain_id=domain_id)
+
+            if state_vos.count() > 0:
+                return True
+
+        return False
+
     def delete_collection_state_by_resource_id(self, resource_id, domain_id):
+        _LOGGER.debug(f'[delete_collection_state_by_resource_id] delete collection state: {resource_id}')
         state_vos = self.collection_state_model.filter(resource_id=resource_id, domain_id=domain_id)
         state_vos.delete()
 
     def delete_collection_state_by_resource_ids(self, resource_ids):
+        _LOGGER.debug(f'[delete_collection_state_by_resource_ids] delete collection state: {resource_ids}')
         _filter = [
             {
                 'k': 'resource_id',
@@ -48,5 +62,6 @@ class CollectionStateManager(BaseManager):
         state_vos.delete()
 
     def delete_collection_state_by_collector_id(self, collector_id, domain_id):
+        _LOGGER.debug(f'[delete_collection_state_by_collector_id] delete collection state: {collector_id}')
         state_vos = self.collection_state_model.filter(collector_id=collector_id, domain_id=domain_id)
         state_vos.delete()

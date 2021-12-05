@@ -44,7 +44,14 @@ class ServerManager(BaseManager, ResourceManager):
             server_vo.update(old_data)
 
         self.transaction.add_rollback(_rollback, server_vo.to_dict())
-        return server_vo.update(params)
+        server_vo: Server = server_vo.update(params)
+
+        # Temporary code to create collection state
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        if not state_mgr.is_exists_collection_state(server_vo.server_id, server_vo.domain_id):
+            state_mgr.create_collection_state(server_vo.server_id, server_vo.domain_id)
+
+        return server_vo
 
     def delete_server(self, server_id, domain_id):
         server_vo: Server = self.get_server(server_id, domain_id)
