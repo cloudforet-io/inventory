@@ -233,8 +233,8 @@ class CollectingManager(BaseManager):
                                                                           domain_id)
                     total_disconnected_count += disconnected
                     total_deleted_count += deleted
-                _LOGGER.debug(f'[collecting_resources] disconnected = {total_disconnected_count}, '
-                              f'deleted = {total_deleted_count}')
+                _LOGGER.debug(f'[collecting_resources] {job_task_id} => total disconnected: {total_disconnected_count},'
+                              f' total deleted: {total_deleted_count}')
                 stat['disconnected_count'] = total_disconnected_count
                 stat['deleted_count'] = total_deleted_count
             else:
@@ -283,8 +283,8 @@ class CollectingManager(BaseManager):
             cleanup_mgr = self.locator.get_manager('CleanupManager')
             disconnected, deleted = cleanup_mgr.update_collection_state(resource_type, collector_id, job_task_id,
                                                                         domain_id)
-            _LOGGER.debug(f'[_update_collection_state] collector_id = {collector_id}, job_task_id = {job_task_id}, '
-                          f'disconnected = {disconnected}, deleted = {deleted}')
+            _LOGGER.debug(f'[_update_collection_state] {job_task_id} / {resource_type} => disconnected: {disconnected},'
+                          f' deleted: {deleted}')
             return disconnected, deleted
         except Exception as e:
             _LOGGER.error(f'[_update_collection_state] failed: {e}')

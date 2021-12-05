@@ -38,7 +38,7 @@ class CleanupManager(BaseManager):
         query = {
             'filter': [
                 {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
-                {'k': 'job_task_id', 'v': job_task_id, 'o': 'not'},
+                # {'k': 'job_task_id', 'v': job_task_id, 'o': 'not'},
                 {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
                 {'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
             ]
