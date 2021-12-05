@@ -22,7 +22,7 @@ class JobTask(MongoModel):
     errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))
     job_id = StringField(max_length=40)
     secret_id = StringField(max_length=40)
-    collector_id = StringField(max_length=40)
+    collector_id = StringField(max_length=40, default=None, null=True)
     provider = StringField(max_length=40, default=None, null=True)
     service_account_id = StringField(max_length=40, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)
