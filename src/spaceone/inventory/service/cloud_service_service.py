@@ -67,6 +67,10 @@ class CloudServiceService(BaseService):
             if isinstance(params['tags'], dict):
                 params['tags'] = utils.dict_to_tags(params['tags'])
 
+        if 'size' in params:
+            if not isinstance(params['size'], float):
+                raise ERROR_INVALID_PARAMETER_TYPE(key='size', type='float')
+
         if provider:
             params['provider'] = provider
 
@@ -137,6 +141,10 @@ class CloudServiceService(BaseService):
         if 'tags' in params:
             if isinstance(params['tags'], dict):
                 params['tags'] = utils.dict_to_tags(params['tags'])
+
+        if 'size' in params:
+            if not isinstance(params['size'], float):
+                raise ERROR_INVALID_PARAMETER_TYPE(key='size', type='float')
 
         if provider:
             params['provider'] = provider

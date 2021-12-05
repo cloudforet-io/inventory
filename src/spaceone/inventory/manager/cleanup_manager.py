@@ -39,9 +39,9 @@ class CleanupManager(BaseManager):
             'filter': [
                 {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
                 {'k': 'secret_id', 'v': secret_id, 'o': 'eq'},
-                # {'k': 'job_task_id', 'v': job_task_id, 'o': 'not'},
+                {'k': 'job_task_id', 'v': job_task_id, 'o': 'not'},
                 {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
-                # {'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
+                {'k': 'updated_at', 'v': updated_at, 'o': 'lt'},
             ]
         }
 
@@ -118,7 +118,7 @@ class CleanupManager(BaseManager):
                                                                              job_task_id, domain_id)
         deleted_count = self._delete_resources_by_collector(state_mgr, collector_id, domain_id)
 
-        return disconnected_count, deleted_count
+        return (disconnected_count - deleted_count), deleted_count
 
     def delete_resources_by_policy(self, resource_type, hour, domain_id):
         """ List resources
