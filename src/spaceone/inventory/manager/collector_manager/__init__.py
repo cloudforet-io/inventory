@@ -214,10 +214,13 @@ class CollectorManager(BaseManager):
 
         except Exception as e:
             _LOGGER.debug(f'[collect] failed in Secret Patch stage: {e}')
-            job_mgr.add_error(created_job.job_id, domain_id,
-                              'ERROR_COLLECT_INITIALIZE',
-                              e,
-                              params)
+            job_mgr.add_error(
+                created_job.job_id,
+                domain_id,
+                'ERROR_COLLECT_INITIALIZE',
+                e,
+                params
+            )
             job_mgr.make_error_by_vo(created_job)
             raise ERROR_COLLECT_INITIALIZE(stage='Secret Patch', params=params)
 
@@ -231,10 +234,13 @@ class CollectorManager(BaseManager):
             _LOGGER.debug(f'[collector] number of secret after filter transform: {len(secret_list)}')
         except Exception as e:
             _LOGGER.debug(f'[collect] failed on Filter Transform stage: {e}')
-            job_mgr.add_error(created_job.job_id, domain_id,
-                              'ERROR_COLLECT_INITIALIZE',
-                              e,
-                              params)
+            job_mgr.add_error(
+                created_job.job_id,
+                domain_id,
+                'ERROR_COLLECT_INITIALIZE',
+                e,
+                params
+            )
             job_mgr.make_error_by_vo(created_job)
             raise ERROR_COLLECT_INITIALIZE(stage='Filter Format', params=params)
 
@@ -290,21 +296,25 @@ class CollectorManager(BaseManager):
 
             except ERROR_BASE as e:
                 # Do not exit, just book-keeping
-                job_mgr.add_error(created_job.job_id, domain_id,
-                                  e.error_code,
-                                  e.message,
-                                  {'secret_id': secret_id}
-                                  )
+                job_mgr.add_error(
+                    created_job.job_id,
+                    domain_id,
+                    e.error_code,
+                    e.message,
+                    {'secret_id': secret_id}
+                )
                 _LOGGER.error(f'####### collect failed {count}/{secret_len} ##########')
                 _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
 
             except Exception as e:
                 # Do not exit, just book-keeping
-                job_mgr.add_error(created_job.job_id, domain_id,
-                                  'ERROR_COLLECTOR_COLLECTING',
-                                  e,
-                                  {'secret_id': secret_id}
-                                  )
+                job_mgr.add_error(
+                    created_job.job_id,
+                    domain_id,
+                    'ERROR_COLLECTOR_COLLECTING',
+                    e,
+                    {'secret_id': secret_id}
+                )
                 _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
 
         # Update Timestamp
