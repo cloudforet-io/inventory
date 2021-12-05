@@ -164,13 +164,12 @@ class CollectingManager(BaseManager):
             _LOGGER.debug('[collect] generator: %s' % results)
 
         except ERROR_BASE as e:
-            _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
+            _LOGGER.error(f'[collecting_resources] fail to collect: {e.message}')
             self.job_task_mgr.add_error(
                 job_task_id,
                 domain_id,
                 e.error_code,
-                e.message,
-                {'resource_type': 'secret.Secret', 'resource_id': secret_id}
+                e.message
             )
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
@@ -180,8 +179,7 @@ class CollectingManager(BaseManager):
                 job_task_id,
                 domain_id,
                 'ERROR_COLLECTOR_COLLECTING',
-                e,
-                {'resource_type': 'secret.Secret', 'resource_id': secret_id}
+                e
             )
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
@@ -206,8 +204,7 @@ class CollectingManager(BaseManager):
                 job_task_id,
                 domain_id,
                 e.error_code,
-                e.message,
-                {'resource_type': 'secret.Secret', 'resource_id': secret_id}
+                e.message
             )
             JOB_TASK_STATE = 'FAILURE'
             ERROR = True
@@ -218,8 +215,7 @@ class CollectingManager(BaseManager):
                 job_task_id,
                 domain_id,
                 'ERROR_COLLECTOR_COLLECTING',
-                e,
-                {'resource_type': 'secret.Secret', 'resource_id': secret_id}
+                e
         )
             JOB_TASK_STATE = 'FAILURE'
             ERROR = True
@@ -411,7 +407,6 @@ class CollectingManager(BaseManager):
         job_id = params['job_id']
         job_task_id = params['job_task_id']
         response = ERROR
-        res_id = "Unknown"
 
         ##################################
         # Error Resource
@@ -439,7 +434,7 @@ class CollectingManager(BaseManager):
                 domain_id,
                 "ERROR_MATCH_RULE",
                 f"No match rule found: {resource}",
-                {'resource_type': resource_type, 'resource_id': res_id}
+                {'resource_type': resource_type}
             )
             if self.use_db_queue:
                 self._update_job_task_stat_to_cache(job_id, job_task_id, ERROR, domain_id)
@@ -460,7 +455,7 @@ class CollectingManager(BaseManager):
                 domain_id,
                 e.error_code,
                 e.message,
-                {'resource_type': resource_type, 'resource_id': res_id}
+                {'resource_type': resource_type}
             )
             total_count = ERROR
         except Exception as e:
@@ -471,7 +466,7 @@ class CollectingManager(BaseManager):
                 domain_id,
                 "ERROR_UNKNOWN",
                 "Match Query failed, may be DB problem",
-                {'resource_type': resource_type, 'resource_id': res_id}
+                {'resource_type': resource_type}
             )
             total_count = ERROR
 
@@ -510,12 +505,29 @@ class CollectingManager(BaseManager):
 
         except ERROR_BASE as e:
             # May be DB error
+            additional = {'resource_type': resource_type}
+
+            if resource_type == 'inventory.CloudService':
+                additional['cloud_service_group'] = data.get('cloud_service_group')
+                additional['cloud_service_type'] = data.get('cloud_service_type')
+                additional['provider'] = data.get('provider')
+
+            elif total_count == 1:
+                if resource_type == 'inventory.Server':
+                    additional['resource_id'] = data.get('server_id')
+                elif resource_type == 'inventory.CloudService':
+                    additional['resource_id'] = data.get('cloud_service_id')
+                elif resource_type == 'inventory.CloudServiceType':
+                    additional['resource_id'] = data.get('cloud_service_type_id')
+                elif resource_type == 'inventory.Region':
+                    additional['resource_id'] = data.get('region_id')
+
             self.job_task_mgr.add_error(
                 job_task_id,
                 domain_id,
                 e.error_code,
                 e.message,
-                {'resource_type': resource_type, 'resource_id': res_id}
+                additional
             )
             response = ERROR
 

@@ -54,15 +54,13 @@ class JobTaskManager(BaseManager):
             'error_code': error_code,
             'message': message[:MAX_MESSAGE_LENGTH]
         }
+
         if additional:
             error_info['additional'] = additional
+
         job_task_vo = self.get(job_task_id, domain_id)
-        job_task_dict = job_task_vo.to_dict()
-        errors = job_task_dict.get('errors', [])
-        errors.append(error_info)
-        params = {'errors': errors}
-        _LOGGER.debug(f'[add_error] {params}')
-        job_task_vo = job_task_vo.update(params)
+        job_task_vo.append('errors', error_info)
+        _LOGGER.debug(f'[add_error] {job_task_id}: {error_info}')
 
         self.make_failure(job_task_id, domain_id)
         # Update Job Failure

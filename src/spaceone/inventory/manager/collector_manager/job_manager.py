@@ -135,12 +135,10 @@ class JobManager(BaseManager):
             error_info['additional'] = additional
 
         job_vo = self.get(job_id, domain_id)
-        job_dict = job_vo.to_dict()
-        errors = job_dict.get('errors', [])
-        errors.append(error_info)
-        params = {'errors': errors}
-        _LOGGER.debug(f'[add_error] {params}')
-        job_vo = job_vo.update(params)
+
+        job_vo.append('errors', error_info)
+        _LOGGER.debug(f'[add_error] {job_id}: {error_info}')
+
         self.mark_error_by_vo(job_vo)
 
         return job_vo
