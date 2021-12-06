@@ -13,7 +13,6 @@ from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
 
 from spaceone.inventory.error import *
 
-from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.collector_manager.collecting_manager import CollectingManager
 from spaceone.inventory.manager.collector_manager.collector_db import CollectorDB
 from spaceone.inventory.manager.collector_manager.filter_manager import FilterManager
