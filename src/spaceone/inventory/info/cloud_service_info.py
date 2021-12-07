@@ -26,7 +26,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
         info.update({
             'account': cloud_svc_vo.account,
             'instance_type': cloud_svc_vo.instance_type,
-            'size': cloud_svc_vo.size,
+            'instance_size': cloud_svc_vo.instance_size,
             'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
             'tags': change_struct_type(utils.tags_to_dict(cloud_svc_vo.tags)),

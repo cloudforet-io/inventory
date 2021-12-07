@@ -20,7 +20,7 @@ class CloudService(MongoModel):
     state = StringField(max_length=20, choices=('ACTIVE', 'DELETED'), default='ACTIVE')
     account = StringField(max_length=255, default=None, null=True)
     instance_type = StringField(max_length=255, default=None, null=True)
-    size = FloatField(max_length=255, default=None, null=True)
+    instance_size = FloatField(max_length=255, default=None, null=True)
     cloud_service_group = StringField(max_length=255)
     cloud_service_type = StringField(max_length=255)
     provider = StringField(max_length=255)
@@ -46,7 +46,7 @@ class CloudService(MongoModel):
             'state',
             'account',
             'instance_type',
-            'size',
+            'instance_size',
             'metadata',
             'reference',
             'tags',

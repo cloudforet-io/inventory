@@ -48,7 +48,6 @@ class Server(MongoModel):
     os_type = StringField(max_length=20, choices=('LINUX', 'WINDOWS'))
     account = StringField(max_length=255, default=None, null=True)
     instance_type = StringField(max_length=255, default=None, null=True)
-    size = FloatField(max_length=255, default=None, null=True)
     provider = StringField(max_length=40)
     cloud_service_group = StringField(max_length=255, default=None, null=True)
     cloud_service_type = StringField(max_length=255, default=None, null=True)
@@ -78,7 +77,6 @@ class Server(MongoModel):
             'os_type',
             'account',
             'instance_type',
-            'size',
             'provider',
             'cloud_service_group',
             'cloud_service_type',
