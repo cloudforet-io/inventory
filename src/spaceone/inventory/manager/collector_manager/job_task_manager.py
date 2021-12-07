@@ -50,7 +50,7 @@ class JobTaskManager(BaseManager):
         job_task_vo.delete()
 
     def check_duplicate_job_tasks(self, collector_id, secret_id, domain_id):
-        created_at = datetime.utcnow() - timedelta(minutes=10)
+        started_at = datetime.utcnow() - timedelta(minutes=10)
 
         query = {
             'filter': [
@@ -58,12 +58,15 @@ class JobTaskManager(BaseManager):
                 {'k': 'secret_id', 'v': secret_id, 'o': 'eq'},
                 {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
                 {'k': 'status', 'v': 'IN_PROGRESS', 'o': 'eq'},
-                {'k': 'created_at', 'v': created_at, 'o': 'lt'},
+                {'k': 'started_at', 'v': started_at, 'o': 'lt'},
             ]
         }
 
         job_task_vos, total_count = self.list(query)
         if total_count > 0:
+            for job_task_vo in job_task_vos:
+                _LOGGER.debug(f'[check_duplicate_job_tasks] Duplicate Job: {job_task_vo.collector_id} / '
+                              f'{job_task_vo.service_account_id} ({job_task_vo.secret_id})')
             return True
 
         return False
