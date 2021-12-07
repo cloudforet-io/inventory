@@ -146,10 +146,14 @@ class JobManager(BaseManager):
     def update_job_status_by_hour(self, hour, status, domain_id):
         # Find Jobs
         created_at = datetime.utcnow() - timedelta(hours=hour)
-        query = {'filter': [{'k': 'created_at', 'v': created_at, 'o': 'lt'},
-                            {'k': 'domain_id',  'v': domain_id, 'o': 'eq'},
-                            {'k': 'status',      'v': 'IN_PROGRESS', 'o': 'eq'}]
-                 }
+        query = {
+            'filter': [
+                {'k': 'created_at', 'v': created_at, 'o': 'lt'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
+                {'k': 'status', 'v': ['CREATED', 'IN_PROGRESS'], 'o': 'in'}
+            ]
+        }
+
         jobs, total_count = self.list_jobs(query)
         _LOGGER.debug(f'[update_job_status_by_hour] job count: {total_count} to {status}')
         for job in jobs:
