@@ -107,12 +107,12 @@ class CollectorService(BaseService):
     @check_required(['collector_id', 'domain_id'])
     def delete(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
-        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
 
         collector_mgr.delete_collector(params['collector_id'], params['domain_id'])
 
-        # Cascade Delete (Collection State)
-        state_vos = state_mgr.delete_collection_state_by_collector_id(params['collector_id'], params['domain_id'])
+        # Cascade Delete Collection State
+        state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
+        state_mgr.delete_collection_state_by_collector_id(params['collector_id'], params['domain_id'])
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
