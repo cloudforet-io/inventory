@@ -29,6 +29,7 @@ class CloudServiceService(BaseService):
         'authorization.require_project_id': True
     })
     @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
+    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def create(self, params):
         """
         Args:
@@ -38,8 +39,9 @@ class CloudServiceService(BaseService):
                     'provider': 'str',
                     'name': 'str',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'size': 'float',
+                    'launched_at': 'datetime',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
@@ -98,6 +100,7 @@ class CloudServiceService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
+    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def update(self, params):
         """
         Args:
@@ -105,8 +108,9 @@ class CloudServiceService(BaseService):
                     'cloud_service_id': 'str',
                     'name': 'str',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'size': 'float',
+                    'launched_at': 'datetime',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',

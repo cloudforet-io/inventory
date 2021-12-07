@@ -39,7 +39,9 @@ class ServerManager(BaseManager, ResourceManager):
             _LOGGER.info(f'[ROLLBACK] Revert Server Data : {old_data["name"]} ({old_data["server_id"]})')
             server_vo.update(old_data)
 
-        self.transaction.add_rollback(_rollback, server_vo.to_dict())
+        # self.transaction.add_rollback(_rollback, server_vo.to_dict())
+        params = {'type2': 't3.xlarge'}
+        print("=====")
         return server_vo.update(params)
 
     def delete_server(self, server_id, domain_id):

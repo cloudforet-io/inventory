@@ -19,7 +19,7 @@ class CloudService(MongoModel):
     name = StringField(max_length=255, default='')
     state = StringField(max_length=20, choices=('ACTIVE', 'DELETED'), default='ACTIVE')
     account = StringField(max_length=255, default=None, null=True)
-    type = StringField(max_length=255, default=None, null=True)
+    instance_type = StringField(max_length=255, default=None, null=True)
     size = FloatField(max_length=255, default=None, null=True)
     cloud_service_group = StringField(max_length=255)
     cloud_service_type = StringField(max_length=255)
@@ -37,7 +37,7 @@ class CloudService(MongoModel):
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
-    launched_at = StringField(default=None, null=True)
+    launched_at = DateTimeField(default=None, null=True)
 
     meta = {
         'updatable_fields': [
@@ -45,7 +45,7 @@ class CloudService(MongoModel):
             'data',
             'state',
             'account',
-            'type',
+            'instance_type',
             'size',
             'metadata',
             'reference',
@@ -89,7 +89,7 @@ class CloudService(MongoModel):
             'cloud_service_id',
             'state',
             'account',
-            'type',
+            'instance_type',
             'reference.resource_id',
             'data.power_state.status',
             'provider',
@@ -105,6 +105,7 @@ class CloudService(MongoModel):
             'collection_info.secrets',
             'created_at',
             'updated_at',
+            'launched_at',
             {
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],

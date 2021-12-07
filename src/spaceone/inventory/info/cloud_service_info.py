@@ -25,7 +25,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
     if not minimal:
         info.update({
             'account': cloud_svc_vo.account,
-            'type': cloud_svc_vo.type,
+            'instance_type': cloud_svc_vo.instance_type,
             'size': cloud_svc_vo.size,
             'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
@@ -35,7 +35,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'created_at': utils.datetime_to_iso8601(cloud_svc_vo.created_at),
             'updated_at': utils.datetime_to_iso8601(cloud_svc_vo.updated_at),
             'deleted_at': utils.datetime_to_iso8601(cloud_svc_vo.deleted_at),
-            'launched_at': cloud_svc_vo.launched_at,
+            'launched_at': utils.datetime_to_iso8601(cloud_svc_vo.launched_at),
         })
 
     return cloud_service_pb2.CloudServiceInfo(**info)

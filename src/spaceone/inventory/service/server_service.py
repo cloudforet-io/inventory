@@ -32,6 +32,7 @@ class ServerService(BaseService):
         'authorization.require_project_id': True
     })
     @check_required(['domain_id'])
+    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def create(self, params):
         """
         Args:
@@ -40,8 +41,9 @@ class ServerService(BaseService):
                     'primary_ip_address': 'str',
                     'os_type': 'LINUX | WINDOWS',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'size': 'float',
+                    'launched_at': 'datetime',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
@@ -120,6 +122,7 @@ class ServerService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
+    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def update(self, params):
         """
         Args:
@@ -129,8 +132,9 @@ class ServerService(BaseService):
                     'primary_ip_address': 'str',
                     'os_type': 'LINUX | WINDOWS',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'size': 'float',
+                    'launched_at': 'datetime',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
@@ -141,6 +145,7 @@ class ServerService(BaseService):
                     'disks': 'list',
                     'reference': 'dict',
                     'tags': 'list or dict',
+                    'launched_at': 'datetime',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
