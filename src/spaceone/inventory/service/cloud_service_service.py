@@ -29,6 +29,7 @@ class CloudServiceService(BaseService):
         'authorization.require_project_id': True
     })
     @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
+    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def create(self, params):
         """
         Args:
@@ -38,8 +39,9 @@ class CloudServiceService(BaseService):
                     'provider': 'str',
                     'name': 'str',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'size': 'float',
+                    'launched_at': 'datetime',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
@@ -98,6 +100,7 @@ class CloudServiceService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
+    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def update(self, params):
         """
         Args:
@@ -105,8 +108,9 @@ class CloudServiceService(BaseService):
                     'cloud_service_id': 'str',
                     'name': 'str',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'size': 'float',
+                    'launched_at': 'datetime',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
@@ -252,7 +256,7 @@ class CloudServiceService(BaseService):
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'type', 'cloud_service_type',
+    @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'instance_type', 'cloud_service_type',
                           'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
                           'domain_id', 'user_projects'])
     @change_tag_filter('tags')
@@ -265,10 +269,10 @@ class CloudServiceService(BaseService):
                     'name': 'str',
                     'state': 'str',
                     'account': 'str',
-                    'type': 'str',
-                    'provider': 'str',
+                    'instance_type': 'str',
                     'cloud_service_type': 'str',
                     'cloud_service_group': 'str',
+                    'provider': 'str',
                     'region_code': 'str',
                     'resource_group_id': 'str',
                     'project_id': 'str',

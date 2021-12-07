@@ -47,7 +47,7 @@ class Server(MongoModel):
     ip_addresses = ListField(StringField())
     os_type = StringField(max_length=20, choices=('LINUX', 'WINDOWS'))
     account = StringField(max_length=255, default=None, null=True)
-    type = StringField(max_length=255, default=None, null=True)
+    instance_type = StringField(max_length=255, default=None, null=True)
     size = FloatField(max_length=255, default=None, null=True)
     provider = StringField(max_length=40)
     cloud_service_group = StringField(max_length=255, default=None, null=True)
@@ -67,7 +67,7 @@ class Server(MongoModel):
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
-    launched_at = StringField(default=None, null=True)
+    launched_at = DateTimeField(default=None, null=True)
 
     meta = {
         'updatable_fields': [
@@ -77,7 +77,7 @@ class Server(MongoModel):
             'ip_addresses',
             'os_type',
             'account',
-            'type',
+            'instance_type',
             'size',
             'provider',
             'cloud_service_group',
@@ -130,7 +130,7 @@ class Server(MongoModel):
             'primary_ip_address',
             'os_type',
             'account',
-            'type',
+            'instance_type',
             'reference.resource_id',
             'data.power_state.status',
             'provider',
@@ -146,6 +146,7 @@ class Server(MongoModel):
             'collection_info.secrets',
             'created_at',
             'updated_at',
+            'launched_at',
             {
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],

@@ -32,6 +32,7 @@ class ServerService(BaseService):
         'authorization.require_project_id': True
     })
     @check_required(['domain_id'])
+    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def create(self, params):
         """
         Args:
@@ -40,8 +41,9 @@ class ServerService(BaseService):
                     'primary_ip_address': 'str',
                     'os_type': 'LINUX | WINDOWS',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'size': 'float',
+                    'launched_at': 'datetime',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
@@ -120,6 +122,7 @@ class ServerService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['server_id', 'domain_id'])
+    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def update(self, params):
         """
         Args:
@@ -129,8 +132,9 @@ class ServerService(BaseService):
                     'primary_ip_address': 'str',
                     'os_type': 'LINUX | WINDOWS',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'size': 'float',
+                    'launched_at': 'datetime',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
@@ -141,6 +145,7 @@ class ServerService(BaseService):
                     'disks': 'list',
                     'reference': 'dict',
                     'tags': 'list or dict',
+                    'launched_at': 'datetime',
                     'project_id': 'str',
                     'domain_id': 'str',
                     'release_project': 'bool',
@@ -292,9 +297,9 @@ class ServerService(BaseService):
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
     @check_required(['domain_id'])
-    @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses',
-                          'server_type', 'os_type', 'provider', 'region_code',
-                          'resource_group_id', 'project_id', 'domain_id', 'user_projects'])
+    @append_query_filter(['server_id', 'name', 'state', 'primary_ip_address', 'ip_addresses', 'os_type',
+                          'account', 'instance_type', 'provider', 'cloud_service_group', 'cloud_service_type',
+                          'region_code', 'resource_group_id', 'project_id', 'domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -308,13 +313,13 @@ class ServerService(BaseService):
                     'ip_addresses': 'str',
                     'os_type': 'str',
                     'account': 'str',
-                    'type': 'str',
+                    'instance_type': 'str',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
                     'region_code': 'str',
-                    'project_id': 'str',
                     'resource_group_id': 'str',
+                    'project_id': 'str',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)',
                     'user_projects': 'list', // from meta

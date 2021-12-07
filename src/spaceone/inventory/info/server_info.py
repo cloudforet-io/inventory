@@ -53,7 +53,7 @@ def ServerInfo(server_vo: Server, minimal=False):
         info.update({
             'ip_addresses': server_vo.ip_addresses,
             'account': server_vo.account,
-            'type': server_vo.type,
+            'instance_type': server_vo.instance_type,
             'size': server_vo.size,
             'data': change_struct_type(server_vo.data),
             'metadata': change_struct_type(server_vo.metadata),
@@ -65,7 +65,7 @@ def ServerInfo(server_vo: Server, minimal=False):
             'created_at': utils.datetime_to_iso8601(server_vo.created_at),
             'updated_at': utils.datetime_to_iso8601(server_vo.updated_at),
             'deleted_at': utils.datetime_to_iso8601(server_vo.deleted_at),
-            'launched_at': server_vo.launched_at
+            'launched_at': utils.datetime_to_iso8601(server_vo.launched_at)
         })
 
     return server_pb2.ServerInfo(**info)
