@@ -50,9 +50,20 @@ class JobTaskManager(BaseManager):
         job_task_vo.delete()
 
     def check_duplicate_job_tasks(self, collector_id, secret_id, domain_id):
-        job_task_vos = self.job_task_model.filter(collector_id=collector_id, secret_id=secret_id, domain_id=domain_id,
-                                                  status='IN_PROGRESS')
-        if job_task_vos.count() > 0:
+        created_at = datetime.utcnow() - timedelta(minutes=10)
+
+        query = {
+            'filter': [
+                {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
+                {'k': 'secret_id', 'v': secret_id, 'o': 'eq'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
+                {'k': 'status', 'v': 'IN_PROGRESS', 'o': 'eq'},
+                {'k': 'created_at', 'v': created_at, 'o': 'lt'},
+            ]
+        }
+
+        job_task_vos, total_count = self.list(**query)
+        if total_count > 0:
             return True
 
         return False
