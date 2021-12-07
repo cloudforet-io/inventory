@@ -217,7 +217,6 @@ class InventoryIntervalScheduler(IntervalScheduler):
                     'service': 'inventory',
                     'resource': 'Collector',
                     'verb': 'collect',
-                    'authorization': True,
                     'domain_id': self.domain_id}
         sched_job = {
             'locator': 'SERVICE',
