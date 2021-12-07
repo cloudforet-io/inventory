@@ -64,6 +64,9 @@ class JobTaskManager(BaseManager):
 
         job_task_vos, total_count = self.list(query)
         if total_count > 0:
+            for job_task_vo in job_task_vos:
+                _LOGGER.debug(f'[check_duplicate_job_tasks] Duplicate Job: {job_task_vo.collector_id} / '
+                              f'{job_task_vo.service_account_id} ({job_task_vo.secret_id})')
             return True
 
         return False
