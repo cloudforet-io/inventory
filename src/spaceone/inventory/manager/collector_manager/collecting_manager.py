@@ -97,12 +97,26 @@ class CollectingManager(BaseManager):
         job_id = kwargs['job_id']
         collector_id = kwargs['collector_id']
 
-        # job_vo = self.job_mgr.get(job_id, domain_id)
-        if self.job_mgr.should_cancel(job_id, domain_id) \
-                or self.job_task_mgr.check_duplicate_job_tasks(collector_id, secret_id, domain_id):
+        if self.job_mgr.should_cancel(job_id, domain_id):
+            self.job_task_mgr.add_error(
+                job_task_id,
+                domain_id,
+                'ERROR_COLLECT_CANCELED',
+                'The job has been canceled.'
+            )
+            self.job_task_mgr.make_canceled(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            self._update_job_task(job_task_id, 'CANCELED', domain_id)
-            self.job_mgr.mark_error(job_id, domain_id)
+            raise ERROR_COLLECT_CANCELED(job_id=job_id)
+
+        if self.job_task_mgr.check_duplicate_job_tasks(collector_id, secret_id, domain_id):
+            self.job_task_mgr.add_error(
+                job_task_id,
+                domain_id,
+                'ERROR_DUPLICATE_JOB',
+                'A duplicate job is already running.'
+            )
+            self.job_task_mgr.make_canceled(job_task_id, domain_id)
+            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
         # Create proper connector
