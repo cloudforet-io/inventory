@@ -256,7 +256,7 @@ class CloudServiceService(BaseService):
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'type', 'cloud_service_type',
+    @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'instance_type', 'cloud_service_type',
                           'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
                           'domain_id', 'user_projects'])
     @change_tag_filter('tags')
@@ -269,10 +269,10 @@ class CloudServiceService(BaseService):
                     'name': 'str',
                     'state': 'str',
                     'account': 'str',
-                    'type': 'str',
-                    'provider': 'str',
+                    'instance_type': 'str',
                     'cloud_service_type': 'str',
                     'cloud_service_group': 'str',
+                    'provider': 'str',
                     'region_code': 'str',
                     'resource_group_id': 'str',
                     'project_id': 'str',
