@@ -303,8 +303,7 @@ class CollectingManager(BaseManager):
         self.transaction.set_meta('job_task_id', job_task_id)
         self.transaction.set_meta('collector_id', collector_id)
         self.transaction.set_meta('secret.secret_id', secret_id)
-        self.transaction.set_meta('authorization', False)
-        self.transaction.set_meta('mutation', False)
+        self.transaction.set_meta('disable_info_log', 'true')
         if plugin_id:
             self.transaction.set_meta('plugin_id', plugin_id)
         if 'provider' in self.secret:
@@ -502,16 +501,18 @@ class CollectingManager(BaseManager):
         try:
             # For book-keeping
             if total_count == 0 and update_mode is None:
-                # Create
-                res_msg = svc.create(data)
+                # Create Resource
+                _LOGGER.debug(f'[_process_single_result] Create Resource: {resource_type}')
+                svc.create(data)
                 diff = time.time() - end
                 _LOGGER.debug(f'insert: {diff}')
                 response = CREATED
 
             elif total_count == 1:
-                # Update
+                # Update Resource
+                _LOGGER.debug(f'[_process_single_result] Update Resource: {resource_type}')
                 data.update(res_info[0])
-                res_msg = svc.update(data)
+                svc.update(data)
                 diff = time.time() - end
                 _LOGGER.debug(f'update: {diff}')
                 response = UPDATED
@@ -526,6 +527,7 @@ class CollectingManager(BaseManager):
                 self._update_job_task_stat_to_cache(job_id, job_task_id, response, domain_id)
 
         except ERROR_BASE as e:
+            _LOGGER.error(f'[_process_single_result] ERROR: {data}')
             # May be DB error
             additional = {'resource_type': resource_type}
 
