@@ -54,7 +54,6 @@ def ServerInfo(server_vo: Server, minimal=False):
             'ip_addresses': server_vo.ip_addresses,
             'account': server_vo.account,
             'instance_type': server_vo.instance_type,
-            'size': server_vo.size,
             'data': change_struct_type(server_vo.data),
             'metadata': change_struct_type(server_vo.metadata),
             'nics': list(map(ServerNIC, server_vo.nics)),
