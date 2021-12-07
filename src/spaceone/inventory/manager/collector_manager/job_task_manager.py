@@ -62,7 +62,7 @@ class JobTaskManager(BaseManager):
             ]
         }
 
-        job_task_vos, total_count = self.list(**query)
+        job_task_vos, total_count = self.list(query)
         if total_count > 0:
             return True
 
