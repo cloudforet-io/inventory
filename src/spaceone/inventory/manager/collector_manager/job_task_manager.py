@@ -58,13 +58,12 @@ class JobTaskManager(BaseManager):
                 {'k': 'secret_id', 'v': secret_id, 'o': 'eq'},
                 {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
                 {'k': 'status', 'v': 'IN_PROGRESS', 'o': 'eq'},
-                {'k': 'started_at', 'v': started_at, 'o': 'lt'},
+                {'k': 'started_at', 'v': started_at, 'o': 'gte'},
             ]
         }
 
         job_task_vos, total_count = self.list(query)
         if total_count > 0:
-            _LOGGER.debug(f'[check_duplicate_job_tasks] Query: {query}')
             for job_task_vo in job_task_vos:
                 _LOGGER.debug(f'[check_duplicate_job_tasks] Duplicate Job Info: {job_task_vo.job_id} '
                               f'({job_task_vo.collector_id})')
