@@ -221,8 +221,7 @@ class CollectionDataManager(BaseManager):
         else:
             return new_value
 
-    @staticmethod
-    def _get_history_diff(old_data, new_data):
+    def _get_history_diff(self, old_data, new_data):
         if isinstance(old_data, list) and isinstance(new_data, list):
             history_diff = {
                 'insert': [],
@@ -238,11 +237,18 @@ class CollectionDataManager(BaseManager):
                     history_diff['insert'].append(value)
         else:
             history_diff = {
-                'insert': new_data,
-                'delete': old_data
+                'insert': self._convert_diff_data(new_data),
+                'delete': self._convert_diff_data(old_data)
             }
 
         return history_diff
+
+    @staticmethod
+    def _convert_diff_data(data):
+        if isinstance(data, datetime):
+            return utils.datetime_to_iso8601(data)
+
+        return data
 
     @staticmethod
     def _exclude_data_by_pinned_keys(resource_data, pinned_keys):
