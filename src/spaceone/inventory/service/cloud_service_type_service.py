@@ -3,7 +3,7 @@ from spaceone.core import utils
 from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
 from spaceone.inventory.error import *
 
-_KEYWORD_FILTER = ['cloud_service_type_id', 'name', 'provider', 'group', 'service_code']
+_KEYWORD_FILTER = ['cloud_service_type_id', 'name', 'group', 'service_code']
 
 
 @authentication_handler

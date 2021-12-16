@@ -11,8 +11,8 @@ from spaceone.inventory.model.server_model import Server
 from spaceone.inventory.error import *
 
 _LOGGER = logging.getLogger(__name__)
-_KEYWORD_FILTER = ['server_id', 'name', 'ip_addresses', 'provider', 'cloud_service_group',
-                   'cloud_service_type', 'reference.resource_id']
+_KEYWORD_FILTER = ['server_id', 'name', 'ip_addresses', 'cloud_service_group', 'cloud_service_type',
+                   'reference.resource_id']
 
 
 @authentication_handler
