@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import consul
 import datetime
 import logging
@@ -6,7 +5,7 @@ import time
 
 from spaceone.core import config
 from spaceone.core.locator import Locator
-from spaceone.core.scheduler import HourlyScheduler
+from spaceone.core.scheduler import HourlyScheduler, IntervalScheduler
 from spaceone.core.auth.jwt.jwt_util import JWTUtil
 
 __all__ = ['InventoryHourlyScheduler']
@@ -53,7 +52,7 @@ class InventoryHourlyScheduler(HourlyScheduler):
 
     def _init_count(self):
         # get current time
-        cur = datetime.datetime.now()
+        cur = datetime.datetime.utcnow()
         count = {
             'previous': cur,            # Last check_count time
             'index': 0,                # index
@@ -102,7 +101,7 @@ class InventoryHourlyScheduler(HourlyScheduler):
 
     def check_count(self):
         # check current count is correct or not
-        cur = datetime.datetime.now()
+        cur = datetime.datetime.utcnow()
         hour = cur.hour
         # check
         if (self.count['hour'] + self.config) % 24 != hour:
@@ -121,7 +120,7 @@ class InventoryHourlyScheduler(HourlyScheduler):
         self.count.update(count)
 
     def _update_count_ended_at(self):
-        cur = datetime.datetime.now()
+        cur = datetime.datetime.utcnow()
         self.count['ended_at'] = cur
 
     def _create_job_request(self, scheduler_vo):
