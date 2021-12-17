@@ -73,7 +73,7 @@ class InventoryIntervalScheduler(IntervalScheduler):
 
     def _init_count(self):
         # get current time
-        cur = datetime.datetime.now()
+        cur = datetime.datetime.utcnow()
         count = {
             'previous': cur,            # Last check_count time
             'index': 0,                # index

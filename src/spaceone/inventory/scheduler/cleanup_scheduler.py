@@ -52,7 +52,7 @@ class CleanupScheduler(HourlyScheduler):
 
     def _init_count(self):
         # get current time
-        cur = datetime.datetime.now()
+        cur = datetime.datetime.utcnow()
         count = {
             'previous': cur,            # Last check_count time
             'index': 0,                 # index
@@ -105,7 +105,7 @@ class CleanupScheduler(HourlyScheduler):
 
     def check_count(self):
         # check current count is correct or not
-        cur = datetime.datetime.now()
+        cur = datetime.datetime.utcnow()
         hour = cur.hour
         # check
         if (self.count['hour'] + self.config) % 24 != hour:
@@ -124,7 +124,7 @@ class CleanupScheduler(HourlyScheduler):
         self.count.update(count)
 
     def _update_count_ended_at(self):
-        cur = datetime.datetime.now()
+        cur = datetime.datetime.utcnow()
         self.count['ended_at'] = cur
 
     def _create_job_request(self, domain):
