@@ -137,6 +137,13 @@ class CleanupManager(BaseManager):
             ]
         )
 
+        if resource_type_name in ['inventory.CloudServiceType', 'inventory.Region']:
+            _filter.append({
+                'k': 'updated_by',
+                'v': 'manual',
+                'o': 'not'
+            })
+
         query = {'filter': _filter}
 
         _LOGGER.debug(f'[delete_resources_by_policy] query: {query}')

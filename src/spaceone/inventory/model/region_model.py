@@ -16,6 +16,7 @@ class Region(MongoModel):
     ref_region = StringField(max_length=255)
     tags = ListField(EmbeddedDocumentField(RegionTag))
     domain_id = StringField(max_length=255)
+    updated_by = StringField(default=None, null=True)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
 
@@ -24,6 +25,7 @@ class Region(MongoModel):
             'name',
             'region_key',
             'tags',
+            'updated_by',
             'updated_at'
         ],
         'minimal_fields': [
