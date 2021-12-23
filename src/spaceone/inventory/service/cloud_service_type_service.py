@@ -40,6 +40,8 @@ class CloudServiceTypeService(BaseService):
 
         """
 
+        params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
+
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
 
         # Temporary Code for Tag Migration
@@ -80,6 +82,8 @@ class CloudServiceTypeService(BaseService):
             cloud_service_type_vo (object)
 
         """
+
+        params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         domain_id = params['domain_id']
