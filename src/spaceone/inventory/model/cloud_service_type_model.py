@@ -23,6 +23,7 @@ class CloudServiceType(MongoModel):
     metadata = DictField()
     tags = ListField(EmbeddedDocumentField(CloudServiceTypeTag))
     domain_id = StringField(max_length=40)
+    updated_by = StringField(default=None, null=True)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
 
@@ -36,6 +37,7 @@ class CloudServiceType(MongoModel):
             'metadata',
             'labels',
             'tags',
+            'updated_by',
             'updated_at'
         ],
         'minimal_fields': [

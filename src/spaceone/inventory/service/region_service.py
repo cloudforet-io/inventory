@@ -35,6 +35,7 @@ class RegionService(BaseService):
             region_vo (object)
         """
 
+        params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
         params['region_key'] = f'{params["provider"]}.{params["region_code"]}'
 
         # Temporary Code for Tag Migration
@@ -60,6 +61,8 @@ class RegionService(BaseService):
             region_vo (object)
 
         """
+
+        params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
 
         region_vo = self.region_mgr.get_region(params['region_id'], params['domain_id'])
 
