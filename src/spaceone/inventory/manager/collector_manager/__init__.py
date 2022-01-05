@@ -254,6 +254,7 @@ class CollectorManager(BaseManager):
         self.secret_mgr = self.locator.get_manager('SecretManager')
         secret_len = len(secret_list)
         count = 0
+        projects = []
         for secret_id in secret_list:
             count += 1
             # Do collect per secret
@@ -265,6 +266,10 @@ class CollectorManager(BaseManager):
 
                 # Create JobTask
                 secret_info = self._get_secret_info(secret_id, domain_id)
+                project_id = secret_info.get('project_id')
+                if project_id:
+                    projects.append(project_id)
+
                 job_task_vo = job_task_mgr.create_job_task(created_job, secret_info, domain_id)
 
                 req_params = self._make_collecting_parameters(collector_dict=collector_dict,
@@ -318,7 +323,7 @@ class CollectorManager(BaseManager):
 
         # Update Timestamp
         self._update_last_collected_time(collector_vo.collector_id, domain_id)
-        return created_job
+        return job_mgr.update_job_by_vo({'projects': projects}, created_job)
 
     def _update_last_collected_time(self, collector_id, domain_id):
         """ Update last_updated_time of collector

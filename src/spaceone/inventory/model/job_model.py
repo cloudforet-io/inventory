@@ -20,7 +20,8 @@ class Job(MongoModel):
     errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))
     collector = ReferenceField('Collector', reverse_delete_rule=NULLIFY)
     collector_id = StringField(max_length=40)
-    project_id = StringField(max_length=255, default=None, null=True)
+    project_id = StringField(max_length=40, default=None, null=True)
+    projects = ListField(StringField(max_length=40), default=[])
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
@@ -34,6 +35,7 @@ class Job(MongoModel):
             'remained_tasks',
             'errors',
             'collector_id',
+            'projects',
             'finished_at',
             'mark_error',
         ],
@@ -44,7 +46,7 @@ class Job(MongoModel):
             'finished_at',
         ],
         'change_query_keys': {
-            'user_projects': 'project_id'
+            'user_projects': 'projects'
         },
         'reference_query_keys': {
             'collector': Collector
@@ -58,6 +60,7 @@ class Job(MongoModel):
             'collector',
             'collector_id',
             'project_id',
+            'projects',
             'domain_id',
             'created_at',
             'finished_at'

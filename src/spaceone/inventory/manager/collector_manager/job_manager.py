@@ -62,6 +62,9 @@ class JobManager(BaseManager):
 
         return job_vo
 
+    def update_job_by_vo(self, params, job_vo: Job):
+        return job_vo.update(params)
+
     def increase_total_tasks_by_vo(self, job_vo: Job):
         job_vo = job_vo.increment('total_tasks')
         _LOGGER.debug(f'[increase_total_tasks] {job_vo.job_id} : {job_vo.total_tasks}')
