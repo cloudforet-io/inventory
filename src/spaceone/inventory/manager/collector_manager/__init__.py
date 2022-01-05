@@ -323,7 +323,7 @@ class CollectorManager(BaseManager):
 
         # Update Timestamp
         self._update_last_collected_time(collector_vo.collector_id, domain_id)
-        return job_mgr.update_job_by_vo({'projects': projects}, created_job)
+        return job_mgr.update_job_by_vo({'projects': list(set(projects))}, created_job)
 
     def _update_last_collected_time(self, collector_id, domain_id):
         """ Update last_updated_time of collector
