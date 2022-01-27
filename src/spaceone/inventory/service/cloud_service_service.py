@@ -258,7 +258,7 @@ class CloudServiceService(BaseService):
     @check_required(['domain_id'])
     @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'instance_type', 'cloud_service_type',
                           'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
-                          'domain_id', 'user_projects'])
+                          'project_group_id', 'domain_id', 'user_projects'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -276,6 +276,7 @@ class CloudServiceService(BaseService):
                     'region_code': 'str',
                     'resource_group_id': 'str',
                     'project_id': 'str',
+                    'project_group_id': 'str',
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)',
                     'user_projects': 'list', // from meta
@@ -289,6 +290,7 @@ class CloudServiceService(BaseService):
 
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
+        query = self._change_project_group_filter(query, params['domain_id'])
 
         return self.cloud_svc_mgr.list_cloud_services(query)
 
@@ -317,6 +319,7 @@ class CloudServiceService(BaseService):
 
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
+        query = self._change_project_group_filter(query, params['domain_id'])
 
         return self.cloud_svc_mgr.stat_cloud_services(query)
 
@@ -368,3 +371,44 @@ class CloudServiceService(BaseService):
             result = self.cloud_svc_mgr.stat_cloud_services(resource_group_query)
             cloud_service_ids += result.get('results', [])
         return cloud_service_ids
+
+    def _change_project_group_filter(self, query, domain_id):
+        change_filter = []
+
+        project_group_query = {
+            'filter': [],
+            'only': ['project_group_id']
+        }
+
+        for condition in query.get('filter', []):
+            key = condition.get('key', condition.get('k'))
+            value = condition.get('value', condition.get('v'))
+            operator = condition.get('operator', condition.get('o'))
+
+            if not all([key, operator]):
+                raise ERROR_DB_QUERY(reason='filter condition should have key, value and operator.')
+
+            if key == 'project_group_id':
+                project_group_query['filter'].append(condition)
+            else:
+                change_filter.append(condition)
+
+        if len(project_group_query['filter']) > 0:
+            identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
+            response = identity_mgr.list_project_groups(project_group_query, domain_id)
+            project_group_ids = []
+            project_ids = []
+            for project_group_info in response.get('results', []):
+                project_group_ids.append(project_group_info['project_group_id'])
+
+            for project_group_id in project_group_ids:
+                response = identity_mgr.list_projects_in_project_group(project_group_id, domain_id, True,
+                                                                       {'only': ['project_id']})
+                for project_info in response.get('results', []):
+                    if project_info['project_id'] not in project_ids:
+                        project_ids.append(project_info['project_id'])
+
+            change_filter.append({'k': 'project_id', 'v': project_ids, 'o': 'in'})
+
+        query['filter'] = change_filter
+        return query
