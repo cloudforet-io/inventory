@@ -79,7 +79,7 @@ def ScheduleInfo(vo, minimal=False):
         'schedule_id': vo.schedule_id,
         'collect_mode': vo.collect_mode,
         'name': vo.name,
-        'schedule': ScheduledInfo(vo.schedule),
+        'schedule': ScheduledInfo(vo.schedule) if vo.schedule else None,
         'collector_info': CollectorInfo(vo.collector, minimal=minimal) if vo.collector else None
     }
 
