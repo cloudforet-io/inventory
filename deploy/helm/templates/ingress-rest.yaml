@@ -1,6 +1,6 @@
 {{- if .Values.enabled }}
 {{- if .Values.rest }}
-apiVersion: extensions/v1beta1
+apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ .Values.name }}-rest
@@ -12,13 +12,16 @@ metadata:
       {{- end }}
     {{- end }}
 spec:
+  ingressClassName: alb
   rules:
   - http:
       paths:
       - path: {{ .Values.ingress.path }}
         backend:
-          serviceName: {{ .Values.name }}-rest
-          servicePort: {{ .Values.ingress.servicePort }}
+          service:
+            name: {{ .Values.name }}-rest
+            port:
+              number: {{ .Values.ingress.servicePort }}
 {{- end }}
 {{- end }}
 
