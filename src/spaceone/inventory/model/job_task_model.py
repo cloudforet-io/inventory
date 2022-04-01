@@ -4,8 +4,8 @@ from spaceone.core.model.mongo_model import MongoModel
 
 
 class Error(EmbeddedDocument):
-    error_code = StringField(max_length=128)
-    message = StringField(max_length=2048)
+    error_code = StringField()
+    message = StringField()
     additional = DictField()
 
 

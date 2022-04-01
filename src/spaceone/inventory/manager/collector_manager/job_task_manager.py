@@ -72,10 +72,11 @@ class JobTaskManager(BaseManager):
         return False
 
     def add_error(self, job_task_id, domain_id, error_code, msg, additional=None):
-        message = repr(msg)
+        # message = repr(msg)
         error_info = {
             'error_code': error_code,
-            'message': message[:MAX_MESSAGE_LENGTH]
+            'message': str(msg).strip()
+            # 'message': message[:MAX_MESSAGE_LENGTH]
         }
 
         if additional:
