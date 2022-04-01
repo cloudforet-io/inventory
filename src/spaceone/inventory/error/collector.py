@@ -70,7 +70,7 @@ class ERROR_COLLECT_INITIALIZE(ERROR_BASE):
 
 
 class ERROR_INVALID_PLUGIN_VERSION(ERROR_INVALID_ARGUMENT):
-        _message = 'Plugin version is invalid. (plugin_id = {plugin_id}, version = {version})'
+    _message = 'Plugin version is invalid. (plugin_id = {plugin_id}, version = {version})'
 
 
 class ERROR_NOT_ALLOWED_PLUGIN_ID(ERROR_INVALID_ARGUMENT):
@@ -78,7 +78,7 @@ class ERROR_NOT_ALLOWED_PLUGIN_ID(ERROR_INVALID_ARGUMENT):
 
 
 class ERROR_WRONG_PLUGIN_SETTINGS(ERROR_BASE):
-    _message = "The plugin settings is incorrect. (key = {key})"
+    _message = 'The plugin settings is incorrect. (key = {key})'
 
 
 class ERROR_INVALID_PLUGIN_OPTIONS(ERROR_INTERNAL_API):
@@ -86,15 +86,15 @@ class ERROR_INVALID_PLUGIN_OPTIONS(ERROR_INTERNAL_API):
 
 
 class ERROR_RESOURCE_KEYS_NOT_DEFINED(ERROR_BASE):
-    _message = "{resource_type} manager does not define resource_keys field"
+    _message = '{resource_type} manager does not define resource_keys field'
 
 
 class ERROR_TOO_MANY_MATCH(ERROR_BASE):
-    _message = "The same resource exists. (\n" \
-               "match_key = {match_key},\n" \
-               "matched_resources = {resources},\n" \
-               "more = {more})"
+    _message = 'The same resource exists. (\n' \
+               'match_key = {match_key},\n' \
+               'matched_resources = {resources},\n' \
+               'more = {more})'
 
 
 class ERROR_UNSUPPORTED_SCHEDULE(ERROR_BASE):
-    _message = "supported schedules: {supported}, requested: {requested}"
+    _message = 'supported schedules: {supported}, requested: {requested}'
