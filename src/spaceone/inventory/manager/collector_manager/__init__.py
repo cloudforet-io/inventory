@@ -132,16 +132,16 @@ class CollectorManager(BaseManager):
 
     def enable_collector(self, collector_id, domain_id, plugin_init=True):
         collector_vo = self.collector_db.enable_collector(collector_id=collector_id, domain_id=domain_id)
-        if plugin_init:
-            # Do plugin init operation
-            collector_info = collector_vo.to_dict()
-            plugin_mgr = self.locator.get_manager('PluginManager')
-            _LOGGER.debug(f'[enable_collector] collector_info: {collector_info}')
-            plugin_metadata = plugin_mgr.init(collector_info)
-            _LOGGER.debug(f'[enable_collector] plugin->init: {plugin_metadata}')
-            plugin_info = collector_info['plugin_info']
-            plugin_info['metadata'] = plugin_metadata
-            collector_vo = self.update_collector_by_vo(collector_vo, {'plugin_info': plugin_info})
+        # if plugin_init:
+        #     # Do plugin init operation
+        #     collector_info = collector_vo.to_dict()
+        #     plugin_mgr = self.locator.get_manager('PluginManager')
+        #     _LOGGER.debug(f'[enable_collector] collector_info: {collector_info}')
+        #     plugin_metadata = plugin_mgr.init(collector_info)
+        #     _LOGGER.debug(f'[enable_collector] plugin->init: {plugin_metadata}')
+        #     plugin_info = collector_info['plugin_info']
+        #     plugin_info['metadata'] = plugin_metadata
+        #     collector_vo = self.update_collector_by_vo(collector_vo, {'plugin_info': plugin_info})
         return collector_vo
 
     def disable_collector(self, collector_id, domain_id, plugin_init=True):
