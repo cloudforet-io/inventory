@@ -67,7 +67,7 @@ class JobTask(MongoModel):
             '-created_at'
         ],
         'indexes': [
-            'job_task_id',
+            # 'job_task_id',
             'status',
             'job_id',
             'secret_id',

@@ -123,7 +123,7 @@ class Server(MongoModel):
             'name'
         ],
         'indexes': [
-            'server_id',
+            # 'server_id',
             'state',
             'primary_ip_address',
             'os_type',

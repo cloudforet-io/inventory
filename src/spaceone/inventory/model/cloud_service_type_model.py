@@ -56,7 +56,7 @@ class CloudServiceType(MongoModel):
             'name'
         ],
         'indexes': [
-            'cloud_service_type_id',
+            # 'cloud_service_type_id',
             'name',
             'provider',
             'group',

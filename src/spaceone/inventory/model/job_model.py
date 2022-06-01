@@ -55,7 +55,7 @@ class Job(MongoModel):
             '-created_at'
         ],
         'indexes': [
-            'job_id',
+            # 'job_id',
             'status',
             'collector',
             'collector_id',
