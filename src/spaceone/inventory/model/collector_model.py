@@ -65,7 +65,7 @@ class Collector(MongoModel):
             'name'
         ],
         'indexes': [
-            'collector_id',
+            # 'collector_id',
             'state',
             'provider',
             'priority',

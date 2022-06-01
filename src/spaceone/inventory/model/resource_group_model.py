@@ -43,7 +43,7 @@ class ResourceGroup(MongoModel):
             'name'
         ],
         'indexes': [
-            'resource_group_id',
+            # 'resource_group_id',
             'resources.resource_type',
             'project_id',
             'domain_id',
