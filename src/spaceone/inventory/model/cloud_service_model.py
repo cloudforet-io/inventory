@@ -60,7 +60,7 @@ class CloudService(MongoModel):
             'launched_at'
         ],
         'minimal_fields': [
-            # 'cloud_service_id',
+            'cloud_service_id',
             'name',
             'cloud_service_group',
             'cloud_service_type',
@@ -86,7 +86,7 @@ class CloudService(MongoModel):
             'name'
         ],
         'indexes': [
-            'cloud_service_id',
+            # 'cloud_service_id',
             'state',
             'account',
             'instance_type',
