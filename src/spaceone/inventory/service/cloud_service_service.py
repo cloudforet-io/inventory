@@ -260,7 +260,7 @@ class CloudServiceService(BaseService):
     @check_required(['domain_id'])
     @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'instance_type', 'cloud_service_type',
                           'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
-                          'project_group_id', 'domain_id', 'user_projects'])
+                          'project_group_id', 'domain_id', 'user_projects', 'ip_address'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -282,6 +282,7 @@ class CloudServiceService(BaseService):
                     'domain_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.Query)',
                     'user_projects': 'list', // from meta
+                    'ip_address': 'str'
                 }
 
         Returns:

@@ -72,7 +72,8 @@ class CloudService(MongoModel):
             'project_id'
         ],
         'change_query_keys': {
-            'user_projects': 'project_id'
+            'user_projects': 'project_id',
+            'ip_address': 'ip_addresses'
         },
         'reference_query_keys': {
             'ref_cloud_service_type': {
