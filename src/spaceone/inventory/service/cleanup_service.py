@@ -163,36 +163,40 @@ class CleanupService(BaseService):
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
         server_mgr: ServerManager = self.locator.get_manager('ServerManager')
 
+        exclude_domains = config.get_global('TERMINATION_EXCLUDE_DOMAINS', [])
+
         domain_id = params['domain_id']
-        termination_time = config.get_global('RESOURCE_TERMINATION_TIME', 30*6)  # days
 
-        query = {
-            'filter': [
-                {
-                    'k': 'deleted_at',
-                    'v': datetime.utcnow() - timedelta(days=termination_time),
-                    'o': 'lt'
-                },
-                {
-                    'k': 'state',
-                    'v': 'DELETED',
-                    'o': 'eq'
-                },
-                {
-                    'k': 'domain_id',
-                    'v': domain_id,
-                    'o': 'eq'
-                }
-            ]
-        }
+        if domain_id not in exclude_domains:
+            termination_time = config.get_global('RESOURCE_TERMINATION_TIME', 30*6)  # days
 
-        cloud_svc_vos, total_count = cloud_svc_mgr.list_cloud_services(query)
-        _LOGGER.info(f'[terminate_resources] Terminate cloud services: {str(total_count)}')
-        cloud_svc_vos.delete()
+            query = {
+                'filter': [
+                    {
+                        'k': 'deleted_at',
+                        'v': datetime.utcnow() - timedelta(days=termination_time),
+                        'o': 'lt'
+                    },
+                    {
+                        'k': 'state',
+                        'v': 'DELETED',
+                        'o': 'eq'
+                    },
+                    {
+                        'k': 'domain_id',
+                        'v': domain_id,
+                        'o': 'eq'
+                    }
+                ]
+            }
 
-        server_vos, total_count = server_mgr.list_servers(query)
-        _LOGGER.info(f'[terminate_resources] Terminate servers: {str(total_count)}')
-        server_vos.delete()
+            cloud_svc_vos, total_count = cloud_svc_mgr.list_cloud_services(query)
+            _LOGGER.info(f'[terminate_resources] Terminate cloud services: {str(total_count)}')
+            cloud_svc_vos.delete()
+
+            server_vos, total_count = server_mgr.list_servers(query)
+            _LOGGER.info(f'[terminate_resources] Terminate servers: {str(total_count)}')
+            server_vos.delete()
 
     # @transaction
     # @check_required(['domain_id'])
