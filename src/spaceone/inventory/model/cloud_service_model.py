@@ -21,6 +21,7 @@ class CloudService(MongoModel):
     account = StringField(max_length=255, default=None, null=True)
     instance_type = StringField(max_length=255, default=None, null=True)
     instance_size = FloatField(max_length=255, default=None, null=True)
+    ip_addresses = ListField(StringField(max_length=255), default=[])
     cloud_service_group = StringField(max_length=255)
     cloud_service_type = StringField(max_length=255)
     provider = StringField(max_length=255)
@@ -47,6 +48,7 @@ class CloudService(MongoModel):
             'account',
             'instance_type',
             'instance_size',
+            'ip_addresses',
             'metadata',
             'reference',
             'tags',
@@ -90,6 +92,7 @@ class CloudService(MongoModel):
             'state',
             'account',
             'instance_type',
+            'ip_addresses',
             'reference.resource_id',
             'data.power_state.status',
             'provider',
