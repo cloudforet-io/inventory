@@ -8,7 +8,7 @@ from spaceone.inventory.manager.collection_data_manager import CollectionDataMan
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.error import *
 
-_KEYWORD_FILTER = ['cloud_service_id', 'name', 'cloud_service_group', 'cloud_service_type',
+_KEYWORD_FILTER = ['cloud_service_id', 'name', 'ip_addresses', 'cloud_service_group', 'cloud_service_type',
                    'reference.resource_id']
 
 
