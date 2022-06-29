@@ -1,3 +1,5 @@
+import copy
+
 import consul
 import datetime
 import logging
@@ -76,6 +78,7 @@ class CleanupScheduler(HourlyScheduler):
         for domain in domains:
             stp = self._create_job_request(domain)
             result.append(stp)
+
         return result
 
     def list_domains(self):
@@ -146,7 +149,7 @@ class CleanupScheduler(HourlyScheduler):
         update_job_state = {
             'locator': 'SERVICE',
             'name': 'CleanupService',
-            'metadata': metadata,
+            'metadata': copy.deepcopy(metadata),
             'method': 'update_job_state',
             'params': {
                 'params': {
@@ -160,7 +163,7 @@ class CleanupScheduler(HourlyScheduler):
         delete_resources = {
             'locator': 'SERVICE',
             'name': 'CleanupService',
-            'metadata': metadata,
+            'metadata': copy.deepcopy(metadata),
             'method': 'delete_resources',
             'params': {
                 'params': {
@@ -174,7 +177,7 @@ class CleanupScheduler(HourlyScheduler):
         terminate_jobs = {
             'locator': 'SERVICE',
             'name': 'CleanupService',
-            'metadata': metadata,
+            'metadata': copy.deepcopy(metadata),
             'method': 'terminate_jobs',
             'params': {
                 'params': {
@@ -188,7 +191,7 @@ class CleanupScheduler(HourlyScheduler):
         terminate_resources = {
             'locator': 'SERVICE',
             'name': 'CleanupService',
-            'metadata': metadata,
+            'metadata': copy.deepcopy(metadata),
             'method': 'terminate_resources',
             'params': {
                 'params': {
