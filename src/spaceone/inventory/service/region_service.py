@@ -115,7 +115,7 @@ class RegionService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['domain_id'])
-    @append_query_filter(['region_id', 'name', 'region_code', 'provider', 'domain_id'])
+    @append_query_filter(['region_id', 'name', 'region_key', 'region_code', 'provider', 'domain_id'])
     @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
@@ -124,6 +124,7 @@ class RegionService(BaseService):
             params (dict): {
                     'region_id': 'str',
                     'name': 'str',
+                    'region_key': 'str',
                     'region_code': 'str',
                     'provider': 'str',
                     'domain_id': 'str',
