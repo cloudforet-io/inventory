@@ -9,4 +9,5 @@ from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.collection_state_model import CollectionState
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
 from spaceone.inventory.model.resource_group_model import ResourceGroup
-
+from spaceone.inventory.model.change_history_model import Record
+from spaceone.inventory.model.note_model import Note
