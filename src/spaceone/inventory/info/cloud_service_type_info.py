@@ -3,7 +3,6 @@ from spaceone.api.inventory.v1 import cloud_service_type_pb2
 from spaceone.core.pygrpc.message_type import *
 from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
-from spaceone.inventory.info.collection_info import CollectionInfo
 
 __all__ = ['CloudServiceTypeInfo', 'CloudServiceTypesInfo']
 
