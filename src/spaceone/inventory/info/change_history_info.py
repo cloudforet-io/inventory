@@ -12,6 +12,7 @@ def RecordDiff(diff_data):
         'key': diff_data.get('key'),
         'before': change_value_type(diff_data.get('before')),
         'after': change_value_type(diff_data.get('after')),
+        'type': diff_data.get('type'),
     }
 
     return change_history_pb2.RecordDiff(**info)
