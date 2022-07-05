@@ -1,13 +1,29 @@
 import logging
+import copy
 from datetime import datetime
 
-from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 
 _LOGGER = logging.getLogger(__name__)
+
+MERGE_KEYS = [
+    'name',
+    'account',
+    'instance_type',
+    'instance_size',
+    'ip_addresses',
+    'reference'
+    'region_code',
+    'ref_region',
+    'project_id'
+    'collection_info',
+    'tags',
+    'data',
+    'metadata',
+]
 
 
 class CloudServiceManager(BaseManager, ResourceManager):
@@ -48,6 +64,10 @@ class CloudServiceManager(BaseManager, ResourceManager):
         cloud_svc_vo = self.get_cloud_service(cloud_service_id, domain_id)
         cloud_svc_vo.delete()
 
+    @staticmethod
+    def delete_cloud_service_by_vo(cloud_svc_vo):
+        cloud_svc_vo.delete()
+
     def get_cloud_service(self, cloud_service_id, domain_id, only=None):
         return self.cloud_svc_model.get(cloud_service_id=cloud_service_id, domain_id=domain_id, only=only)
 
@@ -60,6 +80,31 @@ class CloudServiceManager(BaseManager, ResourceManager):
         # Append Query for DELETED filter (Temporary Logic)
         query = self._append_state_query(query)
         return self.cloud_svc_model.stat(**query)
+
+    @staticmethod
+    def merge_data(new_data, old_data):
+        for key in MERGE_KEYS:
+            if key in new_data:
+                new_value = new_data[key]
+                old_value = old_data.get(key)
+                if key in ['data', 'metadata']:
+                    is_changed = False
+                    for sub_key, sub_value in new_value.items():
+                        if sub_value != old_value.get(sub_key):
+                            is_changed = True
+                            break
+
+                    if is_changed:
+                        merged_value = copy.deepcopy(old_value)
+                        merged_value.update(new_value)
+                        new_data[key] = merged_value
+                    else:
+                        del new_data[key]
+                else:
+                    if new_value == old_value:
+                        del new_data[key]
+
+        return new_data
 
     def delete_resources(self, query):
         query['only'] = self.resource_keys + ['updated_at']

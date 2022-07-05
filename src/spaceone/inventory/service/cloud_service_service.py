@@ -1,10 +1,13 @@
+import copy
+
 from spaceone.core.service import *
 from spaceone.core import utils
+from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
-from spaceone.inventory.manager.collection_data_manager import CollectionDataManager
+from spaceone.inventory.manager.change_history_manager import ChangeHistoryManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.error import *
 
@@ -29,7 +32,6 @@ class CloudServiceService(BaseService):
         'authorization.require_project_id': True
     })
     @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
-    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def create(self, params):
         """
         Args:
@@ -42,7 +44,6 @@ class CloudServiceService(BaseService):
                     'instance_type': 'str',
                     'instance_size': 'float',
                     'ip_addresses': 'list',
-                    'launched_at': 'datetime',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
@@ -57,13 +58,11 @@ class CloudServiceService(BaseService):
 
         """
 
-        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
         domain_id = params['domain_id']
-        provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
-        region_code = params.get('region_code')
 
         # Temporary Code for Tag Migration
         if 'tags' in params:
@@ -74,24 +73,27 @@ class CloudServiceService(BaseService):
             if not isinstance(params['instance_size'], float):
                 raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
 
-        if provider:
-            params['provider'] = provider
+        params['provider'] = params.get('provider', self.transaction.get_meta('secret.provider'))
+
+        if params['provider'] is None:
+            raise ERROR_REQUIRED_PARAMETER(key='provider')
 
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
         elif secret_project_id:
             params['project_id'] = secret_project_id
 
-        if region_code:
-            params['ref_region'] = f'{domain_id}.{provider or "datacenter"}.{region_code}'
+        params['ref_cloud_service_type'] = self._make_cloud_service_type_key(params)
+        params['ref_region'] = self._make_region_key(params, params['provider'])
+        params['collector_info'] = self._get_collection_info()
 
-        params['ref_cloud_service_type'] = f'{params["domain_id"]}.' \
-                                           f'{params["provider"]}.' \
-                                           f'{params["cloud_service_group"]}.' \
-                                           f'{params["cloud_service_type"]}'
+        if 'metadata' in params:
+            params['metadata'] = self._change_metadata_path(params['metadata'])
 
-        params = data_mgr.create_new_history(params, exclude_keys=['domain_id', 'ref_region', 'ref_cloud_service_type'])
         cloud_svc_vo = self.cloud_svc_mgr.create_cloud_service(params)
+
+        # Create New History
+        ch_mgr.add_new_history(cloud_svc_vo, params)
 
         # Create Collection State
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
@@ -101,7 +103,6 @@ class CloudServiceService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
-    @change_timestamp_value(['launched_at'], timestamp_format='iso8601')
     def update(self, params):
         """
         Args:
@@ -112,7 +113,6 @@ class CloudServiceService(BaseService):
                     'instance_type': 'str',
                     'instance_size': 'float',
                     'ip_addresses': 'list',
-                    'launched_at': 'datetime',
                     'data': 'dict',
                     'metadata': 'dict',
                     'reference': 'dict',
@@ -129,9 +129,8 @@ class CloudServiceService(BaseService):
 
         """
 
-        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
+        ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
-        provider = params.get('provider', self.transaction.get_meta('secret.provider'))
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
 
@@ -139,9 +138,8 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
-        region_code = params.get('region_code')
 
-        cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
+        cloud_svc_vo: CloudService = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
 
         # Temporary Code for Tag Migration
         if 'tags' in params:
@@ -152,18 +150,6 @@ class CloudServiceService(BaseService):
             if not isinstance(params['instance_size'], float):
                 raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
 
-        if provider:
-            params['provider'] = provider
-
-        if release_region:
-            params.update({
-                'region_code': None,
-                'ref_region': None
-            })
-        else:
-            if region_code:
-                params['ref_region'] = f'{domain_id}.{provider or cloud_svc_vo.provider}.{region_code}'
-
         if release_project:
             params['project_id'] = None
         elif project_id:
@@ -171,12 +157,25 @@ class CloudServiceService(BaseService):
         elif secret_project_id:
             params['project_id'] = secret_project_id
 
-        cloud_svc_data = cloud_svc_vo.to_dict()
-        exclude_keys = ['cloud_service_id', 'domain_id', 'release_project', 'release_region', 'ref_region']
-        params = data_mgr.merge_data_by_history(params, cloud_svc_data, exclude_keys=exclude_keys)
+        if release_region:
+            params.update({
+                'region_code': None,
+                'ref_region': None
+            })
+        elif 'region_code' in params:
+            params['ref_region'] = self._make_region_key(params, cloud_svc_vo.provider)
+
+        old_cloud_svc_data = dict(cloud_svc_vo.to_dict())
+
+        params['collector_info'] = self._get_collection_info(old_cloud_svc_data.get('collection_info', {}))
+        params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
 
         cloud_svc_vo = self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
 
+        # Create Update History
+        ch_mgr.add_update_history(cloud_svc_vo, params, old_cloud_svc_data)
+
+        # Update Collection History
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
         state_vo = state_mgr.get_collection_state(cloud_service_id, domain_id)
         if state_vo:
@@ -185,30 +184,6 @@ class CloudServiceService(BaseService):
             state_mgr.create_collection_state(cloud_service_id, 'inventory.CloudService', domain_id)
 
         return cloud_svc_vo
-
-    @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['cloud_service_id', 'keys', 'domain_id'])
-    def pin_data(self, params):
-        """
-        Args:
-            params (dict): {
-                    'cloud_service_id': 'str',
-                    'keys': 'list',
-                    'domain_id': 'str'
-                }
-
-        Returns:
-            cloud_service_vo (object)
-
-        """
-
-        data_mgr: CollectionDataManager = self.locator.get_manager('CollectionDataManager')
-
-        cloud_svc_vo = self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], params['domain_id'])
-
-        params['collection_info'] = data_mgr.update_pinned_keys(params['keys'], cloud_svc_vo.collection_info.to_dict())
-
-        return self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
@@ -225,10 +200,17 @@ class CloudServiceService(BaseService):
 
         """
 
+        ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
+
         cloud_service_id = params['cloud_service_id']
         domain_id = params['domain_id']
 
-        self.cloud_svc_mgr.delete_cloud_service(cloud_service_id, domain_id)
+        cloud_svc_vo: CloudService = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
+
+        self.cloud_svc_mgr.delete_cloud_service_by_vo(cloud_svc_vo)
+
+        # Create Update History
+        ch_mgr.add_delete_history(cloud_svc_vo)
 
         # Cascade Delete Collection State
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
@@ -415,3 +397,53 @@ class CloudServiceService(BaseService):
 
         query['filter'] = change_filter
         return query
+
+    @staticmethod
+    def _make_cloud_service_type_key(resource_data):
+        return f'{resource_data["domain_id"]}.{resource_data["provider"]}.' \
+               f'{resource_data["cloud_service_group"]}.{resource_data["cloud_service_type"]}'
+
+    @staticmethod
+    def _make_region_key(resource_data, provider):
+        return f'{resource_data["domain_id"]}.{provider}.{resource_data["region_code"]}'
+
+    def _change_metadata_path(self, metadata):
+        plugin_id = self.transaction.get_meta('plugin_id')
+
+        if plugin_id:
+            metadata = {
+                plugin_id: copy.deepcopy(metadata)
+            }
+        else:
+            metadata = {
+                'MANUAL': copy.deepcopy(metadata)
+            }
+
+        return metadata
+
+    def _get_collection_info(self, collection_info=None):
+        if collection_info is None:
+            collection_info = {}
+
+        collector_id = self.transaction.get_meta('collector_id')
+        secret_id = self.transaction.get_meta('secret.secret_id')
+        service_account_id = self.transaction.get_meta('secret.service_account_id')
+
+        all_collectors = collection_info.get('collectors', [])
+        all_service_accounts = collection_info.get('service_accounts', [])
+        all_secrets = collection_info.get('secrets', [])
+
+        if collector_id:
+            all_collectors.append(collector_id)
+
+        if service_account_id:
+            all_service_accounts.append(service_account_id)
+
+        if secret_id:
+            all_secrets.append(secret_id)
+
+        return {
+            'collectors': sorted(list(set(all_collectors))),
+            'service_accounts': sorted(list(set(all_service_accounts))),
+            'secrets': sorted(list(set(all_secrets))),
+        }
