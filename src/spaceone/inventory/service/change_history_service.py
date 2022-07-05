@@ -16,7 +16,7 @@ class ChangeHistoryService(BaseService):
         'authorization.scope': 'PROJECT',
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
-    @check_required(['domain_id'])
+    @check_required(['cloud_service_id', 'domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['record_id', 'cloud_service_id', 'action', 'user_id', 'collector_id', 'job_id',
                           'updated_by', 'domain_id', 'user_projects'])
@@ -50,13 +50,14 @@ class ChangeHistoryService(BaseService):
         'authorization.scope': 'PROJECT',
         'mutation.append_parameter': {'user_projects': 'authorization.projects'}
     })
-    @check_required(['query', 'domain_id'])
+    @check_required(['query', 'cloud_service_id', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(['record_id', 'cloud_service_id'])
     def stat(self, params):
         """
         Args:
             params (dict): {
+                'cloud_service_id': 'str',
                 'domain_id': 'str',
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
                 'user_projects': 'list', // from meta
