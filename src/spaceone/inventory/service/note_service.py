@@ -36,8 +36,8 @@ class NoteService(BaseService):
 
         user_id = self.transaction.get_meta('user_id')
 
-        ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
-        record_vo: Record = ch_mgr.get_record(params['record_id'], params['domain_id'])
+        record_mgr: RecordManager = self.locator.get_manager('RecordManager')
+        record_vo: Record = record_mgr.get_record(params['record_id'], params['domain_id'])
 
         params['cloud_service'] = record_vo.cloud_service
         params['cloud_service_id'] = record_vo.cloud_service.cloud_service_id
