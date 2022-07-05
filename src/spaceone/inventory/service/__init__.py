@@ -1,5 +1,5 @@
 from spaceone.inventory.service.region_service import RegionService
-from spaceone.inventory.service.server_service import ServerService
+# from spaceone.inventory.service.server_service import ServerService
 from spaceone.inventory.service.collector_service import CollectorService
 from spaceone.inventory.service.job_service import JobService
 from spaceone.inventory.service.job_task_service import JobTaskService

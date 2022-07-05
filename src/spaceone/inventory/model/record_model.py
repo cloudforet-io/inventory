@@ -9,9 +9,11 @@ class Record(MongoModel):
     cloud_service_id = StringField(max_length=40, required=True)
     action = StringField(max_length=20, choices=('CREATE', 'UPDATE', 'DELETE'), required=True)
     diff = ListField(DictField(required=True), default=[])
+    diff_count = IntField(default=0)
     user_id = StringField(max_length=255, default=None, null=True)
     collector_id = StringField(max_length=40, default=None, null=True)
     job_id = StringField(max_length=40, default=None, null=True)
+    updated_by = StringField(max_length=40, choices=('COLLECTOR', 'USER'), default=None, null=True)
     cloud_service = ReferenceField('CloudService', reverse_delete_rule=CASCADE)
     domain_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now=True)
@@ -24,6 +26,7 @@ class Record(MongoModel):
             'user_id',
             'collector_id',
             'job_id',
+            'updated_by',
             'updated_at'
         ],
         'change_query_keys': {
@@ -44,6 +47,7 @@ class Record(MongoModel):
             'user_id',
             'collector_id',
             'job_id',
+            'updated_by',
             'domain_id',
             'created_at'
         ]

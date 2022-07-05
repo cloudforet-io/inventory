@@ -2,7 +2,6 @@ from mongoengine import *
 from datetime import datetime
 
 from spaceone.core.model.mongo_model import MongoModel
-from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
 from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
 from spaceone.inventory.model.region_model import Region
@@ -14,10 +13,19 @@ class CloudServiceTag(EmbeddedDocument):
     value = StringField(max_length=255)
 
 
+class CollectionInfo(EmbeddedDocument):
+    collectors = ListField(StringField(max_length=40))
+    service_accounts = ListField(StringField(max_length=40))
+    secrets = ListField(StringField(max_length=40))
+
+    def to_dict(self):
+        return dict(self.to_mongo())
+
+
 class CloudService(MongoModel):
     cloud_service_id = StringField(max_length=40, generate_id='cloud-svc', unique=True)
     name = StringField(max_length=255, default='')
-    state = StringField(max_length=20, choices=('ACTIVE', 'DELETED'), default='ACTIVE')
+    state = StringField(max_length=20, choices=('ACTIVE', 'DISCONNECTED', 'DELETED'), default='ACTIVE')
     account = StringField(max_length=255, default=None, null=True)
     instance_type = StringField(max_length=255, default=None, null=True)
     instance_size = FloatField(max_length=255, default=None, null=True)
@@ -38,7 +46,6 @@ class CloudService(MongoModel):
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
-    launched_at = DateTimeField(default=None, null=True)
 
     meta = {
         'updatable_fields': [
@@ -59,7 +66,6 @@ class CloudService(MongoModel):
             'collection_info',
             'updated_at',
             'deleted_at',
-            'launched_at'
         ],
         'minimal_fields': [
             'cloud_service_id',
@@ -109,7 +115,6 @@ class CloudService(MongoModel):
             'collection_info.secrets',
             'created_at',
             'updated_at',
-            'launched_at',
             {
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],

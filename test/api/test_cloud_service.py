@@ -377,6 +377,7 @@ class TestCloudService(unittest.TestCase):
         param = {
             'cloud_service_id': self.cloud_service.cloud_service_id,
             'name': name,
+            'data': self.cloud_service.data,
             'domain_id': self.domain.domain_id
         }
 
@@ -500,6 +501,7 @@ class TestCloudService(unittest.TestCase):
 
         data = {
             'a': 'xxx',
+            'c': 'd',
             'e': 'f'
         }
 

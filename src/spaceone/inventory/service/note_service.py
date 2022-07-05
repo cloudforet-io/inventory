@@ -1,8 +1,8 @@
 import logging
 
 from spaceone.core.service import *
-from spaceone.inventory.model.change_history_model import Record
-from spaceone.inventory.manager.change_history_manager import ChangeHistoryManager
+from spaceone.inventory.model.record_model import Record
+from spaceone.inventory.manager.record_manager import RecordManager
 from spaceone.inventory.manager.note_manager import NoteManager
 
 _LOGGER = logging.getLogger(__name__)

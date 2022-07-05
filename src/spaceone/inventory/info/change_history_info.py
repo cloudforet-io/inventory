@@ -2,16 +2,16 @@ import functools
 from spaceone.api.inventory.v1 import change_history_pb2
 from spaceone.core.pygrpc.message_type import *
 from spaceone.core import utils
-from spaceone.inventory.model.change_history_model import Record
+from spaceone.inventory.model.record_model import Record
 
 __all__ = ['RecordInfo', 'ChangeHistoryInfo']
 
 
-def RecordDiff(diff_vo):
+def RecordDiff(diff_data):
     info = {
-        'key': diff_vo['key'],
-        'before': change_value_type(diff_vo.get('before')),
-        'after': change_value_type(diff_vo.get('after')),
+        'key': diff_data.get('key'),
+        'before': change_value_type(diff_data.get('before')),
+        'after': change_value_type(diff_data.get('after')),
     }
 
     return change_history_pb2.RecordDiff(**info)

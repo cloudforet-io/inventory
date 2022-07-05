@@ -36,7 +36,6 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'created_at': utils.datetime_to_iso8601(cloud_svc_vo.created_at),
             'updated_at': utils.datetime_to_iso8601(cloud_svc_vo.updated_at),
             'deleted_at': utils.datetime_to_iso8601(cloud_svc_vo.deleted_at),
-            'launched_at': utils.datetime_to_iso8601(cloud_svc_vo.launched_at),
         })
 
     return cloud_service_pb2.CloudServiceInfo(**info)

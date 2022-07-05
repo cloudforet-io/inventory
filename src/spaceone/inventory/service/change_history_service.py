@@ -1,5 +1,5 @@
 from spaceone.core.service import *
-from spaceone.inventory.manager.change_history_manager import ChangeHistoryManager
+from spaceone.inventory.manager.record_manager import RecordManager
 
 
 @authentication_handler
@@ -10,7 +10,7 @@ class ChangeHistoryService(BaseService):
 
     def __init__(self, metadata):
         super().__init__(metadata)
-        self.cm_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
+        self.record_mgr: RecordManager = self.locator.get_manager('RecordManager')
 
     @transaction(append_meta={
         'authorization.scope': 'PROJECT',
@@ -19,7 +19,7 @@ class ChangeHistoryService(BaseService):
     @check_required(['domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['record_id', 'cloud_service_id', 'action', 'user_id', 'collector_id', 'job_id',
-                          'domain_id', 'user_projects'])
+                          'updated_by', 'domain_id', 'user_projects'])
     @append_keyword_filter(['record_id', 'cloud_service_id'])
     def list(self, params):
         """
@@ -31,6 +31,7 @@ class ChangeHistoryService(BaseService):
                     'user_id': 'dict',
                     'collector_id': 'str',
                     'job_id': 'str',
+                    'updated_by': 'str',
                     'domain_id  ': 'str',
                     'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
                     'user_projects': 'list', // from meta
@@ -43,7 +44,7 @@ class ChangeHistoryService(BaseService):
         """
         query = params.get('query', {})
 
-        return self.cm_mgr.list_records(query)
+        return self.record_mgr.list_records(query)
 
     @transaction(append_meta={
         'authorization.scope': 'PROJECT',
@@ -67,4 +68,4 @@ class ChangeHistoryService(BaseService):
         """
 
         query = params.get('query', {})
-        return self.cm_mgr.stat_records(query)
+        return self.record_mgr.stat_records(query)

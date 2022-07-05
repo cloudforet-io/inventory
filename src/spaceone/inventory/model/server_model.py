@@ -2,11 +2,19 @@ from datetime import datetime
 from mongoengine import *
 
 from spaceone.core.model.mongo_model import MongoModel
-from spaceone.inventory.model.collection_info_model import CollectionInfo
 from spaceone.inventory.model.reference_resource_model import ReferenceResource
 from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
 from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
+
+
+class CollectionInfo(EmbeddedDocument):
+    collectors = ListField(StringField(max_length=40))
+    service_accounts = ListField(StringField(max_length=40))
+    secrets = ListField(StringField(max_length=40))
+
+    def to_dict(self):
+        return dict(self.to_mongo())
 
 
 class NIC(EmbeddedDocument):
@@ -66,7 +74,6 @@ class Server(MongoModel):
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
-    launched_at = DateTimeField(default=None, null=True)
 
     meta = {
         'updatable_fields': [
@@ -91,7 +98,6 @@ class Server(MongoModel):
             'collection_info',
             'updated_at',
             'deleted_at',
-            'launched_at'
         ],
         'minimal_fields': [
             'server_id',
@@ -144,7 +150,6 @@ class Server(MongoModel):
             'collection_info.secrets',
             'created_at',
             'updated_at',
-            'launched_at',
             {
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],
