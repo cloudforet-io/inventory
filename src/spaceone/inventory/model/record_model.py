@@ -27,7 +27,7 @@ class Record(MongoModel):
             'collector_id',
             'job_id',
             'updated_by',
-            'updated_at'
+            'created_at'
         ],
         'change_query_keys': {
             'user_projects': 'cloud_service.project_id'
