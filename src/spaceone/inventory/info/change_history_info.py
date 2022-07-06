@@ -2,17 +2,17 @@ import functools
 from spaceone.api.inventory.v1 import change_history_pb2
 from spaceone.core.pygrpc.message_type import *
 from spaceone.core import utils
-from spaceone.inventory.model.record_model import Record
+from spaceone.inventory.model.record_model import Record, RecordDiff
 
 __all__ = ['RecordInfo', 'ChangeHistoryInfo']
 
 
-def RecordDiff(diff_data):
+def RecordDiffInfo(diff_vo: RecordDiff):
     info = {
-        'key': diff_data.get('key'),
-        'before': change_value_type(diff_data.get('before')),
-        'after': change_value_type(diff_data.get('after')),
-        'type': diff_data.get('type'),
+        'key': diff_vo.key,
+        'before': change_value_type(diff_vo.before),
+        'after': change_value_type(diff_vo.after),
+        'type': diff_vo.type,
     }
 
     return change_history_pb2.RecordDiff(**info)
@@ -31,7 +31,7 @@ def RecordInfo(record_vo: Record, minimal=False):
 
     if not minimal:
         info.update({
-            'diff': list(map(RecordDiff, record_vo.diff)),
+            'diff': list(map(RecordDiffInfo, record_vo.diff)),
             'domain_id': record_vo.domain_id
         })
 

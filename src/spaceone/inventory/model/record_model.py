@@ -4,11 +4,21 @@ from spaceone.core.model.mongo_model import MongoModel
 from spaceone.inventory.model.cloud_service_model import CloudService
 
 
+class RecordDiff(EmbeddedDocument):
+    key = StringField(required=True)
+    before = StringField(default=None, null=True)
+    after = StringField(default=None, null=True)
+    type = StringField(max_length=20, choices=('ADDED', 'CHANGED', 'DELETED'), required=True)
+
+    def to_dict(self):
+        return dict(self.to_mongo())
+
+
 class Record(MongoModel):
     record_id = StringField(max_length=40, generate_id='record', unique=True)
     cloud_service_id = StringField(max_length=40, required=True)
     action = StringField(max_length=20, choices=('CREATE', 'UPDATE', 'DELETE'), required=True)
-    diff = ListField(DictField(required=True), default=[])
+    diff = ListField(EmbeddedDocumentField(RecordDiff), default=[])
     diff_count = IntField(default=0)
     user_id = StringField(max_length=255, default=None, null=True)
     collector_id = StringField(max_length=40, default=None, null=True)
@@ -49,6 +59,7 @@ class Record(MongoModel):
             'job_id',
             'updated_by',
             'domain_id',
-            'created_at'
+            'created_at',
+            'diff.key'
         ]
     }
