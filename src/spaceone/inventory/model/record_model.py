@@ -6,9 +6,9 @@ from spaceone.inventory.model.cloud_service_model import CloudService
 
 class RecordDiff(EmbeddedDocument):
     key = StringField(required=True)
-    before = StringField(default=None, null=True)
+    before = DynamicField(default=None, null=True)
     after = DynamicField(default=None, null=True)
-    type = DynamicField(max_length=20, choices=('ADDED', 'CHANGED', 'DELETED'), required=True)
+    type = StringField(max_length=20, choices=('ADDED', 'CHANGED', 'DELETED'), required=True)
 
     def to_dict(self):
         return dict(self.to_mongo())

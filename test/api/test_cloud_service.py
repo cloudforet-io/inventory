@@ -501,7 +501,7 @@ class TestCloudService(unittest.TestCase):
 
         data = {
             'a': 'xxx',
-            'c': 'd',
+            'c': 8,
             'e': 'f'
         }
 
