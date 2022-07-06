@@ -75,7 +75,7 @@ class ChangeHistoryManager(BaseManager):
                 'domain_id': cloud_service_vo.domain_id,
                 'action': action,
                 'diff': diff,
-                'diff_count': len(diff),
+                'diff_count': diff_count,
                 'updated_by': self.updated_by,
             }
 
