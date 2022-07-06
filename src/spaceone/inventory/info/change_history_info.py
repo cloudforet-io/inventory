@@ -8,14 +8,20 @@ __all__ = ['RecordInfo', 'ChangeHistoryInfo']
 
 
 def RecordDiffInfo(diff_vo: RecordDiff):
-    info = {
+    # info = {
+    #     'key': diff_vo.key,
+    #     'before': change_value_type(diff_vo.before),
+    #     'after': change_value_type(diff_vo.after),
+    #     'type': diff_vo.type,
+    # }
+    #
+    # return change_history_pb2.RecordDiff(**info)
+    return {
         'key': diff_vo.key,
-        'before': change_value_type(diff_vo.before),
-        'after': change_value_type(diff_vo.after),
-        'type': diff_vo.type,
+        'before': diff_vo.before,
+        'after': diff_vo.after,
+        'type': diff_vo.type
     }
-
-    return change_history_pb2.RecordDiff(**info)
 
 
 def RecordInfo(record_vo: Record, minimal=False):
@@ -31,7 +37,8 @@ def RecordInfo(record_vo: Record, minimal=False):
 
     if not minimal:
         info.update({
-            'diff': list(map(RecordDiffInfo, record_vo.diff)),
+            # 'diff': list(map(RecordDiffInfo, record_vo.diff)),
+            'diff': change_list_value_type(list(map(RecordDiffInfo, record_vo.diff))),
             'domain_id': record_vo.domain_id
         })
 
