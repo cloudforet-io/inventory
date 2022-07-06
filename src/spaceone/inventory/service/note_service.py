@@ -111,7 +111,7 @@ class NoteService(BaseService):
     })
     @check_required(['domain_id'])
     @append_query_filter(['note_id', 'record_id', 'cloud_service_id', 'created_by', 'domain_id', 'user_projects'])
-    @append_keyword_filter(['note_id', 'note'])
+    @append_keyword_filter(['note'])
     def list(self, params):
         """ List record notes
 
@@ -140,7 +140,7 @@ class NoteService(BaseService):
     })
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
-    @append_keyword_filter(['note_id', 'note'])
+    @append_keyword_filter(['note'])
     def stat(self, params):
         """
         Args:
