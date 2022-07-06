@@ -66,23 +66,26 @@ class ChangeHistoryManager(BaseManager):
             action = 'CREATE'
 
         diff = self._make_diff(new_data, old_data)
-        params = {
-            'cloud_service_id': cloud_service_vo.cloud_service_id,
-            'cloud_service': cloud_service_vo,
-            'domain_id': cloud_service_vo.domain_id,
-            'action': action,
-            'diff': diff,
-            'diff_count': len(diff),
-            'updated_by': self.updated_by,
-        }
+        diff_count = len(diff)
 
-        if self.updated_by == 'COLLECTOR':
-            params['collector_id'] = self.collector_id
-            params['job_id'] = self.collector_id
-        else:
-            params['user_id'] = self.user_id
+        if diff_count > 0:
+            params = {
+                'cloud_service_id': cloud_service_vo.cloud_service_id,
+                'cloud_service': cloud_service_vo,
+                'domain_id': cloud_service_vo.domain_id,
+                'action': action,
+                'diff': diff,
+                'diff_count': len(diff),
+                'updated_by': self.updated_by,
+            }
 
-        self.record_mgr.create_record(params)
+            if self.updated_by == 'COLLECTOR':
+                params['collector_id'] = self.collector_id
+                params['job_id'] = self.collector_id
+            else:
+                params['user_id'] = self.user_id
+
+            self.record_mgr.create_record(params)
 
     def _make_diff(self, new_data, old_data=None):
         diff = []

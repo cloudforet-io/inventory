@@ -20,7 +20,7 @@ class ChangeHistoryService(BaseService):
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['record_id', 'cloud_service_id', 'action', 'user_id', 'collector_id', 'job_id',
                           'updated_by', 'domain_id', 'user_projects'])
-    @append_keyword_filter(['record_id', 'cloud_service_id'])
+    @append_keyword_filter(['diff.key', 'diff.before', 'diff.after'])
     def list(self, params):
         """
         Args:
@@ -52,7 +52,7 @@ class ChangeHistoryService(BaseService):
     })
     @check_required(['query', 'cloud_service_id', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
-    @append_keyword_filter(['record_id', 'cloud_service_id'])
+    @append_keyword_filter(['diff.key', 'diff.before', 'diff.after'])
     def stat(self, params):
         """
         Args:
