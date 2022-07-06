@@ -29,6 +29,7 @@ def RecordInfo(record_vo: Record, minimal=False):
         'record_id': record_vo.record_id,
         'cloud_service_id': record_vo.cloud_service_id,
         'action': record_vo.action,
+        'diff_count': record_vo.diff_count,
         'user_id': record_vo.user_id,
         'collector_id': record_vo.collector_id,
         'job_id': record_vo.job_id,

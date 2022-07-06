@@ -33,6 +33,7 @@ class Record(MongoModel):
             'record_id',
             'cloud_service_id',
             'action',
+            'diff_count',
             'user_id',
             'collector_id',
             'job_id',
