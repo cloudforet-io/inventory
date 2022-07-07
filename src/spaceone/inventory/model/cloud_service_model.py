@@ -115,6 +115,7 @@ class CloudService(MongoModel):
             'collection_info.secrets',
             'created_at',
             'updated_at',
+            'deleted_at',
             {
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],
