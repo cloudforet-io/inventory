@@ -4,7 +4,6 @@ from spaceone.core.service import *
 from spaceone.core import config
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.cleanup_manager import CleanupManager
-from spaceone.inventory.manager.server_manager import ServerManager
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 from spaceone.inventory.manager.collector_manager.job_manager import JobManager
 from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
@@ -166,7 +165,6 @@ class CleanupService(BaseService):
         """
 
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
-        server_mgr: ServerManager = self.locator.get_manager('ServerManager')
 
         domain_id = params['domain_id']
 
@@ -195,70 +193,3 @@ class CleanupService(BaseService):
         cloud_svc_vos, total_count = cloud_svc_mgr.list_cloud_services(query)
         _LOGGER.info(f'[terminate_resources] Terminate cloud services: {str(total_count)}')
         cloud_svc_vos.delete()
-
-        server_vos, total_count = server_mgr.list_servers(query)
-        _LOGGER.info(f'[terminate_resources] Terminate servers: {str(total_count)}')
-        server_vos.delete()
-
-    # @transaction
-    # @check_required(['domain_id'])
-    # def update_collection_state(self, params):
-    #     """
-    #     Args:
-    #         params (dict): {
-    #             'options': {},
-    #             'domain_id': str
-    #         }
-    #
-    #     Based on domain's cleanup policy update  collection.state
-    #
-    #     Returns:
-    #         values (list) : 'list of updated resources'
-    #
-    #     """
-    #     domain_id = params['domain_id']
-    #     # Get Cleanup Policy of domain
-    #     state = 'DISCONNECTED'
-    #     policies = self._get_domain_config(state, domain_id)
-    #     _LOGGER.debug(f'[update_collection_state] policies = {policies}')
-    #
-    #     # policies = {
-    #     #    'inventory.Server?provider=aws&data.aws.lifecycle=spot': 12,
-    #     #    'inventory.Server?provider=aws&data.auto_scaling_group!=': 0,
-    #     #    'inventory.Server': 24,
-    #     #    'inventory.CloudService': 24
-    #     # }
-    #
-    #     mgr = self.locator.get_manager('CleanupManager')
-    #     for resource_type, hour in policies.items():
-    #         try:
-    #             _LOGGER.debug(f'[update_collection_state] {resource_type}, {hour}, {state}, {domain_id}')
-    #             mgr.update_collection_state(resource_type, hour, state, domain_id)
-    #         except Exception as e:
-    #             _LOGGER.error(f'[update_collection_state] {resource_type}, {hour}')
-    #             _LOGGER.error(f'[update_collection_state] {e}')
-
-    # def _get_domain_config(self, name, domain_id):
-    #     """ Get domain config with name
-    #     """
-    #
-    #     # define as Domain config variable
-    #     # DEFAULT_POLICY = {
-    #     #     'garbage_collection.inventory.DISCONNECTED': {
-    #     #             'inventory.Server': 24,
-    #     #             'inventory.CloudService': 24
-    #     #         },
-    #     #     'garbage_collection.inventory.DELETE': {
-    #     #             'inventory.Server': 48,
-    #     #             'inventory.CloudService': 48
-    #     #     }
-    #     # }
-    #
-    #     try:
-    #         cfg_mgr = self.locator.get_manager('ConfigManager')
-    #         policy_name = f'garbage_collection.inventory.{name}'
-    #
-    #         return cfg_mgr.get_domain_config(policy_name, domain_id)
-    #     except Exception as e:
-    #         _LOGGER.debug(f'[_get_domain_config] fail to get config {name} {domain_id}')
-    #         return DEFAULT_POLICY[policy_name]
