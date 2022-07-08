@@ -11,7 +11,6 @@ _LOGGER = logging.getLogger(__name__)
 
 
 RESOURCE_MAP = {
-    'inventory.Server': 'ServerManager',
     'inventory.CloudService': 'CloudServiceManager',
     'inventory.CloudServiceType': 'CloudServiceTypeManager',
     'inventory.Region': 'RegionManager',
@@ -64,32 +63,12 @@ class CleanupManager(BaseManager):
         }
 
         state_vos, total_count = state_mgr.list_collection_states(query)
-        server_ids = []
         cloud_service_ids = []
         for state_vo in state_vos:
-            if state_vo.resource_type == 'inventory.Server':
-                server_ids.append(state_vo.resource_id)
-            elif state_vo.resource_type == 'inventory.CloudService':
+            if state_vo.resource_type == 'inventory.CloudService':
                 cloud_service_ids.append(state_vo.resource_id)
 
         total_deleted_count = 0
-
-        if len(server_ids) > 0:
-            server_mgr = self.locator.get_manager('ServerManager')
-
-            query = {
-                'filter': [
-                    {'k': 'server_id', 'v': server_ids, 'o': 'in'},
-                    {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
-                ]
-            }
-
-            try:
-                deleted_count = server_mgr.delete_resources(query)
-                _LOGGER.debug(f'[_delete_resources_by_collector] delete server {deleted_count} in {domain_id}')
-                total_deleted_count += deleted_count
-            except Exception as e:
-                _LOGGER.error(f'[_delete_resources_by_collector] delete server error: {e}', exc_info=True)
 
         if len(cloud_service_ids) > 0:
             cloud_svc_mgr = self.locator.get_manager('CloudServiceManager')
@@ -165,9 +144,7 @@ class CleanupManager(BaseManager):
     def _parse_resource_type(resource_type):
         """
         Example of resource type
-         - inventory.Server
-         - inventory.Server?data.aws.lifecycle=spot
-         - inventory.Server?data.auto_scaling_group!=
+         - inventory.CloudService
          - inventory.CloudService?provider=aws&cloud_service_group=DynamoDB
         """
         items = resource_type.split('?')
