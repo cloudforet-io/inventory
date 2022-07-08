@@ -71,10 +71,10 @@ class CloudServiceManager(BaseManager, ResourceManager):
     def get_cloud_service(self, cloud_service_id, domain_id, only=None):
         return self.cloud_svc_model.get(cloud_service_id=cloud_service_id, domain_id=domain_id, only=only)
 
-    def list_cloud_services(self, query):
+    def list_cloud_services(self, query, target=None):
         # Append Query for DELETED filter (Temporary Logic)
         query = self._append_state_query(query)
-        return self.cloud_svc_model.query(**query)
+        return self.cloud_svc_model.query(**query, target=target)
 
     def stat_cloud_services(self, query):
         # Append Query for DELETED filter (Temporary Logic)
@@ -105,6 +105,19 @@ class CloudServiceManager(BaseManager, ResourceManager):
                         del new_data[key]
 
         return new_data
+
+    def find_resources(self, query):
+        query['only'] = ['cloud_service_id']
+
+        resources = []
+        cloud_svc_vos, total_count = self.list_cloud_services(query, target='SECONDARY_PREFERRED')
+
+        for cloud_svc_vo in cloud_svc_vos:
+            resources.append({
+                'cloud_service_id': cloud_svc_vo.cloud_service_id
+            })
+
+        return resources, total_count
 
     def delete_resources(self, query):
         query['only'] = self.resource_keys + ['updated_at']
