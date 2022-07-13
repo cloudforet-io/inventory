@@ -1,5 +1,6 @@
 import logging
 from spaceone.core.manager import BaseManager
+from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.manager.record_manager import RecordManager
 
@@ -125,8 +126,7 @@ class ChangeHistoryManager(BaseManager):
 
         return diff
 
-    @staticmethod
-    def _generate_diff_data(key, parent_key, new_value, old_value):
+    def _generate_diff_data(self, key, parent_key, new_value, old_value):
         if old_value is None:
             diff_type = 'ADDED'
         else:
@@ -134,7 +134,52 @@ class ChangeHistoryManager(BaseManager):
 
         return {
             'key': key if parent_key is None else f'{parent_key}.{key}',
-            'before': old_value,
-            'after': new_value,
+            'before': self._change_diff_value(old_value),
+            'after': self._change_diff_value(new_value),
             'type': diff_type
         }
+
+    @staticmethod
+    def _change_diff_value(value):
+        if isinstance(value, dict):
+            try:
+                sorted_value = dict(sorted(value.items()))
+                return utils.dump_json(sorted_value)
+            except Exception as e:
+                _LOGGER.error(f'[_change_diff_value] dict value sort error: {e}')
+
+            return utils.dump_json(value)
+        elif isinstance(value, list):
+            try:
+                if len(value) > 0:
+                    if isinstance(value[0], dict):
+                        changed_list_value = []
+                        sort_keys = []
+
+                        for v in value:
+                            changed_list_value.append(
+                                dict(sorted(v.items()))
+                            )
+
+                        for key in changed_list_value[0].keys():
+                            sort_keys.append(key)
+
+                        if len(sort_keys) > 1:
+                            sorted_value = sorted(changed_list_value, key=lambda k: (k[sort_keys[0]], k[sort_keys[1]]))
+                        elif len(sort_keys) == 1:
+                            sorted_value = sorted(changed_list_value, key=lambda k: (k[sort_keys[0]]))
+                        else:
+                            sorted_value = changed_list_value
+                    else:
+                        sorted_value = sorted(value)
+
+                    return utils.dump_json(sorted_value)
+            except Exception as e:
+                _LOGGER.error(f'[_change_diff_value] list value sort error: {e}')
+
+            return utils.dump_json(value)
+
+        elif value is None:
+            return value
+        else:
+            return str(value)

@@ -477,7 +477,13 @@ class TestCloudService(unittest.TestCase):
         old_data = {
             'a': 'b',
             'c': 'd',
-            'x': 'y'
+            'x': 'y',
+            'z': {
+                'y': {
+                    'a': 1,
+                    'b': 2
+                }
+            }
         }
 
         old_metadata = {
@@ -502,7 +508,14 @@ class TestCloudService(unittest.TestCase):
         data = {
             'a': 'xxx',
             'c': 8,
-            'e': 'f'
+            'e': 'f',
+            'z': {
+                'y': {
+                    'c': 3,
+                    'a': 1,
+                    'b': 2
+                }
+            }
         }
 
         metadata = {
@@ -545,9 +558,16 @@ class TestCloudService(unittest.TestCase):
 
         result_data = {
             'a': 'xxx',
-            'c': 'd',
+            'c': 8,
             'x': 'y',
-            'e': 'f'
+            'e': 'f',
+            'z': {
+                'y': {
+                    'c': 3,
+                    'a': 1,
+                    'b': 2
+                }
+            }
         }
 
         self.assertEqual(MessageToDict(self.cloud_service.data), result_data)
