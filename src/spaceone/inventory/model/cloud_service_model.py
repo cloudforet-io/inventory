@@ -91,9 +91,6 @@ class CloudService(MongoModel):
                 'foreign_key': 'ref_region'
             }
         },
-        'ordering': [
-            'name'
-        ],
         'indexes': [
             # 'cloud_service_id',
             'state',
