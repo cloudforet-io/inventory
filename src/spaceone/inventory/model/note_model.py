@@ -41,6 +41,7 @@ class Note(MongoModel):
             'record_id',
             'cloud_service_id',
             'created_by',
+            'cloud_service',
             'domain_id'
         ]
     }
