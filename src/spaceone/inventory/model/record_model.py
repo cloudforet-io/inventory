@@ -59,6 +59,7 @@ class Record(MongoModel):
             'collector_id',
             'job_id',
             'updated_by',
+            'cloud_service',
             'domain_id',
             'created_at',
             'diff.key'
