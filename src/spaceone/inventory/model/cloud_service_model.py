@@ -98,7 +98,6 @@ class CloudService(MongoModel):
             'instance_type',
             'ip_addresses',
             'reference.resource_id',
-            'data.power_state.status',
             'provider',
             'cloud_service_group',
             'cloud_service_type',
