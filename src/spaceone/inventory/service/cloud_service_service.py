@@ -168,6 +168,10 @@ class CloudServiceService(BaseService):
         old_cloud_svc_data = dict(cloud_svc_vo.to_dict())
 
         params['collection_info'] = self._get_collection_info(old_cloud_svc_data.get('collection_info', {}))
+
+        if 'metadata' in params:
+            params['metadata'] = self._change_metadata_path(params['metadata'])
+
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
 
         cloud_svc_vo = self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
