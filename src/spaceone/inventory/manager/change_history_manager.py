@@ -83,7 +83,7 @@ class ChangeHistoryManager(BaseManager):
 
             if self.updated_by == 'COLLECTOR':
                 params['collector_id'] = self.collector_id
-                params['job_id'] = self.collector_id
+                params['job_id'] = self.job_id
             else:
                 params['user_id'] = self.user_id
 
