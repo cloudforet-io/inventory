@@ -1,7 +1,6 @@
 from mongoengine import *
 
 from spaceone.core.model.mongo_model import MongoModel
-from spaceone.inventory.model.cloud_service_model import CloudService
 
 
 class Note(MongoModel):
@@ -10,7 +9,7 @@ class Note(MongoModel):
     record_id = StringField(max_length=40)
     cloud_service_id = StringField(max_length=40)
     created_by = StringField(max_length=40)
-    cloud_service = ReferenceField('CloudService', reverse_delete_rule=CASCADE)
+    project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now_add=True)
 
@@ -23,16 +22,11 @@ class Note(MongoModel):
             'note',
             'record_id',
             'cloud_service_id',
-            'created_by'
+            'created_by',
+            'project_id'
         ],
         'change_query_keys': {
-            'user_projects': 'cloud_service.project_id'
-        },
-        'reference_query_keys': {
-            'cloud_service': {
-                'model': CloudService,
-                'foreign_key': 'project_id'
-            }
+            'user_projects': 'project_id'
         },
         'ordering': [
             '-created_at'
@@ -41,7 +35,7 @@ class Note(MongoModel):
             'record_id',
             'cloud_service_id',
             'created_by',
-            'cloud_service',
+            'project_id',
             'domain_id'
         ]
     }
