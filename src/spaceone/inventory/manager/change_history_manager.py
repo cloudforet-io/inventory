@@ -54,7 +54,7 @@ class ChangeHistoryManager(BaseManager):
     def add_delete_history(self, cloud_service_vo: CloudService):
         params = {
             'cloud_service_id': cloud_service_vo.cloud_service_id,
-            'cloud_service': cloud_service_vo,
+            'project_id': cloud_service_vo.project_id,
             'domain_id': cloud_service_vo.domain_id,
             'action': 'DELETE',
         }
@@ -73,7 +73,7 @@ class ChangeHistoryManager(BaseManager):
         if diff_count > 0:
             params = {
                 'cloud_service_id': cloud_service_vo.cloud_service_id,
-                'cloud_service': cloud_service_vo,
+                'project_id': cloud_service_vo.project_id,
                 'domain_id': cloud_service_vo.domain_id,
                 'action': action,
                 'diff': diff,
