@@ -39,8 +39,8 @@ class NoteService(BaseService):
         record_mgr: RecordManager = self.locator.get_manager('RecordManager')
         record_vo: Record = record_mgr.get_record(params['record_id'], params['domain_id'])
 
-        params['cloud_service'] = record_vo.cloud_service
-        params['cloud_service_id'] = record_vo.cloud_service.cloud_service_id
+        params['cloud_service_id'] = record_vo.cloud_service_id
+        params['project_id'] = record_vo.project_id
         params['created_by'] = user_id
 
         return self.note_mgr.create_note(params)

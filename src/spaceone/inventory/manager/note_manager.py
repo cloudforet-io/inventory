@@ -44,6 +44,9 @@ class NoteManager(BaseManager):
     def get_note(self, note_id, domain_id, only=None):
         return self.note_model.get(note_id=note_id, domain_id=domain_id, only=only)
 
+    def filter_notes(self, **conditions):
+        return self.note_model.filter(**conditions)
+
     def list_notes(self, query={}):
         return self.note_model.query(**query)
 

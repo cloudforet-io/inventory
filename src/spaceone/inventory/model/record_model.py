@@ -24,7 +24,7 @@ class Record(MongoModel):
     collector_id = StringField(max_length=40, default=None, null=True)
     job_id = StringField(max_length=40, default=None, null=True)
     updated_by = StringField(max_length=40, choices=('COLLECTOR', 'USER'), default=None, null=True)
-    cloud_service = ReferenceField('CloudService', reverse_delete_rule=CASCADE)
+    project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now=True)
 
@@ -38,16 +38,11 @@ class Record(MongoModel):
             'collector_id',
             'job_id',
             'updated_by',
-            'created_at'
+            'created_at',
+            'project_id'
         ],
         'change_query_keys': {
-            'user_projects': 'cloud_service.project_id'
-        },
-        'reference_query_keys': {
-            'cloud_service': {
-                'model': CloudService,
-                'foreign_key': 'project_id'
-            }
+            'user_projects': 'project_id'
         },
         'ordering': [
             '-created_at'
@@ -59,7 +54,6 @@ class Record(MongoModel):
             'collector_id',
             'job_id',
             'updated_by',
-            'cloud_service',
             'domain_id',
             'created_at',
             'diff.key'

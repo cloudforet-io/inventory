@@ -9,6 +9,8 @@ from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.change_history_manager import ChangeHistoryManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
+from spaceone.inventory.manager.record_manager import RecordManager
+from spaceone.inventory.manager.note_manager import NoteManager
 from spaceone.inventory.error import *
 
 _KEYWORD_FILTER = ['cloud_service_id', 'name', 'ip_addresses', 'cloud_service_group', 'cloud_service_type',
@@ -138,6 +140,7 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
+        params['ip_addresses'] = params.get('ip_addresses', [])
 
         cloud_svc_vo: CloudService = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
 
@@ -154,7 +157,7 @@ class CloudServiceService(BaseService):
             params['project_id'] = None
         elif project_id:
             self.identity_mgr.get_project(project_id, domain_id)
-        elif secret_project_id:
+        elif secret_project_id and secret_project_id != cloud_svc_vo.project_id:
             params['project_id'] = secret_project_id
 
         if release_region:
@@ -186,6 +189,18 @@ class CloudServiceService(BaseService):
             state_mgr.reset_collection_state(state_vo)
         else:
             state_mgr.create_collection_state(cloud_service_id, 'inventory.CloudService', domain_id)
+
+        if 'project_id' in params:
+            record_mgr: RecordManager = self.locator.get_manager('RecordManager')
+            note_mgr: NoteManager = self.locator.get_manager('NoteManager')
+
+            # Update Project ID from Records
+            record_vos = record_mgr.filter_records(cloud_service_id=cloud_service_id, domain_id=domain_id)
+            record_vos.update({'project_id': params['project_id']})
+
+            # Update Project ID from Notes
+            note_vos = note_mgr.filter_notes(cloud_service_id=cloud_service_id, domain_id=domain_id)
+            note_vos.update({'project_id': params['project_id']})
 
         return cloud_svc_vo
 
