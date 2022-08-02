@@ -138,6 +138,7 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
+        params['ip_addresses'] = params.get('ip_addresses', [])
 
         cloud_svc_vo: CloudService = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
 
