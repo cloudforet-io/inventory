@@ -54,6 +54,7 @@ class Record(MongoModel):
             'collector_id',
             'job_id',
             'updated_by',
+            'project_id',
             'domain_id',
             'created_at',
             'diff.key'
