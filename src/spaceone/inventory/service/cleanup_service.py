@@ -5,6 +5,8 @@ from spaceone.core import config
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
+from spaceone.inventory.manager.record_manager import RecordManager
+from spaceone.inventory.manager.note_manager import NoteManager
 from spaceone.inventory.manager.collector_manager.job_manager import JobManager
 from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
 
@@ -165,6 +167,8 @@ class CleanupService(BaseService):
         """
 
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
+        record_mgr: RecordManager = self.locator.get_manager('RecordManager')
+        note_mgr: NoteManager = self.locator.get_manager('NoteManager')
 
         domain_id = params['domain_id']
 
@@ -192,4 +196,17 @@ class CleanupService(BaseService):
 
         cloud_svc_vos, total_count = cloud_svc_mgr.list_cloud_services(query)
         _LOGGER.info(f'[terminate_resources] Terminate cloud services: {str(total_count)}')
+        for cloud_svc_vo in cloud_svc_vos:
+            cloud_service_id = cloud_svc_vo.cloud_service_id
+            domain_id = cloud_svc_vo.domain_id
+            _LOGGER.info(f'[terminate_resources] Terminate cloud service / record / note: {cloud_service_id}')
+
+            # Cascade Delete Records
+            record_vos = record_mgr.filter_records(cloud_service_id=cloud_service_id, domain_id=domain_id)
+            record_vos.delete()
+
+            # Cascade Delete Notes
+            note_vos = note_mgr.filter_notes(cloud_service_id=cloud_service_id, domain_id=domain_id)
+            note_vos.delete()
+
         cloud_svc_vos.delete()
