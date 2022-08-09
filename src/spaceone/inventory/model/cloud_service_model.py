@@ -8,11 +8,6 @@ from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
 
-class CloudServiceTag(EmbeddedDocument):
-    key = StringField(max_length=255)
-    value = StringField(max_length=255)
-
-
 class CollectionInfo(EmbeddedDocument):
     collectors = ListField(StringField(max_length=40))
     service_accounts = ListField(StringField(max_length=40))
@@ -37,7 +32,7 @@ class CloudService(MongoModel):
     data = DictField()
     metadata = DictField()
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
-    tags = ListField(EmbeddedDocumentField(CloudServiceTag))
+    tags = DictField()
     region_code = StringField(max_length=255, default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)
@@ -116,8 +111,7 @@ class CloudService(MongoModel):
                 "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],
                 "name": "COMPOUND_INDEX_FOR_SEARCH"
-            },
-            ('tags.key', 'tags.value')
+            }
         ]
     }
 

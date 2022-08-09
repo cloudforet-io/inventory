@@ -42,11 +42,6 @@ class Disk(EmbeddedDocument):
         return self.to_mongo()
 
 
-class ServerTag(EmbeddedDocument):
-    key = StringField(max_length=255)
-    value = StringField(max_length=255)
-
-
 class Server(MongoModel):
     server_id = StringField(max_length=40, generate_id='server', unique=True)
     name = StringField(max_length=255, default='')
@@ -65,7 +60,7 @@ class Server(MongoModel):
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
     nics = ListField(EmbeddedDocumentField(NIC))
     disks = ListField(EmbeddedDocumentField(Disk))
-    tags = ListField(EmbeddedDocumentField(ServerTag))
+    tags = DictField()
     region_code = StringField(max_length=255, default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=40, default=None, null=True)
@@ -155,7 +150,6 @@ class Server(MongoModel):
                            'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],
                 "name": "COMPOUND_INDEX_FOR_SEARCH"
             },
-            ('tags.key', 'tags.value')
         ]
     }
 

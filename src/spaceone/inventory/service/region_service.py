@@ -38,11 +38,6 @@ class RegionService(BaseService):
         params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
         params['region_key'] = f'{params["provider"]}.{params["region_code"]}'
 
-        # Temporary Code for Tag Migration
-        if 'tags' in params:
-            if isinstance(params['tags'], dict):
-                params['tags'] = utils.dict_to_tags(params['tags'])
-
         return self.region_mgr.create_region(params)
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
@@ -65,11 +60,6 @@ class RegionService(BaseService):
         params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
 
         region_vo = self.region_mgr.get_region(params['region_id'], params['domain_id'])
-
-        # Temporary Code for Tag Migration
-        if 'tags' in params:
-            if isinstance(params['tags'], dict):
-                params['tags'] = utils.dict_to_tags(params['tags'])
 
         if not region_vo.region_key:
             params['region_key'] = f'{region_vo.provider}.{region_vo.region_code}'
@@ -116,7 +106,6 @@ class RegionService(BaseService):
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['domain_id'])
     @append_query_filter(['region_id', 'name', 'region_key', 'region_code', 'provider', 'domain_id'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
@@ -142,7 +131,6 @@ class RegionService(BaseService):
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """

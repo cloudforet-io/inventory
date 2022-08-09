@@ -39,9 +39,6 @@ class CollectorService(BaseService):
             collector_vo (object)
         """
 
-        if 'tags' in params:
-            params['tags'] = utils.dict_to_tags(params['tags'])
-
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         is_public = params.get('is_public', True)
         project_id = params.get('project_id', None)
@@ -73,9 +70,6 @@ class CollectorService(BaseService):
         Returns:
             collector_vo (object)
         """
-
-        if 'tags' in params:
-            params['tags'] = utils.dict_to_tags(params['tags'])
 
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         collector_id = params['collector_id']
@@ -142,7 +136,6 @@ class CollectorService(BaseService):
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['domain_id'])
     @append_query_filter(['collector_id', 'name', 'state', 'priority', 'plugin_id', 'domain_id'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
@@ -152,7 +145,6 @@ class CollectorService(BaseService):
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """

@@ -48,7 +48,7 @@ def CollectorInfo(vo, minimal=False):
             'priority': vo.priority,
             'created_at': utils.datetime_to_iso8601(vo.created_at),
             'last_collected_at': utils.datetime_to_iso8601(vo.last_collected_at),
-            'tags': change_struct_type(utils.tags_to_dict(vo.tags)),
+            'tags': change_struct_type(vo.tags),
             'domain_id': vo.domain_id
         })
 

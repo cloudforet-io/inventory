@@ -73,11 +73,6 @@ class ServerService(BaseService):
         cloud_service_type = params.get('cloud_service_type')
         region_code = params.get('region_code')
 
-        # Temporary Code for Tag Migration
-        if 'tags' in params:
-            if isinstance(params['tags'], dict):
-                params['tags'] = utils.dict_to_tags(params['tags'])
-
         if provider:
             params['provider'] = provider
 
@@ -160,11 +155,6 @@ class ServerService(BaseService):
         region_code = params.get('region_code')
 
         server_vo: Server = self.server_mgr.get_server(server_id, domain_id)
-
-        # Temporary Code for Tag Migration
-        if 'tags' in params:
-            if isinstance(params['tags'], dict):
-                params['tags'] = utils.dict_to_tags(params['tags'])
 
         if provider:
             params['provider'] = provider
@@ -286,7 +276,6 @@ class ServerService(BaseService):
                           'account', 'instance_type', 'provider', 'cloud_service_group', 'cloud_service_type',
                           'region_code', 'resource_group_id', 'project_id', 'project_group_id',
                           'domain_id', 'user_projects'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
@@ -332,7 +321,6 @@ class ServerService(BaseService):
     })
     @check_required(['query', 'domain_id'])
     @append_query_filter(['resource_group_id', 'domain_id', 'user_projects'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """
