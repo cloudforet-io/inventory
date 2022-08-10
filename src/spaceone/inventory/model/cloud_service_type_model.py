@@ -3,11 +3,6 @@ from mongoengine import *
 from spaceone.core.model.mongo_model import MongoModel
 
 
-class CloudServiceTypeTag(EmbeddedDocument):
-    key = StringField(max_length=255)
-    value = StringField(max_length=255)
-
-
 class CloudServiceType(MongoModel):
     cloud_service_type_id = StringField(max_length=40, generate_id='cloud-svc-type', unique=True)
     name = StringField(max_length=255, unique_with=['provider', 'group', 'domain_id'])
@@ -21,7 +16,7 @@ class CloudServiceType(MongoModel):
     resource_type = StringField(max_length=255)
     labels = ListField(StringField(max_length=255))
     metadata = DictField()
-    tags = ListField(EmbeddedDocumentField(CloudServiceTypeTag))
+    tags = DictField()
     domain_id = StringField(max_length=40)
     updated_by = StringField(default=None, null=True)
     created_at = DateTimeField(auto_now_add=True)
@@ -70,6 +65,5 @@ class CloudServiceType(MongoModel):
             'domain_id',
             'created_at',
             'updated_at',
-            ('tags.key', 'tags.value')
         ]
     }

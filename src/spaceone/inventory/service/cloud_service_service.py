@@ -66,11 +66,6 @@ class CloudServiceService(BaseService):
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
 
-        # Temporary Code for Tag Migration
-        if 'tags' in params:
-            if isinstance(params['tags'], dict):
-                params['tags'] = utils.dict_to_tags(params['tags'])
-
         if 'instance_size' in params:
             if not isinstance(params['instance_size'], float):
                 raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
@@ -145,11 +140,6 @@ class CloudServiceService(BaseService):
             del params['ip_addresses']
 
         cloud_svc_vo: CloudService = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
-
-        # Temporary Code for Tag Migration
-        if 'tags' in params:
-            if isinstance(params['tags'], dict):
-                params['tags'] = utils.dict_to_tags(params['tags'])
 
         if 'instance_size' in params:
             if not isinstance(params['instance_size'], float):
@@ -264,7 +254,6 @@ class CloudServiceService(BaseService):
     @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'instance_type', 'cloud_service_type',
                           'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
                           'project_group_id', 'domain_id', 'user_projects', 'ip_address'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
@@ -306,7 +295,6 @@ class CloudServiceService(BaseService):
     })
     @check_required(['query', 'domain_id'])
     @append_query_filter(['resource_group_id', 'domain_id', 'user_projects'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """

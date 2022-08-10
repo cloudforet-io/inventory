@@ -44,11 +44,6 @@ class CloudServiceTypeService(BaseService):
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
 
-        # Temporary Code for Tag Migration
-        if 'tags' in params:
-            if isinstance(params['tags'], dict):
-                params['tags'] = utils.dict_to_tags(params['tags'])
-
         if provider:
             params['provider'] = provider
 
@@ -90,10 +85,6 @@ class CloudServiceTypeService(BaseService):
 
         cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
                                                                            domain_id)
-        # Temporary Code for Tag Migration
-        if 'tags' in params:
-            if isinstance(params['tags'], dict):
-                params['tags'] = utils.dict_to_tags(params['tags'])
 
         if not cloud_svc_type_vo.cloud_service_type_key:
             params['cloud_service_type_key'] = f'{cloud_svc_type_vo.provider}.{cloud_svc_type_vo.group}.' \
@@ -145,7 +136,6 @@ class CloudServiceTypeService(BaseService):
     @check_required(['domain_id'])
     @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'cloud_service_type_key',
                           'service_code', 'is_primary', 'is_major', 'resource_type', 'domain_id'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
@@ -175,7 +165,6 @@ class CloudServiceTypeService(BaseService):
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """

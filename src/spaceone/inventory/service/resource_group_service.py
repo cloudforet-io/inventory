@@ -40,9 +40,6 @@ class ResourceGroupService(BaseService):
             resource_group_vo (object)
         """
 
-        if 'tags' in params:
-            params['tags'] = utils.dict_to_tags(params['tags'])
-
         return self.resource_group_mgr.create_resource_group(params)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
@@ -74,9 +71,6 @@ class ResourceGroupService(BaseService):
         elif project_id:
             identity_mgr.get_project(project_id, params['domain_id'])
             params['project_id'] = project_id
-
-        if 'tags' in params:
-            params['tags'] = utils.dict_to_tags(params['tags'])
 
         rg_vo = self.resource_group_mgr.get_resource_group(params['resource_group_id'], params['domain_id'])
         return self.resource_group_mgr.update_resource_group_by_vo(params, rg_vo)
@@ -124,7 +118,6 @@ class ResourceGroupService(BaseService):
     })
     @check_required(['domain_id'])
     @append_query_filter(['resource_group_id', 'name', 'project_id', 'domain_id', 'user_projects'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def list(self, params):
         """
@@ -151,7 +144,6 @@ class ResourceGroupService(BaseService):
     })
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
-    @change_tag_filter('tags')
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """

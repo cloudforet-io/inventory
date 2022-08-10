@@ -18,11 +18,6 @@ class PluginInfo(EmbeddedDocument):
         return dict(self.to_mongo())
 
 
-class CollectorTag(EmbeddedDocument):
-    key = StringField(max_length=255)
-    value = StringField(max_length=255)
-
-
 class Collector(MongoModel):
     collector_id = StringField(max_length=40, generate_id='collector', unique=True)
     name = StringField(max_length=255)
@@ -32,7 +27,7 @@ class Collector(MongoModel):
     capability = DictField()
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)
     priority = IntField(min_value=0, default=10, max_value=99)
-    tags = ListField(EmbeddedDocumentField(CollectorTag))
+    tags = DictField()
     project_id = StringField(max_length=40)
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
@@ -71,7 +66,6 @@ class Collector(MongoModel):
             'priority',
             'project_id',
             'domain_id',
-            ('tags.key', 'tags.value')
         ]
     }
 

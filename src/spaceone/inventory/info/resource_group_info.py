@@ -30,7 +30,7 @@ def ResourceGroupInfo(rg_vo: ResourceGroup, minimal=False):
         info.update({
             'resources': list(map(ResourceInfo, rg_vo.resources)),
             'options': change_struct_type(rg_vo.options),
-            'tags': change_struct_type(utils.tags_to_dict(rg_vo.tags)),
+            'tags': change_struct_type(rg_vo.tags),
             'domain_id': rg_vo.domain_id,
             'created_at': utils.datetime_to_iso8601(rg_vo.created_at),
         })

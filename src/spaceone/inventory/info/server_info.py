@@ -58,7 +58,7 @@ def ServerInfo(server_vo: Server, minimal=False):
             'metadata': change_struct_type(server_vo.metadata),
             'nics': list(map(ServerNIC, server_vo.nics)),
             'disks': list(map(ServerDisk, server_vo.disks)),
-            'tags': change_struct_type(utils.tags_to_dict(server_vo.tags)),
+            'tags': change_struct_type(server_vo.tags),
             'collection_info': CollectionInfo(server_vo.collection_info.to_dict()),
             'domain_id': server_vo.domain_id,
             'created_at': utils.datetime_to_iso8601(server_vo.created_at),

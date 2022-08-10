@@ -30,7 +30,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'ip_addresses': cloud_svc_vo.ip_addresses,
             'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
-            'tags': change_struct_type(utils.tags_to_dict(cloud_svc_vo.tags)),
+            'tags': change_struct_type(cloud_svc_vo.tags),
             'collection_info': CollectionInfo(cloud_svc_vo.collection_info.to_dict()),
             'domain_id': cloud_svc_vo.domain_id,
             'created_at': utils.datetime_to_iso8601(cloud_svc_vo.created_at),
