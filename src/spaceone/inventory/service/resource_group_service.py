@@ -40,6 +40,10 @@ class ResourceGroupService(BaseService):
             resource_group_vo (object)
         """
 
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
+
         return self.resource_group_mgr.create_resource_group(params)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
@@ -62,6 +66,11 @@ class ResourceGroupService(BaseService):
             resource_group_vo (object)
 
         """
+
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
+
         identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
         project_id = params.get('project_id', self.transaction.get_meta('secret.project_id'))
         release_project = params.get('release_project', False)

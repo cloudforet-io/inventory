@@ -47,6 +47,10 @@ class CloudServiceTypeService(BaseService):
         if provider:
             params['provider'] = provider
 
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
+
         params['resource_type'] = params.get('resource_type', 'inventory.CloudService')
 
         params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
@@ -77,6 +81,10 @@ class CloudServiceTypeService(BaseService):
             cloud_service_type_vo (object)
 
         """
+
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
 
         params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
 

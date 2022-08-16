@@ -35,6 +35,10 @@ class RegionService(BaseService):
             region_vo (object)
         """
 
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
+
         params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
         params['region_key'] = f'{params["provider"]}.{params["region_code"]}'
 
@@ -56,6 +60,10 @@ class RegionService(BaseService):
             region_vo (object)
 
         """
+
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
 
         params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
 

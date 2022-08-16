@@ -66,6 +66,10 @@ class CloudServiceService(BaseService):
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
 
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
+
         if 'instance_size' in params:
             if not isinstance(params['instance_size'], float):
                 raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
@@ -135,6 +139,10 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
+
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
 
         if 'ip_addresses' in params and params['ip_addresses'] is None:
             del params['ip_addresses']

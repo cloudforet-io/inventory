@@ -39,6 +39,10 @@ class CollectorService(BaseService):
             collector_vo (object)
         """
 
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
+
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         is_public = params.get('is_public', True)
         project_id = params.get('project_id', None)
@@ -70,6 +74,10 @@ class CollectorService(BaseService):
         Returns:
             collector_vo (object)
         """
+
+        if 'tags' in params:
+            if isinstance(params['tags'], list):
+                params['tags'] = utils.tags_to_dict(params['tags'])
 
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
         collector_id = params['collector_id']
