@@ -12,10 +12,7 @@ class JobTaskService(BaseService):
         super().__init__(metadata)
         self.job_task_mgr: JobTaskManager = self.locator.get_manager('JobTaskManager')
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
     @append_query_filter(['job_task_id', 'status', 'job_id', 'secret_id', 'provider',
                           'service_account_id', 'project_id', 'domain_id', 'user_projects'])
@@ -44,10 +41,7 @@ class JobTaskService(BaseService):
 
         return self.job_task_mgr.list(params.get('query', {}))
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(['job_task_id'])
