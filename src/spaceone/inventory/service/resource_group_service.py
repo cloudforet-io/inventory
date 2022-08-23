@@ -121,10 +121,7 @@ class ResourceGroupService(BaseService):
         return self.resource_group_mgr.get_resource_group(params['resource_group_id'], params['domain_id'],
                                                           params.get('only'))
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
     @append_query_filter(['resource_group_id', 'name', 'project_id', 'domain_id', 'user_projects'])
     @append_keyword_filter(_KEYWORD_FILTER)
@@ -147,10 +144,7 @@ class ResourceGroupService(BaseService):
         """
         return self.resource_group_mgr.list_resource_groups(params.get('query', {}))
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(_KEYWORD_FILTER)

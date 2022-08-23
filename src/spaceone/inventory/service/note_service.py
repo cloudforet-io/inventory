@@ -105,10 +105,7 @@ class NoteService(BaseService):
 
         return self.note_mgr.get_note(params['note_id'], params['domain_id'], params.get('only'))
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
     @append_query_filter(['note_id', 'record_id', 'cloud_service_id', 'created_by', 'domain_id', 'user_projects'])
     @append_keyword_filter(['note'])
@@ -134,10 +131,7 @@ class NoteService(BaseService):
         query = params.get('query', {})
         return self.note_mgr.list_notes(query)
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(['note'])

@@ -12,10 +12,7 @@ class JobService(BaseService):
         super().__init__(metadata)
         self.job_mgr: JobManager = self.locator.get_manager('JobManager')
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['job_id', 'status', 'collector_id', 'project_id', 'domain_id', 'user_projects'])
@@ -46,10 +43,7 @@ class JobService(BaseService):
 
         return self.job_mgr.list_jobs(query)
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(['job_id'])
