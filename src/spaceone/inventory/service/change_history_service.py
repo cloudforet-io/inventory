@@ -12,10 +12,7 @@ class ChangeHistoryService(BaseService):
         super().__init__(metadata)
         self.record_mgr: RecordManager = self.locator.get_manager('RecordManager')
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['record_id', 'cloud_service_id', 'action', 'user_id', 'collector_id', 'job_id',
@@ -46,10 +43,7 @@ class ChangeHistoryService(BaseService):
 
         return self.record_mgr.list_records(query)
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(['diff.key', 'diff.before', 'diff.after'])

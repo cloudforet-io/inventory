@@ -254,10 +254,7 @@ class CloudServiceService(BaseService):
         return self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], params['domain_id'],
                                                     params.get('only'))
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
     @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'instance_type', 'cloud_service_type',
                           'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
@@ -297,10 +294,7 @@ class CloudServiceService(BaseService):
 
         return self.cloud_svc_mgr.list_cloud_services(query)
 
-    @transaction(append_meta={
-        'authorization.scope': 'PROJECT',
-        'mutation.append_parameter': {'user_projects': 'authorization.projects'}
-    })
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
     @append_query_filter(['resource_group_id', 'domain_id', 'user_projects'])
     @append_keyword_filter(_KEYWORD_FILTER)
