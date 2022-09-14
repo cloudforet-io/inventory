@@ -1,11 +1,11 @@
-from spaceone.api.inventory.v1 import cloud_service_tag_pb2, cloud_service_tag_grpc
+from spaceone.api.inventory.v1 import cloud_service_tag_pb2, cloud_service_tag_pb2_grpc
 from spaceone.core.pygrpc import BaseAPI
 
 
-class CloudServiceTag(BaseAPI, cloud_service_tag_grpc.CloudServiceServicer):
+class CloudServiceTag(BaseAPI, cloud_service_tag_pb2_grpc.CloudServiceTagServicer):
 
     pb2 = cloud_service_tag_pb2
-    pb2_grpc = cloud_service_tag_grpc
+    pb2_grpc = cloud_service_tag_pb2_grpc
 
     def list(self, request, context):
         params, metadata = self.parse_request(request, context)
