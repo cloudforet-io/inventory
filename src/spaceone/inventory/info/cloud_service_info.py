@@ -47,7 +47,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'instance_type': cloud_svc_vo.instance_type,
             'instance_size': cloud_svc_vo.instance_size,
             'ip_addresses': cloud_svc_vo.ip_addresses,
-            'data': change_struct_type(cloud_svc_vo.data),
+            'data': change_struct_type(utils.change_dict_with_dot_notation(cloud_svc_vo.data)),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
             'tags': change_struct_type(cloud_svc_vo.tags),
             'tags_info': TagsInfo(cloud_svc_vo.tags_info),
@@ -57,7 +57,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'updated_at': utils.datetime_to_iso8601(cloud_svc_vo.updated_at),
             'deleted_at': utils.datetime_to_iso8601(cloud_svc_vo.deleted_at),
         })
-
+    print(info.get('tags'))
     return cloud_service_pb2.CloudServiceInfo(**info)
 
 

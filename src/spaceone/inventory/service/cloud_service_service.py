@@ -69,6 +69,9 @@ class CloudServiceService(BaseService):
         if 'tags' in params:
             if isinstance(params['tags'], list):
                 params['tags'] = utils.tags_to_dict(params['tags'])
+                params['tags'] = utils.change_dict_with_nested_key(params['tags'])
+            else:
+                params['tags'] = utils.change_dict_with_nested_key(params['tags'])
 
         if 'instance_size' in params:
             if not isinstance(params['instance_size'], float):
@@ -143,6 +146,9 @@ class CloudServiceService(BaseService):
         if 'tags' in params:
             if isinstance(params['tags'], list):
                 params['tags'] = utils.tags_to_dict(params['tags'])
+                params['tags'] = utils.change_dict_with_nested_key(params['tags'])
+            else:
+                params['tags'] = utils.change_dict_with_nested_key(params['tags'])
 
         if 'ip_addresses' in params and params['ip_addresses'] is None:
             del params['ip_addresses']
