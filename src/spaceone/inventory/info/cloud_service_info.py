@@ -1,11 +1,30 @@
 import functools
+from typing import List
 from spaceone.api.inventory.v1 import cloud_service_pb2
 from spaceone.core.pygrpc.message_type import *
 from spaceone.core import utils
-from spaceone.inventory.model.cloud_service_model import CloudService
+from spaceone.inventory.model.cloud_service_model import CloudService, Tag
 from spaceone.inventory.info.collection_info import CollectionInfo
 
 __all__ = ['CloudServiceInfo', 'CloudServicesInfo']
+
+
+def TagsInfo(vos: List[Tag]):
+    if vos:
+        tags = []
+        for vo in vos:
+            info = {
+                'key': vo.key,
+                'value': vo.value,
+                'type': vo.type,
+                'provider': vo.provider
+            }
+            tag = cloud_service_pb2.CloudServiceTag(**info)
+            tags.append(tag)
+
+        return tags
+    else:
+        return None
 
 
 def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
@@ -31,6 +50,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
             'tags': change_struct_type(cloud_svc_vo.tags),
+            'tags_info': TagsInfo(cloud_svc_vo.tags_info),
             'collection_info': CollectionInfo(cloud_svc_vo.collection_info.to_dict()),
             'domain_id': cloud_svc_vo.domain_id,
             'created_at': utils.datetime_to_iso8601(cloud_svc_vo.created_at),
