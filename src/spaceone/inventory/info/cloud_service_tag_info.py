@@ -9,10 +9,9 @@ __all__ = ['CloudServiceTagInfo', 'CloudServiceTagsInfo']
 
 def CloudServiceTagInfo(cloud_svc_tag_vo: CloudServiceTag, minimal=False):
     info = {
-        'tag_id': cloud_svc_tag_vo.tag_id,
         'cloud_Service_id': cloud_svc_tag_vo.cloud_service_id,
-        'key': cloud_svc_tag_vo.key,
-        'value': cloud_svc_tag_vo.value,
+        'k': cloud_svc_tag_vo.k,
+        'v': cloud_svc_tag_vo.v,
         'provider': cloud_svc_tag_vo.provider,
         'project_id': cloud_svc_tag_vo.project_id,
     }

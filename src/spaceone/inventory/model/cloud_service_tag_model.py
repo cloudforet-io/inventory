@@ -4,10 +4,9 @@ from spaceone.core.model.mongo_model import MongoModel
 
 
 class CloudServiceTag(MongoModel):
-    tag_id = StringField(max_length=40, generate_id='tag', unique=True)
     cloud_service_id = StringField(max_length=40)
-    key = StringField(max_length=255)
-    value = DynamicField()
+    k = StringField(max_length=255)
+    v = StringField(max_length=255)
     provider = StringField(max_length=255)
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
@@ -15,15 +14,14 @@ class CloudServiceTag(MongoModel):
 
     meta = {
         'updatable_fields': [
-            'key',
-            'value',
+            'k',
+            'v',
             'project_id'
         ],
         'minimal_fields': [
-            'tag_id',
             'cloud_service_id',
-            'key',
-            'value',
+            'k',
+            'v',
             'provider',
             'project_id',
         ],
@@ -32,8 +30,10 @@ class CloudServiceTag(MongoModel):
         ],
         'indexes': [
             'cloud_service_id',
-            'key',
-            'value',
-            'provider'
+            'k',
+            'v',
+            'provider',
+            'project_id',
+            'created_at'
         ]
     }

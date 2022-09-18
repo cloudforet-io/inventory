@@ -10,17 +10,17 @@ class CloudServiceTagService(BaseService):
 
     def __init__(self, metadata):
         super().__init__(metadata)
-        self.cloud_service_tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
+        self.cloud_svc_tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_id', 'key', 'provider', 'project_id', 'domain_id'])
+    @append_query_filter(['cloud_service_id', 'k', 'provider', 'project_id', 'domain_id'])
     def list(self, params):
         """
         Args:
             params (dict): {
                     'cloud_service_id': 'str',
-                    'key': 'str',
+                    'k': 'str',
                     'provider': 'str',
                     'project_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
@@ -32,7 +32,7 @@ class CloudServiceTagService(BaseService):
             total_count (int)
         """
         query = params.get('query', {})
-        return self.cloud_service_tag_mgr.list_cloud_service_tags(query)
+        return self.cloud_svc_tag_mgr.list_cloud_svc_tags(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
@@ -49,4 +49,4 @@ class CloudServiceTagService(BaseService):
             values (list) : 'list of statistics data'
         """
         query = params.get('query', {})
-        return self.cloud_service_tag_mgr.stat_cloud_service_tags(query)
+        return self.cloud_svc_tag_mgr.stat_cloud_svc_tags(query)
