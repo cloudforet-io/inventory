@@ -1,6 +1,6 @@
 import copy
-import json
 
+from operator import itemgetter
 from spaceone.core.service import *
 from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_model import CloudService
@@ -100,15 +100,16 @@ class CloudServiceService(BaseService):
 
         cloud_svc_vo = self.cloud_svc_mgr.create_cloud_service(params)
 
-        # Create New CloudServiceTag Resources
-        self.tag_mgr.create_cloud_svc_tags_by_cloud_svc_vo(cloud_svc_vo)
-
         # Create New History
         ch_mgr.add_new_history(cloud_svc_vo, params)
 
         # Create Collection State
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
         state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, 'inventory.CloudService', domain_id)
+
+        # Create New CloudServiceTag Resources
+        if 'tags' in params:
+            self.tag_mgr.create_cloud_svc_tags_by_new_tags(cloud_svc_vo, params['tags'])
 
         return cloud_svc_vo
 
@@ -189,8 +190,6 @@ class CloudServiceService(BaseService):
             elif 'tags' in params:
                 del params['tags']
 
-            self.tag_mgr.delete_tags_by_tag_type(cloud_svc_vo, new_tags, tag_type)
-
         params['collection_info'] = self._get_collection_info(old_cloud_svc_data.get('collection_info', {}))
 
         if 'metadata' in params:
@@ -202,7 +201,8 @@ class CloudServiceService(BaseService):
 
         # Create New CloudServiceTag Resources
         if 'tags' in params:
-            self.tag_mgr.create_cloud_svc_tags(cloud_svc_vo, new_tags)
+            self.tag_mgr.delete_tags_by_tag_type(cloud_service_id, tag_type)
+            self.tag_mgr.create_cloud_svc_tags_by_new_tags(cloud_svc_vo, new_tags)
 
         # Create Update History
         ch_mgr.add_update_history(cloud_svc_vo, params, old_cloud_svc_data)
@@ -496,16 +496,11 @@ class CloudServiceService(BaseService):
                     'type': tag['type'],
                     'provider': tag['provider']
                 })
-            elif tag['key'] not in [new_tag['key'] for new_tag in new_tags]:
-                tags.append({
-                    'key': tag['key'],
-                    'value': tag['value'],
-                    'type': tag['type'],
-                    'provider': tag['provider']
-                })
         for new_tag in new_tags:
             tags.append(new_tag)
-        return tags
+
+        from operator import itemgetter
+        return sorted(tags, key=itemgetter('type'))
 
     @staticmethod
     def _create_tag(params: dict, tag_type: str):

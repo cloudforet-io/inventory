@@ -21,7 +21,7 @@ class TestCloudServiceTagService(unittest.TestCase):
         cls.domain_id = utils.generate_id('domain')
         cls.transaction = Transaction({
             'service': 'inventory',
-            'api_class': 'CloudService'
+            'resource': 'CloudService'
         })
         super().setUpClass()
 
@@ -53,16 +53,18 @@ class TestCloudServiceTagService(unittest.TestCase):
 
         }
 
-        self.transaction.set_meta('verb', 'create')
-        self.transaction.set_meta('collector_id', utils.generate_id('collector'))
-        self.transaction.set_meta('job_id', utils.generate_id('job'))
-        self.transaction.set_meta('plugin_id', utils.generate_id('plugin'))
-        self.transaction.set_meta('secret.service_account_id', utils.generate_id('sa'))
+        metadata = {
+            'verb': 'create',
+            'collector_id': utils.generate_id('collector'),
+            'job_id': utils.generate_id('job'),
+            'plugin_id': utils.generate_id('plugin'),
+            'secret.service_account_id': utils.generate_id('sa'),
+        }
 
-        cloud_svc_service = CloudServiceService(transaction=self.transaction)
+        cloud_svc_service = CloudServiceService(metadata=metadata)
         cloud_svc_vo = cloud_svc_service.create(params.copy())
 
-        cloud_svc_tag_service = CloudServiceTagService(transaction=self.transaction)
+        cloud_svc_tag_service = CloudServiceTagService(metadata=metadata)
         cloud_svc_tag_vos = cloud_svc_tag_service.list({'domain_id': params['domain_id']})
 
         print_data(cloud_svc_vo.to_dict(), 'test_create_cloud_service')
@@ -90,8 +92,7 @@ class TestCloudServiceTagService(unittest.TestCase):
 
         }
 
-        self.transaction.method = 'create'
-        cloud_svc_service = CloudServiceService(transaction=self.transaction)
+        cloud_svc_service = CloudServiceService(metadata=None)
         cloud_svc_vo = cloud_svc_service.create(params.copy())
 
         cloud_svc_tag_service = CloudServiceTagService(metadata=None)
@@ -121,7 +122,6 @@ class TestCloudServiceTagService(unittest.TestCase):
 
         }
 
-        self.transaction.method = 'create'
         cloud_svc_service = CloudServiceService(metadata=None)
         cloud_svc_vo = cloud_svc_service.create(params.copy())
 
@@ -153,9 +153,9 @@ class TestCloudServiceTagService(unittest.TestCase):
             'domain_id': utils.generate_id('domain'),
         }
 
-        self.transaction.method = 'create'
-        cloud_svc_service = CloudServiceService(transaction=self.transaction)
+        cloud_svc_service = CloudServiceService(metadata=None)
         old_cloud_svc_vo = cloud_svc_service.create(params.copy())
+        print_data(old_cloud_svc_vo.to_dict(), 'test_create_cloud_service')
 
         update_params = {
             'cloud_service_id': old_cloud_svc_vo.cloud_service_id,
@@ -166,16 +166,16 @@ class TestCloudServiceTagService(unittest.TestCase):
             },
             'domain_id': old_cloud_svc_vo.domain_id
         }
-        cloud_svc_service = CloudServiceService(transaction=self.transaction)
+        cloud_svc_service = CloudServiceService(meatadata=None)
         new_cloud_svc_vo = cloud_svc_service.update(update_params)
-        print_data(new_cloud_svc_vo.to_dict(), 'test_create_cloud_service')
+        print_data(new_cloud_svc_vo.to_dict(), 'test_update_cloud_service')
 
         cloud_svc_tag_service = CloudServiceTagService(metadata=None)
         cloud_svc_tag_vos = cloud_svc_tag_service.list({'domain_id': params['domain_id']})
         for tag in cloud_svc_tag_vos[0]:
             print_data(tag.to_dict(), 'test_cloud_service_tag')
 
-        self.assertEqual(cloud_svc_tag_vos[1], 5)
+        self.assertEqual(cloud_svc_tag_vos[1], 3)
 
     def test_update_cloud_service_mix_provider(self):
         params = {
@@ -192,16 +192,16 @@ class TestCloudServiceTagService(unittest.TestCase):
             'domain_id': utils.generate_id('domain'),
         }
 
-        self.transaction.method = 'create'
-        self.transaction.set_meta('verb', 'create')
-        self.transaction.set_meta('collector_id', utils.generate_id('collector'))
-        self.transaction.set_meta('job_id', utils.generate_id('job'))
-        self.transaction.set_meta('plugin_id', utils.generate_id('plugin'))
-        self.transaction.set_meta('secret.service_account_id', utils.generate_id('sa'))
+        metadata = {
+            'verb': 'create',
+            'collector_id': utils.generate_id('collector'),
+            'job_id': utils.generate_id('job'),
+            'plugin_id': utils.generate_id('plugin'),
+            'secret.service_account_id': utils.generate_id('sa'),
+        }
 
-        cloud_svc_service = CloudServiceService(transaction=self.transaction)
+        cloud_svc_service = CloudServiceService(metadata=metadata)
         old_cloud_svc_vo = cloud_svc_service.create(params.copy())
-        print_data(old_cloud_svc_vo.to_dict(), 'test_create_cloud_service')
 
         update_params = {
             'cloud_service_id': old_cloud_svc_vo.cloud_service_id,
@@ -214,9 +214,7 @@ class TestCloudServiceTagService(unittest.TestCase):
             'domain_id': old_cloud_svc_vo.domain_id
         }
 
-        del self.transaction._meta['collector_id']
-
-        cloud_svc_service = CloudServiceService(transaction=self.transaction)
+        cloud_svc_service = CloudServiceService(metadta=None)
         new_cloud_svc_vo = cloud_svc_service.update(update_params)
         print_data(new_cloud_svc_vo.to_dict(), 'test_update_cloud_service')
 
