@@ -145,6 +145,7 @@ class CollectingManager(BaseManager):
 
         except ERROR_BASE as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
+            _LOGGER.error(e)
             self.job_task_mgr.add_error(
                 job_task_id,
                 domain_id,
@@ -158,6 +159,7 @@ class CollectingManager(BaseManager):
 
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
+            _LOGGER.error(e)
             self.job_task_mgr.add_error(
                 job_task_id,
                 domain_id,
