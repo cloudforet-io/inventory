@@ -9,8 +9,8 @@ from spaceone.inventory.error import *
 
 
 class Tag(EmbeddedDocument):
-    k = StringField(max_length=255)
-    v = StringField(max_length=255)
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
     type = StringField(max_length=255, choices=('CUSTOM', 'PROVIDER'))
     provider = StringField(max_length=255, default=None, null=True)
 
@@ -39,7 +39,7 @@ class CloudService(MongoModel):
     data = DictField()
     metadata = DictField()
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
-    tags = ListField(EmbeddedDocumentField(Tag))
+    tags = ListField(EmbeddedDocumentField(Tag, required=True), default=[])
     region_code = StringField(max_length=255, default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)

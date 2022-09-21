@@ -8,19 +8,19 @@ from spaceone.inventory.manager.cloud_service_tag_manager import CloudServiceTag
 @event_handler
 class CloudServiceTagService(BaseService):
 
-    def __init__(self, metadata):
-        super().__init__(metadata)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.cloud_svc_tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_id', 'k', 'provider', 'project_id', 'domain_id'])
+    @append_query_filter(['cloud_service_id', 'key', 'provider', 'project_id', 'domain_id'])
     def list(self, params):
         """
         Args:
             params (dict): {
                     'cloud_service_id': 'str',
-                    'k': 'str',
+                    'key': 'str',
                     'provider': 'str',
                     'project_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',

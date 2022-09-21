@@ -9,6 +9,7 @@ from spaceone.inventory.manager.record_manager import RecordManager
 from spaceone.inventory.manager.note_manager import NoteManager
 from spaceone.inventory.manager.collector_manager.job_manager import JobManager
 from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
+from spaceone.inventory.manager.cloud_service_tag_manager import CloudServiceTagManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,7 +52,7 @@ class CleanupService(BaseService):
         # Get Cleanup Policy of domain
         # TODO: from domain config
 
-        job_timeout = config.get_global('JOB_TIMEOUT', 2)   # hours
+        job_timeout = config.get_global('JOB_TIMEOUT', 2)  # hours
 
         policies = {
             'inventory.Job': {'TIMEOUT': job_timeout}
@@ -83,7 +84,7 @@ class CleanupService(BaseService):
 
         job_mgr: JobManager = self.locator.get_manager('JobManager')
         job_task_mgr: JobTaskManager = self.locator.get_manager('JobTaskManager')
-        termination_time = config.get_global('JOB_TERMINATION_TIME', 30*2)  # days
+        termination_time = config.get_global('JOB_TERMINATION_TIME', 30 * 2)  # days
 
         query = {
             'filter': [
@@ -169,10 +170,11 @@ class CleanupService(BaseService):
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
         record_mgr: RecordManager = self.locator.get_manager('RecordManager')
         note_mgr: NoteManager = self.locator.get_manager('NoteManager')
+        tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
 
         domain_id = params['domain_id']
 
-        termination_time = config.get_global('RESOURCE_TERMINATION_TIME', 30*6)  # days
+        termination_time = config.get_global('RESOURCE_TERMINATION_TIME', 30 * 6)  # days
 
         query = {
             'filter': [
@@ -208,5 +210,9 @@ class CleanupService(BaseService):
             # Cascade Delete Notes
             note_vos = note_mgr.filter_notes(cloud_service_id=cloud_service_id, domain_id=domain_id)
             note_vos.delete()
+
+            # Cascade Delete CloudServiceTags
+            cloud_svc_tags_vos = tag_mgr.filter_cloud_svc_tags(cloud_service_id=cloud_service_id, domain_id=domain_id)
+            cloud_svc_tags_vos.delete()
 
         cloud_svc_vos.delete()

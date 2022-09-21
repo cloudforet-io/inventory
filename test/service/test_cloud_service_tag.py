@@ -53,15 +53,16 @@ class TestCloudServiceTagService(unittest.TestCase):
 
         }
 
-        metadata = {
-            'collector_id': utils.generate_id('collector'),
-            'job_id': utils.generate_id('job'),
-            'plugin_id': utils.generate_id('plugin'),
-            'secret.service_account_id': utils.generate_id('sa')}
-        cloud_svc_service = CloudServiceService(metadata=metadata)
+        self.transaction.set_meta('verb', 'create')
+        self.transaction.set_meta('collector_id', utils.generate_id('collector'))
+        self.transaction.set_meta('job_id', utils.generate_id('job'))
+        self.transaction.set_meta('plugin_id', utils.generate_id('plugin'))
+        self.transaction.set_meta('secret.service_account_id', utils.generate_id('sa'))
+
+        cloud_svc_service = CloudServiceService(transaction=self.transaction)
         cloud_svc_vo = cloud_svc_service.create(params.copy())
 
-        cloud_svc_tag_service = CloudServiceTagService(metadata=metadata)
+        cloud_svc_tag_service = CloudServiceTagService(transaction=self.transaction)
         cloud_svc_tag_vos = cloud_svc_tag_service.list({'domain_id': params['domain_id']})
 
         print_data(cloud_svc_vo.to_dict(), 'test_create_cloud_service')
@@ -74,6 +75,37 @@ class TestCloudServiceTagService(unittest.TestCase):
         self.assertEqual(cloud_svc_vo.tags[0].type, 'PROVIDER')
 
     def test_create_cloud_service_contain_dot_tag_by_custom(self):
+        params = {
+            'cloud_service_type': 'Instance',
+            'data': {},
+            'provider': 'aws',
+            'tags': {
+                'a.b.c': 'd',
+                'a.c.d': 'e',
+                'b.c.d.e': 'f'
+            },
+            "region_code": "ap-northeast-2",
+            'cloud_service_group': 'EC2',
+            'domain_id': utils.generate_id('domain'),
+
+        }
+
+        self.transaction.method = 'create'
+        cloud_svc_service = CloudServiceService(transaction=self.transaction)
+        cloud_svc_vo = cloud_svc_service.create(params.copy())
+
+        cloud_svc_tag_service = CloudServiceTagService(metadata=None)
+        cloud_svc_tag_vos = cloud_svc_tag_service.list({'domain_id': params['domain_id']})
+
+        print_data(cloud_svc_vo.to_dict(), 'test_create_cloud_service')
+        for tag in cloud_svc_tag_vos[0]:
+            print_data(tag.to_dict(), 'test_cloud_service_tag')
+
+        self.assertIsInstance(cloud_svc_vo, CloudService)
+        self.assertEqual(params['cloud_service_type'], cloud_svc_vo.cloud_service_type)
+        self.assertEqual(cloud_svc_vo.tags[0].type, 'CUSTOM')
+
+    def test_create_cloud_service_custom_tags(self):
         params = {
             'cloud_service_type': 'Instance',
             'provider': 'aws',
@@ -102,39 +134,6 @@ class TestCloudServiceTagService(unittest.TestCase):
 
         self.assertIsInstance(cloud_svc_vo, CloudService)
         self.assertEqual(params['cloud_service_type'], cloud_svc_vo.cloud_service_type)
-        self.assertEqual(cloud_svc_vo.tags[0].provider, None)
-        self.assertEqual(cloud_svc_vo.tags[0].type, 'CUSTOM')
-
-    def test_create_cloud_service_custom_tags(self):
-        params = {
-            'cloud_service_type': 'Instance',
-            'provider': '',
-            'data': {},
-            'tags': {
-                'a.b.c': 'd',
-                'a.c.d': 'e',
-                'b.c.d.e': 'f'
-            },
-            "region_code": "ap-northeast-2",
-            'cloud_service_group': 'EC2',
-            'domain_id': utils.generate_id('domain'),
-
-        }
-
-        self.transaction.method = 'create'
-        cloud_svc_service = CloudServiceService(metadata=None)
-        cloud_svc_vo = cloud_svc_service.create(params.copy())
-
-        cloud_svc_tag_service = CloudServiceTagService(metadata=None)
-        cloud_svc_tag_vos = cloud_svc_tag_service.list({'domain_id': params['domain_id']})
-
-        print_data(cloud_svc_vo.to_dict(), 'test_create_cloud_service')
-        for tag in cloud_svc_tag_vos[0]:
-            print_data(tag.to_dict(), 'test_cloud_service_tag')
-
-        self.assertIsInstance(cloud_svc_vo, CloudService)
-        self.assertEqual(params['cloud_service_type'], cloud_svc_vo.cloud_service_type)
-        self.assertEqual(cloud_svc_vo.tags[0].provider, None)
         self.assertEqual(cloud_svc_vo.tags[0].type, 'CUSTOM')
 
     def test_update_cloud_service_all_custom(self):
@@ -154,8 +153,10 @@ class TestCloudServiceTagService(unittest.TestCase):
             'domain_id': utils.generate_id('domain'),
         }
 
-        cloud_svc_service = CloudServiceService(metadata=None)
+        self.transaction.method = 'create'
+        cloud_svc_service = CloudServiceService(transaction=self.transaction)
         old_cloud_svc_vo = cloud_svc_service.create(params.copy())
+
         update_params = {
             'cloud_service_id': old_cloud_svc_vo.cloud_service_id,
             'tags': {
@@ -165,7 +166,7 @@ class TestCloudServiceTagService(unittest.TestCase):
             },
             'domain_id': old_cloud_svc_vo.domain_id
         }
-        cloud_svc_service = CloudServiceService(metadata=None)
+        cloud_svc_service = CloudServiceService(transaction=self.transaction)
         new_cloud_svc_vo = cloud_svc_service.update(update_params)
         print_data(new_cloud_svc_vo.to_dict(), 'test_create_cloud_service')
 
@@ -190,16 +191,21 @@ class TestCloudServiceTagService(unittest.TestCase):
             'cloud_service_group': 'EC2',
             'domain_id': utils.generate_id('domain'),
         }
-        metadata = {
-            'collector_id': utils.generate_id('collector'),
-            'job_id': utils.generate_id('job'),
-            'plugin_id': utils.generate_id('plugin'),
-            'secret.service_account_id': utils.generate_id('sa')}
-        cloud_svc_service = CloudServiceService(metadata=metadata)
+
+        self.transaction.method = 'create'
+        self.transaction.set_meta('verb', 'create')
+        self.transaction.set_meta('collector_id', utils.generate_id('collector'))
+        self.transaction.set_meta('job_id', utils.generate_id('job'))
+        self.transaction.set_meta('plugin_id', utils.generate_id('plugin'))
+        self.transaction.set_meta('secret.service_account_id', utils.generate_id('sa'))
+
+        cloud_svc_service = CloudServiceService(transaction=self.transaction)
         old_cloud_svc_vo = cloud_svc_service.create(params.copy())
+        print_data(old_cloud_svc_vo.to_dict(), 'test_create_cloud_service')
 
         update_params = {
             'cloud_service_id': old_cloud_svc_vo.cloud_service_id,
+            'provider': 'aws',
             'tags': {
                 'a': 'b',
                 'a.a': 'c',
@@ -207,9 +213,12 @@ class TestCloudServiceTagService(unittest.TestCase):
             },
             'domain_id': old_cloud_svc_vo.domain_id
         }
-        cloud_svc_service = CloudServiceService(metadata=None)
+
+        del self.transaction._meta['collector_id']
+
+        cloud_svc_service = CloudServiceService(transaction=self.transaction)
         new_cloud_svc_vo = cloud_svc_service.update(update_params)
-        print_data(new_cloud_svc_vo.to_dict(), 'test_create_cloud_service')
+        print_data(new_cloud_svc_vo.to_dict(), 'test_update_cloud_service')
 
         cloud_svc_tag_service = CloudServiceTagService(metadata=None)
         cloud_svc_tag_vos = cloud_svc_tag_service.list({'domain_id': params['domain_id']})
@@ -217,42 +226,6 @@ class TestCloudServiceTagService(unittest.TestCase):
             print_data(tag.to_dict(), 'test_cloud_service_tag')
 
         self.assertEqual(cloud_svc_tag_vos[1], 6)
-
-    def test_delete_cloud_service(self):
-        params = {
-            'cloud_service_type': 'Instance',
-            'provider': 'aws',
-            'data': {},
-            'tags': {
-                'a.b.c': 'd',
-                'b.c.d': 'e',
-                'c.d.e': 'f',
-            },
-            "region_code": "ap-northeast-2",
-            'cloud_service_group': 'EC2',
-            'domain_id': utils.generate_id('domain'),
-
-        }
-
-        cloud_svc_service = CloudServiceService(metadata=None)
-        cloud_svc_vo = cloud_svc_service.create(params.copy())
-
-        cloud_svc_tag_service = CloudServiceTagService(metadata=None)
-        cloud_svc_tag_vos = cloud_svc_tag_service.list({'domain_id': params['domain_id']})
-
-        print_data(cloud_svc_vo.to_dict(), 'test_create_cloud_service')
-        for tag in cloud_svc_tag_vos[0]:
-            print_data(tag.to_dict(), 'test_cloud_service_tag')
-
-        # Execute delete function
-        results = cloud_svc_service.delete({"cloud_service_id": cloud_svc_vo.cloud_service_id,
-                                            "domain_id": cloud_svc_vo.domain_id})
-
-        re_cloud_svc_tag_vos = cloud_svc_tag_service.list({'domain_id': params['domain_id']})
-        for tag in re_cloud_svc_tag_vos[0]:
-            print_data(tag.to_dict(), 'test_cloud_service_tag')
-
-        self.assertIsNone(results)
 
 
 if __name__ == '__main__':

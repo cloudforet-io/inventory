@@ -21,16 +21,40 @@ class CloudServiceTagManager(BaseManager):
         else:
             self.provider = 'CUSTOM'
 
-    def create_cloud_svc_tags_by_cloud_svc_vo(self, cloud_service_vo: CloudService, update_cloud_svc_tags=None):
-        if update_cloud_svc_tags:
-            dot_tags = cloud_service_vo.tags[-len(update_cloud_svc_tags):]
-        else:
-            dot_tags = cloud_service_vo.tags
+    def delete_tags_by_tag_type(self, cloud_service_vo, new_tags, tag_type):
+        for tag in cloud_service_vo.tags:
+            if tag['type'] == 'PROVIDER':
+                provider = tag['provider']
+            else:
+                provider = 'CUSTOM'
+
+            if tag['type'] == tag_type and tag['key'] in [new_tag['key'] for new_tag in new_tags]:
+                self._delete_cloud_svc_tag_by_vo(
+                    self._get_cloud_svc_tag(cloud_service_id=cloud_service_vo.cloud_service_id,
+                                            key=tag['key'], provider=provider, domain_id=cloud_service_vo.domain_id))
+
+    def create_cloud_svc_tags(self, cloud_service_vo, new_tags):
+        for tag in new_tags:
+            params = {
+                'cloud_service_id': cloud_service_vo.cloud_service_id,
+                'key': tag['key'],
+                'value': tag['value'],
+                'project_id': cloud_service_vo.project_id,
+                'domain_id': cloud_service_vo.domain_id
+            }
+            if self.provider == 'COLLECTOR':
+                params.update({'provider': cloud_service_vo.provider})
+            else:
+                params.update({'provider': 'CUSTOM'})
+            self._create_cloud_svc_tag(params)
+
+    def create_cloud_svc_tags_by_cloud_svc_vo(self, cloud_service_vo: CloudService):
+        dot_tags = cloud_service_vo.tags
         for tag in dot_tags:
             params = {
                 'cloud_service_id': cloud_service_vo.cloud_service_id,
-                'k': tag.k,
-                'v': tag.v,
+                'key': tag.key,
+                'value': tag.value,
                 'project_id': cloud_service_vo.project_id,
                 'domain_id': cloud_service_vo.domain_id
             }
@@ -40,24 +64,6 @@ class CloudServiceTagManager(BaseManager):
                 params.update({'provider': 'CUSTOM'})
             self.cloud_svc_tag_model.create(params)
 
-    def delete_cloud_svc_tags_by_cloud_service_id(self, cloud_service_id, domain_id):
-        _LOGGER.debug(
-            f'[delete_cloud_service_tags_by_cloud_service_id] delete cloud_service_tags: {cloud_service_id}')
-        cloud_svc_tag_vos = self.cloud_svc_tag_model.filter(cloud_service_id=cloud_service_id, domain_id=domain_id)
-        cloud_svc_tag_vos.delete()
-
-    def get_cloud_svc_tag(self, k, provider, domain_id):
-        return self.cloud_svc_tag_model.get(k=k, provider=provider, domain_id=domain_id)
-
-    def delete_cloud_svc_tag(self, delete_cloud_svc_tag, domain_id):
-        key = delete_cloud_svc_tag['k']
-        if delete_cloud_svc_tag['provider']:
-            provider = delete_cloud_svc_tag['provider']
-        else:
-            provider = 'CUSTOM'
-        self.delete_cloud_svc_tag_by_vo(
-            self.get_cloud_svc_tag(k=key, provider=provider, domain_id=domain_id))
-
     def list_cloud_svc_tags(self, query=None):
         if query is None:
             query = {}
@@ -66,6 +72,22 @@ class CloudServiceTagManager(BaseManager):
     def stat_cloud_svc_tags(self, query):
         return self.cloud_svc_tag_model.stat(**query)
 
+    def filter_cloud_svc_tags(self, **conditions):
+        return self.cloud_svc_tag_model.filter(**conditions)
+
+    def _create_cloud_svc_tag(self, params):
+        def _rollback(cloud_svc_tag_vo):
+            _LOGGER.info(
+                f'[ROLLBACK] Delete Cloud Service Tag : {cloud_svc_tag_vo.key} ({cloud_svc_tag_vo.cloud_service_id})')
+            cloud_svc_tag_vo.delete(True)
+
+        cloud_svc_tag_vo: CloudServiceTag = self.cloud_svc_tag_model.create(params)
+        self.transaction.add_rollback(_rollback, cloud_svc_tag_vo)
+
+    def _get_cloud_svc_tag(self, cloud_service_id, key, provider, domain_id):
+        return self.cloud_svc_tag_model.get(cloud_service_id=cloud_service_id, key=key, provider=provider,
+                                            domain_id=domain_id)
+
     @staticmethod
-    def delete_cloud_svc_tag_by_vo(cloud_svc_tag_vo: CloudServiceTag):
+    def _delete_cloud_svc_tag_by_vo(cloud_svc_tag_vo: CloudServiceTag):
         cloud_svc_tag_vo.delete()
