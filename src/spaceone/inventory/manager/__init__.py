@@ -3,6 +3,7 @@ from spaceone.inventory.manager.server_manager import ServerManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
+from spaceone.inventory.manager.cloud_service_tag_manager import CloudServiceTagManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.collector_manager.__init__ import *
 from spaceone.inventory.manager.cleanup_manager import CleanupManager

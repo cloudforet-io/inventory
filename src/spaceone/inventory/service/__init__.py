@@ -4,6 +4,7 @@ from spaceone.inventory.service.collector_service import CollectorService
 from spaceone.inventory.service.job_service import JobService
 from spaceone.inventory.service.job_task_service import JobTaskService
 from spaceone.inventory.service.cloud_service_type_service import CloudServiceTypeService
+from spaceone.inventory.service.cloud_service_tag_service import CloudServiceTagService
 from spaceone.inventory.service.cloud_service_service import CloudServiceService
 from spaceone.inventory.service.cleanup_service import CleanupService
 from spaceone.inventory.service.resource_group_service import ResourceGroupService

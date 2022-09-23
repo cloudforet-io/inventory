@@ -8,6 +8,13 @@ from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
 
+class Tag(EmbeddedDocument):
+    key = StringField(max_length=255)
+    value = StringField(max_length=255)
+    type = StringField(max_length=255, choices=('CUSTOM', 'PROVIDER'))
+    provider = StringField(max_length=255, default=None, null=True)
+
+
 class CollectionInfo(EmbeddedDocument):
     collectors = ListField(StringField(max_length=40))
     service_accounts = ListField(StringField(max_length=40))
@@ -32,7 +39,7 @@ class CloudService(MongoModel):
     data = DictField()
     metadata = DictField()
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
-    tags = DictField()
+    tags = ListField(EmbeddedDocumentField(Tag, required=True), default=[])
     region_code = StringField(max_length=255, default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)

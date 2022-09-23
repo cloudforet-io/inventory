@@ -1,9 +1,11 @@
 import copy
 
+from operator import itemgetter
 from spaceone.core.service import *
 from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
+from spaceone.inventory.manager.cloud_service_tag_manager import CloudServiceTagManager
 from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
@@ -23,11 +25,16 @@ _KEYWORD_FILTER = ['cloud_service_id', 'name', 'ip_addresses', 'cloud_service_gr
 @event_handler
 class CloudServiceService(BaseService):
 
-    def __init__(self, metadata):
-        super().__init__(metadata)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self.cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
         self.region_mgr: RegionManager = self.locator.get_manager('RegionManager')
         self.identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
+        self.tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
+        self.collector_id = self.transaction.get_meta('collector_id')
+        self.job_id = self.transaction.get_meta('job_id')
+        self.plugin_id = self.transaction.get_meta('plugin_id')
+        self.service_account_id = self.transaction.get_meta('secret.service_account_id')
 
     @transaction(append_meta={
         'authorization.scope': 'PROJECT',
@@ -66,18 +73,18 @@ class CloudServiceService(BaseService):
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
 
-        if 'tags' in params:
-            if isinstance(params['tags'], list):
-                params['tags'] = utils.tags_to_dict(params['tags'])
-
-        if 'instance_size' in params:
-            if not isinstance(params['instance_size'], float):
-                raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
-
         params['provider'] = params.get('provider', self.transaction.get_meta('secret.provider'))
 
         if params['provider'] is None:
             raise ERROR_REQUIRED_PARAMETER(key='provider')
+
+        if 'tags' in params:
+            tag_type = self._get_tag_type_from_meta()
+            params['tags'] = self._create_tag(params, tag_type)
+
+        if 'instance_size' in params:
+            if not isinstance(params['instance_size'], float):
+                raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
 
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
@@ -99,6 +106,10 @@ class CloudServiceService(BaseService):
         # Create Collection State
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
         state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, 'inventory.CloudService', domain_id)
+
+        # Create New CloudServiceTag Resources
+        if 'tags' in params:
+            self.tag_mgr.create_cloud_svc_tags_by_new_tags(cloud_svc_vo, params['tags'])
 
         return cloud_svc_vo
 
@@ -139,10 +150,8 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
-
-        if 'tags' in params:
-            if isinstance(params['tags'], list):
-                params['tags'] = utils.tags_to_dict(params['tags'])
+        new_tags = None
+        tag_type = self._get_tag_type_from_meta()
 
         if 'ip_addresses' in params and params['ip_addresses'] is None:
             del params['ip_addresses']
@@ -170,6 +179,17 @@ class CloudServiceService(BaseService):
 
         old_cloud_svc_data = dict(cloud_svc_vo.to_dict())
 
+        if 'tags' in params:
+            new_tags = self._create_tag(params, tag_type)
+
+            new_tags_dict: dict = self._change_tags_to_dict(new_tags)
+            old_tags_dict: dict = self._change_tags_to_dict(old_cloud_svc_data['tags'], tag_type=tag_type)
+
+            if new_tags_dict != old_tags_dict:
+                params['tags'] = self._merge_tags(new_tags, old_cloud_svc_data['tags'], tag_type=tag_type)
+            elif 'tags' in params:
+                del params['tags']
+
         params['collection_info'] = self._get_collection_info(old_cloud_svc_data.get('collection_info', {}))
 
         if 'metadata' in params:
@@ -178,6 +198,11 @@ class CloudServiceService(BaseService):
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
 
         cloud_svc_vo = self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
+
+        # Create New CloudServiceTag Resources
+        if 'tags' in params:
+            self.tag_mgr.delete_tags_by_tag_type(cloud_service_id, tag_type)
+            self.tag_mgr.create_cloud_svc_tags_by_new_tags(cloud_svc_vo, new_tags)
 
         # Create Update History
         ch_mgr.add_update_history(cloud_svc_vo, params, old_cloud_svc_data)
@@ -291,6 +316,7 @@ class CloudServiceService(BaseService):
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
+        # TODO : make _change_tags_filter
 
         return self.cloud_svc_mgr.list_cloud_services(query)
 
@@ -458,3 +484,56 @@ class CloudServiceService(BaseService):
             'service_accounts': sorted(list(set(all_service_accounts))),
             'secrets': sorted(list(set(all_secrets))),
         }
+
+    @staticmethod
+    def _merge_tags(new_tags, old_tags, tag_type):
+        tags = []
+        for tag in old_tags:
+            if tag['type'] != tag_type:
+                tags.append({
+                    'key': tag['key'],
+                    'value': tag['value'],
+                    'type': tag['type'],
+                    'provider': tag['provider']
+                })
+        for new_tag in new_tags:
+            tags.append(new_tag)
+
+        from operator import itemgetter
+        return sorted(tags, key=itemgetter('type'))
+
+    @staticmethod
+    def _create_tag(params: dict, tag_type: str):
+        if isinstance(params['tags'], list):
+            dot_tags = utils.tags_to_dict(params['tags'])
+
+        if isinstance(params['tags'], dict):
+            dot_tags = params['tags']
+
+        tags = []
+        for key, value in dot_tags.items():
+            tags.append({
+                'key': key,
+                'value': value,
+                'type': tag_type,
+                'provider': params.get('provider')
+            })
+        return tags
+
+    @staticmethod
+    def _change_tags_to_dict(tags: list, tag_type=None) -> dict:
+        tags_dict = {}
+        for tag in tags:
+            if tag_type and tag_type == tag['type']:
+                tags_dict[tag['key']] = tag['value']
+            else:
+                tags_dict[tag['key']] = tag['value']
+
+        return tags_dict
+
+    def _get_tag_type_from_meta(self):
+        if self.collector_id and self.job_id and self.service_account_id and self.plugin_id:
+            tag_type = 'PROVIDER'
+        else:
+            tag_type = 'CUSTOM'
+        return tag_type
