@@ -49,5 +49,5 @@ def CloudServicesInfo(cloud_svc_vos, total_count, **kwargs):
 def _tags_to_dict(tags: list) -> dict:
     dict_value = {}
     for tag in tags:
-        dict_value[tag['k']] = tag['v']
+        dict_value[tag['key']] = tag['value']
     return dict_value
