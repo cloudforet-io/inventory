@@ -29,7 +29,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'instance_type': cloud_svc_vo.instance_type,
             'instance_size': cloud_svc_vo.instance_size,
             'ip_addresses': cloud_svc_vo.ip_addresses,
-            'data': change_struct_type(utils.change_dict_with_dot_notation(cloud_svc_vo.data)),
+            'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
             'tags': change_struct_type(_tags_to_dict(cloud_svc_vo.tags)),
             'collection_info': CollectionInfo(cloud_svc_vo.collection_info.to_dict()),
