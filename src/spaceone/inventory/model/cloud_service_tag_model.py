@@ -7,7 +7,7 @@ class CloudServiceTag(MongoModel):
     cloud_service_id = StringField(max_length=40)
     key = StringField(max_length=255)
     value = StringField(max_length=255)
-    type = StringField(max_length=255, choices=('CUSTOM', 'PROVIDER'))
+    type = StringField(max_length=255, choices=('CUSTOM', 'MANAGED'))
     provider = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)

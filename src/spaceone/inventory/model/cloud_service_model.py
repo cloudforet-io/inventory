@@ -11,7 +11,7 @@ from spaceone.inventory.error import *
 class Tag(EmbeddedDocument):
     key = StringField(max_length=255)
     value = StringField(max_length=255)
-    type = StringField(max_length=255, choices=('CUSTOM', 'PROVIDER'))
+    type = StringField(max_length=255, choices=('CUSTOM', 'MANAGED'))
     provider = StringField(max_length=255, default=None, null=True)
 
 
