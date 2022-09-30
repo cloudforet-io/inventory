@@ -546,7 +546,7 @@ class CloudServiceService(BaseService):
 
     def _get_tag_type_from_meta(self):
         if self.collector_id and self.job_id and self.service_account_id and self.plugin_id:
-            tag_type = 'PROVIDER'
+            tag_type = 'MANAGED'
         else:
             tag_type = 'CUSTOM'
         return tag_type
