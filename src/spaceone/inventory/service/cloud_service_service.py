@@ -316,7 +316,7 @@ class CloudServiceService(BaseService):
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
-        # TODO : make _change_tags_filter
+        query = self._change_only_tags(query)
 
         return self.cloud_svc_mgr.list_cloud_services(query)
 
@@ -433,6 +433,19 @@ class CloudServiceService(BaseService):
             change_filter.append({'k': 'project_id', 'v': project_ids, 'o': 'in'})
 
         query['filter'] = change_filter
+        return query
+
+    @staticmethod
+    def _change_only_tags(query):
+        change_only_tags = []
+        if 'only' in query:
+
+            for key in query.get('only', []):
+                if key.startswith('tags.'):
+                    change_only_tags.append('tags')
+                else:
+                    change_only_tags.append(key)
+            query['only'] = change_only_tags
         return query
 
     @staticmethod
