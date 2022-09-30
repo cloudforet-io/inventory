@@ -225,6 +225,59 @@ class TestCloudServiceTagService(unittest.TestCase):
 
         self.assertEqual(cloud_svc_tag_vos[1], 6)
 
+    def test_list_cloud_service_mix_provider(self):
+        params = {
+            'cloud_service_type': 'Instance',
+            'provider': 'aws',
+            'data': {},
+            'tags': {
+                'a.b.c': 'd',
+                'b.c.d': 'e',
+                'c.d.e': 'f',
+            },
+            "region_code": "ap-northeast-2",
+            'cloud_service_group': 'EC2',
+            'reference' : {'resource_id': 'abcde',
+                           'external_link': 'http://localhost:8080'},
+            'domain_id': utils.generate_id('domain'),
+        }
+
+        metadata = {
+            'verb': 'create',
+            'collector_id': utils.generate_id('collector'),
+            'job_id': utils.generate_id('job'),
+            'plugin_id': utils.generate_id('plugin'),
+            'secret.service_account_id': utils.generate_id('sa'),
+        }
+
+        cloud_svc_service = CloudServiceService(metadata=metadata)
+        old_cloud_svc_vo = cloud_svc_service.create(params.copy())
+
+        update_params = {
+            'cloud_service_id': old_cloud_svc_vo.cloud_service_id,
+            'provider': 'aws',
+            'tags': {
+                'a': 'b',
+                'a.a': 'c',
+                'a.b.c': 'f'
+            },
+            'domain_id': old_cloud_svc_vo.domain_id
+        }
+
+        cloud_svc_service = CloudServiceService(metadta=None)
+        new_cloud_svc_vo = cloud_svc_service.update(update_params)
+
+        list_params = {
+            'cloud_service_id': new_cloud_svc_vo.cloud_service_id,
+            'domain_id': new_cloud_svc_vo.domain_id,
+            'query': {'only': ['reference.external_link', 'reference.resource_id', 'tags.a']}
+        }
+
+        CloudServiceService(metadata=None)
+        list_cloud_svc_vo = cloud_svc_service.list(list_params)
+        for result in list_cloud_svc_vo[0]:
+            print_data(result.to_dict())
+
 
 if __name__ == '__main__':
     unittest.main()
