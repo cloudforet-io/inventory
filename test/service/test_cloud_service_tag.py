@@ -74,7 +74,7 @@ class TestCloudServiceTagService(unittest.TestCase):
         self.assertIsInstance(cloud_svc_vo, CloudService)
         self.assertEqual(params['cloud_service_type'], cloud_svc_vo.cloud_service_type)
         self.assertEqual(cloud_svc_vo.tags[0].provider, params['provider'])
-        self.assertEqual(cloud_svc_vo.tags[0].type, 'PROVIDER')
+        self.assertEqual(cloud_svc_vo.tags[0].type, 'MANAGED')
 
     def test_create_cloud_service_contain_dot_tag_by_custom(self):
         params = {
