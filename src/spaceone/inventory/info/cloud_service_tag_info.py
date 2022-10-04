@@ -1,4 +1,5 @@
 import functools
+from spaceone.core import utils
 
 from spaceone.api.inventory.v1 import cloud_service_tag_pb2
 
@@ -19,7 +20,7 @@ def CloudServiceTagInfo(cloud_svc_tag_vo: CloudServiceTag, minimal=False):
 
     if not minimal:
         info.update({
-            'created_at': cloud_svc_tag_vo.created_at,
+            'created_at': utils.datetime_to_iso8601(cloud_svc_tag_vo.created_at),
             'domain_id': cloud_svc_tag_vo.domain_id
         })
 
