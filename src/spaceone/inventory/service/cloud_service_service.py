@@ -316,6 +316,7 @@ class CloudServiceService(BaseService):
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
+        query = self._change_tags_filter(query, params['domain_id'])
         query = self._change_only_tags(query)
 
         return self.cloud_svc_mgr.list_cloud_services(query)
@@ -550,3 +551,49 @@ class CloudServiceService(BaseService):
         else:
             tag_type = 'CUSTOM'
         return tag_type
+
+    def _change_tags_filter(self, query, domain_id):
+        change_filter = []
+
+        for condition in query.get('filter', []):
+            key = condition.get('k', condition.get('key'))
+            value = condition.get('v', condition.get('value'))
+            operator = condition.get('o', condition.get('operator'))
+
+            if key.startswith('tags.'):
+                tag_key = key.replace('tags.', '')
+
+                if operator in ['not', 'not_contain', 'not_in', 'not_contain_in']:
+                    if operator == 'not':
+                        operator = 'eq'
+                    elif operator == 'not_contain':
+                        operator = 'contain'
+                    elif operator == 'not_in':
+                        operator = 'in'
+                    elif operator == 'not_contain_in':
+                        operator = 'contain_in'
+                else:
+                    operator = 'in'
+
+                cloud_svc_ids = self._get_cloud_service_ids_from_tag(tag_key, value, domain_id)
+
+                if cloud_svc_ids is not None:
+                    change_filter.append({
+                        'k': 'cloud_service_id',
+                        'v': list(set(cloud_svc_ids)),
+                        'o': operator
+                    })
+            else:
+                change_filter.append(condition)
+
+        query['filter'] = change_filter
+        return query
+
+    def _get_cloud_service_ids_from_tag(self, key, value, domain_id):
+        cst_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
+
+        cloud_svc_tag_vos = cst_mgr.filter_cloud_svc_tags(key=key, value=value, domain_id=domain_id)
+        cloud_svc_ids = []
+        for cloud_svc_tag_vo in cloud_svc_tag_vos:
+            cloud_svc_ids.append(cloud_svc_tag_vo.cloud_service_id)
+        return cloud_svc_ids
