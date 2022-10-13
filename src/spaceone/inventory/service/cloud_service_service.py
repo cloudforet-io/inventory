@@ -572,16 +572,14 @@ class CloudServiceService(BaseService):
                         operator = 'in'
                     elif operator == 'not_contain_in':
                         operator = 'contain_in'
-                else:
-                    operator = 'in'
 
-                cloud_svc_ids = self._get_cloud_service_ids_from_tag(tag_key, value, domain_id)
+                cloud_svc_ids = self._get_cloud_service_ids_from_tag(tag_key, value, operator, domain_id)
 
                 if cloud_svc_ids is not None:
                     change_filter.append({
                         'k': 'cloud_service_id',
                         'v': list(set(cloud_svc_ids)),
-                        'o': operator
+                        'o': 'in'
                     })
             else:
                 change_filter.append(condition)
@@ -589,11 +587,33 @@ class CloudServiceService(BaseService):
         query['filter'] = change_filter
         return query
 
-    def _get_cloud_service_ids_from_tag(self, key, value, domain_id):
+    def _get_cloud_service_ids_from_tag(self, key, value, operator, domain_id):
         cst_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
 
-        cloud_svc_tag_vos = cst_mgr.filter_cloud_svc_tags(key=key, value=value, domain_id=domain_id)
-        cloud_svc_ids = []
-        for cloud_svc_tag_vo in cloud_svc_tag_vos:
-            cloud_svc_ids.append(cloud_svc_tag_vo.cloud_service_id)
-        return cloud_svc_ids
+        cloud_service_ids = []
+        query = {
+            'filter': self._create_cloud_svc_tag_filter(key, value, operator, domain_id),
+            'only': ['cloud_service_id']
+        }
+
+        cst_vos, total_count = cst_mgr.list_cloud_svc_tags(query)
+        for cst_vo in cst_vos:
+            cloud_service_ids.append(cst_vo.cloud_service_id)
+
+        return cloud_service_ids
+
+    @staticmethod
+    def _create_cloud_svc_tag_filter(key, value, operator, domain_id):
+        return [{
+            'k': 'key',
+            'v': key,
+            'o': 'eq'
+        }, {
+            'k': 'value',
+            'v': value,
+            'o': operator
+        }, {
+            'k': 'domain_id',
+            'v': domain_id,
+            'o': 'eq'
+        }]
