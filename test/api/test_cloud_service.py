@@ -590,6 +590,12 @@ class TestCloudService(unittest.TestCase):
                         }
                     }]
                 }
+            },
+            'change_history': {
+                'exclude': [
+                    'reference.external_link',
+                    'data.e'
+                ]
             }
         }
 
