@@ -67,7 +67,10 @@ class ChangeHistoryManager(BaseManager):
         else:
             action = 'CREATE'
 
-        diff = self._make_diff(new_data, old_data)
+        metadata = new_data.get('metadata', {}).get(self.plugin_id or 'MANUAL', {})
+        exclude_keys = metadata.get('change_history', {}).get('exclude', [])
+
+        diff = self._make_diff(new_data, old_data, exclude_keys)
         diff_count = len(diff)
 
         if diff_count > 0:
@@ -89,7 +92,7 @@ class ChangeHistoryManager(BaseManager):
 
             self.record_mgr.create_record(params)
 
-    def _make_diff(self, new_data, old_data=None):
+    def _make_diff(self, new_data, old_data, exclude_keys):
         diff = []
         for key in DIFF_KEYS:
             if key in new_data:
@@ -98,16 +101,16 @@ class ChangeHistoryManager(BaseManager):
                 else:
                     old_value = None
 
-                diff += self._get_diff_data(key, new_data[key], old_value)
+                diff += self._get_diff_data(key, new_data[key], old_value, exclude_keys)
 
         return diff
 
-    def _get_diff_data(self, key, new_value, old_value, depth=1, parent_key=None):
+    def _get_diff_data(self, key, new_value, old_value, exclude_keys, depth=1, parent_key=None):
         diff = []
 
         if depth == MAX_KEY_DEPTH:
             if new_value != old_value:
-                diff_data = self._generate_diff_data(key, parent_key, new_value, old_value)
+                diff_data = self._generate_diff_data(key, parent_key, new_value, old_value, exclude_keys)
                 if diff_data:
                     diff.append(diff_data)
         elif isinstance(new_value, dict):
@@ -122,16 +125,16 @@ class ChangeHistoryManager(BaseManager):
                 else:
                     sub_old_value = None
 
-                diff += self._get_diff_data(sub_key, sub_value, sub_old_value, depth+1, parent_key)
+                diff += self._get_diff_data(sub_key, sub_value, sub_old_value, exclude_keys, depth+1, parent_key)
         else:
             if new_value != old_value:
-                diff_data = self._generate_diff_data(key, parent_key, new_value, old_value)
+                diff_data = self._generate_diff_data(key, parent_key, new_value, old_value, exclude_keys)
                 if diff_data:
                     diff.append(diff_data)
 
         return diff
 
-    def _generate_diff_data(self, key, parent_key, new_value, old_value):
+    def _generate_diff_data(self, key, parent_key, new_value, old_value, exclude_keys):
         if old_value is None:
             diff_type = 'ADDED'
         else:
@@ -139,16 +142,19 @@ class ChangeHistoryManager(BaseManager):
 
         before = self._change_diff_value(old_value)
         after = self._change_diff_value(new_value)
+        diff_key = key if parent_key is None else f'{parent_key}.{key}'
 
-        if before != after:
+        if diff_key in exclude_keys:
+            return None
+        elif before == after:
+            return None
+        else:
             return {
-                'key': key if parent_key is None else f'{parent_key}.{key}',
+                'key': diff_key,
                 'before': before,
                 'after': after,
                 'type': diff_type
             }
-        else:
-            return None
 
     def _change_diff_value(self, value):
         if isinstance(value, dict):
