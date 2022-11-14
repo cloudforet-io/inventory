@@ -1,4 +1,5 @@
 from spaceone.core.service import *
+from spaceone.inventory.model.job_model import Job
 from spaceone.inventory.manager.collector_manager.job_manager import JobManager
 
 
@@ -11,6 +12,44 @@ class JobService(BaseService):
     def __init__(self, metadata):
         super().__init__(metadata)
         self.job_mgr: JobManager = self.locator.get_manager('JobManager')
+
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
+    @check_required(['job_id', 'domain_id'])
+    def delete(self, params):
+        """
+        Args:
+            params (dict): {
+                    'job_id': 'str',
+                    'domain_id': 'str'
+                }
+
+        Returns:
+            None
+
+        """
+        job_id = params['job_id']
+        domain_id = params['domain_id']
+
+        job_vo: Job = self.job_mgr.get(job_id, domain_id)
+        self.job_mgr.delete_job_by_vo(job_vo)
+
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
+    @check_required(['job_id', 'domain_id'])
+    def get(self, params):
+        """
+        Args:
+            params (dict): {
+                    'job_id': 'str',
+                    'domain_id': 'str',
+                    'only': 'list'
+                }
+
+        Returns:
+            job_vo (object)
+
+        """
+
+        return self.job_mgr.get(params['job_id'], params['domain_id'], params.get('only'))
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
