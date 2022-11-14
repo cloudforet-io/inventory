@@ -36,8 +36,8 @@ class JobTaskManager(BaseManager):
 
         return job_task_vo
 
-    def get(self, job_task_id, domain_id):
-        return self.job_task_model.get(job_task_id=job_task_id, domain_id=domain_id)
+    def get(self, job_task_id, domain_id, only=None):
+        return self.job_task_model.get(job_task_id=job_task_id, domain_id=domain_id, only=only)
 
     def list(self, query):
         return self.job_task_model.query(**query)
@@ -47,6 +47,10 @@ class JobTaskManager(BaseManager):
 
     def delete(self, job_task_id, domain_id):
         job_task_vo = self.get(job_task_id, domain_id)
+        job_task_vo.delete()
+
+    @staticmethod
+    def delete_job_task_by_vo(job_task_vo):
         job_task_vo.delete()
 
     def check_duplicate_job_tasks(self, collector_id, secret_id, domain_id):
