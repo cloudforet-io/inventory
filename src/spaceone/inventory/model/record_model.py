@@ -48,15 +48,13 @@ class Record(MongoModel):
             '-created_at'
         ],
         'indexes': [
-            'cloud_service_id',
-            'action',
-            'user_id',
-            'collector_id',
-            'job_id',
-            'updated_by',
-            'project_id',
-            'domain_id',
-            'created_at',
-            'diff.key'
+            {
+                "fields": ['domain_id', 'cloud_service_id', '-created_at', 'diff.key'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH"
+            },
+            {
+                "fields": ['domain_id', 'record_id'],
+                "name": "COMPOUND_INDEX_FOR_GET"
+            }
         ]
     }

@@ -94,30 +94,43 @@ class CloudService(MongoModel):
             }
         },
         'indexes': [
-            # 'cloud_service_id',
-            'state',
-            'account',
-            'instance_type',
-            'ip_addresses',
-            'reference.resource_id',
-            'provider',
-            'cloud_service_group',
-            'cloud_service_type',
-            'ref_cloud_service_type',
-            'region_code',
-            'ref_region',
-            'project_id',
-            'domain_id',
-            'collection_info.collectors',
-            'collection_info.service_accounts',
-            'collection_info.secrets',
-            'created_at',
-            'updated_at',
-            'deleted_at',
             {
-                "fields": ['domain_id', 'provider', 'region_code', 'state', 'project_id',
-                           'cloud_service_group', 'cloud_service_type', 'ref_cloud_service_type'],
-                "name": "COMPOUND_INDEX_FOR_SEARCH"
+                "fields": ['domain_id', 'state', 'cloud_service_id'],
+                "name": "COMPOUND_INDEX_FOR_GC_1"
+            },
+            {
+                "fields": ['domain_id', 'state', 'updated_at'],
+                "name": "COMPOUND_INDEX_FOR_GC_2"
+            },
+            {
+                "fields": ['domain_id', 'state', '-deleted_at'],
+                "name": "COMPOUND_INDEX_FOR_GC_3"
+            },
+            {
+                "fields": ['domain_id', 'state', 'provider', 'cloud_service_group', 'cloud_service_type',
+                           'reference.resource_id', 'cloud_service_id'],
+                "name": "COMPOUND_INDEX_FOR_COLLECTOR"
+            },
+            {
+                "fields": ['domain_id', 'state', 'provider', 'cloud_service_group', 'cloud_service_type',
+                           'project_id', 'region_code'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1"
+            },
+            {
+                "fields": ['domain_id', 'state', 'ref_cloud_service_type', 'project_id', 'region_code'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_2"
+            },
+            {
+                "fields": ['domain_id', 'state', '-created_at', 'project_id'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_3"
+            },
+            {
+                "fields": ['domain_id', 'state', '-deleted_at', 'project_id'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_4"
+            },
+            {
+                "fields": ['domain_id', 'cloud_service_id', 'project_id'],
+                "name": "COMPOUND_INDEX_FOR_GET"
             }
         ]
     }

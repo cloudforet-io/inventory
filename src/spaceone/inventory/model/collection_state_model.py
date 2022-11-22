@@ -19,13 +19,22 @@ class CollectionState(MongoModel):
             'updated_at'
         ],
         'indexes': [
-            'collector_id',
-            'job_task_id',
-            'secret_id',
-            'resource_id',
-            'resource_type',
-            'disconnected_count',
-            'domain_id'
+            {
+                "fields": ['domain_id', 'collector_id', 'resource_id', 'secret_id'],
+                "name": "COMPOUND_INDEX_FOR_GET"
+            },
+            {
+                "fields": ['domain_id', 'collector_id', '-disconnected_count'],
+                "name": "COMPOUND_INDEX_FOR_DELETE_1"
+            },
+            {
+                "fields": ['resource_id', 'domain_id'],
+                "name": "COMPOUND_INDEX_FOR_DELETE_2"
+            },
+            {
+                "fields": ['domain_id', 'collector_id', 'job_task_id', 'secret_id', 'updated_at'],
+                "name": "COMPOUND_INDEX_FOR_DELETE_3"
+            },
         ]
     }
 
