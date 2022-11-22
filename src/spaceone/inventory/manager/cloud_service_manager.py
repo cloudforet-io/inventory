@@ -120,7 +120,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
         return resources, total_count
 
     def delete_resources(self, query):
-        query['only'] = self.resource_keys + ['updated_at']
+        query['only'] = self.resource_keys
 
         vos, total_count = self.list_cloud_services(query)
 
