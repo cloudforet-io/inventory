@@ -7,6 +7,19 @@ class Job(BaseAPI, job_pb2_grpc.JobServicer):
     pb2 = job_pb2
     pb2_grpc = job_pb2_grpc
 
+    def delete(self, request, context):
+        params, metadata = self.parse_request(request, context)
+
+        with self.locator.get_service('JobService', metadata) as job_service:
+            job_service.delete(params)
+            return self.locator.get_info('EmptyInfo')
+
+    def get(self, request, context):
+        params, metadata = self.parse_request(request, context)
+
+        with self.locator.get_service('JobService', metadata) as job_service:
+            return self.locator.get_info('JobInfo', job_service.get(params))
+
     def list(self, request, context):
         params, metadata = self.parse_request(request, context)
 

@@ -24,11 +24,15 @@ class JobManager(BaseManager):
     def stat_jobs(self, query):
         return self.job_model.stat(**query)
 
-    def get(self, job_id, domain_id):
-        return self.job_model.get(job_id=job_id, domain_id=domain_id)
+    def get(self, job_id, domain_id, only=None):
+        return self.job_model.get(job_id=job_id, domain_id=domain_id, only=only)
 
     def delete(self, job_id, domain_id):
         job_vo = self.get(job_id, domain_id)
+        job_vo.delete()
+
+    @staticmethod
+    def delete_job_by_vo(job_vo):
         job_vo.delete()
 
     def delete_by_collector_id(self, collector_id, domain_id):
@@ -99,7 +103,7 @@ class JobManager(BaseManager):
 
     def increase_remained_tasks(self, job_id, domain_id):
         job_vo = self.get(job_id, domain_id)
-        job_vo =job_vo.increment('remained_tasks')
+        job_vo = job_vo.increment('remained_tasks')
         _LOGGER.debug(f'[increase_remained_tasks] {job_id}, {job_vo.remained_tasks}')
         return job_vo
 

@@ -42,7 +42,6 @@ class CloudServiceTagManager(BaseManager):
                 'value': tag['value'],
                 'type': tag['type'],
                 'provider': tag['provider'],
-                'project_id': cloud_service_vo.project_id,
                 'domain_id': cloud_service_vo.domain_id
             }
             self.create_cloud_svc_tag(params)

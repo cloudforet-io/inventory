@@ -3,9 +3,21 @@ from spaceone.core.pygrpc import BaseAPI
 
 
 class JobTask(BaseAPI, job_task_pb2_grpc.JobTaskServicer):
-
     pb2 = job_task_pb2
     pb2_grpc = job_task_pb2_grpc
+
+    def delete(self, request, context):
+        params, metadata = self.parse_request(request, context)
+
+        with self.locator.get_service('JobTaskService', metadata) as job_task_service:
+            job_task_service.delete(params)
+            return self.locator.get_info('EmptyInfo')
+
+    def get(self, request, context):
+        params, metadata = self.parse_request(request, context)
+
+        with self.locator.get_service('JobTaskService', metadata) as job_task_service:
+            return self.locator.get_info('JobTaskInfo', job_task_service.get(params))
 
     def list(self, request, context):
         params, metadata = self.parse_request(request, context)

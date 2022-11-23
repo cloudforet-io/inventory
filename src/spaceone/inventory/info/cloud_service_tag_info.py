@@ -15,7 +15,6 @@ def CloudServiceTagInfo(cloud_svc_tag_vo: CloudServiceTag, minimal=False):
         'value': cloud_svc_tag_vo.value,
         'type': cloud_svc_tag_vo.type,
         'provider': cloud_svc_tag_vo.provider,
-        'project_id': cloud_svc_tag_vo.project_id,
     }
 
     if not minimal:
