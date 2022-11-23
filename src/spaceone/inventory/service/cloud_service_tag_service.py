@@ -13,8 +13,8 @@ class CloudServiceTagService(BaseService):
         self.cloud_svc_tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_id', 'key', 'provider', 'project_id', 'domain_id'])
+    @check_required(['cloud_service_id', 'domain_id'])
+    @append_query_filter(['cloud_service_id', 'key', 'provider', 'domain_id'])
     def list(self, params):
         """
         Args:
@@ -22,7 +22,6 @@ class CloudServiceTagService(BaseService):
                     'cloud_service_id': 'str',
                     'key': 'str',
                     'provider': 'str',
-                    'project_id': 'str',
                     'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
                     'domain_id  ': 'str'
                 }
@@ -35,7 +34,7 @@ class CloudServiceTagService(BaseService):
         return self.cloud_svc_tag_mgr.list_cloud_svc_tags(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['query', 'domain_id'])
+    @check_required(['cloud_service_id', 'query', 'domain_id'])
     @append_query_filter(['domain_id'])
     def stat(self, params):
         """
