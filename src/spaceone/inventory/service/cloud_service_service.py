@@ -277,7 +277,7 @@ class CloudServiceService(BaseService):
         """
 
         return self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], params['domain_id'],
-                                                    params.get('only'))
+                                                    only=params.get('only'))
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
