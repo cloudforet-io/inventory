@@ -29,8 +29,9 @@ class CloudServiceTagManager(BaseManager):
         cloud_svc_tag_vo: CloudServiceTag = self.cloud_svc_tag_model.create(params)
         self.transaction.add_rollback(_rollback, cloud_svc_tag_vo)
 
-    def delete_tags_by_tag_type(self, cloud_service_id, tag_type):
-        cloud_svc_tag_vos = self.filter_cloud_svc_tags(cloud_service_id=cloud_service_id, type=tag_type)
+    def delete_tags_by_tag_type(self, domain_id, cloud_service_id, tag_type):
+        cloud_svc_tag_vos = self.filter_cloud_svc_tags(domain_id=domain_id, cloud_service_id=cloud_service_id,
+                                                       type=tag_type)
         cloud_svc_tag_vos.delete()
 
     def create_cloud_svc_tags_by_new_tags(self, cloud_service_vo, new_tags):

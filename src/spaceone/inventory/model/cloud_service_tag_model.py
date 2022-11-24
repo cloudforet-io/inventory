@@ -25,12 +25,17 @@ class CloudServiceTag(MongoModel):
             'provider'
         ],
         'indexes': [
-            'cloud_service_id',
-            'key',
-            'value',
-            'type',
-            'provider',
-            'domain_id',
-            'created_at'
+            {
+                "fields": ['domain_id', 'cloud_service_id', 'key', 'value'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1"   # Cloud Service Tag Search
+            },
+            {
+                "fields": ['domain_id', 'key', 'value', 'cloud_service_id'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_2"   # Cloud Service Search
+            },
+            {
+                "fields": ['domain_id', 'cloud_service_id', 'type'],
+                "name": "COMPOUND_INDEX_FOR_UPDATE"
+            }
         ]
     }

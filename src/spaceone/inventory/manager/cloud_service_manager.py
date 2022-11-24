@@ -68,8 +68,19 @@ class CloudServiceManager(BaseManager, ResourceManager):
     def delete_cloud_service_by_vo(cloud_svc_vo):
         cloud_svc_vo.delete()
 
-    def get_cloud_service(self, cloud_service_id, domain_id, only=None):
-        return self.cloud_svc_model.get(cloud_service_id=cloud_service_id, domain_id=domain_id, only=only)
+    def get_cloud_service(self, cloud_service_id, domain_id, user_projects=None, only=None):
+        kwargs = {
+            'cloud_service_id': cloud_service_id,
+            'domain_id': domain_id
+        }
+
+        if user_projects:
+            kwargs['project_id'] = user_projects
+
+        if only:
+            kwargs['only'] = only
+
+        return self.cloud_svc_model.get(**kwargs)
 
     def list_cloud_services(self, query, target=None):
         # Append Query for DELETED filter (Temporary Logic)
@@ -120,7 +131,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
         return resources, total_count
 
     def delete_resources(self, query):
-        query['only'] = self.resource_keys + ['updated_at']
+        query['only'] = self.resource_keys
 
         vos, total_count = self.list_cloud_services(query)
 

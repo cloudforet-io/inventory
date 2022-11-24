@@ -1,5 +1,6 @@
 from spaceone.core.service import *
 from spaceone.inventory.manager.record_manager import RecordManager
+from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 
 
 @authentication_handler
@@ -11,12 +12,13 @@ class ChangeHistoryService(BaseService):
     def __init__(self, metadata):
         super().__init__(metadata)
         self.record_mgr: RecordManager = self.locator.get_manager('RecordManager')
+        self.cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
     @append_query_filter(['record_id', 'cloud_service_id', 'action', 'user_id', 'collector_id', 'job_id',
-                          'updated_by', 'domain_id', 'user_projects'])
+                          'updated_by', 'domain_id'])
     @append_keyword_filter(['diff.key', 'diff.before', 'diff.after'])
     def list(self, params):
         """
@@ -39,8 +41,10 @@ class ChangeHistoryService(BaseService):
             total_count (int)
 
         """
-        query = params.get('query', {})
 
+        self._check_cloud_service(params)
+
+        query = params.get('query', {})
         return self.record_mgr.list_records(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
@@ -61,5 +65,13 @@ class ChangeHistoryService(BaseService):
 
         """
 
+        self._check_cloud_service(params)
+
         query = params.get('query', {})
         return self.record_mgr.stat_records(query)
+
+    def _check_cloud_service(self, params):
+        cloud_service_id = params['cloud_service_id']
+        domain_id = params['domain_id']
+        user_projects = self.transaction.get_meta('user_projects', [])
+        self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id, user_projects=user_projects)

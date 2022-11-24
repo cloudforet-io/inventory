@@ -201,7 +201,7 @@ class CloudServiceService(BaseService):
 
         # Create New CloudServiceTag Resources
         if 'tags' in params:
-            self.tag_mgr.delete_tags_by_tag_type(cloud_service_id, tag_type)
+            self.tag_mgr.delete_tags_by_tag_type(domain_id, cloud_service_id, tag_type)
             self.tag_mgr.create_cloud_svc_tags_by_new_tags(cloud_svc_vo, new_tags)
 
         # Create Update History
@@ -277,7 +277,7 @@ class CloudServiceService(BaseService):
         """
 
         return self.cloud_svc_mgr.get_cloud_service(params['cloud_service_id'], params['domain_id'],
-                                                    params.get('only'))
+                                                    only=params.get('only'))
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])

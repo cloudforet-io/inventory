@@ -1,7 +1,6 @@
 from mongoengine import *
 
 from spaceone.core.model.mongo_model import MongoModel
-from spaceone.inventory.model.cloud_service_model import CloudService
 
 
 class RecordDiff(EmbeddedDocument):
@@ -24,7 +23,6 @@ class Record(MongoModel):
     collector_id = StringField(max_length=40, default=None, null=True)
     job_id = StringField(max_length=40, default=None, null=True)
     updated_by = StringField(max_length=40, choices=('COLLECTOR', 'USER'), default=None, null=True)
-    project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now=True)
 
@@ -38,25 +36,19 @@ class Record(MongoModel):
             'collector_id',
             'job_id',
             'updated_by',
-            'created_at',
-            'project_id'
+            'created_at'
         ],
-        'change_query_keys': {
-            'user_projects': 'project_id'
-        },
         'ordering': [
             '-created_at'
         ],
         'indexes': [
-            'cloud_service_id',
-            'action',
-            'user_id',
-            'collector_id',
-            'job_id',
-            'updated_by',
-            'project_id',
-            'domain_id',
-            'created_at',
-            'diff.key'
+            {
+                "fields": ['domain_id', 'cloud_service_id', '-created_at', 'diff.key'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH"
+            },
+            {
+                "fields": ['domain_id', 'record_id'],
+                "name": "COMPOUND_INDEX_FOR_GET"
+            }
         ]
     }
