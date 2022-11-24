@@ -73,5 +73,5 @@ class ChangeHistoryService(BaseService):
     def _check_cloud_service(self, params):
         cloud_service_id = params['cloud_service_id']
         domain_id = params['domain_id']
-        user_projects = self.transaction.get_meta('user_projects', [])
+        user_projects = params.get('user_projects')
         self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id, user_projects=user_projects)
