@@ -15,7 +15,7 @@ class CloudServiceTagService(BaseService):
         self.cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['cloud_service_id', 'domain_id'])
+    @check_required(['domain_id'])
     @append_query_filter(['cloud_service_id', 'key', 'provider', 'domain_id'])
     def list(self, params):
         """
@@ -34,13 +34,14 @@ class CloudServiceTagService(BaseService):
             total_count (int)
         """
 
-        self._check_cloud_service(params)
+        if 'cloud_service_id' in params:
+            self._check_cloud_service(params)
 
         query = params.get('query', {})
         return self.cloud_svc_tag_mgr.list_cloud_svc_tags(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['cloud_service_id', 'query', 'domain_id'])
+    @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id'])
     def stat(self, params):
         """
@@ -54,8 +55,8 @@ class CloudServiceTagService(BaseService):
         Returns:
             values (list) : 'list of statistics data'
         """
-
-        self._check_cloud_service(params)
+        if 'cloud_service_id' in params:
+            self._check_cloud_service(params)
 
         query = params.get('query', {})
         return self.cloud_svc_tag_mgr.stat_cloud_svc_tags(query)
