@@ -59,14 +59,3 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
     @staticmethod
     def delete_cloud_service_type_by_vo(cloud_svc_type_vo):
         cloud_svc_type_vo.delete()
-
-    def _get_cloud_service_count_in_type(self, cloud_svc_type_vo, cloud_svc_vos):
-        count = 0
-        for cloud_svc_vo in cloud_svc_vos:
-            if cloud_svc_type_vo.group == cloud_svc_vo.cloud_service_group and \
-                    cloud_svc_type_vo.provider == cloud_svc_vo.provider and \
-                    cloud_svc_type_vo.name == cloud_svc_vo.cloud_service_type:
-
-                count = count + 1
-
-        return count

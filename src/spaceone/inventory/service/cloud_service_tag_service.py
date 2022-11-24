@@ -1,5 +1,6 @@
 from spaceone.core.service import *
 from spaceone.inventory.manager.cloud_service_tag_manager import CloudServiceTagManager
+from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 
 
 @authentication_handler
@@ -11,6 +12,7 @@ class CloudServiceTagService(BaseService):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cloud_svc_tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
+        self.cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['cloud_service_id', 'domain_id'])
@@ -23,13 +25,17 @@ class CloudServiceTagService(BaseService):
                     'key': 'str',
                     'provider': 'str',
                     'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
-                    'domain_id  ': 'str'
+                    'domain_id  ': 'str',
+                    'user_projects': 'list', // from meta
                 }
 
         Returns:
             results (list)
             total_count (int)
         """
+
+        self._check_cloud_service(params)
+
         query = params.get('query', {})
         return self.cloud_svc_tag_mgr.list_cloud_svc_tags(query)
 
@@ -42,10 +48,20 @@ class CloudServiceTagService(BaseService):
             params (dict): {
                 'domain_id': 'str',
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
+                'user_projects': 'list', // from meta
             }
 
         Returns:
             values (list) : 'list of statistics data'
         """
+
+        self._check_cloud_service(params)
+
         query = params.get('query', {})
         return self.cloud_svc_tag_mgr.stat_cloud_svc_tags(query)
+
+    def _check_cloud_service(self, params):
+        cloud_service_id = params['cloud_service_id']
+        domain_id = params['domain_id']
+        user_projects = params.get('user_projects')
+        self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id, user_projects=user_projects)

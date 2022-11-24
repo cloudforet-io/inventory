@@ -33,11 +33,25 @@ class Region(MongoModel):
             'name'
         ],
         'indexes': [
-            # 'region_id',
-            'region_key',
-            'region_code',
-            'provider',
-            'ref_region',
-            'domain_id',
+            {
+                "fields": ['domain_id', 'region_id'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1"
+            },
+            {
+                "fields": ['domain_id', 'region_code', 'provider'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_2"
+            },
+            {
+                "fields": ['domain_id', 'region_key'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_3"
+            },
+            {
+                "fields": ['region_id', 'ref_region'],
+                "name": "COMPOUND_INDEX_FOR_REF_1"
+            },
+            {
+                "fields": ['region_code', 'provider', 'ref_region'],
+                "name": "COMPOUND_INDEX_FOR_REF_2"
+            },
         ]
     }
