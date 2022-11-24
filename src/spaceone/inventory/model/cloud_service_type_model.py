@@ -51,19 +51,25 @@ class CloudServiceType(MongoModel):
             'name'
         ],
         'indexes': [
-            # 'cloud_service_type_id',
-            'name',
-            'provider',
-            'group',
-            'cloud_service_type_key',
-            'ref_cloud_service_type',
-            'service_code',
-            'is_primary',
-            'is_major',
-            'resource_type',
-            'labels',
-            'domain_id',
-            'created_at',
-            'updated_at',
+            {
+                "fields": ['domain_id', 'cloud_service_type_id'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1"
+            },
+            {
+                "fields": ['domain_id', 'provider', 'group', 'name', 'is_primary'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_2"
+            },
+            {
+                "fields": ['domain_id', 'cloud_service_type_key'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_3"
+            },
+            {
+                "fields": ['cloud_service_type_id', 'ref_cloud_service_type'],
+                "name": "COMPOUND_INDEX_FOR_REF_1"
+            },
+            {
+                "fields": ['labels', 'is_primary', 'ref_cloud_service_type'],
+                "name": "COMPOUND_INDEX_FOR_REF_2"
+            },
         ]
     }
