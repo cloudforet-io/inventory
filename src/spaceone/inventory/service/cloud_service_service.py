@@ -216,12 +216,7 @@ class CloudServiceService(BaseService):
             state_mgr.create_collection_state(cloud_service_id, 'inventory.CloudService', domain_id)
 
         if 'project_id' in params:
-            record_mgr: RecordManager = self.locator.get_manager('RecordManager')
             note_mgr: NoteManager = self.locator.get_manager('NoteManager')
-
-            # Update Project ID from Records
-            record_vos = record_mgr.filter_records(cloud_service_id=cloud_service_id, domain_id=domain_id)
-            record_vos.update({'project_id': params['project_id']})
 
             # Update Project ID from Notes
             note_vos = note_mgr.filter_notes(cloud_service_id=cloud_service_id, domain_id=domain_id)
