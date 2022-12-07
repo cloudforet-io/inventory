@@ -1,4 +1,3 @@
-# -*- coding: utf-8 -*-
 import consul
 import datetime
 import logging
@@ -14,8 +13,6 @@ from spaceone.core.locator import Locator
 from spaceone.core.scheduler import IntervalScheduler
 from spaceone.core.auth.jwt.jwt_util import JWTUtil
 from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
-
-__all__ = ['IntervalExecutor']
 
 _LOGGER = logging.getLogger(__name__)
 
