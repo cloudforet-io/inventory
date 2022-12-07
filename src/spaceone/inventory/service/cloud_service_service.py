@@ -92,7 +92,10 @@ class CloudServiceService(BaseService):
             params['project_id'] = secret_project_id
 
         params['ref_cloud_service_type'] = self._make_cloud_service_type_key(params)
-        params['ref_region'] = self._make_region_key(params, params['provider'])
+
+        if 'region_code' in params:
+            params['ref_region'] = self._make_region_key(params, params['provider'])
+
         params['collection_info'] = self._get_collection_info()
 
         if 'metadata' in params:
