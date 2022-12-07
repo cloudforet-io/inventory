@@ -1,5 +1,4 @@
 from spaceone.inventory.manager.region_manager import RegionManager
-from spaceone.inventory.manager.server_manager import ServerManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
