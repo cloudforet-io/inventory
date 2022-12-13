@@ -2,8 +2,10 @@ import logging
 
 from spaceone.core.service import *
 from spaceone.inventory.model.record_model import Record
+from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.manager.record_manager import RecordManager
 from spaceone.inventory.manager.note_manager import NoteManager
+from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,11 +38,13 @@ class NoteService(BaseService):
 
         user_id = self.transaction.get_meta('user_id')
 
+        cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
         record_mgr: RecordManager = self.locator.get_manager('RecordManager')
         record_vo: Record = record_mgr.get_record(params['record_id'], params['domain_id'])
+        cloud_svc_vo: CloudService = cloud_svc_mgr.get_cloud_service(record_vo.cloud_service_id, params['domain_id'])
 
         params['cloud_service_id'] = record_vo.cloud_service_id
-        params['project_id'] = record_vo.project_id
+        params['project_id'] = cloud_svc_vo.project_id
         params['created_by'] = user_id
 
         return self.note_mgr.create_note(params)
