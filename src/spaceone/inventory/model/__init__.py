@@ -1,5 +1,4 @@
 from spaceone.inventory.model.region_model import Region
-from spaceone.inventory.model.server_model import Server
 from spaceone.inventory.model.collector_model import Collector, Schedule
 from spaceone.inventory.model.job_model import Job
 from spaceone.inventory.model.job_task_model import JobTask
