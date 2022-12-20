@@ -108,7 +108,7 @@ class CloudService(MongoModel):
             },
             {
                 "fields": ['domain_id', 'state', 'provider', 'cloud_service_group', 'cloud_service_type',
-                           'reference.resource_id', 'cloud_service_id'],
+                           'reference.resource_id', 'account', 'cloud_service_id'],
                 "name": "COMPOUND_INDEX_FOR_COLLECTOR"
             },
             {
