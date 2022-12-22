@@ -153,8 +153,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
     def _append_state_query(query):
         state_default_filter = {
             'key': 'state',
-            'value': 'DELETED',
-            'operator': 'not'
+            'value': 'ACTIVE',
+            'operator': 'eq'
         }
 
         show_deleted_resource = False
