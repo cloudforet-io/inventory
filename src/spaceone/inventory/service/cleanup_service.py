@@ -196,6 +196,9 @@ class CleanupService(BaseService):
             ]
         }
 
+        _LOGGER.debug(f'[terminate_resources] RESOURCE_TERMINATION_TIME = {termination_time}')
+        _LOGGER.debug(f'[terminate_resources] query: {query}')
+
         cloud_svc_vos, total_count = cloud_svc_mgr.list_cloud_services(query)
         _LOGGER.info(f'[terminate_resources] Terminate cloud services: {str(total_count)}')
         for cloud_svc_vo in cloud_svc_vos:
