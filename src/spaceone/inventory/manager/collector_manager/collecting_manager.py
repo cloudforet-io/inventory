@@ -333,7 +333,7 @@ class CollectingManager(BaseManager):
             try:
                 res_dict = MessageToDict(res, preserving_proto_field_name=True)
                 idx += 1
-                _LOGGER.debug(f'[_process_results] idx: {idx}')
+                # _LOGGER.debug(f'[_process_results] idx: {idx}')
                 ######################################
                 # Asynchronous DB Updater (using Queue)
                 ######################################
@@ -412,7 +412,7 @@ class CollectingManager(BaseManager):
                 self.transaction.set_meta('update_mode', update_mode)
             # delete update_mode
 
-        _LOGGER.debug(f'[_process_single_result] {resource_type}')
+        # _LOGGER.debug(f'[_process_single_result] {resource_type}')
         (svc, mgr) = self._get_resource_map(resource_type)
 
         # FilterCache
@@ -468,7 +468,7 @@ class CollectingManager(BaseManager):
                                                                  domain_id,
                                                                  mgr
                                                                  )
-            _LOGGER.debug(f'[_process_single_result] matched resources count = {total_count}')
+            # _LOGGER.debug(f'[_process_single_result] matched resources count = {total_count}')
         except ERROR_TOO_MANY_MATCH as e:
             _LOGGER.error(f'[_process_single_result] too many match')
             self.job_task_mgr.add_error(
@@ -493,7 +493,7 @@ class CollectingManager(BaseManager):
 
         end = time.time()
         diff = end - start
-        _LOGGER.debug(f'query time: {diff}')
+        # _LOGGER.debug(f'query time: {diff}')
 
         #########################################
         # Create / Update to DB
@@ -510,7 +510,7 @@ class CollectingManager(BaseManager):
 
             elif total_count == 1:
                 # Update Resource
-                _LOGGER.debug(f'[_process_single_result] Update Resource: {resource_type}')
+                # _LOGGER.debug(f'[_process_single_result] Update Resource: {resource_type}')
                 data.update(res_info[0])
                 svc.update(data)
                 diff = time.time() - end
@@ -811,7 +811,7 @@ class CollectingManager(BaseManager):
 
         for order in sorted(match_order):
             query = rule_matcher.make_query(order, match_rules, resource, domain_id)
-            _LOGGER.debug(f'[_query_with_match_rules] query generated: {query}')
+            # _LOGGER.debug(f'[_query_with_match_rules] query generated: {query}')
             found_resource, total_count = mgr.find_resources(query)
             if found_resource and total_count == 1:
                 return found_resource, total_count
