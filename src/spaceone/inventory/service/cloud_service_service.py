@@ -1,6 +1,5 @@
 import copy
 
-from operator import itemgetter
 from spaceone.core.service import *
 from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_model import CloudService
@@ -11,7 +10,6 @@ from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.change_history_manager import ChangeHistoryManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
-from spaceone.inventory.manager.record_manager import RecordManager
 from spaceone.inventory.manager.note_manager import NoteManager
 from spaceone.inventory.error import *
 
