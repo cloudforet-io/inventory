@@ -218,4 +218,4 @@ class CleanupService(BaseService):
             cloud_svc_tags_vos = tag_mgr.filter_cloud_svc_tags(cloud_service_id=cloud_service_id, domain_id=domain_id)
             cloud_svc_tags_vos.delete()
 
-            cloud_svc_mgr.delete_cloud_service(cloud_service_id, domain_id)
+            cloud_svc_mgr.terminate_cloud_service(cloud_service_id, domain_id)
