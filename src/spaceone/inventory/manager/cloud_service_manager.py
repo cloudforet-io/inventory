@@ -36,10 +36,10 @@ class CloudServiceManager(BaseManager, ResourceManager):
         self.cloud_svc_model: CloudService = self.locator.get_model('CloudService')
 
     def create_cloud_service(self, params):
-        def _rollback(cloud_svc_vo):
+        def _rollback(cloud_svc_vo: CloudService):
             _LOGGER.info(
                 f'[ROLLBACK] Delete Cloud Service : {cloud_svc_vo.provider} ({cloud_svc_vo.cloud_service_type})')
-            cloud_svc_vo.delete(True)
+            cloud_svc_vo.terminate()
 
         cloud_svc_vo: CloudService = self.cloud_svc_model.create(params)
         self.transaction.add_rollback(_rollback, cloud_svc_vo)
@@ -65,8 +65,12 @@ class CloudServiceManager(BaseManager, ResourceManager):
         cloud_svc_vo.delete()
 
     @staticmethod
-    def delete_cloud_service_by_vo(cloud_svc_vo):
+    def delete_cloud_service_by_vo(cloud_svc_vo: CloudService):
         cloud_svc_vo.delete()
+
+    def terminate_cloud_service(self, cloud_service_id, domain_id):
+        cloud_svc_vo: CloudService = self.get_cloud_service(cloud_service_id, domain_id)
+        cloud_svc_vo.terminate()
 
     def get_cloud_service(self, cloud_service_id, domain_id, user_projects=None, only=None):
         kwargs = {
