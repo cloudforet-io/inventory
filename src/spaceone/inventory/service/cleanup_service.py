@@ -193,7 +193,8 @@ class CleanupService(BaseService):
                     'v': domain_id,
                     'o': 'eq'
                 }
-            ]
+            ],
+            'only': ['cloud_service_id']
         }
 
         _LOGGER.debug(f'[terminate_resources] RESOURCE_TERMINATION_TIME = {termination_time}')
@@ -203,7 +204,6 @@ class CleanupService(BaseService):
         _LOGGER.info(f'[terminate_resources] Terminate cloud services: {str(total_count)}')
         for cloud_svc_vo in cloud_svc_vos:
             cloud_service_id = cloud_svc_vo.cloud_service_id
-            domain_id = cloud_svc_vo.domain_id
             _LOGGER.info(f'[terminate_resources] Terminate cloud service / record / note: {cloud_service_id}')
 
             # Cascade Delete Records
