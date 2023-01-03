@@ -34,18 +34,6 @@ class CloudServiceTagManager(BaseManager):
                                                        type=tag_type)
         cloud_svc_tag_vos.delete()
 
-    def create_cloud_svc_tags_by_new_tags(self, cloud_service_vo, new_tags):
-        for tag in new_tags:
-            params = {
-                'cloud_service_id': cloud_service_vo.cloud_service_id,
-                'key': tag['key'],
-                'value': tag['value'],
-                'type': tag['type'],
-                'provider': tag['provider'],
-                'domain_id': cloud_service_vo.domain_id
-            }
-            self.create_cloud_svc_tag(params)
-
     def list_cloud_svc_tags(self, query=None):
         if query is None:
             query = {}
