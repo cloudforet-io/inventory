@@ -40,7 +40,7 @@ class CloudService(MongoModel):
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
-    collection_info = ListField(EmbeddedDocumentField(CollectionInfo, default=CollectionInfo), default=[])
+    collection_info = ListField(EmbeddedDocumentField(CollectionInfo), default=[])
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)

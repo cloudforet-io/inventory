@@ -78,6 +78,7 @@ class CloudServiceService(BaseService):
             raise ERROR_REQUIRED_PARAMETER(key='provider')
 
         if 'tags' in params:
+            params['tag_keys'] = self._create_tag_keys(params['tags'], provider)
             params['tags'] = self._create_tags(params['tags'], provider)
 
         if 'instance_size' in params:
@@ -107,11 +108,6 @@ class CloudServiceService(BaseService):
         # Create Collection State
         state_mgr: CollectionStateManager = self.locator.get_manager('CollectionStateManager')
         state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, 'inventory.CloudService', domain_id)
-
-        # Create New CloudServiceTag Resources
-        if 'tags' in params:
-            pass
-            # TODO: have to apply to create tag_keys
 
         return cloud_svc_vo
 
@@ -546,15 +542,16 @@ class CloudServiceService(BaseService):
         else:
             dot_tags = {}
 
-        tags = {}
+        tags = {provider: {}}
         for key, value in dot_tags.items():
-            tags.update({
-                provider: {
-                    utils.dict_to_hash({key: value}): {'key': key,
-                                                       'value': value}
-                }
-            })
+            tags[provider].update({utils.dict_to_hash({key: value}): {'key': key, 'value': value}})
         return tags
+
+    @staticmethod
+    def _create_tag_keys(tags: dict, provider=None):
+        if provider is None:
+            provider = 'custom'
+        return {provider: list(tags.keys())}
 
     @staticmethod
     def _change_tags_to_dict(tags: list, tag_type=None) -> dict:
