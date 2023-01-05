@@ -4,7 +4,7 @@ from spaceone.core.model.mongo_model import MongoModel
 
 
 class PluginInfo(EmbeddedDocument):
-    plugin_id = StringField(max_length=40)
+    plugin_id = StringField(max_length=255)
     version = StringField(max_length=255)
     options = DictField()
     metadata = DictField()
