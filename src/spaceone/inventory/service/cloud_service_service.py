@@ -186,7 +186,7 @@ class CloudServiceService(BaseService):
 
         if 'metadata' in params:
             old_metadata = old_cloud_svc_data['metadata']
-            new_metadata = self._change_metadata_path(params['metadata'])
+            new_metadata = self._change_metadata_path(params['metadata'], provider)
 
             if new_metadata != old_metadata:
                 params['metadata'] = self._merge_namespaces(old_metadata, new_metadata)
