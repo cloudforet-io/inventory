@@ -176,18 +176,24 @@ class CloudServiceService(BaseService):
         old_cloud_svc_data = dict(cloud_svc_vo.to_dict())
 
         if 'tags' in params:
-            new_tags = self._create_tags(params, provider)
             old_tags = old_cloud_svc_data['tags']
+            new_tags = self._create_tags(params, provider)
 
             if new_tags != old_tags:
-                params['tags'] = self._merge_tags(new_tags, old_tags)
+                params['tags'] = self._merge_namespaces(new_tags, old_tags)
             else:
                 del params['tags']
 
-        params['collection_info'] = self._get_collection_info(provider, old_cloud_svc_data.get('collection_info', {}))
-
         if 'metadata' in params:
-            params['metadata'] = self._change_metadata_path(params['metadata'])
+            old_metadata = old_cloud_svc_data['metadata']
+            new_metadata = self._change_metadata_path(params['metadata'])
+
+            if new_metadata != old_metadata:
+                params['metadata'] = self._merge_namespaces(old_metadata, new_metadata)
+            else:
+                del params['metadata']
+
+        params['collection_info'] = self._get_collection_info(provider, old_cloud_svc_data.get('collection_info', {}))
 
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
 
@@ -506,27 +512,25 @@ class CloudServiceService(BaseService):
         return collection
 
     @staticmethod
-    def _merge_tags(old_tags, new_tags):
-        old_tag_providers = list(old_tags.keys())
-        merged_tags = copy.deepcopy(old_tags)
+    def _merge_namespaces(old_namespace, new_namespace):
+        merged_namespaces = copy.deepcopy(old_namespace)
 
-        for provider, items_with_hash_key in new_tags.items():
-            if provider in old_tag_providers:
-
-                new_items_with_hash_key = {}
-                if old_tags[provider] == new_tags[provider]:
-                    new_items_with_hash_key.update(old_tags[provider])
+        for provider, resources in new_namespace.items():
+            if provider in old_namespace:
+                new_resources = {}
+                if old_namespace[provider] == new_namespace[provider]:
+                    new_resources.update(old_namespace[provider])
                 else:
-                    inner_old_tags = old_tags[provider]
-                    inner_new_old_tags = new_tags[provider]
-                    inner_old_tags.update(inner_new_old_tags)
-                    new_items_with_hash_key.update(inner_old_tags)
+                    inner_old_resource = old_namespace[provider]
+                    inner_new_resource = new_namespace[provider]
+                    inner_old_resource.update(inner_new_resource)
+                    new_resources.update(inner_old_resource)
 
-                merged_tags.update({provider: new_items_with_hash_key})
+                merged_namespaces.update({provider: new_resources})
 
             else:
-                merged_tags.update({provider: items_with_hash_key})
-        return merged_tags
+                merged_namespaces.update({provider: resources})
+        return merged_namespaces
 
     @staticmethod
     def _create_tags(tags: dict, provider=None):
