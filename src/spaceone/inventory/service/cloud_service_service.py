@@ -176,11 +176,17 @@ class CloudServiceService(BaseService):
         old_cloud_svc_data = dict(cloud_svc_vo.to_dict())
 
         if 'tags' in params:
+            # old_tags = {'aws': {}, 'custom': {}}
             old_tags = old_cloud_svc_data.get('tags', {})
-            new_tags = self._create_tags(params, provider)
+            # new_tags = {'aws': {}}
+            # params['tags'] = old_tags.update(new_tags) pull-update
+            new_tags = self._create_tags(params['tags'], provider)
+            old_tag_keys = old_cloud_svc_data.get('tag_keys', {})
+            new_tag_keys = self._create_tag_keys(params['tags'], provider)
 
             if new_tags != old_tags:
-                params['tags'] = self._merge_namespaces(new_tags, old_tags)
+                params['tags'] = self._merge_namespaces(old_tags, new_tags)
+                params['tag_keys'] = self._merge_tag_keys(old_tag_keys, new_tag_keys)
             else:
                 del params['tags']
 
@@ -565,7 +571,7 @@ class CloudServiceService(BaseService):
 
         tags = {provider: {}}
         for key, value in dot_tags.items():
-            tags[provider].update({utils.dict_to_hash({key: value}): {'key': key, 'value': value}})
+            tags[provider].update({utils.string_to_hash({key}): {'key': key, 'value': value}})
         return tags
 
     @staticmethod
@@ -574,11 +580,21 @@ class CloudServiceService(BaseService):
             provider = 'custom'
         return {provider: list(tags.keys())}
 
+    @staticmethod
+    def _merge_tag_keys(old_tag_keys, new_tag_keys):
+        tag_keys = copy.deepcopy(old_tag_keys)
+        for provider, keys in new_tag_keys.items():
+            if provider in old_tag_keys:
+                tag_keys[provider].update(new_tag_keys[provider])
+            else:
+                tag_keys.update({provider: keys})
+        return tag_keys
+
     def _get_provider_from_meta(self):
         if self.collector_id and self.job_id and self.service_account_id and self.plugin_id:
             provider = self.transaction.get_meta(self.transaction.get_meta('secret.provider'))
         else:
-            provider = 'CUSTOM'
+            provider = 'custom'
         return provider
 
     def _change_tags_filter(self, query, domain_id):
@@ -590,59 +606,69 @@ class CloudServiceService(BaseService):
             operator = condition.get('o', condition.get('operator'))
 
             if key.startswith('tags.'):
-                tag_key = key.replace('tags.', '')
+                prefix, provider, tags_key = key.split('.', 2)
+                print(prefix, provider, tags_key)
+                utils.dict_to_hash()
+                hash_key = '<hash>.value'
+                key = f'{prefix}.{provider}.{hash_key}'
 
-                if operator in ['not', 'not_contain', 'not_in', 'not_contain_in']:
-                    if operator == 'not':
-                        operator = 'eq'
-                    elif operator == 'not_contain':
-                        operator = 'contain'
-                    elif operator == 'not_in':
-                        operator = 'in'
-                    elif operator == 'not_contain_in':
-                        operator = 'contain_in'
+                change_filter.append({
+                    'key': key,
+                    'value': value,
+                    'operator': operator
+                })
 
-                cloud_svc_ids = self._get_cloud_service_ids_from_tag(tag_key, value, operator, domain_id)
-
-                if cloud_svc_ids is not None:
-                    change_filter.append({
-                        'k': 'cloud_service_id',
-                        'v': list(set(cloud_svc_ids)),
-                        'o': 'in'
-                    })
+                # if operator in ['not', 'not_contain', 'not_in', 'not_contain_in']:
+                #     if operator == 'not':
+                #         operator = 'eq'
+                #     elif operator == 'not_contain':
+                #         operator = 'contain'
+                #     elif operator == 'not_in':
+                #         operator = 'in'
+                #     elif operator == 'not_contain_in':
+                #         operator = 'contain_in'
+                #
+                # cloud_svc_ids = self._get_cloud_service_ids_from_tag(tag_key, value, operator, domain_id)
+                #
+                # if cloud_svc_ids is not None:
+                #     change_filter.append({
+                #         'k': 'cloud_service_id',
+                #         'v': list(set(cloud_svc_ids)),
+                #         'o': 'in'
+                #     })
             else:
                 change_filter.append(condition)
 
         query['filter'] = change_filter
         return query
 
-    def _get_cloud_service_ids_from_tag(self, key, value, operator, domain_id):
-        cst_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
-
-        cloud_service_ids = []
-        query = {
-            'filter': self._create_cloud_svc_tag_filter(key, value, operator, domain_id),
-            'only': ['cloud_service_id']
-        }
-
-        cst_vos, total_count = cst_mgr.list_cloud_svc_tags(query)
-        for cst_vo in cst_vos:
-            cloud_service_ids.append(cst_vo.cloud_service_id)
-
-        return cloud_service_ids
-
-    @staticmethod
-    def _create_cloud_svc_tag_filter(key, value, operator, domain_id):
-        return [{
-            'k': 'key',
-            'v': key,
-            'o': 'eq'
-        }, {
-            'k': 'value',
-            'v': value,
-            'o': operator
-        }, {
-            'k': 'domain_id',
-            'v': domain_id,
-            'o': 'eq'
-        }]
+    # def _get_cloud_service_ids_from_tag(self, key, value, operator, domain_id):
+    #     cst_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
+    #
+    #     cloud_service_ids = []
+    #     query = {
+    #         'filter': self._create_cloud_svc_tag_filter(key, value, operator, domain_id),
+    #         'only': ['cloud_service_id']
+    #     }
+    #
+    #     cst_vos, total_count = cst_mgr.list_cloud_svc_tags(query)
+    #     for cst_vo in cst_vos:
+    #         cloud_service_ids.append(cst_vo.cloud_service_id)
+    #
+    #     return cloud_service_ids
+    #
+    # @staticmethod
+    # def _create_cloud_svc_tag_filter(key, value, operator, domain_id):
+    #     return [{
+    #         'k': 'key',
+    #         'v': key,
+    #         'o': 'eq'
+    #     }, {
+    #         'k': 'value',
+    #         'v': value,
+    #         'o': operator
+    #     }, {
+    #         'k': 'domain_id',
+    #         'v': domain_id,
+    #         'o': 'eq'
+    #     }]

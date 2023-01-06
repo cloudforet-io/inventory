@@ -9,7 +9,6 @@ from spaceone.inventory.manager.record_manager import RecordManager
 from spaceone.inventory.manager.note_manager import NoteManager
 from spaceone.inventory.manager.collector_manager.job_manager import JobManager
 from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
-from spaceone.inventory.manager.cloud_service_tag_manager import CloudServiceTagManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -170,7 +169,6 @@ class CleanupService(BaseService):
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
         record_mgr: RecordManager = self.locator.get_manager('RecordManager')
         note_mgr: NoteManager = self.locator.get_manager('NoteManager')
-        tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
 
         domain_id = params['domain_id']
 
