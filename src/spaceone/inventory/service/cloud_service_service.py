@@ -176,7 +176,7 @@ class CloudServiceService(BaseService):
         old_cloud_svc_data = dict(cloud_svc_vo.to_dict())
 
         if 'tags' in params:
-            old_tags = old_cloud_svc_data['tags']
+            old_tags = old_cloud_svc_data.get('tags', {})
             new_tags = self._create_tags(params, provider)
 
             if new_tags != old_tags:
@@ -185,7 +185,7 @@ class CloudServiceService(BaseService):
                 del params['tags']
 
         if 'metadata' in params:
-            old_metadata = old_cloud_svc_data['metadata']
+            old_metadata = old_cloud_svc_data.get('metadata', {})
             new_metadata = self._change_metadata_path(params['metadata'], provider)
 
             if new_metadata != old_metadata:
@@ -193,7 +193,14 @@ class CloudServiceService(BaseService):
             else:
                 del params['metadata']
 
-        params['collection_info'] = self._get_collection_info(provider, old_cloud_svc_data.get('collection_info', {}))
+        if 'collection_info' in params:
+            old_collection_info = old_cloud_svc_data.get('collection_info', [])
+            new_collection_info = self._get_collection_info(provider)
+
+            if old_collection_info != new_collection_info:
+                params['collection_info'] = self._merge_collection_info(old_collection_info, new_collection_info)
+            else:
+                del params['collection_info']
 
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
 
@@ -484,16 +491,7 @@ class CloudServiceService(BaseService):
             'last_collected_at': datetime.utcnow()
         }
 
-        if collections:
-            for collection in collections:
-                if collection.provider == provider and collection.collector_id == collector_id and \
-                        collection.secret_id == secret_id and collection.service_account_id == service_account_id:
-                    pass
-                else:
-                    collections.append(new_collection)
-        else:
-            collections.append(new_collection)
-
+        collections.append(new_collection)
         return collections
 
     @staticmethod
@@ -531,6 +529,26 @@ class CloudServiceService(BaseService):
             else:
                 merged_namespaces.update({provider: resources})
         return merged_namespaces
+
+    @staticmethod
+    def _merge_collection_info(old_collection_info, new_collection_info):
+        merged_collection_info = []
+        for old_collection in old_collection_info:
+            last_collected_at = old_collection.get('last_collected_at')
+            del old_collection['last_collected_at']
+
+            for new_collection in new_collection_info:
+                del new_collection['last_collected_at']
+
+                if old_collection == new_collection:
+                    old_collection.update({'last_collected_at': last_collected_at})
+                    merged_collection_info.append(old_collection)
+
+        for new_collection in new_collection_info:
+            if new_collection not in merged_collection_info:
+                merged_collection_info.append(new_collection)
+
+        return merged_collection_info
 
     @staticmethod
     def _create_tags(tags: dict, provider=None):
