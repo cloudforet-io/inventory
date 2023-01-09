@@ -19,15 +19,11 @@ MERGE_KEYS = [
     'region_code',
     'ref_region',
     'project_id'
-    'collection_info',
-    'tags',
-    'data',
-    'metadata',
+    'data'
 ]
 
 
 class CloudServiceManager(BaseManager, ResourceManager):
-
     resource_keys = ['cloud_service_id']
     query_method = 'list_cloud_services'
 

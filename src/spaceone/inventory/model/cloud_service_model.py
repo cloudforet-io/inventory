@@ -57,6 +57,7 @@ class CloudService(MongoModel):
             'metadata',
             'reference',
             'tags',
+            'tag_keys',
             'project_id',
             'region_code',
             'cloud_service_group',

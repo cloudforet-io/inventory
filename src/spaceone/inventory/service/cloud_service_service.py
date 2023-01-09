@@ -176,17 +176,16 @@ class CloudServiceService(BaseService):
         old_cloud_svc_data = dict(cloud_svc_vo.to_dict())
 
         if 'tags' in params:
-            # old_tags = {'aws': {}, 'custom': {}}
             old_tags = old_cloud_svc_data.get('tags', {})
-            # new_tags = {'aws': {}}
-            # params['tags'] = old_tags.update(new_tags) pull-update
             new_tags = self._create_tags(params['tags'], provider)
             old_tag_keys = old_cloud_svc_data.get('tag_keys', {})
             new_tag_keys = self._create_tag_keys(params['tags'], provider)
 
             if new_tags != old_tags:
-                params['tags'] = self._merge_namespaces(old_tags, new_tags)
-                params['tag_keys'] = self._merge_tag_keys(old_tag_keys, new_tag_keys)
+                old_tags.update(new_tags)
+                old_tag_keys.update(new_tag_keys)
+                params['tags'] = old_tags
+                params['tag_keys'] = old_tag_keys
             else:
                 del params['tags']
 
@@ -195,7 +194,8 @@ class CloudServiceService(BaseService):
             new_metadata = self._change_metadata_path(params['metadata'], provider)
 
             if new_metadata != old_metadata:
-                params['metadata'] = self._merge_namespaces(old_metadata, new_metadata)
+                old_metadata.update(new_metadata)
+                params['metadata'] = old_metadata
             else:
                 del params['metadata']
 
@@ -501,42 +501,6 @@ class CloudServiceService(BaseService):
         return collections
 
     @staticmethod
-    def _create_collection(provider, collector_id, service_account_id, secret_id):
-        collection = {'provider': provider}
-
-        if collector_id:
-            collection.update({'collector_id': collector_id})
-
-        if service_account_id:
-            collection.update({'service_account_id': service_account_id})
-
-        if secret_id:
-            collection.update({'secret_id': secret_id})
-
-        return collection
-
-    @staticmethod
-    def _merge_namespaces(old_namespace, new_namespace):
-        merged_namespaces = copy.deepcopy(old_namespace)
-
-        for provider, resources in new_namespace.items():
-            if provider in old_namespace:
-                new_resources = {}
-                if old_namespace[provider] == new_namespace[provider]:
-                    new_resources.update(old_namespace[provider])
-                else:
-                    inner_old_resource = old_namespace[provider]
-                    inner_new_resource = new_namespace[provider]
-                    inner_old_resource.update(inner_new_resource)
-                    new_resources.update(inner_old_resource)
-
-                merged_namespaces.update({provider: new_resources})
-
-            else:
-                merged_namespaces.update({provider: resources})
-        return merged_namespaces
-
-    @staticmethod
     def _merge_collection_info(old_collection_info, new_collection_info):
         merged_collection_info = []
         for old_collection in old_collection_info:
@@ -571,7 +535,7 @@ class CloudServiceService(BaseService):
 
         tags = {provider: {}}
         for key, value in dot_tags.items():
-            tags[provider].update({utils.string_to_hash({key}): {'key': key, 'value': value}})
+            tags[provider].update({utils.string_to_hash(key): {'key': key, 'value': value}})
         return tags
 
     @staticmethod
@@ -579,16 +543,6 @@ class CloudServiceService(BaseService):
         if provider is None:
             provider = 'custom'
         return {provider: list(tags.keys())}
-
-    @staticmethod
-    def _merge_tag_keys(old_tag_keys, new_tag_keys):
-        tag_keys = copy.deepcopy(old_tag_keys)
-        for provider, keys in new_tag_keys.items():
-            if provider in old_tag_keys:
-                tag_keys[provider].update(new_tag_keys[provider])
-            else:
-                tag_keys.update({provider: keys})
-        return tag_keys
 
     def _get_provider_from_meta(self):
         if self.collector_id and self.job_id and self.service_account_id and self.plugin_id:
