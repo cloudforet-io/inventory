@@ -319,8 +319,9 @@ class CloudServiceService(BaseService):
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
-        query = self._change_tags_filter(query, params['domain_id'])
+        query = self._change_tags_filter(query)
         query = self._change_only_tags(query)
+        query = self._change_sort_tags(query)
 
         return self.cloud_svc_mgr.list_cloud_services(query)
 
@@ -551,7 +552,8 @@ class CloudServiceService(BaseService):
             provider = 'custom'
         return provider
 
-    def _change_tags_filter(self, query, domain_id):
+    @staticmethod
+    def _change_tags_filter(query):
         change_filter = []
 
         for condition in query.get('filter', []):
@@ -560,11 +562,9 @@ class CloudServiceService(BaseService):
             operator = condition.get('o', condition.get('operator'))
 
             if key.startswith('tags.'):
-                prefix, provider, tags_key = key.split('.', 2)
-                print(prefix, provider, tags_key)
-                utils.dict_to_hash()
-                hash_key = '<hash>.value'
-                key = f'{prefix}.{provider}.{hash_key}'
+                prefix, provider, key = key.split('.', 2)
+                hash_value = utils.string_to_hash(key)
+                key = f'{prefix}.{provider}.{hash_value}.value'
 
                 change_filter.append({
                     'key': key,
@@ -572,57 +572,35 @@ class CloudServiceService(BaseService):
                     'operator': operator
                 })
 
-                # if operator in ['not', 'not_contain', 'not_in', 'not_contain_in']:
-                #     if operator == 'not':
-                #         operator = 'eq'
-                #     elif operator == 'not_contain':
-                #         operator = 'contain'
-                #     elif operator == 'not_in':
-                #         operator = 'in'
-                #     elif operator == 'not_contain_in':
-                #         operator = 'contain_in'
-                #
-                # cloud_svc_ids = self._get_cloud_service_ids_from_tag(tag_key, value, operator, domain_id)
-                #
-                # if cloud_svc_ids is not None:
-                #     change_filter.append({
-                #         'k': 'cloud_service_id',
-                #         'v': list(set(cloud_svc_ids)),
-                #         'o': 'in'
-                #     })
             else:
                 change_filter.append(condition)
-
         query['filter'] = change_filter
         return query
 
-    # def _get_cloud_service_ids_from_tag(self, key, value, operator, domain_id):
-    #     cst_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
-    #
-    #     cloud_service_ids = []
-    #     query = {
-    #         'filter': self._create_cloud_svc_tag_filter(key, value, operator, domain_id),
-    #         'only': ['cloud_service_id']
-    #     }
-    #
-    #     cst_vos, total_count = cst_mgr.list_cloud_svc_tags(query)
-    #     for cst_vo in cst_vos:
-    #         cloud_service_ids.append(cst_vo.cloud_service_id)
-    #
-    #     return cloud_service_ids
-    #
-    # @staticmethod
-    # def _create_cloud_svc_tag_filter(key, value, operator, domain_id):
-    #     return [{
-    #         'k': 'key',
-    #         'v': key,
-    #         'o': 'eq'
-    #     }, {
-    #         'k': 'value',
-    #         'v': value,
-    #         'o': operator
-    #     }, {
-    #         'k': 'domain_id',
-    #         'v': domain_id,
-    #         'o': 'eq'
-    #     }]
+    @staticmethod
+    def _change_sort_tags(query):
+        change_filter = []
+        if 'sort' in query:
+            sort_keys = query['sort'].get('keys', [])
+            for condition in sort_keys:
+                sort_key = condition.get('key', '')
+                desc = condition.get('desc', False)
+
+                if sort_key.startswith('tags.'):
+                    prefix, provider, key = sort_key.split('.', 2)
+                    hash_value = utils.string_to_hash(key)
+                    key = f'{prefix}.{provider}.{hash_value}.value'
+
+                    change_filter.append({
+                        'key': key,
+                        'desc': desc
+                    })
+
+                else:
+                    change_filter.append({
+                        'key': sort_key,
+                        'desc': desc
+                    })
+
+            query['sort']['keys'] = change_filter
+        return query
