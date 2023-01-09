@@ -14,6 +14,36 @@ image:
     version: latest
 imagePullPolicy: IfNotPresent
 
+resources: {}
+#     grpc: 
+#         requests:
+#             memory: "128Mi"
+#             cpu: "25m"
+#         limits:
+#             memory: "256Mi"
+#             cpu: "50m"
+#     rest: 
+#         requests:
+#             memory: "128Mi"
+#             cpu: "25m"
+#         limits:
+#             memory: "256Mi"
+#             cpu: "50m"
+#     scheduler: 
+#         requests:
+#             memory: "128Mi"
+#             cpu: "25m"
+#         limits:
+#             memory: "256Mi"
+#             cpu: "50m"
+#     worker: 
+#         requests:
+#             memory: "128Mi"
+#             cpu: "25m"
+#         limits:
+#             memory: "256Mi"
+#             cpu: "50m"
+
 # Overwrite database
 database: {}
 
@@ -48,14 +78,7 @@ application_scheduler:
             queue: collector_q
             interval: 1
             minute: ':35'
-#   TOKEN_INFO:
-#       protocol:
-#       config:
-#           host: consul
-#       uri: debug/supervisor/TOKEN
-# OR
-#   TOKEN: xxxxxxx
-#
+
 # Overwrite worker config
 #application_worker: {}
 application_worker:
@@ -73,17 +96,28 @@ application_worker:
             queue: collector_q
             pool: 4
 
-#   TOKEN_INFO:
-#       protocol:
-#       config:
-#           host: consul
-#       uri: debug/supervisor/TOKEN
-# OR
-#   TOKEN: xxxxxxx
-#
+application_rest: {}
+
+##########################
 # local sidecar
 ##########################
-#sidecar:
+sidecar:
+    rest_web:
+        image:
+            name: nginx
+            version: stable
+            imagePullPolicy: IfNotPresent
+        resources: {}
+        #     requests:
+        #         memory: "128Mi"
+        #         cpu: "25m"
+        #     limits:
+        #         memory: "256Mi"
+        #         cpu: "50m"
+    grpc: {} 
+    rest: {}
+    scheduler: {}
+    worker: {}
 
 
 ##########################
