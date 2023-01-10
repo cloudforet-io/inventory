@@ -48,7 +48,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'ip_addresses': cloud_svc_vo.ip_addresses,
             'data': change_struct_type(cloud_svc_vo.data),
             'metadata': change_struct_type(cloud_svc_vo.metadata),
-            'tags': change_struct_type(_tags_to_dict(cloud_svc_vo.tags)),
+            'tags': change_struct_type(_change_tags_without_hash(cloud_svc_vo.tags)),
             'tag_keys': change_struct_type(cloud_svc_vo.tag_keys),
             'collection_info': CollectionInfo(cloud_svc_vo.collection_info),
             'domain_id': cloud_svc_vo.domain_id,
@@ -64,13 +64,12 @@ def CloudServicesInfo(cloud_svc_vos, total_count, **kwargs):
         map(functools.partial(CloudServiceInfo, **kwargs), cloud_svc_vos)), total_count=total_count)
 
 
-def _tags_to_dict(tags) -> dict:
-    outer_tags = {}
-    for provider in tags.keys():
-        inner_tags = {}
-        for hash_key in tags[provider].keys():
-            inner_tags.update({
-                tags[provider][hash_key].get('key'): tags[provider][hash_key].get('value')
-            })
-        outer_tags.update({provider: inner_tags})
-    return outer_tags
+def _change_tags_without_hash(tags) -> dict:
+    changed_tags = {}
+    for provider, tag in tags.items():
+        for hash_key, tag_info in tag.items():
+            if not changed_tags.get(provider):
+                changed_tags[provider] = {}
+            changed_tags[provider].update({tag_info['key']: tag_info['value']})
+
+    return changed_tags
