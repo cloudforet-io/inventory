@@ -48,10 +48,12 @@ def CloudServicesInfo(cloud_svc_vos, total_count, **kwargs):
 
 
 def _tags_to_dict(tags) -> dict:
-    new_tags = {}
+    outer_tags = {}
     for provider in tags.keys():
+        inner_tags = {}
         for hash_key in tags[provider].keys():
-            new_tags.update({
+            inner_tags.update({
                 tags[provider][hash_key].get('key'): tags[provider][hash_key].get('value')
             })
-    return new_tags
+        outer_tags.update({provider: inner_tags})
+    return outer_tags
