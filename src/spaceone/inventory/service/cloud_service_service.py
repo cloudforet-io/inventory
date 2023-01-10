@@ -470,14 +470,14 @@ class CloudServiceService(BaseService):
 
         if plugin_id:
             metadata = {
-                plugin_id: copy.deepcopy(metadata)
+                provider: copy.deepcopy(metadata)
             }
         else:
             metadata = {
-                'MANUAL': copy.deepcopy(metadata)
+                'custom': copy.deepcopy(metadata)
             }
 
-        return {provider: metadata}
+        return metadata
 
     def _get_collection_info(self, provider=None, collections: CollectionInfo = None):
         if provider is None:
