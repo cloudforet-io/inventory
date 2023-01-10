@@ -9,7 +9,6 @@ from spaceone.inventory.manager.record_manager import RecordManager
 from spaceone.inventory.manager.note_manager import NoteManager
 from spaceone.inventory.manager.collector_manager.job_manager import JobManager
 from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
-from spaceone.inventory.manager.cloud_service_tag_manager import CloudServiceTagManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -170,7 +169,6 @@ class CleanupService(BaseService):
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
         record_mgr: RecordManager = self.locator.get_manager('RecordManager')
         note_mgr: NoteManager = self.locator.get_manager('NoteManager')
-        tag_mgr: CloudServiceTagManager = self.locator.get_manager('CloudServiceTagManager')
 
         domain_id = params['domain_id']
 
@@ -213,9 +211,5 @@ class CleanupService(BaseService):
             # Cascade Delete Notes
             note_vos = note_mgr.filter_notes(cloud_service_id=cloud_service_id, domain_id=domain_id)
             note_vos.delete()
-
-            # Cascade Delete CloudServiceTags
-            cloud_svc_tags_vos = tag_mgr.filter_cloud_svc_tags(cloud_service_id=cloud_service_id, domain_id=domain_id)
-            cloud_svc_tags_vos.delete()
 
             cloud_svc_mgr.terminate_cloud_service(cloud_service_id, domain_id)
