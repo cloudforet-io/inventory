@@ -29,10 +29,20 @@ spec:
       serviceAccountName: {{ .Values.global.serviceAccountName }}
 {{- end }}
       terminationGracePeriodSeconds: {{ .Values.gracePeriod }}
+{{- if .Values.imagePullSecrets}}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end}}
       containers:
         - name: {{ .Values.name }}-fastapi
           image: {{ .Values.image.name }}:{{ .Values.image.version }}
           imagePullPolicy: {{ .Values.imagePullPolicy }}
+{{- if .Values.resources.rest }}
+          resources:
+          {{- toYaml .Values.resources.rest | nindent 12 }}
+{{- end }}
           command: ['spaceone', 'rest', 'spaceone.{{ regexReplaceAll "-" .Values.name "_" }}', '-p', '8000']
           ports:
             - containerPort: 8000
@@ -63,10 +73,17 @@ spec:
           env:
             - name: SPACEONE_CONFIG_FILE
               value: /opt/spaceone/{{ .Values.name }}/config/config.yaml
+{{- if .Values.global.common_env }}
+{{- toYaml .Values.global.common_env | nindent 12 }}
+{{- end }}
 
         - name: {{ .Values.name }}-nginx
-          image: 'nginx:stable'
-          imagePullPolicy: {{ .Values.imagePullPolicy }}
+          image: {{ .Values.sidecar.rest_web.image.name }}:{{ .Values.sidecar.rest_web.image.version }}
+          imagePullPolicy: {{ .Values.sidecar.rest_web.image.imagePullPolicy }}
+{{- if .Values.sidecar.rest_web.resources }}
+          resources:
+          {{- toYaml .Values.sidecar.rest_web.resources | nindent 12 }}
+{{- end }}
           ports:
             - containerPort: 80
           volumeMounts:
@@ -85,11 +102,17 @@ spec:
             - name: rest-nginx-proxy-conf
               mountPath: /etc/nginx/conf.d
               readOnly: true
-
-
-{{- if .Values.sidecar }}
-{{- toYaml .Values.sidecar | nindent 8 }}
+{{- if .Values.global.common_env }}
+          env:
+{{- toYaml .Values.global.common_env | nindent 12 }}
 {{- end }}
+
+
+
+{{- if .Values.sidecar.rest }}
+{{- toYaml .Values.sidecar.rest | nindent 8 }}
+{{- end }}
+
 
 {{- if .Values.global.backend.sidecar }}
 {{- toYaml .Values.global.backend.sidecar | nindent 8 }}

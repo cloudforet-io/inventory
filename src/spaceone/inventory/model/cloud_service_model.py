@@ -8,17 +8,12 @@ from spaceone.inventory.model.region_model import Region
 from spaceone.inventory.error import *
 
 
-class Tag(EmbeddedDocument):
-    key = StringField(max_length=255)
-    value = StringField(max_length=255)
-    type = StringField(max_length=255, choices=('CUSTOM', 'MANAGED'))
-    provider = StringField(max_length=255, default=None, null=True)
-
-
 class CollectionInfo(EmbeddedDocument):
-    collectors = ListField(StringField(max_length=40))
-    service_accounts = ListField(StringField(max_length=40))
-    secrets = ListField(StringField(max_length=40))
+    provider = StringField(max_length=40)
+    service_account_id = StringField(max_length=40)
+    secret_id = StringField(max_length=40)
+    collector_id = StringField(max_length=40)
+    last_collected_at = DateTimeField(auto_now=True)
 
     def to_dict(self):
         return dict(self.to_mongo())
@@ -39,12 +34,13 @@ class CloudService(MongoModel):
     data = DictField()
     metadata = DictField()
     reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
-    tags = ListField(EmbeddedDocumentField(Tag, required=True), default=[])
+    tags = DictField()
+    tag_keys = DictField()
     region_code = StringField(max_length=255, default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
     project_id = StringField(max_length=255, default=None, null=True)
     domain_id = StringField(max_length=40)
-    collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
+    collection_info = ListField(EmbeddedDocumentField(CollectionInfo), default=[])
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)
@@ -61,6 +57,7 @@ class CloudService(MongoModel):
             'metadata',
             'reference',
             'tags',
+            'tag_keys',
             'project_id',
             'region_code',
             'cloud_service_group',
