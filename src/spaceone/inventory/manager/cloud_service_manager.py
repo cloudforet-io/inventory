@@ -19,15 +19,11 @@ MERGE_KEYS = [
     'region_code',
     'ref_region',
     'project_id'
-    'collection_info',
-    'tags',
-    'data',
-    'metadata',
+    'data'
 ]
 
 
 class CloudServiceManager(BaseManager, ResourceManager):
-
     resource_keys = ['cloud_service_id']
     query_method = 'list_cloud_services'
 
@@ -102,7 +98,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
             if key in new_data:
                 new_value = new_data[key]
                 old_value = old_data.get(key)
-                if key in ['data', 'metadata']:
+                if key in ['data']:
                     is_changed = False
                     for sub_key, sub_value in new_value.items():
                         if sub_value != old_value.get(sub_key):
