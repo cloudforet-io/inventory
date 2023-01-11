@@ -69,7 +69,7 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
-        provider = params.get('provider', self.transaction.get_meta('secret.provider'))
+        provider = self._get_provider_from_meta()
 
         params['provider'] = provider
 
@@ -179,7 +179,7 @@ class CloudServiceService(BaseService):
             old_tag_keys = old_cloud_svc_data.get('tag_keys', {})
             new_tags, new_tag_keys = self._convert_tag_type(params['tags'], provider)
 
-            if new_tags[provider] != old_tags.get(provider, {}):
+            if self._is_different_data(new_tags, old_tags, provider):
                 old_tags.update(new_tags)
                 old_tag_keys.update(new_tag_keys)
                 params['tags'] = old_tags
@@ -191,7 +191,7 @@ class CloudServiceService(BaseService):
             old_metadata = old_cloud_svc_data.get('metadata', {})
             new_metadata = self._convert_metadata(params['metadata'], provider)
 
-            if new_metadata != old_metadata:
+            if self._is_different_data(new_metadata, old_metadata, provider):
                 old_metadata.update(new_metadata)
                 params['metadata'] = old_metadata
             else:
@@ -311,7 +311,7 @@ class CloudServiceService(BaseService):
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
-        query = self._change_tags_filter(query)
+        query = self._change_filter_tags(query)
         query = self._change_only_tags(query)
         query = self._change_sort_tags(query)
 
@@ -433,19 +433,6 @@ class CloudServiceService(BaseService):
         return query
 
     @staticmethod
-    def _change_only_tags(query):
-        change_only_tags = []
-        if 'only' in query:
-
-            for key in query.get('only', []):
-                if key.startswith('tags.'):
-                    change_only_tags.append('tags')
-                else:
-                    change_only_tags.append(key)
-            query['only'] = change_only_tags
-        return query
-
-    @staticmethod
     def _make_cloud_service_type_key(resource_data):
         return f'{resource_data["domain_id"]}.{resource_data["provider"]}.' \
                f'{resource_data["cloud_service_group"]}.{resource_data["cloud_service_type"]}'
@@ -456,20 +443,10 @@ class CloudServiceService(BaseService):
 
     @staticmethod
     def _convert_metadata(metadata, provider):
-        if provider:
-            metadata = {
-                provider: copy.deepcopy(metadata)
-            }
-        else:
-            metadata = {
-                'custom': copy.deepcopy(metadata)
-            }
-
-        return metadata
+        return {provider: copy.deepcopy(metadata)}
 
     def _get_collection_info(self, provider, collections: CollectionInfo = None):
-        if collections is None:
-            collections = []
+        collections = collections or []
 
         collector_id = self.transaction.get_meta('collector_id')
         secret_id = self.transaction.get_meta('secret.secret_id')
@@ -483,28 +460,17 @@ class CloudServiceService(BaseService):
             'last_collected_at': datetime.utcnow()
         }
 
-        collections.append(new_collection)
-        return collections
+        merged_collections = []
+        if collections:
+            for collection in collections:
+                if collection['provider'] == provider:
+                    merged_collections.append(new_collection)
+                else:
+                    merged_collections.append(collection)
+        else:
+            merged_collections.append(new_collection)
 
-    @staticmethod
-    def _merge_collection_info(old_collection_info, new_collection_info):
-        merged_collection_info = []
-        for old_collection in old_collection_info:
-            last_collected_at = old_collection.get('last_collected_at')
-            del old_collection['last_collected_at']
-
-            for new_collection in new_collection_info:
-                del new_collection['last_collected_at']
-
-                if old_collection == new_collection:
-                    old_collection.update({'last_collected_at': last_collected_at})
-                    merged_collection_info.append(old_collection)
-
-        for new_collection in new_collection_info:
-            if new_collection not in merged_collection_info:
-                merged_collection_info.append(new_collection)
-
-        return merged_collection_info
+        return merged_collections
 
     @staticmethod
     def _convert_tag_type(tags: dict, provider):
@@ -520,9 +486,17 @@ class CloudServiceService(BaseService):
 
         tags = {provider: {}}
         for key, value in dot_tags.items():
-            tags[provider].update({utils.string_to_hash(key): {'key': key, 'value': value}})
+            hashed_key = utils.string_to_hash(key)
+            tags[provider][hashed_key] = {'key': key, 'value': value}
 
         return tags, tag_keys
+
+    @staticmethod
+    def _is_different_data(new_data, old_data, provider):
+        if new_data[provider] != old_data.get(provider):
+            return True
+        else:
+            return False
 
     def _get_provider_from_meta(self):
         if self.collector_id and self.job_id and self.service_account_id and self.plugin_id:
@@ -531,8 +505,7 @@ class CloudServiceService(BaseService):
             provider = 'custom'
         return provider
 
-    @staticmethod
-    def _change_tags_filter(query):
+    def _change_filter_tags(self, query):
         change_filter = []
 
         for condition in query.get('filter', []):
@@ -541,12 +514,10 @@ class CloudServiceService(BaseService):
             operator = condition.get('o', condition.get('operator'))
 
             if key.startswith('tags.'):
-                prefix, provider, key = key.split('.', 2)
-                hash_value = utils.string_to_hash(key)
-                key = f'{prefix}.{provider}.{hash_value}.value'
+                hashed_key = self._get_hashed_key(key)
 
                 change_filter.append({
-                    'key': key,
+                    'key': hashed_key,
                     'value': value,
                     'operator': operator
                 })
@@ -557,7 +528,18 @@ class CloudServiceService(BaseService):
         return query
 
     @staticmethod
-    def _change_sort_tags(query):
+    def _change_only_tags(query):
+        change_only_tags = []
+        if 'only' in query:
+            for key in query.get('only', []):
+                if key.startswith('tags.'):
+                    change_only_tags.append('tags')
+                else:
+                    change_only_tags.append(key)
+            query['only'] = change_only_tags
+        return query
+
+    def _change_sort_tags(self, query):
         change_filter = []
         if 'sort' in query:
             sort_keys = query['sort'].get('keys', [])
@@ -566,12 +548,10 @@ class CloudServiceService(BaseService):
                 desc = condition.get('desc', False)
 
                 if sort_key.startswith('tags.'):
-                    prefix, provider, key = sort_key.split('.', 2)
-                    hash_value = utils.string_to_hash(key)
-                    key = f'{prefix}.{provider}.{hash_value}.value'
+                    hashed_key = self._get_hashed_key(sort_key)
 
                     change_filter.append({
-                        'key': key,
+                        'key': hashed_key,
                         'desc': desc
                     })
 
@@ -583,3 +563,9 @@ class CloudServiceService(BaseService):
 
             query['sort']['keys'] = change_filter
         return query
+
+    @staticmethod
+    def _get_hashed_key(key):
+        prefix, provider, key = key.split('.', 2)
+        hash_key = utils.string_to_hash(key)
+        return f'{prefix}.{provider}.{hash_key}.value'

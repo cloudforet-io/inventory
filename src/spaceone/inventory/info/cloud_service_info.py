@@ -66,10 +66,10 @@ def CloudServicesInfo(cloud_svc_vos, total_count, **kwargs):
 
 def _change_tags_without_hash(tags) -> dict:
     changed_tags = {}
-    for provider, tag in tags.items():
-        for hash_key, tag_info in tag.items():
+    for provider, hashed_tags in tags.items():
+        for hash_key, tag in hashed_tags.items():
             if not changed_tags.get(provider):
                 changed_tags[provider] = {}
-            changed_tags[provider].update({tag_info['key']: tag_info['value']})
+            changed_tags[provider][tag['key']] = tag['value']
 
     return changed_tags
