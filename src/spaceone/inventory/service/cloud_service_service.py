@@ -69,12 +69,7 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
-        provider = self._get_provider_from_meta()
-
-        params['provider'] = provider
-
-        if params['provider'] is None:
-            raise ERROR_REQUIRED_PARAMETER(key='provider')
+        provider = params['provider']
 
         if 'tags' in params:
             params['tags'], params['tag_keys'] = self._convert_tag_type(params['tags'], provider)
@@ -146,7 +141,7 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
-        provider = self._get_provider_from_meta()
+        provider = self._get_provider_from_meta(params)
 
         if 'ip_addresses' in params and params['ip_addresses'] is None:
             del params['ip_addresses']
@@ -476,7 +471,6 @@ class CloudServiceService(BaseService):
     def _convert_tag_type(tags: dict, provider):
         if isinstance(tags, list):
             dot_tags = utils.tags_to_dict(tags)
-
         elif isinstance(tags, dict):
             dot_tags = copy.deepcopy(tags)
         else:
@@ -500,10 +494,9 @@ class CloudServiceService(BaseService):
 
     def _get_provider_from_meta(self):
         if self.collector_id and self.job_id and self.service_account_id and self.plugin_id:
-            provider = self.transaction.get_meta(self.transaction.get_meta('secret.provider'))
+            return self.transaction.get_meta('secret.provider')
         else:
-            provider = 'custom'
-        return provider
+            return 'custom'
 
     def _change_filter_tags(self, query):
         change_filter = []
