@@ -334,6 +334,7 @@ class CloudServiceService(BaseService):
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
+        query = self._change_filter_tags(query)
 
         return self.cloud_svc_mgr.stat_cloud_services(query)
 
