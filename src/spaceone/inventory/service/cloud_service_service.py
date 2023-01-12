@@ -178,7 +178,7 @@ class CloudServiceService(BaseService):
                 old_tags.update(new_tags)
                 old_tag_keys.update(new_tag_keys)
                 params['tags'] = old_tags
-                params['tag_keys'] = list(set(old_tag_keys))
+                params['tag_keys'] = old_tag_keys
             else:
                 del params['tags']
 
@@ -334,6 +334,7 @@ class CloudServiceService(BaseService):
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
+        query = self._change_filter_tags(query)
 
         return self.cloud_svc_mgr.stat_cloud_services(query)
 
