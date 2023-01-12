@@ -11,10 +11,10 @@ _LOGGER = logging.getLogger(__name__)
 
 MERGE_KEYS = [
     'name',
+    'ip_addresses',
     'account',
     'instance_type',
     'instance_size',
-    'ip_addresses',
     'reference'
     'region_code',
     'ref_region',
