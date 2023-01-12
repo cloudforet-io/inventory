@@ -468,7 +468,7 @@ class CloudServiceService(BaseService):
         return merged_collections
 
     @staticmethod
-    def _convert_tag_type(tags: dict, provider):
+    def _convert_tag_type(tags, provider):
         if isinstance(tags, list):
             dot_tags = utils.tags_to_dict(tags)
         elif isinstance(tags, dict):
@@ -476,7 +476,7 @@ class CloudServiceService(BaseService):
         else:
             dot_tags = {}
 
-        tag_keys = {provider: list(tags.keys())}
+        tag_keys = {provider: list(dot_tags.keys())}
 
         tags = {provider: {}}
         for key, value in dot_tags.items():
