@@ -178,7 +178,7 @@ class CloudServiceService(BaseService):
                 old_tags.update(new_tags)
                 old_tag_keys.update(new_tag_keys)
                 params['tags'] = old_tags
-                params['tag_keys'] = list(set(old_tag_keys))
+                params['tag_keys'] = old_tag_keys
             else:
                 del params['tags']
 
