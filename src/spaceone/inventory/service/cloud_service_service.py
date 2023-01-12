@@ -141,7 +141,7 @@ class CloudServiceService(BaseService):
         domain_id = params['domain_id']
         release_region = params.get('release_region', False)
         release_project = params.get('release_project', False)
-        provider = self._get_provider_from_meta(params)
+        provider = self._get_provider_from_meta()
 
         if 'ip_addresses' in params and params['ip_addresses'] is None:
             del params['ip_addresses']
