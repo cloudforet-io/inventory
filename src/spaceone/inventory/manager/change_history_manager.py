@@ -9,10 +9,10 @@ _LOGGER = logging.getLogger(__name__)
 
 DIFF_KEYS = [
     'name',
+    'ip_addresses',
     'account',
     'instance_type',
     'instance_size',
-    'ip_addresses',
     'reference',
     'region_code',
     'project_id',

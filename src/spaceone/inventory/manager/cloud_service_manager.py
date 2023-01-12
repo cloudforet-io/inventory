@@ -19,9 +19,7 @@ MERGE_KEYS = [
     'region_code',
     'ref_region',
     'project_id'
-    'data',
-    'tags',
-    'tag_keys'
+    'data'
 ]
 
 
