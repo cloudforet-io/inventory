@@ -359,6 +359,7 @@ class CloudServiceService(BaseService):
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
         query = self._change_filter_tags(query)
+        query = self._change_distinct_tags(query)
 
         return self.cloud_svc_mgr.stat_cloud_services(query)
 
@@ -555,6 +556,16 @@ class CloudServiceService(BaseService):
                 else:
                     change_only_tags.append(key)
             query['only'] = change_only_tags
+
+        return query
+
+    def _change_distinct_tags(self, query):
+        if 'distinct' in query:
+            distinct_key = query['distinct']
+            if distinct_key.startswith('tags.'):
+                hashed_key = self._get_hashed_key(distinct_key)
+                query['distinct'] = hashed_key
+
         return query
 
     def _change_sort_tags(self, query):
@@ -584,6 +595,9 @@ class CloudServiceService(BaseService):
 
     @staticmethod
     def _get_hashed_key(key):
+        if key.count('.') < 2:
+            return key
+
         prefix, provider, key = key.split('.', 2)
         hash_key = utils.string_to_hash(key)
         return f'{prefix}.{provider}.{hash_key}.value'
