@@ -314,13 +314,37 @@ class CloudServiceService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
-    @append_query_filter(['resource_group_id', 'domain_id', 'user_projects'])
+    @append_query_filter(['domain_id', 'user_projects'])
+    @append_keyword_filter(_KEYWORD_FILTER)
+    def analyze(self, params):
+        """
+        Args:
+            params (dict): {
+                'domain_id': 'str',
+                'query': 'dict (spaceone.api.core.v1.AnalyzeQuery)',
+                'user_projects': 'list', // from meta
+            }
+
+        Returns:
+            values (list) : 'list of statistics data'
+
+        """
+
+        query = params.get('query', {})
+        query = self._append_resource_group_filter(query, params['domain_id'])
+        query = self._change_project_group_filter(query, params['domain_id'])
+        query = self._change_filter_tags(query)
+
+        return self.cloud_svc_mgr.analyze_cloud_services(query)
+
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
+    @check_required(['query', 'domain_id'])
+    @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """
         Args:
             params (dict): {
-                'resource_group_id': 'str',
                 'domain_id': 'str',
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
                 'user_projects': 'list', // from meta
@@ -335,6 +359,7 @@ class CloudServiceService(BaseService):
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
         query = self._change_filter_tags(query)
+        query = self._change_distinct_tags(query)
 
         return self.cloud_svc_mgr.stat_cloud_services(query)
 
@@ -531,6 +556,16 @@ class CloudServiceService(BaseService):
                 else:
                     change_only_tags.append(key)
             query['only'] = change_only_tags
+
+        return query
+
+    def _change_distinct_tags(self, query):
+        if 'distinct' in query:
+            distinct_key = query['distinct']
+            if distinct_key.startswith('tags.'):
+                hashed_key = self._get_hashed_key(distinct_key)
+                query['distinct'] = hashed_key
+
         return query
 
     def _change_sort_tags(self, query):
@@ -560,6 +595,9 @@ class CloudServiceService(BaseService):
 
     @staticmethod
     def _get_hashed_key(key):
+        if key.count('.') < 2:
+            return key
+
         prefix, provider, key = key.split('.', 2)
         hash_key = utils.string_to_hash(key)
         return f'{prefix}.{provider}.{hash_key}.value'

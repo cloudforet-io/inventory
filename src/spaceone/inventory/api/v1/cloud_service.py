@@ -48,6 +48,12 @@ class CloudService(BaseAPI, cloud_service_pb2_grpc.CloudServiceServicer):
                                          total_count,
                                          minimal=self.get_minimal(params))
 
+    def analyze(self, request, context):
+        params, metadata = self.parse_request(request, context)
+
+        with self.locator.get_service('CloudServiceService', metadata) as cloud_svc_service:
+            return self.locator.get_info('AnalyzeInfo', cloud_svc_service.analyze(params))
+
     def stat(self, request, context):
         params, metadata = self.parse_request(request, context)
 
