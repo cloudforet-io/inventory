@@ -87,6 +87,11 @@ class CloudServiceManager(BaseManager, ResourceManager):
         query = self._append_state_query(query)
         return self.cloud_svc_model.query(**query, target=target)
 
+    def analyze_cloud_services(self, query):
+        # Append Query for DELETED filter (Temporary Logic)
+        query = self._append_state_query(query)
+        return self.cloud_svc_model.analyze(**query)
+
     def stat_cloud_services(self, query):
         # Append Query for DELETED filter (Temporary Logic)
         query = self._append_state_query(query)
