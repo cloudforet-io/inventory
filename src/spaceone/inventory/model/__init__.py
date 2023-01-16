@@ -11,3 +11,4 @@ from spaceone.inventory.model.reference_resource_model import ReferenceResource
 from spaceone.inventory.model.resource_group_model import ResourceGroup
 from spaceone.inventory.model.record_model import Record
 from spaceone.inventory.model.note_model import Note
+from spaceone.inventory.model.collector_rule_model import CollectorRule

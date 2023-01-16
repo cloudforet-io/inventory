@@ -11,3 +11,4 @@ from spaceone.inventory.info.collection_info import *
 from spaceone.inventory.info.resource_group_info import *
 from spaceone.inventory.info.change_history_info import *
 from spaceone.inventory.info.note_info import *
+from spaceone.inventory.info.collector_rule_info import *
