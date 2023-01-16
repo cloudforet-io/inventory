@@ -41,3 +41,6 @@ class IdentityManager(BaseManager):
 
     def list_domains(self, query):
         return self.identity_conn.dispatch('Domain.list', {'query': query})
+
+    def list_service_accounts(self, query, domain_id):
+        return self.identity_conn.dispatch('ServiceAccount.list', {'query': query, 'domain_id': domain_id})

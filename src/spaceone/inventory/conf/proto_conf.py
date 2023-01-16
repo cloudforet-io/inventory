@@ -8,4 +8,5 @@ PROTO = {
     'spaceone.inventory.api.v1.resource_group': ['ResourceGroup'],
     'spaceone.inventory.api.v1.change_history': ['ChangeHistory'],
     'spaceone.inventory.api.v1.note': ['Note'],
+    'spaceone.inventory.api.v1.collector_rule': ['CollectorRule'],
 }
