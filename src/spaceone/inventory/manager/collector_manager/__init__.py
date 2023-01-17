@@ -63,8 +63,8 @@ class CollectorManager(BaseManager):
                 plugin_info['version'] = updated_version
 
             plugin_info['metadata'] = plugin_metadata['metadata']
-            params2 = {'plugin_info': plugin_info}
-            collector_vo = self.update_collector_by_vo(collector_vo, params2)
+            plugin_info_params = {'plugin_info': plugin_info}
+            collector_vo = self.update_collector_by_vo(collector_vo, plugin_info_params)
             return collector_vo
         except Exception as e:
             _LOGGER.debug(f'[create_collector] failed plugin init: {e}')
