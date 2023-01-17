@@ -4,7 +4,8 @@ from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
 
 from spaceone.inventory.error import *
-from spaceone.inventory.manager.collector_manager.secret_manager import SecretManager
+from spaceone.inventory.service.collector_rule_service import CollectorRuleService
+from spaceone.inventory.manager.collector_rule_manager import CollectorRuleManager
 
 __ALL__ = ['PluginManager']
 
@@ -148,6 +149,38 @@ class PluginManager(BaseManager):
         _LOGGER.debug(f'[_init_by_plugin_info] metadata: {plugin_meta}')
         return plugin_meta, updated_version
 
+    def create_collector_rules_by_metadata(self, metadata, collector_id, domain_id):
+        collector_rules = metadata.get('collector_rules', [])
+
+        if collector_rules:
+            _LOGGER.debug(f'[_create_collector_rules_by_metadata] create collector rules: {collector_id} / '
+                          f'rule count = {len(collector_rules)}')
+            metadata = {
+                'transaction_id': self.transaction.id,
+                'token': self.transaction.get_meta('token'),
+                'service': 'inventory',
+                'resource': 'CollectorRule',
+                'verb': 'create'
+            }
+
+            collector_rule_svc: CollectorRuleService = self.locator.get_service('CollectorRuleService', metadata)
+
+            for collector_rule_params in collector_rules:
+                collector_rule_params.update({
+                    'collector_id': collector_id,
+                    'domain_id': domain_id,
+                    'rule_type': 'MANAGED'
+                })
+
+                collector_rule_svc.create(collector_rule_params)
+
+    def delete_collector_rules(self, collector_id, domain_id):
+        _LOGGER.debug(f'[_delete_collector_rules] delete all collector rules: {collector_id}')
+        collector_rule_mgr: CollectorRuleManager = self.locator.get_manager('CollectorRuleManager')
+        old_collector_rule_vos = collector_rule_mgr.filter_collector_rules(collector_id=collector_id,
+                                                                           rule_type='MANAGED',
+                                                                           domain_id=domain_id)
+        old_collector_rule_vos.delete()
 
 def is_member(item, seq):
     return sum(map(lambda x: x == item, seq)) > 0

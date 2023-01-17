@@ -27,7 +27,6 @@ class CollectorRuleService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'conditions_policy', 'actions', 'domain_id'])
-    @change_date_value(['start', 'end'])
     def create(self, params):
         """Create Collector rule
 
@@ -74,7 +73,6 @@ class CollectorRuleService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_rule_id', 'domain_id'])
-    @change_date_value(['end'])
     def update(self, params):
         """ Update collector rule
         Args:

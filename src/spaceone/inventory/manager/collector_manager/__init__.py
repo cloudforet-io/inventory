@@ -51,7 +51,7 @@ class CollectorManager(BaseManager):
         collector_vo = self.collector_db.create_collector(params)
 
         # Plugin Manager
-        plugin_mgr = self.locator.get_manager('PluginManager')
+        plugin_mgr: PluginManager = self.locator.get_manager('PluginManager')
 
         # init plugin
         try:
@@ -63,14 +63,22 @@ class CollectorManager(BaseManager):
                 plugin_info['version'] = updated_version
 
             plugin_info['metadata'] = plugin_metadata['metadata']
-            params2 = {'plugin_info': plugin_info}
-            collector_vo = self.update_collector_by_vo(collector_vo, params2)
+            plugin_info_params = {'plugin_info': plugin_info}
+
+            collector_vo = self.update_collector_by_vo(collector_vo, plugin_info_params)
+            plugin_mgr.create_collector_rules_by_metadata(plugin_metadata['metadata'],
+                                                          collector_vo.collector_id,
+                                                          params['domain_id'])
+
             return collector_vo
         except Exception as e:
             _LOGGER.debug(f'[create_collector] failed plugin init: {e}')
             raise ERROR_VERIFY_PLUGIN_FAILURE(params=params)
 
     def update_plugin(self, collector_id, domain_id, version, options, upgrade_mode):
+        # Plugin Manager
+        plugin_mgr: PluginManager = self.locator.get_manager('PluginManager')
+
         collector_vo = self.get_collector(collector_id, domain_id)
         plugin_info = collector_vo.plugin_info.to_dict()
 
@@ -94,7 +102,12 @@ class CollectorManager(BaseManager):
             'plugin_info': plugin_info
         }
         _LOGGER.debug(f'[update_plugin] {plugin_info}')
-        return self.update_collector_by_vo(collector_vo, params)
+        collector_vo = self.update_collector_by_vo(collector_vo, params)
+
+        plugin_mgr.delete_collector_rules(collector_id, domain_id),
+        plugin_mgr.create_collector_rules_by_metadata(plugin_metadata, collector_id, domain_id)
+
+        return collector_vo
 
     def verify_plugin(self, collector_id, secret_id, domain_id):
         # Get collector
@@ -172,7 +185,6 @@ class CollectorManager(BaseManager):
 
         collector_vo = self.get_collector(collector_id, domain_id)
         collector_dict = collector_vo.to_dict()
-        # Check collector state (if disabled, raise error)
         if collector_dict['state'] == 'DISABLED':
             raise ERROR_COLLECTOR_STATE(state='DISABLED')
 
@@ -191,6 +203,9 @@ class CollectorManager(BaseManager):
             plugin_info['version'] = updated_version
             plugin_info['metadata'] = response['metadata']
             collector_vo = collector_vo.update({'plugin_info': plugin_info})
+
+            plugin_mgr.delete_collector_rules(collector_id, domain_id),
+            plugin_mgr.create_collector_rules_by_metadata(response['metadata'], collector_id, domain_id)
 
         # TODO: get Queue from config
 
