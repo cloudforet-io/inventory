@@ -8,3 +8,4 @@ from spaceone.inventory.service.cleanup_service import CleanupService
 from spaceone.inventory.service.resource_group_service import ResourceGroupService
 from spaceone.inventory.service.note_service import NoteService
 from spaceone.inventory.service.change_history_service import ChangeHistoryService
+from spaceone.inventory.service.collector_rule_service import CollectorRuleService
