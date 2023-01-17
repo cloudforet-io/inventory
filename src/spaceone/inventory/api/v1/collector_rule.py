@@ -43,7 +43,7 @@ class CollectorRule(BaseAPI, collector_rule_pb2_grpc.CollectorRuleServicer):
 
         with self.locator.get_service('CollectorRuleService', metadata) as collector_rule_service:
             collector_rule_vos, total_count = collector_rule_service.list(params)
-            return self.locator.get_info('CollectorRuleInfo', collector_rule_vos, total_count, minimal=self.get_minimal(params))
+            return self.locator.get_info('CollectorRulesInfo', collector_rule_vos, total_count, minimal=self.get_minimal(params))
 
     def stat(self, request, context):
         params, metadata = self.parse_request(request, context)
