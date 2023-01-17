@@ -11,6 +11,7 @@ from spaceone.inventory.manager.resource_group_manager import ResourceGroupManag
 from spaceone.inventory.manager.change_history_manager import ChangeHistoryManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.note_manager import NoteManager
+from spaceone.inventory.manager.collector_rule_manager import CollectorRuleManager
 from spaceone.inventory.error import *
 
 _KEYWORD_FILTER = ['cloud_service_id', 'name', 'ip_addresses', 'cloud_service_group', 'cloud_service_type',
@@ -28,6 +29,7 @@ class CloudServiceService(BaseService):
         self.cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
         self.region_mgr: RegionManager = self.locator.get_manager('RegionManager')
         self.identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
+        self.collector_rule_mgr: CollectorRuleManager = self.locator.get_manager('CollectorRuleManager')
         self.collector_id = self.transaction.get_meta('collector_id')
         self.job_id = self.transaction.get_meta('job_id')
         self.plugin_id = self.transaction.get_meta('plugin_id')
@@ -93,6 +95,8 @@ class CloudServiceService(BaseService):
 
         params['collection_info'] = self._get_collection_info(provider)
 
+        # Change data through Collector Rule
+        params = self.collector_rule_mgr.change_cloud_service_data(params)
         cloud_svc_vo = self.cloud_svc_mgr.create_cloud_service(params)
 
         # Create New History
@@ -196,6 +200,9 @@ class CloudServiceService(BaseService):
         params['collection_info'] = self._get_collection_info(provider, old_collection_info)
 
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
+
+        # Change data through Collector Rule
+        params = self.collector_rule_mgr.change_cloud_service_data(params)
 
         cloud_svc_vo = self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
 
