@@ -134,6 +134,24 @@ class TestCollectorRuleService(unittest.TestCase):
 
         self.assertIsInstance(get_collector_rule_vo, CollectorRule)
 
+    @patch.object(IdentityManager, '__init__', return_value=None)
+    @patch.object(MongoModel, 'connect', return_value=None)
+    def test_list_collector_rules(self, *args):
+        collector_rules_vos = CollectorRuleFactory.build_batch(10, domain_id=self.domain_id)
+        list(map(lambda vo: vo.save(), collector_rules_vos))
+
+        params = {
+            'domain_id': self.domain_id
+        }
+
+        self.metadata.update({'verb': 'list'})
+        collector_rule_svc = CollectorRuleService(metadata=self.metadata)
+        collector_rule_vos, total_count = collector_rule_svc.list(params)
+        CollectorRulesInfo(collector_rule_vos, total_count)
+
+        self.assertEqual(len(collector_rule_vos), 10)
+        self.assertIsInstance(collector_rule_vos[0], CollectorRule)
+        self.assertEqual(total_count, 10)
 
 if __name__ == "__main__":
     unittest.main(testRunner=RichTestRunner)
