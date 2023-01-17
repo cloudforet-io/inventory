@@ -4,7 +4,6 @@ from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
 
 from spaceone.inventory.error import *
-from spaceone.inventory.service.collector_rule_service import CollectorRuleService
 from spaceone.inventory.manager.collector_rule_manager import CollectorRuleManager
 
 __ALL__ = ['PluginManager']
@@ -163,7 +162,7 @@ class PluginManager(BaseManager):
                 'verb': 'create'
             }
 
-            collector_rule_svc: CollectorRuleService = self.locator.get_service('CollectorRuleService', metadata)
+            collector_rule_svc = self.locator.get_service('CollectorRuleService', metadata)
 
             for collector_rule_params in collector_rules:
                 collector_rule_params.update({
