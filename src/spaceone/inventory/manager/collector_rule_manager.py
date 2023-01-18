@@ -63,8 +63,7 @@ class CollectorRuleManager(BaseManager):
     def stat_collector_rules(self, query):
         return self.collector_rule_model.stat(**query)
 
-    def change_cloud_service_data(self, collector_id, cloud_service_data):
-        domain_id = cloud_service_data['domain_id']
+    def change_cloud_service_data(self, collector_id, domain_id, cloud_service_data):
         managed_collector_rule_vos, custom_collector_rule_vos = self._get_collector_rules(collector_id, domain_id)
 
         cloud_service_data = self._apply_collector_rule_to_cloud_service_data(cloud_service_data,
