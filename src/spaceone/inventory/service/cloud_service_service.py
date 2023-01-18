@@ -73,12 +73,16 @@ class CloudServiceService(BaseService):
         secret_project_id = self.transaction.get_meta('secret.project_id')
         provider = params['provider']
 
-        if 'tags' in params:
-            params['tags'], params['tag_keys'] = self._convert_tag_type(params['tags'], provider)
-
         if 'instance_size' in params:
             if not isinstance(params['instance_size'], float):
                 raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
+
+        # Change data through Collector Rule
+        if self._is_created_by_collector():
+            params = self.collector_rule_mgr.change_cloud_service_data(self.collector_id, domain_id, params)
+
+        if 'tags' in params:
+            params['tags'], params['tag_keys'] = self._convert_tag_type(params['tags'], provider)
 
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
@@ -93,11 +97,8 @@ class CloudServiceService(BaseService):
         if 'metadata' in params:
             params['metadata'] = self._convert_metadata(params['metadata'], provider)
 
-        collector_id = self.transaction.get_meta('collector_id')
         params['collection_info'] = self._get_collection_info(provider)
 
-        # Change data through Collector Rule
-        params = self.collector_rule_mgr.change_cloud_service_data(collector_id, params)
         cloud_svc_vo = self.cloud_svc_mgr.create_cloud_service(params)
 
         # Create New History
@@ -151,11 +152,15 @@ class CloudServiceService(BaseService):
         if 'ip_addresses' in params and params['ip_addresses'] is None:
             del params['ip_addresses']
 
-        cloud_svc_vo: CloudService = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
-
         if 'instance_size' in params:
             if not isinstance(params['instance_size'], float):
                 raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
+
+        # Change data through Collector Rule
+        if self._is_created_by_collector():
+            params = self.collector_rule_mgr.change_cloud_service_data(self.collector_id, domain_id, params)
+
+        cloud_svc_vo: CloudService = self.cloud_svc_mgr.get_cloud_service(cloud_service_id, domain_id)
 
         if release_project:
             params['project_id'] = None
@@ -201,10 +206,6 @@ class CloudServiceService(BaseService):
         params['collection_info'] = self._get_collection_info(provider, old_collection_info)
 
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
-
-        # Change data through Collector Rule
-        collector_id = self.transaction.get_meta('collector_id')
-        params = self.collector_rule_mgr.change_cloud_service_data(collector_id, params)
 
         cloud_svc_vo = self.cloud_svc_mgr.update_cloud_service_by_vo(params, cloud_svc_vo)
 
@@ -528,10 +529,13 @@ class CloudServiceService(BaseService):
             return False
 
     def _get_provider_from_meta(self):
-        if self.collector_id and self.job_id and self.service_account_id and self.plugin_id:
+        if self._is_created_by_collector():
             return self.transaction.get_meta('secret.provider')
         else:
             return 'custom'
+
+    def _is_created_by_collector(self):
+        return self.collector_id and self.job_id and self.service_account_id and self.plugin_id
 
     def _change_filter_tags(self, query):
         change_filter = []
