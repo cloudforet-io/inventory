@@ -582,28 +582,48 @@ class CloudServiceService(BaseService):
         return query
 
     def _change_sort_tags(self, query):
-        change_filter = []
         if 'sort' in query:
-            sort_keys = query['sort'].get('keys', [])
-            for condition in sort_keys:
-                sort_key = condition.get('key', '')
-                desc = condition.get('desc', False)
+            if 'keys' in query['sort']:
+                change_filter = []
+                sort_keys = query['sort'].get('keys', [])
+                for condition in sort_keys:
+                    sort_key = condition.get('key', '')
+                    desc = condition.get('desc', False)
+
+                    if sort_key.startswith('tags.'):
+                        hashed_key = self._get_hashed_key(sort_key)
+
+                        change_filter.append({
+                            'key': hashed_key,
+                            'desc': desc
+                        })
+
+                    else:
+                        change_filter.append({
+                            'key': sort_key,
+                            'desc': desc
+                        })
+                query['sort']['keys'] = change_filter
+
+            else:
+                change_filter = {}
+                sort_key = query['sort']['key']
+                desc = query['sort'].get('desc', False)
 
                 if sort_key.startswith('tags.'):
                     hashed_key = self._get_hashed_key(sort_key)
 
-                    change_filter.append({
+                    change_filter.update({
                         'key': hashed_key,
                         'desc': desc
                     })
 
                 else:
-                    change_filter.append({
+                    change_filter.update({
                         'key': sort_key,
                         'desc': desc
                     })
-
-            query['sort']['keys'] = change_filter
+                query['sort'] = change_filter
         return query
 
     @staticmethod
