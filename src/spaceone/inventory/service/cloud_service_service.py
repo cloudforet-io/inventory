@@ -77,12 +77,15 @@ class CloudServiceService(BaseService):
             if not isinstance(params['instance_size'], float):
                 raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
 
+        if 'tags' in params:
+            params['tags'] = self._convert_tags_to_dict(params['tags'])
+
         # Change data through Collector Rule
         if self._is_created_by_collector():
             params = self.collector_rule_mgr.change_cloud_service_data(self.collector_id, domain_id, params)
 
         if 'tags' in params:
-            params['tags'], params['tag_keys'] = self._convert_tag_type(params['tags'], provider)
+            params['tags'], params['tag_keys'] = self._convert_tags_to_hash(params['tags'], provider)
 
         if project_id:
             self.identity_mgr.get_project(project_id, domain_id)
@@ -156,6 +159,9 @@ class CloudServiceService(BaseService):
             if not isinstance(params['instance_size'], float):
                 raise ERROR_INVALID_PARAMETER_TYPE(key='instance_size', type='float')
 
+        if 'tags' in params:
+            params['tags'] = self._convert_tags_to_dict(params['tags'])
+
         # Change data through Collector Rule
         if self._is_created_by_collector():
             params = self.collector_rule_mgr.change_cloud_service_data(self.collector_id, domain_id, params)
@@ -182,7 +188,7 @@ class CloudServiceService(BaseService):
         if 'tags' in params:
             old_tags = old_cloud_svc_data.get('tags', {})
             old_tag_keys = old_cloud_svc_data.get('tag_keys', {})
-            new_tags, new_tag_keys = self._convert_tag_type(params['tags'], provider)
+            new_tags, new_tag_keys = self._convert_tags_to_hash(params['tags'], provider)
 
             if self._is_different_data(new_tags, old_tags, provider):
                 old_tags.update(new_tags)
@@ -504,14 +510,17 @@ class CloudServiceService(BaseService):
         return merged_collections
 
     @staticmethod
-    def _convert_tag_type(tags, provider):
+    def _convert_tags_to_dict(tags):
         if isinstance(tags, list):
             dot_tags = utils.tags_to_dict(tags)
         elif isinstance(tags, dict):
             dot_tags = copy.deepcopy(tags)
         else:
             dot_tags = {}
+        return dot_tags
 
+    @staticmethod
+    def _convert_tags_to_hash(dot_tags, provider):
         tag_keys = {provider: list(dot_tags.keys())}
 
         tags = {provider: {}}
