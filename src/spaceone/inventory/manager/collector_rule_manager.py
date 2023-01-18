@@ -164,13 +164,13 @@ class CollectorRuleManager(BaseManager):
         self._project_info[f'project:{domain_id}:{target_key}:{target_value}'] = project_info
         return project_info
 
-    def _change_cloud_service_data_by_rule(self, cost_data, collector_rule_vo: CollectorRule):
+    def _change_cloud_service_data_by_rule(self, cloud_service_data, collector_rule_vo: CollectorRule):
         conditions_policy = collector_rule_vo.conditions_policy
 
         if conditions_policy == 'ALWAYS':
             return True
         else:
-            results = list(map(functools.partial(self._check_condition, cost_data), collector_rule_vo.conditions))
+            results = list(map(functools.partial(self._check_condition, cloud_service_data), collector_rule_vo.conditions))
 
             if conditions_policy == 'ALL':
                 return all(results)
