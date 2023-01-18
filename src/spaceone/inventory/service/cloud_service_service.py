@@ -546,13 +546,13 @@ class CloudServiceService(BaseService):
         query['filter'] = change_filter
         return query
 
-    @staticmethod
-    def _change_only_tags(query):
+    def _change_only_tags(self, query):
         change_only_tags = []
         if 'only' in query:
             for key in query.get('only', []):
                 if key.startswith('tags.'):
-                    change_only_tags.append('tags')
+                    hashed_key = self._get_hashed_key(key, only=True)
+                    change_only_tags.append(hashed_key)
                 else:
                     change_only_tags.append(key)
             query['only'] = change_only_tags
@@ -594,10 +594,13 @@ class CloudServiceService(BaseService):
         return query
 
     @staticmethod
-    def _get_hashed_key(key):
+    def _get_hashed_key(key, only=False):
         if key.count('.') < 2:
             return key
 
         prefix, provider, key = key.split('.', 2)
         hash_key = utils.string_to_hash(key)
-        return f'{prefix}.{provider}.{hash_key}.value'
+        if only:
+            return f'{prefix}.{provider}.{hash_key}'
+        else:
+            return f'{prefix}.{provider}.{hash_key}.value'
