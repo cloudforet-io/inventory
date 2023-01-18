@@ -153,5 +153,6 @@ class TestCollectorRuleService(unittest.TestCase):
         self.assertIsInstance(collector_rule_vos[0], CollectorRule)
         self.assertEqual(total_count, 10)
 
+
 if __name__ == "__main__":
     unittest.main(testRunner=RichTestRunner)
