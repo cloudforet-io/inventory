@@ -1,0 +1,17 @@
+apiVersion: skaffold/v4beta1
+kind: Config
+metadata:
+  name: inventory
+build:
+  platforms: ["linux/amd64"]
+  artifacts:
+    - image: ${IMAGE_REPOSITORY}/inventory
+      docker:
+        dockerfile: Dockerfile
+deploy:
+  helm:
+    releases:
+    - name: inventory
+      chartPath: deploy/helm
+      valuesFiles:
+      - ${VALUES_LOCATION}/inventory.yaml
