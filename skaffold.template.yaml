@@ -3,7 +3,9 @@ kind: Config
 metadata:
   name: inventory
 build:
-  platforms: ["linux/amd64"]
+  platforms: [ "linux/amd64" ]
+  tagPolicy:
+    sha256: { }
   artifacts:
     - image: ${IMAGE_REPOSITORY}/inventory
       docker:
@@ -11,7 +13,7 @@ build:
 deploy:
   helm:
     releases:
-    - name: inventory
-      chartPath: deploy/helm
-      valuesFiles:
-      - ${VALUES_LOCATION}/inventory.yaml
+      - name: inventory
+        chartPath: deploy/helm
+        valuesFiles:
+          - ${VALUES_LOCATION}/inventory.yaml
