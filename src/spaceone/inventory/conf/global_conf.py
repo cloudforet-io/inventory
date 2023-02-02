@@ -22,7 +22,7 @@ CACHES = {
 # Garbage Collection Policies
 JOB_TIMEOUT = 2  # 2 Hours
 JOB_TERMINATION_TIME = 2 * 30  # 2 Months
-RESOURCE_TERMINATION_TIME = 6 * 30  # 6 Months
+RESOURCE_TERMINATION_TIME = 3 * 30  # 3 Months
 DEFAULT_DELETE_POLICIES = {
     'inventory.CloudService': 48,  # 48 Hours
     'inventory.CloudServiceType': 48,  # 48 Hours
