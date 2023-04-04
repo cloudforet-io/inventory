@@ -72,7 +72,6 @@ class CloudServiceService(BaseService):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
         domain_id = params['domain_id']
-        project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
         provider = params['provider']
 
@@ -90,8 +89,8 @@ class CloudServiceService(BaseService):
         if 'tags' in params:
             params['tags'], params['tag_keys'] = self._convert_tags_to_hash(params['tags'], provider)
 
-        if project_id:
-            self.identity_mgr.get_project(project_id, domain_id)
+        if 'project_id' in params:
+            self.identity_mgr.get_project(params['project_id'], domain_id)
         elif secret_project_id:
             params['project_id'] = secret_project_id
 
@@ -146,7 +145,6 @@ class CloudServiceService(BaseService):
 
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
-        project_id = params.get('project_id')
         secret_project_id = self.transaction.get_meta('secret.project_id')
 
         cloud_service_id = params['cloud_service_id']
@@ -173,8 +171,8 @@ class CloudServiceService(BaseService):
 
         if release_project:
             params['project_id'] = None
-        elif project_id:
-            self.identity_mgr.get_project(project_id, domain_id)
+        elif 'project_id' in params:
+            self.identity_mgr.get_project(params['project_id'], domain_id)
         elif secret_project_id and secret_project_id != cloud_svc_vo.project_id:
             params['project_id'] = secret_project_id
 
