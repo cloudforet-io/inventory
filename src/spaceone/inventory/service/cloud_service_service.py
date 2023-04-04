@@ -1,3 +1,4 @@
+import logging
 import copy
 from datetime import datetime
 
@@ -16,6 +17,8 @@ from spaceone.inventory.error import *
 
 _KEYWORD_FILTER = ['cloud_service_id', 'name', 'ip_addresses', 'cloud_service_group', 'cloud_service_type',
                    'reference.resource_id']
+
+_LOGGER = logging.getLogger(__name__)
 
 
 @authentication_handler
@@ -544,6 +547,10 @@ class CloudServiceService(BaseService):
             return 'custom'
 
     def _is_created_by_collector(self):
+        _LOGGER.debug(f'collector id: {self.collector_id}')
+        _LOGGER.debug(f'job id: {self.job_id}')
+        _LOGGER.debug(f'service account id: {self.service_account_id}')
+        _LOGGER.debug(f'plugin id: {self.plugin_id}')
         return self.collector_id and self.job_id and self.service_account_id and self.plugin_id
 
     def _change_filter_tags(self, query):
