@@ -66,9 +66,6 @@ class CollectorRuleManager(BaseManager):
     def change_cloud_service_data(self, collector_id, domain_id, cloud_service_data):
         managed_collector_rule_vos, custom_collector_rule_vos = self._get_collector_rules(collector_id, domain_id)
 
-        _LOGGER.debug(f'Managed Collector Rule : {managed_collector_rule_vos}')
-        _LOGGER.debug(f'Custom collector Rule : {custom_collector_rule_vos}')
-
         cloud_service_data = self._apply_collector_rule_to_cloud_service_data(cloud_service_data,
                                                                               managed_collector_rule_vos,
                                                                               domain_id)
@@ -83,7 +80,6 @@ class CollectorRuleManager(BaseManager):
         for collector_rule_vo in collector_rule_vos:
             is_match = self._change_cloud_service_data_by_rule(cloud_service_data, collector_rule_vo)
 
-            _LOGGER.debug(f'is_match : {is_match}')
             if is_match:
                 cloud_service_data = self._change_cloud_service_data_with_actions(cloud_service_data,
                                                                                   collector_rule_vo.actions,
@@ -104,14 +100,8 @@ class CollectorRuleManager(BaseManager):
                 target_key = value.get('target', 'project_id')
                 target_value = utils.get_dict_value(cloud_service_data, source)
 
-                _LOGGER.debug(f'source: {source}')
-                _LOGGER.debug(f'target key: {target_key}')
-                _LOGGER.debug(f'target value: {target_value}')
-
                 if target_value:
                     project_info = self._get_project(target_key, target_value, domain_id)
-
-                    _LOGGER.debug(f'project info: {project_info}')
 
                     if project_info:
                         cloud_service_data['project_id'] = project_info['project_id']
