@@ -143,6 +143,7 @@ class CollectorRuleManager(BaseManager):
 
     def _get_project(self, target_key, target_value, domain_id):
         if f'project:{domain_id}:{target_key}:{target_value}' in self._project_info:
+            _LOGGER.debug(f'[_get_project] Hit the cache in self._project_info : {target_value}')
             return self._project_info[f'project:{domain_id}:{target_key}:{target_value}']
 
         query = {
