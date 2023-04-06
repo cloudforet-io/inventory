@@ -152,7 +152,8 @@ class CollectorRuleManager(BaseManager):
             'only': ['project_id']
         }
 
-        response = self.identity_mgr.list_projects(query, domain_id)
+        query_hash = utils.dict_to_hash(query)
+        response = self.identity_mgr.list_projects_with_cache(query, query_hash, domain_id)
         results = response.get('results', [])
         total_count = response.get('total_count', 0)
 
