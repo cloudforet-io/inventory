@@ -15,7 +15,7 @@ class IdentityManager(BaseManager):
     def list_users(self, query, domain_id):
         return self.identity_conn.dispatch('User.list', {'query': query, 'domain_id': domain_id})
 
-    @cache.cacheable(key='project:{domain_id}:{project_id}', expire=3600)
+    @cache.cacheable(key='identity:project:{domain_id}:{project_id}', expire=3600)
     def get_project(self, project_id, domain_id):
         return self.identity_conn.dispatch('Project.get', {'project_id': project_id, 'domain_id': domain_id})
 
