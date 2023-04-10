@@ -50,6 +50,7 @@ jobs:
           tags: latest,${{ env.VERSION }}
           build-args: |
             PIP_ADDITIONAL_OPTION=--pre
+          push: true
 
       - name: Slack
         if: always()
