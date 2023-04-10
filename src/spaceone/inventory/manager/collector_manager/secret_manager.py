@@ -14,6 +14,7 @@ class SecretManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.secret_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='secret')
+        print(f'[SECRET CONNECTOR...] {self.secret_connector}')
 
     def get_secret_ids_from_provider(self, provider, domain_id):
         secrets = self.secret_connector.dispatch('Secret.list', {'provider': provider, 'domain_id': domain_id})
