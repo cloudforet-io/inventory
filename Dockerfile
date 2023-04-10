@@ -8,6 +8,7 @@ ENV CONF_DIR /etc/spaceone
 ENV LOG_DIR /var/log/spaceone
 ENV EXTENSION_NAME extension
 ENV EXTENSION_SRC_DIR /opt/spaceone
+ARG PIP_ADDITIONAL_OPTION
 
 
 COPY pkg/*.txt ${PKG_DIR}/
@@ -24,7 +25,7 @@ RUN echo "__path__ = __import__('pkgutil').extend_path(__path__, __name__)" >> $
 RUN echo "name = '${EXTENSION_NAME}'" >> ${EXTENSION_SRC_DIR}/${EXTENSION_NAME}/__init__.py
 
 ARG CACHEBUST=1
-RUN pip install --upgrade spaceone-core spaceone-api
+RUN pip install --upgrade ${PIP_ADDITIONAL_OPTION} spaceone-core spaceone-api
 
 COPY src ${SRC_DIR}
 WORKDIR ${SRC_DIR}
