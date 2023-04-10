@@ -14,11 +14,10 @@ class SecretManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.secret_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='secret')
-        print(f'[SECRET CONNECTOR...] {self.secret_connector}')
 
     def get_secret_ids_from_provider(self, provider, domain_id):
         secrets = self.secret_connector.dispatch('Secret.list', {'provider': provider, 'domain_id': domain_id})
-        _LOGGER.debug(f'[get_secret_ids_from_provider] secrets: {secrets}, by {provider}')
+        # _LOGGER.debug(f'[get_secret_ids_from_provider] secrets: {secrets}, by {provider}')
 
         result = []
         for secret in secrets.get('results', []):
@@ -34,7 +33,7 @@ class SecretManager(BaseManager):
         result = []
         for secret in secrets.get('results', []):
             result.append(secret.get('secret_id'))
-        _LOGGER.debug(f'[get_secret_ids_from_secret_group_id] found: {secrets["total_count"]}, by {secret_group_id}')
+        # _LOGGER.debug(f'[get_secret_ids_from_secret_group_id] found: {secrets["total_count"]}, by {secret_group_id}')
         return result
 
     def get_secret_data(self, secret_id, domain_id):
@@ -43,7 +42,7 @@ class SecretManager(BaseManager):
         """
         secret_data = self.secret_connector.dispatch('Secret.get_data', {'secret_id': secret_id, 'domain_id': domain_id})
 
-        _LOGGER.debug(f'[get_secret_data] secret_data.keys: {list(secret_data)}')
+        # _LOGGER.debug(f'[get_secret_data] secret_data.keys: {list(secret_data)}')
         return secret_data
 
     def get_provider(self, secret_id, domain_id):
@@ -52,7 +51,7 @@ class SecretManager(BaseManager):
         """
         secret = self.secret_connector.dispatch('Secret.get', {'secret_id': secret_id, 'domain_id': domain_id})
 
-        _LOGGER.debug(f'[get_provider] secret: {secret}')
+        # _LOGGER.debug(f'[get_provider] secret: {secret}')
         return secret.get('provider', None)
 
     def get_secret(self, secret_id, domain_id):
@@ -61,5 +60,5 @@ class SecretManager(BaseManager):
         """
         secret = self.secret_connector.dispatch('Secret.get', {'secret_id': secret_id, 'domain_id': domain_id})
 
-        _LOGGER.debug(f'[get_secret] secret: {secret}')
+        # _LOGGER.debug(f'[get_secret] secret: {secret}')
         return secret
