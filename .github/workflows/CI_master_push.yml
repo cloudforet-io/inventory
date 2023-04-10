@@ -49,7 +49,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
           tags: latest,${{ env.VERSION }}
           build-args: |
-            PIP_ADDITIONAL_OPTION='--pre'
+            PIP_ADDITIONAL_OPTION=--pre
 
       - name: Slack
         if: always()
