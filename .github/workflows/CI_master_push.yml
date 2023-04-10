@@ -44,10 +44,11 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           path: .
-          repository: ${{ env.ORGANIZATION }}/${{ env.SERVICE }}
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
-          tags: latest,${{ env.VERSION }}
+          tags: | 
+            ${{ env.ORGANIZATION }}/${{ env.SERVICE }}:latest
+            ${{ env.ORGANIZATION }}/${{ env.SERVICE }}:${{ env.VERSION }}
           build-args: |
             PIP_ADDITIONAL_OPTION=--pre
           push: true
