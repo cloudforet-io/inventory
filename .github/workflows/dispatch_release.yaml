@@ -73,7 +73,7 @@ jobs:
           user: ${{ secrets.PYPI_USERNAME }}
           password: ${{ secrets.PYPI_PASSWORD }}
           verbose: true
-          packages-dir: dist/
+          packages-dir: src/dist/
 
       - name: Notice when job fails
         if: failure()
