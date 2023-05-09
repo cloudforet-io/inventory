@@ -113,6 +113,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: cloudforet/${{ github.event.repository.name }}:${{ env.VERSION }}
+          build-args: |
+            PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -131,6 +133,8 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ secrets.ECR_REPO }}/${{ github.event.repository.name }}:${{ env.VERSION }}
+          build-args: |
+            PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
 
       - name: Notice when job fails
         if: failure()
