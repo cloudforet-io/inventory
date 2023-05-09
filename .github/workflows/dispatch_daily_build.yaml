@@ -43,6 +43,8 @@ jobs:
           tags: |
             cloudforetdev/${{ github.event.repository.name }}:latest
             cloudforetdev/${{ github.event.repository.name }}:${{ env.TIME }}
+          build-args: |
+            PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
 
       - name: Notice when job fails
         if: failure()
