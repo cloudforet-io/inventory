@@ -10,6 +10,8 @@ env:
 jobs:
   docker:
     runs-on: ubuntu-latest
+    outputs:
+        TIME: ${{ steps.get_date.outputs.TIME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -30,6 +32,7 @@ jobs:
           password: ${{ secrets.CLOUDFORET_DOCKER_PASSWORD }}
 
       - name: Get Date
+        id: get_date
         run: |
           sudo ln -sf /usr/share/zoneinfo/Asia/Seoul /etc/localtime
           CURRENT_TIME=$(date +'%Y%m%d.%H%M%S')
@@ -105,7 +108,7 @@ jobs:
                   "fields": [
                     {
                       "type": "mrkdwn",
-                      "text": "*Image:*\n$cloudforetdev/${{ github.event.repository.name }}:${{ env.VERSION }}"
+                      "text": "*Image:*\n$cloudforetdev/${{ github.event.repository.name }}:${{ needs.docker.outputs.TIME }}"
                     },
                     {
                       "type": "mrkdwn",
