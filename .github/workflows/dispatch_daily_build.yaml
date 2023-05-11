@@ -11,7 +11,7 @@ jobs:
   docker:
     runs-on: ubuntu-latest
     outputs:
-        TIME: ${{ steps.get_date.outputs.TIME }}
+      TIME: ${{ steps.get_date.outputs.TIME }}
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -44,7 +44,6 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
           push: true
           tags: |
             cloudforetdev/${{ github.event.repository.name }}:latest
