@@ -11,8 +11,17 @@ on:
         description: 'enter version(x.y.z)'
         required: true
         default: '1.0.0'
+      container_arch:
+        type: choice
+        description: 'choose container architecture'
+        default: linux/amd64
+        options:
+        - "linux/amd64"
+        - "linux/amd64,linux/arm64"
+
 
 env:
+  ARCH: ${{ github.event.inputs.container_arch }}
   BRANCH: ${{ github.event.inputs.branch }}
   VERSION: ${{ github.event.inputs.version }}
   PACKAGE_VERSION: ${{ github.event.inputs.version }}
@@ -110,7 +119,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ env.ARCH }}
           push: true
           tags: cloudforet/${{ github.event.repository.name }}:${{ env.VERSION }}
           build-args: |
@@ -130,7 +139,7 @@ jobs:
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: ${{ env.ARCH }}
           push: true
           tags: ${{ secrets.ECR_REPO }}/${{ github.event.repository.name }}:${{ env.VERSION }}
           build-args: |
