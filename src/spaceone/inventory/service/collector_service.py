@@ -28,10 +28,9 @@ class CollectorService(BaseService):
             params (dict): {
                 'name': 'str',
                 'plugin_info': 'dict',
-                'priority': 'int',
+                'provider': 'str',
+                'schedule': 'dict',
                 'tags': 'dict',
-                'is_public': 'bool',
-                'project_id': 'str',
                 'domain_id': 'str'
             }
 
@@ -44,15 +43,14 @@ class CollectorService(BaseService):
                 params['tags'] = utils.tags_to_dict(params['tags'])
 
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
-        is_public = params.get('is_public', True)
-        project_id = params.get('project_id', None)
-        if (is_public is False) and (project_id is None):
-            _LOGGER.error(f'[create] project_id is required, if is_public is false')
-            raise ERROR_REQUIRED_PARAMETER(key='project_id')
-
         plugin_info = self._get_plugin(params['plugin_info'], params['domain_id'])
         params['capability'] = plugin_info.get('capability', {})
-        params['provider'] = plugin_info.get('provider')
+        params['provider'] = self._get_plugin_providers(params.get('provider'), plugin_info)
+
+        # Check schedule type
+        if 'schedule' in params:
+            collector_mgr.is_supported_schedule(params['plugin_info'], params['schedule'])
+
         _LOGGER.debug(f'[create] capability: {params["capability"]}')
         _LOGGER.debug(f'[create] provider: {params["provider"]}')
 
@@ -68,6 +66,7 @@ class CollectorService(BaseService):
                 'name': 'str',
                 'priority': 'int',
                 'tags': 'dict',
+                'schedule': 'dict',
                 'domain_id': 'str'
             }
 
@@ -80,28 +79,12 @@ class CollectorService(BaseService):
                 params['tags'] = utils.tags_to_dict(params['tags'])
 
         collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
-        collector_id = params['collector_id']
-        domain_id = params['domain_id']
-        try:
-            collector_vo = collector_mgr.get_collector(collector_id, domain_id)
-        except Exception as e:
-            raise ERROR_NO_COLLECTOR(collector_id=collector_id, domain_id=domain_id)
+        collector_vo = collector_mgr.get_collector(params['collector_id'], params['domain_id'])
 
-        # If plugin_info exists, we need deep merge with previous information
-        # (merged_params, version_check) = self._get_merged_params(params, collector_vo.plugin_info)
-        # _LOGGER.debug(f'[update] params: {params}')
-        # _LOGGER.debug(f'[update] merged_params: {merged_params}')
-
-        if 'plugin_info' in params:
-            original_plugin_info = collector_vo.plugin_info.to_dict()
-
-            version = params['plugin_info'].get('version', original_plugin_info['version'])
-            options = params['plugin_info'].get('options', original_plugin_info['options'])
-            upgrade_mode = params['plugin_info'].get('upgrade_mode', original_plugin_info['upgrade_mode'])
-
-            collector_mgr.update_plugin(collector_id, domain_id, version, options, upgrade_mode)
-
-            del params['plugin_info']
+        # Check schedule type
+        if 'schedule' in params:
+            collector_dict = collector_vo.to_dict()
+            collector_mgr.is_supported_schedule(collector_dict.get('plugin_info', {}), params['schedule'])
 
         return collector_mgr.update_collector_by_vo(collector_vo, params)
 
@@ -213,8 +196,11 @@ class CollectorService(BaseService):
         collector_vo = collector_mgr.get_collector(collector_id, domain_id)
         params['collector'] = collector_vo
 
+        collector_dict = collector_vo.to_dict()
+        plugin_info = collector_dict['plugin_info']
+
         # Check schedule type
-        collector_mgr.is_supported_schedule(collector_vo, params['schedule'])
+        collector_mgr.is_supported_schedule(plugin_info, params['schedule'])
 
         scheduler_info = collector_mgr.add_schedule(params)
         return scheduler_info
@@ -327,6 +313,19 @@ class CollectorService(BaseService):
 
         return plugin_info
 
+    @staticmethod
+    def _get_plugin_providers(provider, plugin_info):
+        supported_providers = plugin_info.get('capability', {}).get('supported_providers', [])
+
+        if supported_providers:
+            # Multi providers
+            if provider in supported_providers:
+                return provider
+            else:
+                raise ERROR_INVALID_PARAMETER(key='provider', reason=f'Not supported provider: {provider}')
+        else:
+            # Single provider
+            return provider if provider else plugin_info.get('provider')
 
 def _make_query_domain(domain_id):
     return {

@@ -9,6 +9,16 @@ __all__ = ['CollectorInfo', 'CollectorsInfo', 'VerifyInfo', 'ScheduleInfo', 'Sch
 _LOGGER = logging.getLogger(__name__)
 
 
+def ScheduledInfo(schedule_vo):
+    info = {
+        'cron': schedule_vo.cron,
+        'interval': schedule_vo.interval,
+        'hours': schedule_vo.hours,
+        'minutes': schedule_vo.minutes
+    }
+    return collector_pb2.Scheduled(**info)
+
+
 def PluginInfo(vo, minimal=False):
     if vo is None:
         return None
@@ -22,11 +32,8 @@ def PluginInfo(vo, minimal=False):
         info.update({
             'options': change_struct_type(vo.options),
             'metadata': change_struct_type(vo.metadata),
-            'secret_id': vo.secret_id,
-            'secret_group_id': vo.secret_group_id,
-            'provider': vo.provider,
-            'service_account_id': vo.service_account_id,
-            'upgrade_mode': vo.upgrade_mode
+            'upgrade_mode': vo.upgrade_mode,
+            'secret_filter': change_struct_type(vo.secret_filter),
         })
     return collector_pb2.PluginInfo(**info)
 
@@ -36,16 +43,14 @@ def CollectorInfo(vo, minimal=False):
         'collector_id': vo.collector_id,
         'name': vo.name,
         'state': vo.state,
-        'provider': vo.provider,
+        'providers': vo.providers,
         'capability': change_struct_type(vo.capability),
         'plugin_info': PluginInfo(vo.plugin_info, minimal=minimal),
-        'is_public': vo.is_public,
-        'project_id': vo.project_id
     }
 
     if not minimal:
         info.update({
-            'priority': vo.priority,
+            'schedule': ScheduledInfo(vo.schedule) if vo.schedule else None,
             'created_at': utils.datetime_to_iso8601(vo.created_at),
             'last_collected_at': utils.datetime_to_iso8601(vo.last_collected_at),
             'tags': change_struct_type(vo.tags),
@@ -62,16 +67,6 @@ def VerifyInfo(info):
 def CollectorsInfo(vos, total_count, **kwargs):
     return collector_pb2.CollectorsInfo(results=list(map(functools.partial(CollectorInfo, **kwargs), vos)),
                                         total_count=total_count)
-
-
-def ScheduledInfo(vo):
-    info = {
-        'cron': vo.cron,
-        'interval': vo.interval,
-        'hours': vo.hours,
-        'minutes': vo.minutes
-    }
-    return collector_pb2.Scheduled(**info)
 
 
 def ScheduleInfo(vo, minimal=False):

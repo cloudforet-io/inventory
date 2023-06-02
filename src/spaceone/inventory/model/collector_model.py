@@ -8,27 +8,30 @@ class PluginInfo(EmbeddedDocument):
     version = StringField(max_length=255)
     options = DictField()
     metadata = DictField()
-    secret_id = StringField(max_length=40, null=True)
-    secret_group_id = StringField(max_length=40, null=True)
-    provider = StringField(max_length=40, null=True)
-    service_account_id = StringField(max_length=40, null=True)
     upgrade_mode = StringField(max_length=20, default='AUTO', choices=('AUTO', 'MANUAL'))
+    secret_filter = DictField()
 
     def to_dict(self):
         return dict(self.to_mongo())
+
+
+class Scheduled(EmbeddedDocument):
+    cron = StringField(max_length=1024, default=None, null=True)
+    interval = IntField(min_value=1, max_value=3600, default=None, null=True)
+    minutes = ListField(defualt=None, null=True)
+    hours = ListField(default=None, null=True)
 
 
 class Collector(MongoModel):
     collector_id = StringField(max_length=40, generate_id='collector', unique=True)
     name = StringField(max_length=255)
     state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))
-    provider = StringField(max_length=40)
-    is_public = BooleanField(default=True)
+    providers = ListField(StringField(max_length=40), default=[])
     capability = DictField()
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)
+    schedule = EmbeddedDocumentField(Scheduled, default=None, null=True)
     priority = IntField(min_value=0, default=10, max_value=99)
     tags = DictField()
-    project_id = StringField(max_length=40)
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
     last_collected_at = DateTimeField()
@@ -38,7 +41,7 @@ class Collector(MongoModel):
             'name',
             'state',
             'plugin_info',
-            'priority',
+            'schedule',
             'tags',
             'last_collected_at'
         ],
@@ -48,10 +51,7 @@ class Collector(MongoModel):
             'state',
             'provider',
             'capability',
-            'plugin_info',
-            'is_public',
-            'project_id'
-
+            'plugin_info'
         ],
         'change_query_keys': {
             'plugin_id': 'plugin_info.plugin_id'
@@ -64,17 +64,9 @@ class Collector(MongoModel):
             'state',
             'provider',
             'priority',
-            'project_id',
             'domain_id',
         ]
     }
-
-
-class Scheduled(EmbeddedDocument):
-    cron = StringField(max_length=1024, default=None, null=True)
-    interval = IntField(min_value=1, max_value=3600, default=None, null=True)
-    minutes = ListField(defualt=None, null=True)
-    hours = ListField(default=None, null=True)
 
 
 class Schedule(MongoModel):
