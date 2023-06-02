@@ -40,12 +40,10 @@ class CollectorManager(BaseManager):
         Args: params
           - name
           - plugin_info
+          - schedule
           - state
-          - priority
           - tags
           - domain_id
-          - is_public
-          - project_id
         """
         # Create DB first
         collector_vo = self.collector_db.create_collector(params)
@@ -445,25 +443,26 @@ class CollectorManager(BaseManager):
         return schedule_vo.update(params)
 
     @staticmethod
-    def is_supported_schedule(collector_vo, schedule):
+    def is_supported_schedule(plugin_info, schedule):
         """ Check metadata.supported_schedule
         ex) metadata.supported_schedule: ["hours", "interval", "cron"]
         """
-        collector_dict = collector_vo.to_dict()
-        plugin_info = collector_dict['plugin_info']
-        metadata = plugin_info.get('metadata', None)
+        metadata = plugin_info.get('metadata')
+
         if metadata is None:
             _LOGGER.warning(f'[is_supported_schedule] no metadata: {plugin_info}')
             return True
-        supported_schedule = metadata.get('supported_schedules', None)
-        _LOGGER.debug(f'[is_supported_schedule] supported: {plugin_info}')
+
+        supported_schedule = metadata.get('supported_schedules')
+
         if supported_schedule is None:
             _LOGGER.warning(f'[is_supported_schedule] no schedule: {plugin_info}')
             return True
+
         requested = schedule.keys()
-        _LOGGER.debug(f'[is_supported_schedule] requested: {requested}')
         if set(requested).issubset(set(supported_schedule)):
             return True
+
         raise ERROR_UNSUPPORTED_SCHEDULE(supported=supported_schedule, requested=requested)
 
     @staticmethod
