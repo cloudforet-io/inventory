@@ -32,6 +32,7 @@ class Collector(MongoModel):
     state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))
     provider = StringField(max_length=40)
     capability = DictField()
+    is_public = BooleanField(default=True)                                      # Deprecated
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)
     schedule = EmbeddedDocumentField(Scheduled, default=None, null=True)
     priority = IntField(min_value=0, default=10, max_value=99)
