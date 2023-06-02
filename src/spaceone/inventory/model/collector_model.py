@@ -10,6 +10,10 @@ class PluginInfo(EmbeddedDocument):
     metadata = DictField()
     upgrade_mode = StringField(max_length=20, default='AUTO', choices=('AUTO', 'MANUAL'))
     secret_filter = DictField()
+    secret_id = StringField(max_length=40, default=None, null=True)             # Deprecated
+    secret_group_id = StringField(max_length=40, default=None, null=True)       # Deprecated
+    service_account_id = StringField(max_length=40, default=None, null=True)    # Deprecated
+    provider = StringField(max_length=40, default=None, null=True)              # Deprecated
 
     def to_dict(self):
         return dict(self.to_mongo())
