@@ -10,13 +10,16 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def ScheduledInfo(schedule_vo):
-    info = {
-        'cron': schedule_vo.cron,
-        'interval': schedule_vo.interval,
-        'hours': schedule_vo.hours,
-        'minutes': schedule_vo.minutes
-    }
-    return collector_pb2.Scheduled(**info)
+    if schedule_vo:
+        info = {
+            'cron': schedule_vo.cron,
+            'interval': schedule_vo.interval,
+            'hours': schedule_vo.hours,
+            'minutes': schedule_vo.minutes
+        }
+        return collector_pb2.Scheduled(**info)
+    else:
+        return None
 
 
 def PluginInfo(vo, minimal=False):
@@ -50,7 +53,7 @@ def CollectorInfo(vo, minimal=False):
 
     if not minimal:
         info.update({
-            'schedule': ScheduledInfo(vo.schedule) if vo.schedule else change_struct_type({}),
+            'schedule': ScheduledInfo(vo.schedule),
             'created_at': utils.datetime_to_iso8601(vo.created_at),
             'last_collected_at': utils.datetime_to_iso8601(vo.last_collected_at),
             'tags': change_struct_type(vo.tags),
