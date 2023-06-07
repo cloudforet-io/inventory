@@ -276,9 +276,7 @@ class CollectorService(BaseService):
         filter_query = []
 
         if 'domain_id' in params:
-            domain_id = params['domain_id']
-            # update query
-            filter_query.append(_make_query_domain(domain_id))
+            filter_query.append(_make_query_domain(params['domain_id']))
 
         # parse schedule
         schedule = params['schedule']
@@ -301,7 +299,8 @@ class CollectorService(BaseService):
         query = {'filter': filter_query}
 
         _LOGGER.debug(f'[scheduled_collectors] query: {query}')
-        return collector_mgr.list_schedules(query)
+        # return collector_mgr.list_schedules(query)
+        return collector_mgr.list_collectors(query)
 
     def _get_plugin(self, plugin_info, domain_id):
         plugin_id = plugin_info['plugin_id']

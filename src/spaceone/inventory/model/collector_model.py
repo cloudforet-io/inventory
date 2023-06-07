@@ -34,7 +34,7 @@ class Collector(MongoModel):
     capability = DictField()
     is_public = BooleanField(default=True)                                      # Deprecated
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)
-    schedule = EmbeddedDocumentField(Scheduled, default=None, null=True)
+    schedule = EmbeddedDocumentField(Scheduled, default={})
     priority = IntField(min_value=0, default=10, max_value=99)
     tags = DictField()
     domain_id = StringField(max_length=255)
