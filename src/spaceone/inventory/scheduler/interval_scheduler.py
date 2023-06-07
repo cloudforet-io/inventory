@@ -52,6 +52,7 @@ Sync DB in every N seconds.
 Load all interval schedule, and create IntervalScheduler
 """
 class InventoryIntervalScheduler(IntervalScheduler):
+
     def __init__(self, queue, interval):
         super().__init__(queue, interval)
         self.count = self._init_count()
@@ -67,25 +68,6 @@ class InventoryIntervalScheduler(IntervalScheduler):
         while True:
             schedule.run_pending()
             time.sleep(1)
-
-    def _init_count(self):
-        # get current time
-        cur = datetime.datetime.utcnow()
-        count = {
-            'previous': cur,            # Last check_count time
-            'index': 0,                # index
-            'hour': cur.hour,           # previous hour
-            'started_at': 0,            # start time of push_token
-            'ended_at': 0               # end time of execution in this tick
-            }
-        _LOGGER.debug(f'[_init_count] {count}')
-        return count
-
-    def _update_token(self):
-        token = config.get_global('TOKEN')
-        if token == "":
-            token = _validate_token(config.get_global('TOKEN_INFO'))
-        return token
 
     def push_task(self, schedule_id, interval_info):
         # schedule_id: schedule_2222
@@ -210,32 +192,57 @@ class InventoryIntervalScheduler(IntervalScheduler):
         """
         _LOGGER.debug(f'[_create_job_request] {interval_info}')
         domain_id = interval_info['domain_id']
-        metadata = {'token': self.TOKEN,
-                    'service': 'inventory',
-                    'resource': 'Collector',
-                    'verb': 'collect',
-                    'domain_id': self.domain_id}
-        sched_job = {
+
+        metadata = {
+            'token': self.TOKEN,
+            'service': 'inventory',
+            'resource': 'Collector',
+            'verb': 'collect',
+            'domain_id': self.domain_id
+        }
+
+        schedule_job = {
             'locator': 'SERVICE',
             'name': 'CollectorService',
             'metadata': metadata,
             'method': 'collect',
-            'params': {'params': {
-                            'collector_id': interval_info['collector_id'],
-                            # if filter
-                            # contact credential
-                            'collect_mode': 'ALL',
-                            'filter': {},
-                            'domain_id': domain_id
-                            }
-                       }
+            'params': {
+                'params': {
+                    'collector_id': interval_info['collector_id'],
+                    'collect_mode': 'ALL',
+                    'filter': {},
+                    'domain_id': domain_id
+                }
             }
-        stp = {'name': 'inventory_collect_by_interval_schedule',
-               'version': 'v1',
-               'executionEngine': 'BaseWorker',
-               'stages': [sched_job]}
-        #_LOGGER.debug(f'[_create_job_request] tasks: {stp}')
-        return stp
+        }
+
+        return {
+            'name': 'inventory_collect_by_interval_schedule',
+            'version': 'v1',
+            'executionEngine': 'BaseWorker',
+            'stages': [schedule_job]
+        }
+
+    @staticmethod
+    def _init_count():
+        # get current time
+        cur = datetime.datetime.utcnow()
+        count = {
+            'previous': cur,            # Last check_count time
+            'index': 0,                # index
+            'hour': cur.hour,           # previous hour
+            'started_at': 0,            # start time of push_token
+            'ended_at': 0               # end time of execution in this tick
+            }
+        _LOGGER.debug(f'[_init_count] {count}')
+        return count
+
+    @staticmethod
+    def _update_token():
+        token = config.get_global('TOKEN')
+        if token == "":
+            token = _validate_token(config.get_global('TOKEN_INFO'))
+        return token
 
 
 class Consul:

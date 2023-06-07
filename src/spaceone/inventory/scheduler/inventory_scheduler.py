@@ -50,51 +50,17 @@ class InventoryHourlyScheduler(HourlyScheduler):
         self.TOKEN = self._update_token()
         self.domain_id = _get_domain_id_from_token(self.TOKEN)
 
-    def _init_count(self):
-        # get current time
-        cur = datetime.datetime.utcnow()
-        count = {
-            'previous': cur,            # Last check_count time
-            'index': 0,                # index
-            'hour': cur.hour,           # previous hour
-            'started_at': 0,            # start time of push_token
-            'ended_at': 0               # end time of execution in this tick
-            }
-        _LOGGER.debug(f'[_init_count] {count}')
-        return count
-
-    def _update_token(self):
-        token = config.get_global('TOKEN')
-        if token == "":
-            token = _validate_token(config.get_global('TOKEN_INFO'))
-        return token
-
     def create_task(self):
-        # self.check_global_configuration()
-        schedules = self.list_schedules()
-        result = []
-        for schedule in schedules:
-            try:
-                stp = self._create_job_request(schedule)
-                result.append(stp)
-            except Exception as e:
-                _LOGGER.error(f'[create_task] check schedule {schedule}')
+        collector_vos = self.list_schedule_collectors()
+        return [self._create_job_request(collector_vo) for collector_vo in collector_vos]
 
-        return result
-
-    def list_schedules(self):
+    def list_schedule_collectors(self):
         try:
-            ok = self.check_count()
-            if ok == False:
-                # ERROR LOGGING
-                pass
-            # Loop all domain, then find scheduled collector
+            self.check_count()
             collector_svc = self.locator.get_service('CollectorService')
-            schedule = {'hour': self.count['hour']}
-            _LOGGER.debug(f'[push_token] schedule: {schedule}')
-            schedule_vos, total = collector_svc.scheduled_collectors({'schedule': schedule})
-            _LOGGER.debug(f'[push_token] scheduled count: {total}')
-            return schedule_vos
+            collector_vos, total = collector_svc.scheduled_collectors({'schedule': {'hour': self.count['hour']}})
+            _LOGGER.debug(f'[push_token] scheduled collectors count: {total}')
+            return collector_vos
         except Exception as e:
             _LOGGER.error(e)
             return []
@@ -123,7 +89,63 @@ class InventoryHourlyScheduler(HourlyScheduler):
         cur = datetime.datetime.utcnow()
         self.count['ended_at'] = cur
 
-    def _create_job_request(self, scheduler_vo):
+    def _create_job_request(self, collector_vo):
+        schedule_job = {
+            'locator': 'SERVICE',
+            'name': 'CollectorService',
+            'metadata': self._get_metadata(),
+            'method': 'collect',
+            'params': {
+                'params': {
+                    'collector_id': collector_vo.collector_id,
+                    'collect_mode': 'ALL',
+                    'filter': {},
+                    'domain_id': collector_vo.domain_id
+                }
+            }
+        }
+
+        return {
+            'name': 'inventory_collect_schedule',
+            'version': 'v1',
+            'executionEngine': 'BaseWorker',
+            'stages': [schedule_job]
+        }
+
+    def _get_metadata(self):
+        return {
+            'token': self.TOKEN,
+            'service': 'inventory',
+            'resource': 'Collector',
+            'verb': 'collect',
+            'domain_id': self.domain_id
+        }
+
+    @staticmethod
+    def _init_count():
+        # get current time
+        cur = datetime.datetime.utcnow()
+        count = {
+            'previous': cur,            # Last check_count time
+            'index': 0,                # index
+            'hour': cur.hour,           # previous hour
+            'started_at': 0,            # start time of push_token
+            'ended_at': 0               # end time of execution in this tick
+            }
+        _LOGGER.debug(f'[_init_count] {count}')
+        return count
+
+    @staticmethod
+    def _update_token():
+        token = config.get_global('TOKEN')
+        if token == "":
+            token = _validate_token(config.get_global('TOKEN_INFO'))
+        return token
+
+    """
+    Deprecated
+    """
+    def _create_job_request_deprecated(self, scheduler_vo):
         """ Based on scheduler_vo, create Job Request
 
         Args:
@@ -149,30 +171,31 @@ class InventoryHourlyScheduler(HourlyScheduler):
         plugin_info = scheduler_vo.collector.plugin_info
         _LOGGER.debug(f'plugin_info: {plugin_info}')
         domain_id = scheduler_vo.domain_id
-        metadata = {'token': self.TOKEN,
-                    'service': 'inventory',
-                    'resource': 'Collector',
-                    'verb': 'collect',
-                    'domain_id': self.domain_id}
-        sched_job = {
+
+        schedule_job = {
             'locator': 'SERVICE',
             'name': 'CollectorService',
-            'metadata': metadata,
+            'metadata': self._get_metadata(),
             'method': 'collect',
-            'params': {'params': {
-                            'collector_id': scheduler_vo.collector.collector_id,
-                            # if filter
-                            # contact credential
-                            'collect_mode': 'ALL',
-                            'filter': {},
-                            'domain_id': domain_id
-                            }
-                       }
+            'params': {
+                'params': {
+                    'collector_id': scheduler_vo.collector.collector_id,
+                    # if filter
+                    # contact credential
+                    'collect_mode': 'ALL',
+                    'filter': {},
+                    'domain_id': domain_id
+                }
             }
-        stp = {'name': 'inventory_collect_schedule',
-               'version': 'v1',
-               'executionEngine': 'BaseWorker',
-               'stages': [sched_job]}
+        }
+
+        stp = {
+            'name': 'inventory_collect_schedule',
+            'version': 'v1',
+            'executionEngine': 'BaseWorker',
+            'stages': [schedule_job]
+        }
+
         _LOGGER.debug(f'[_create_job_request] tasks: {stp}')
         return stp
 

@@ -50,7 +50,7 @@ def CollectorInfo(vo, minimal=False):
 
     if not minimal:
         info.update({
-            'schedule': ScheduledInfo(vo.schedule) if vo.schedule else None,
+            'schedule': ScheduledInfo(vo.schedule) if vo.schedule else change_struct_type({}),
             'created_at': utils.datetime_to_iso8601(vo.created_at),
             'last_collected_at': utils.datetime_to_iso8601(vo.last_collected_at),
             'tags': change_struct_type(vo.tags),
