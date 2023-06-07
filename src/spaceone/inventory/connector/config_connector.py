@@ -18,8 +18,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class ConfigConnector(BaseConnector):
-    def __init__(self, transaction, config):
-        super().__init__(transaction, config)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
         if 'endpoint' not in self.config:
             raise ERROR_WRONG_CONFIGURATION(key='endpoint')

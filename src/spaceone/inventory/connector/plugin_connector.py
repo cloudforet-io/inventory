@@ -15,8 +15,8 @@ _LOGGER = logging.getLogger(__name__)
 
 class PluginConnector(BaseConnector):
 
-    def __init__(self, transaction, config):
-        super().__init__(transaction, config)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._check_config()
         self._init_client()
 
