@@ -7,8 +7,8 @@ from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 from spaceone.inventory.manager.record_manager import RecordManager
 from spaceone.inventory.manager.note_manager import NoteManager
-from spaceone.inventory.manager.collector_manager.job_manager import JobManager
-from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
+from spaceone.inventory.manager.job_manager import JobManager
+from spaceone.inventory.manager.job_task_manager import JobTaskManager
 
 _LOGGER = logging.getLogger(__name__)
 

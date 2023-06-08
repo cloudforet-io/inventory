@@ -98,3 +98,7 @@ class ERROR_TOO_MANY_MATCH(ERROR_BASE):
 
 class ERROR_UNSUPPORTED_SCHEDULE(ERROR_BASE):
     _message = 'supported schedules: {supported}, requested: {requested}'
+
+
+class ERROR_NOT_ALLOWED_SECRET_ID(ERROR_BASE):
+    _message = 'Not allowed secret_id: {secret_id}'
