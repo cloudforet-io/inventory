@@ -86,6 +86,28 @@ class JobService(BaseService):
     @check_required(['query', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(['job_id'])
+    def analyze(self, params):
+        """
+        Args:
+            params (dict): {
+                'domain_id': 'str',
+                'query': 'dict (spaceone.api.core.v1.AnalyzeQuery)',
+                'user_projects': 'list', // from meta
+            }
+
+        Returns:
+            values (list) : 'list of statistics data'
+
+        """
+
+        query = params.get('query', {})
+
+        return self.job_mgr.analyze_jobs(query)
+
+    @transaction(append_meta={'authorization.scope': 'PROJECT'})
+    @check_required(['query', 'domain_id'])
+    @append_query_filter(['domain_id', 'user_projects'])
+    @append_keyword_filter(['job_id'])
     def stat(self, params):
         """
         Args:
