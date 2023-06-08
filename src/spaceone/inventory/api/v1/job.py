@@ -27,6 +27,12 @@ class Job(BaseAPI, job_pb2_grpc.JobServicer):
             job_vos, total_count = job_service.list(params)
             return self.locator.get_info('JobsInfo', job_vos, total_count, minimal=self.get_minimal(params))
 
+    def analyze(self, request, context):
+        params, metadata = self.parse_request(request, context)
+
+        with self.locator.get_service('JobService', metadata) as job_service:
+            return self.locator.get_info('AnalyzeInfo', job_service.analyze(params))
+
     def stat(self, request, context):
         params, metadata = self.parse_request(request, context)
 
