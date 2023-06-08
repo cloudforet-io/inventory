@@ -82,7 +82,7 @@ class CollectorService(BaseService):
         plugin_info['metadata'] = plugin_response.get('metadata', {})
         plugin_info_params = {'plugin_info': plugin_info}
 
-        collector_vo = self.update_collector_by_vo(collector_vo, plugin_info_params)
+        collector_vo = collector_mgr.update_collector_by_vo(collector_vo, plugin_info_params)
         self.create_collector_rules_by_metadata(plugin_info['metadata'], collector_vo.collector_id, params['domain_id'])
 
         return collector_vo
