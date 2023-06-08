@@ -46,18 +46,14 @@ class CleanupService(BaseService):
         Returns:
             None
         """
+        _LOGGER.debug(f'[update_job_state] START')
+        job_mgr: JobManager = self.locator.get_manager(JobManager)
+
         domain_id = params['domain_id']
-
-        # Get Cleanup Policy of domain
-        # TODO: from domain config
-
         job_timeout = config.get_global('JOB_TIMEOUT', 2)  # hours
 
-        policies = {
-            'inventory.Job': {'TIMEOUT': job_timeout}
-        }
+        policies = {'inventory.Job': {'TIMEOUT': job_timeout}}
 
-        job_mgr: JobManager = self.locator.get_manager('JobManager')
         for resource_type, policy in policies.items():
             for status, hour in policy.items():
                 _LOGGER.debug(f'[update_job_state] {resource_type}, {hour}, {status}, {domain_id}')
