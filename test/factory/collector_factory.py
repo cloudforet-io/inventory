@@ -37,6 +37,7 @@ class CollectorFactory(factory.mongoengine.MongoEngineFactory):
     state = 'ENABLED'
     provider = 'aws'
     is_public = True
+    schedule = {'hours': [1, 2, 3]}
     capability = {'supported_schema': ['aws_access_key']}
     priority = 10
     tags = {'xxx': 'yyy'}
