@@ -21,6 +21,9 @@ class JobManager(BaseManager):
     def list_jobs(self, query):
         return self.job_model.query(**query)
 
+    def analyze_jobs(self, query):
+        return self.job_model.analyze(**query)
+
     def stat_jobs(self, query):
         return self.job_model.stat(**query)
 
