@@ -17,3 +17,4 @@ from spaceone.inventory.manager.repository_manager import RepositoryManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.plugin_manager import PluginManager
+from spaceone.inventory.manager.collecting_manager import CollectingManager

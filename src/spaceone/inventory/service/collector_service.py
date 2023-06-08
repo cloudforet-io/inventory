@@ -267,7 +267,11 @@ class CollectorService(BaseService):
                 else:
                     # Do synchronous collect
                     _LOGGER.warning(f'[collect] Synchronous collect {count}/{len(secret_ids)}')
-                    collecting_mgr.collecting_resources(**req_params)
+                    kwargs = {'job_id': req_params['job_id'], 'use_cache': req_params['use_cache']}
+                    collecting_mgr.collecting_resources(req_params['plugin_info'],
+                                                        req_params['secret_data'],
+                                                        req_params['domain_id'],
+                                                        **kwargs)
 
             except Exception as e:
                 # Do not exit, just book-keeping
@@ -486,7 +490,6 @@ class CollectorService(BaseService):
     @staticmethod
     def _make_collecting_parameters(**kwargs):
         """ Make parameters for collecting_resources
-
         Args:
             collector_dict
             secret_id
@@ -495,25 +498,17 @@ class CollectorService(BaseService):
             job_vo
             job_task_vo
             params
-
         """
 
-        new_params = {
+        return {
             'secret_id': kwargs['secret_id'],
-            'job_id':    kwargs['job_vo'].job_id,
-            'job_task_id':    kwargs['job_task_vo'].job_task_id,
+            'job_id': kwargs['job_vo'].job_id,
+            'job_task_id': kwargs['job_task_vo'].job_task_id,
             'domain_id': kwargs['domain_id'],
-            'collector_id': kwargs['collector_dict']['collector_id']
+            'collector_id': kwargs['collector_dict']['collector_id'],
+            'plugin_info': kwargs['collector_dict']['plugin_info'].to_dict(),
+            'use_cache': kwargs['params'].get('use_cache', False)
         }
-
-        # plugin_info dict
-        new_params.update({'plugin_info': kwargs['collector_dict']['plugin_info'].to_dict()})
-
-        params = kwargs['params']
-        use_cache = params.get('use_cache', False)
-        new_params.update({'use_cache': use_cache})
-
-        return new_params
 
 
 def _make_query_domain(domain_id):

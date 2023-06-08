@@ -263,12 +263,10 @@ class JobManager(BaseManager):
 
     @staticmethod
     def _update_job_status_by_vo(job_vo, status):
-        ###############
-        # Update by VO
-        ###############
         params = {'status': status}
-        if status == 'SUCCESS' or status == 'TIMEOUT' or status == 'ERROR' or status == 'CANCELED':
+        if status in ['SUCCESS', 'TIMEOUT', 'ERROR', 'CANCELED']:
             params.update({'finished_at': datetime.utcnow()})
+
         _LOGGER.debug(f'[update_job_status] job_id: {job_vo.job_id}, status: {status}')
         return job_vo.update(params)
 
@@ -279,13 +277,13 @@ class JobManager(BaseManager):
     @staticmethod
     def increase_total_tasks_by_vo(job_vo: Job):
         job_vo = job_vo.increment('total_tasks')
-        _LOGGER.debug(f'[increase_total_tasks] {job_vo.job_id} : {job_vo.total_tasks}')
+        # _LOGGER.debug(f'[increase_total_tasks] {job_vo.job_id} : {job_vo.total_tasks}')
         return job_vo
 
     @staticmethod
     def increase_remained_tasks_by_vo(job_vo: Job):
         job_vo = job_vo.increment('remained_tasks')
-        _LOGGER.debug(f'[increase_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
+        # _LOGGER.debug(f'[increase_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
         return job_vo
 
 

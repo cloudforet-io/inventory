@@ -11,119 +11,70 @@ from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.plugin_manager import PluginManager
+from spaceone.inventory.manager.secret_manager import SecretManager
+from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
 from spaceone.inventory.error import *
 from spaceone.inventory.lib import rule_matcher
+from spaceone.inventory.conf.collector_conf import *
 
 _LOGGER = logging.getLogger(__name__)
 
-######################################################################
-#    ************ Very Important ************
-#
-# This is resource map for collector
-# If you add new service and manager for specific RESOURCE_TYPE,
-# add here for collector
-######################################################################
-RESOURCE_MAP = {
-    'inventory.Server': 'ServerManager',
-    'inventory.FilterCache': 'FilterManager',
-    'inventory.CloudService': 'CloudServiceManager',
-    'inventory.CloudServiceType': 'CloudServiceTypeManager',
-    'inventory.Region': 'RegionManager',
-    'inventory.ErrorResource': 'CollectingManager',
-}
-
-SERVICE_MAP = {
-    'inventory.Server': 'ServerService',
-    'inventory.FilterCache': 'CollectorService',
-    'inventory.CloudService': 'CloudServiceService',
-    'inventory.CloudServiceType': 'CloudServiceTypeService',
-    'inventory.Region': 'RegionService',
-    'inventory.ErrorResource': 'CollectorService',
-}
-
-DB_QUEUE_NAME = 'db_q'
-NOT_COUNT = 0
-CREATED = 1
-UPDATED = 2
-ERROR = 3
-JOB_TASK_STAT_EXPIRE_TIME = 3600  # 1 hour
-WATCHDOG_WAITING_TIME = 30  # wait 30 seconds, before watchdog works
-
-
-#################################################
-# Collecting Resource and Update DB
-#################################################
 
 class CollectingManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.secret = None  # secret info for update meta
+        self.secret = None                                  # secret info for update meta
         self.use_db_queue = False
         self.initialize()
-        self.job_mgr: JobManager = self.locator.get_manager('JobManager')
-        self.job_task_mgr: JobTaskManager = self.locator.get_manager('JobTaskManager')
+        self.job_mgr: JobManager = self.locator.get_manager(JobManager)
+        self.job_task_mgr: JobTaskManager = self.locator.get_manager(JobTaskManager)
         self.db_queue = DB_QUEUE_NAME
 
     def initialize(self):
-        _LOGGER.debug(f'[initialize] initialize Worker configuration')
         queues = config.get_global('QUEUES', {})
         if DB_QUEUE_NAME in queues:
             self.use_db_queue = True
 
         _LOGGER.debug(f'[initialize] use db_queue: {self.use_db_queue}')
 
-    ##########################################################
-    # collect
-    #
-    # links: https://pyengine.atlassian.net/wiki/spaces/CLOUD/pages/682459145/3.+Collector+Rule+Management
-    #
-    ##########################################################
-    def collecting_resources(self, plugin_info, secret_id, filters, domain_id, **kwargs):
+    def collecting_resources(self, plugin_info, secret_id, domain_id, **kwargs):
         """ This is single call of real plugin with endpoint
-
         All parameter should be primitive type(Json), not object.
         Because this method will be executed by worker.
         Args:
             plugin_info(dict)
+            secret_id(str)
+            domain_id(str)
             kwargs: {
                 'job_id': 'str',
                 'use_cache': bool
             }
         """
+        secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
+        plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
+        collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
 
-        # Check Job State first, if job state is canceled, stop process
         job_task_id = kwargs['job_task_id']
         job_id = kwargs['job_id']
         collector_id = kwargs['collector_id']
 
+        _LOGGER.debug(f'[collecting_resources] Job Task ID: {job_task_id}')
+
         if self.job_mgr.should_cancel(job_id, domain_id):
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                'ERROR_COLLECT_CANCELED',
-                'The job has been canceled.'
-            )
+            self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECT_CANCELED', 'The job has been canceled.')
             self.job_task_mgr.make_canceled(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
         if self.job_task_mgr.check_duplicate_job_tasks(collector_id, secret_id, domain_id):
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                'ERROR_DUPLICATE_JOB',
-                'A duplicate job is already running.'
-            )
+            self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_DUPLICATE_JOB', 'A duplicate job is already running.')
             self.job_task_mgr.make_canceled(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
-        # Create proper connector
-        connector = self._get_connector(plugin_info, domain_id)
-
-        collect_filter = filters
+        collect_filter = {}
         try:
             # use_cache
             use_cache = kwargs['use_cache']
@@ -133,25 +84,13 @@ class CollectingManager(BaseManager):
                 _LOGGER.debug(f'[collecting_resources] cache -> {key}: {value}')
                 if value:
                     collect_filter.update(value)
-            else:
-                _LOGGER.debug(f'[collecting_resources] no cache mode')
 
         except Exception as e:
             _LOGGER.debug(f'[collecting_resources] cache error,{e}')
 
         try:
-            secret_mgr = self.locator.get_manager('SecretManager')
-            secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
             self.secret = secret_mgr.get_secret(secret_id, domain_id)
-
-        except ERROR_BASE as e:
-            _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
-            self.job_task_mgr.add_error(job_task_id, domain_id, e.error_code, e.message,
-                                        {'resource_type': 'secret.Secret', 'resource_id': secret_id})
-
-            self.job_task_mgr.make_failure(job_task_id, domain_id)
-            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
+            secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
 
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
@@ -168,14 +107,8 @@ class CollectingManager(BaseManager):
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to update job_task: {e}')
 
-        ##########################################################
-        # Call method
-        ##########################################################
         try:
             _LOGGER.debug('[collect] Before call collect')
-
-            plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
-            collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
             endpoint, updated_version = plugin_manager.get_endpoint(plugin_info['plugin_id'],
                                                                     plugin_info.get('version'),
                                                                     domain_id,
@@ -189,25 +122,8 @@ class CollectingManager(BaseManager):
 
             _LOGGER.debug('[collect] generator: %s' % results)
 
-        except ERROR_BASE as e:
-            _LOGGER.error(f'[collecting_resources] fail to collect: {e.message}')
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                e.error_code,
-                e.message
-            )
-            self.job_task_mgr.make_failure(job_task_id, domain_id)
-            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
-
         except Exception as e:
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                'ERROR_COLLECTOR_COLLECTING',
-                e
-            )
+            self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e)
             self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
@@ -220,45 +136,32 @@ class CollectingManager(BaseManager):
         JOB_TASK_STATE = 'SUCCESS'
         stat = {}
         ERROR = False
-        plugin_id = plugin_info.get('plugin_id', None)
+        plugin_id = plugin_info.get('plugin_id')
+
         try:
             stat = self._process_results(results, job_id, job_task_id, collector_id, secret_id, plugin_id, domain_id)
             if stat['failure_count'] > 0:
                 JOB_TASK_STATE = 'FAILURE'
 
-        except ERROR_BASE as e:
-            _LOGGER.error(f'[collecting_resources] {e}', exc_info=True)
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                e.error_code,
-                e.message
-            )
-            JOB_TASK_STATE = 'FAILURE'
-            ERROR = True
-
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] {e}', exc_info=True)
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                'ERROR_COLLECTOR_COLLECTING',
-                e
-            )
+            self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e)
             JOB_TASK_STATE = 'FAILURE'
             ERROR = True
 
         finally:
             # update collection_state which is not found
-            cleanup_mode = self._need_update_collection_state(plugin_info, filters)
+            cleanup_mode = self._need_update_collection_state(plugin_info)
             _LOGGER.debug(f'[collecting_resources] #### cleanup support: {cleanup_mode}')
+
             if cleanup_mode and JOB_TASK_STATE == 'SUCCESS':
                 disconnected_count, deleted_count = self._update_collection_state(collector_id, secret_id,
                                                                                   job_task_id, domain_id)
+
                 _LOGGER.debug(f'[collecting_resources] {job_task_id} => disconnected: {disconnected_count},'
                               f' total deleted: {deleted_count}')
-                stat['disconnected_count'] = disconnected_count
-                stat['deleted_count'] = deleted_count
+
+                stat.update({'disconnected_count': disconnected_count, 'deleted_count': deleted_count})
             else:
                 _LOGGER.debug(f'[collecting_resources] skip garbage_collection, {cleanup_mode}, {JOB_TASK_STATE}')
 
@@ -275,29 +178,12 @@ class CollectingManager(BaseManager):
                 # Update Job
                 self.job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
 
-        print("[collecting_resources] system tracker")
+        _LOGGER.debug("[collecting_resources] system tracker")
         return True
 
-    @staticmethod
-    def _need_update_collection_state(plugin_info, filters):
-        try:
-            if filters != {}:
-                return False
-            metadata = plugin_info.get('metadata', {})
-            supported_features = metadata.get('supported_features', [])
-            if 'garbage_collection' in supported_features:
-                return True
-            return False
-        except Exception as e:
-            _LOGGER.error(e)
-            return False
-
     def _update_collection_state(self, collector_id, secret_id, job_task_id, domain_id):
-        """ get cleanup manager
-        cleanup_mgr = self.locator
-        """
         try:
-            cleanup_mgr = self.locator.get_manager('CleanupManager')
+            cleanup_mgr: CleanupManager = self.locator.get_manager(CleanupManager)
             return cleanup_mgr.update_collection_state(collector_id, secret_id, job_task_id, domain_id)
         except Exception as e:
             _LOGGER.error(f'[_update_collection_state] failed: {e}')
@@ -310,6 +196,7 @@ class CollectingManager(BaseManager):
         self.transaction.set_meta('collector_id', collector_id)
         self.transaction.set_meta('secret.secret_id', secret_id)
         self.transaction.set_meta('disable_info_log', 'true')
+
         if plugin_id:
             self.transaction.set_meta('plugin_id', plugin_id)
         if 'provider' in self.secret:
@@ -743,55 +630,42 @@ class CollectingManager(BaseManager):
             # Close remained task
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
 
-    ######################
-    # Internal
-    ######################
-    def _get_connector(self, plugin_info, domain_id, **kwargs):
-        """ Find proper connector(plugin)
-
-        Returns: connector (object)
+    ########################
+    # Asynchronous DB Update
+    ########################
+    def _create_db_update_task(self, res, param):
+        """ Create Asynchronous Task
         """
-        connector = self.locator.get_connector('CollectorPluginConnector')
-        # get endpoint
-        endpoint, updated_version = self._get_endpoint(plugin_info, domain_id)
-        _LOGGER.debug('[collect] endpoint: %s' % endpoint)
-        connector.initialize(endpoint)
+        try:
+            # Push Queue
+            task = {'method': '_process_single_result', 'res': res, 'param': param, 'meta': self.transaction.meta}
+            json_task = json.dumps(task)
+            queue.put(self.db_queue, json_task)
+            return True
+        except Exception as e:
+            _LOGGER.error(f'[_create_db_update_task] {e}')
+            return False
 
-        return connector
-
-    def _get_endpoint(self, plugin_info, domain_id):
-        """ get endpoint from plugin_info
-
-        Args:
-            plugin_info (dict) : {
-                'plugin_id': 'str',
-                'version': 'str',
-                'options': 'dict',
-                'secret_id': 'str',
-                'secret_group_id': 'str',
-                'provider': 'str',
-                'capabilities': 'dict'
-                }
-            domain_id (str)
-
-        Returns: Endpoint Object
-
+    def _create_db_update_task_watchdog(self, total_count, job_id, job_task_id, domain_id):
+        """ Create Asynchronous Task
         """
-        # Call Plugin Service
-        plugin_id = plugin_info['plugin_id']
-        version = plugin_info['version']
-        upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
+        try:
+            # Push Queue
+            param = {'job_id': job_id, 'job_task_id': job_task_id, 'domain_id': domain_id, 'total_count': total_count}
+            task = {'method': '_watchdog_job_task_stat', 'res': {}, 'param': param, 'meta': self.transaction.meta}
+            json_task = json.dumps(task)
+            queue.put(self.db_queue, json_task)
+            return True
+        except Exception as e:
+            _LOGGER.error(f'[_create_db_update_task_watchdog] {e}')
+            return False
 
-        plugin_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', service='plugin')
-
-        response = plugin_connector.dispatch('Plugin.get_plugin_endpoint', {
-            'plugin_id': plugin_id,
-            'version': version,
-            'upgrade_mode': upgrade_mode,
-            'domain_id': domain_id
-        })
-
-        return response.get('endpoint'), response.get('updated_version')
+    @staticmethod
+    def _need_update_collection_state(plugin_info):
+        if 'garbage_collection' in plugin_info.get('metadata', {}).get('supported_features', []):
+            return True
+        else:
+            return False
 
     @staticmethod
     def _query_with_match_rules(resource, match_rules, domain_id, mgr):
@@ -830,33 +704,3 @@ class CollectingManager(BaseManager):
                 raise ERROR_TOO_MANY_MATCH(match_key=match_rules[order], resources=found_resource, more=data)
         # total_count == 0
         return found_resource, total_count
-
-    ########################
-    # Asynchronous DB Update
-    ########################
-    def _create_db_update_task(self, res, param):
-        """ Create Asynchronous Task
-        """
-        try:
-            # Push Queue
-            task = {'method': '_process_single_result', 'res': res, 'param': param, 'meta': self.transaction.meta}
-            json_task = json.dumps(task)
-            queue.put(self.db_queue, json_task)
-            return True
-        except Exception as e:
-            _LOGGER.error(f'[_create_db_update_task] {e}')
-            return False
-
-    def _create_db_update_task_watchdog(self, total_count, job_id, job_task_id, domain_id):
-        """ Create Asynchronous Task
-        """
-        try:
-            # Push Queue
-            param = {'job_id': job_id, 'job_task_id': job_task_id, 'domain_id': domain_id, 'total_count': total_count}
-            task = {'method': '_watchdog_job_task_stat', 'res': {}, 'param': param, 'meta': self.transaction.meta}
-            json_task = json.dumps(task)
-            queue.put(self.db_queue, json_task)
-            return True
-        except Exception as e:
-            _LOGGER.error(f'[_create_db_update_task_watchdog] {e}')
-            return False
