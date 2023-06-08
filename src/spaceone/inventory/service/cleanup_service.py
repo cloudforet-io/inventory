@@ -57,7 +57,7 @@ class CleanupService(BaseService):
         for resource_type, policy in policies.items():
             for status, hour in policy.items():
                 _LOGGER.debug(f'[update_job_state] {resource_type}, {hour}, {status}, {domain_id}')
-                job_mgr.update_job_status_by_hour(hour, status, domain_id)
+                job_mgr.update_job_timeout_by_hour(hour, status, domain_id)
 
     @transaction
     @check_required(['domain_id'])

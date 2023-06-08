@@ -236,7 +236,6 @@ class CollectorService(BaseService):
 
         for secret_id in secret_ids:
             count += 1
-            # Do collect per secret
             try:
                 job_mgr.increase_total_tasks_by_vo(created_job)
                 job_mgr.increase_remained_tasks_by_vo(created_job)
@@ -248,24 +247,22 @@ class CollectorService(BaseService):
 
                 job_task_vo = job_task_mgr.create_job_task(created_job, secret_info, domain_id)
 
-                req_params = self._make_collecting_parameters(collector_dict=collector_dict,
-                                                              secret_id=secret_id,
-                                                              domain_id=domain_id,
-                                                              job_vo=created_job,
-                                                              job_task_vo=job_task_vo,
-                                                              params=params)
+                req_params = collector_mgr.make_collecting_parameters(collector_dict=collector_dict,
+                                                                      secret_id=secret_id,
+                                                                      domain_id=domain_id,
+                                                                      job_vo=created_job,
+                                                                      job_task_vo=job_task_vo,
+                                                                      params=params)
 
                 task = collector_mgr.create_task_pipeline(req_params, domain_id)
                 queue_name = collector_mgr.get_queue_name(name='collect_queue')
 
                 if task and queue_name:
-                    # Push to queue
                     _LOGGER.warning(f'[collect] Asynchronous collect {count}/{len(secret_ids)}')
                     validate(task, schema=SPACEONE_TASK_SCHEMA)
                     json_task = json.dumps(task)
                     queue.put(queue_name, json_task)
                 else:
-                    # Do synchronous collect
                     _LOGGER.warning(f'[collect] Synchronous collect {count}/{len(secret_ids)}')
                     kwargs = {'job_id': req_params['job_id'], 'use_cache': req_params['use_cache']}
                     collecting_mgr.collecting_resources(req_params['plugin_info'],
@@ -274,9 +271,8 @@ class CollectorService(BaseService):
                                                         **kwargs)
 
             except Exception as e:
-                # Do not exit, just book-keeping
                 job_mgr.add_error(created_job.job_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e, {'secret_id': secret_id})
-                _LOGGER.error(f'####### collect failed {count}/{len(secret_ids)} ##########')
+                _LOGGER.error(f'[collect] collect failed {count}/{len(secret_ids)}')
                 _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
 
         # Update Timestamp
@@ -360,58 +356,43 @@ class CollectorService(BaseService):
 
         return [secret_info.get('secret_id') for secret_info in response['results']]
 
-    ############################
-    # for schedule
-    ############################
     @check_required(['schedule'])
     def scheduled_collectors(self, params):
         """ Search all collectors in this schedule
-
         This is global search out-of domain
+
         Args:
-            schedule(dict): {
-                    'hours': list,
-                    'minutes': list
+            params(dict): {
+                schedule(dict): {
+                  'hours': list,
+                  'minutes': list
                 }
-
-            domain_id: optional
-
+                domain_id: optional
+            }
         ex) {'hour': 3}
 
         Returns: collectors_info
         """
-        collector_mgr: CollectorManager = self.locator.get_manager('CollectorManager')
 
-        # state: ENABLED
-        # filter_query = [{'k':'collector.state','v':'ENABLED','o':'eq'}]
-        filter_query = []
+        collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
+
+        filter_query = [{'k': 'collector.state', 'v': 'ENABLED', 'o': 'eq'}]
 
         if 'domain_id' in params:
-            filter_query.append(_make_query_domain(params['domain_id']))
+            filter_query.append({'k': 'domain_id', 'v': params['domain_id'], 'o': 'eq'})
 
-        # parse schedule
-        schedule = params['schedule']
+        schedule = params.get('schedule', {})
         if 'hour' in schedule:
-            # find plugins which has hour rule
-            filter_query.append(_make_query_hour(schedule['hour']))
-
+            filter_query.append({'k': 'schedule.hours', 'v': schedule['hour'], 'o': 'contain'})
         elif 'minute' in schedule:
-            # find plugins which has minute rule
-            filter_query.append(_make_query_minute(schedule['minute']))
-
+            filter_query.append({'k': 'schedule.minute', 'v': schedule['minute'], 'o': 'contain'})
         elif 'interval' in schedule:
-            # find interval schedules
-            filter_query.append(_make_query_interval())
+            filter_query.append({'k': 'schedule.interval', 'v': 0, 'o': 'gt'})
         else:
             # TODO: CRON
             pass
 
-        # make query for list_collector
-        query = {'filter': filter_query}
-
-        _LOGGER.debug(f'[scheduled_collectors] query: {query}')
-        # return collector_mgr.list_schedules(query)
-        return collector_mgr.list_collectors(query)
+        return collector_mgr.list_collectors({'filter': filter_query})
 
     def _get_plugin_from_repository(self, plugin_info, domain_id):
         repo_mgr: RepositoryManager = self.locator.get_manager(RepositoryManager)
@@ -486,60 +467,3 @@ class CollectorService(BaseService):
             return utils.tags_to_dict(tags)
         else:
             return tags
-
-    @staticmethod
-    def _make_collecting_parameters(**kwargs):
-        """ Make parameters for collecting_resources
-        Args:
-            collector_dict
-            secret_id
-            domain_id
-            filter
-            job_vo
-            job_task_vo
-            params
-        """
-
-        return {
-            'secret_id': kwargs['secret_id'],
-            'job_id': kwargs['job_vo'].job_id,
-            'job_task_id': kwargs['job_task_vo'].job_task_id,
-            'domain_id': kwargs['domain_id'],
-            'collector_id': kwargs['collector_dict']['collector_id'],
-            'plugin_info': kwargs['collector_dict']['plugin_info'].to_dict(),
-            'use_cache': kwargs['params'].get('use_cache', False)
-        }
-
-
-def _make_query_domain(domain_id):
-    return {
-        'k': 'domain_id',
-        'v': domain_id,
-        'o': 'eq'
-        }
-
-
-def _make_query_hour(hour: int):
-    # make query hour
-    return {
-        'k': 'schedule.hours',
-        'v': hour,
-        'o': 'contain'
-        }
-
-
-def _make_query_minute(minute: int):
-    # make minute query
-    return {
-        'k': 'schedule.minute',
-        'v': minute,
-        'o': 'contain'
-        }
-
-
-def _make_query_interval():
-    return {
-        'k': 'schedule.interval',
-        'v': 0,
-        'o': 'gt'
-        }

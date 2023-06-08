@@ -57,8 +57,10 @@ class CollectionStateManager(BaseManager):
 
     def get_collection_state(self, resource_id, domain_id):
         if self.collector_id and self.secret_id:
-            state_vos = self.collection_state_model.filter(collector_id=self.collector_id, secret_id=self.secret_id,
-                                                           resource_id=resource_id, domain_id=domain_id)
+            state_vos = self.collection_state_model.filter(collector_id=self.collector_id,
+                                                           secret_id=self.secret_id,
+                                                           resource_id=resource_id,
+                                                           domain_id=domain_id)
 
             if state_vos.count() > 0:
                 return state_vos[0]
@@ -78,13 +80,7 @@ class CollectionStateManager(BaseManager):
 
     def delete_collection_state_by_resource_ids(self, resource_ids):
         _LOGGER.debug(f'[delete_collection_state_by_resource_ids] delete collection state: {resource_ids}')
-        _filter = [
-            {
-                'k': 'resource_id',
-                'v': resource_ids,
-                'o': 'in'
-            }
-        ]
+        _filter = [{'k': 'resource_id', 'v': resource_ids, 'o': 'in'}]
         state_vos, total_count = self.collection_state_model.query(filter=_filter)
         state_vos.delete()
 

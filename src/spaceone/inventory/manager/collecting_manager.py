@@ -1,13 +1,10 @@
 import logging
 import json
 import time
-
 from google.protobuf.json_format import MessageToDict
-
 from spaceone.core import config, cache
 from spaceone.core import queue
 from spaceone.core.manager import BaseManager
-from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.plugin_manager import PluginManager

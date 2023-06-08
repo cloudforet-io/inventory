@@ -19,18 +19,17 @@ class JobService(BaseService):
         """
         Args:
             params (dict): {
-                    'job_id': 'str',
-                    'domain_id': 'str'
-                }
+                'job_id': 'str',
+                'domain_id': 'str'
+            }
 
         Returns:
             None
-
         """
         job_id = params['job_id']
         domain_id = params['domain_id']
 
-        job_vo: Job = self.job_mgr.get(job_id, domain_id)
+        job_vo: Job = self.job_mgr.get_job(job_id, domain_id)
         self.job_mgr.delete_job_by_vo(job_vo)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
@@ -39,17 +38,16 @@ class JobService(BaseService):
         """
         Args:
             params (dict): {
-                    'job_id': 'str',
-                    'domain_id': 'str',
-                    'only': 'list'
-                }
+                'job_id': 'str',
+                'domain_id': 'str',
+                'only': 'list'
+            }
 
         Returns:
             job_vo (object)
-
         """
 
-        return self.job_mgr.get(params['job_id'], params['domain_id'], params.get('only'))
+        return self.job_mgr.get_job(params['job_id'], params['domain_id'], params.get('only'))
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
@@ -60,19 +58,18 @@ class JobService(BaseService):
         """
         Args:
             params (dict): {
-                    'job_id': 'str',
-                    'status': 'str',
-                    'collector_id': 'dict',
-                    'project_id': 'str',
-                    'domain_id  ': 'str',
-                    'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
-                    'user_projects': 'list', // from meta
-                }
+                'job_id': 'str',
+                'status': 'str',
+                'collector_id': 'dict',
+                'project_id': 'str',
+                'domain_id  ': 'str',
+                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
+                'user_projects': 'list', // from meta
+            }
 
         Returns:
             results (list)
             total_count (int)
-
         """
         query = params.get('query', {})
 
@@ -97,7 +94,6 @@ class JobService(BaseService):
 
         Returns:
             values (list) : 'list of statistics data'
-
         """
 
         query = params.get('query', {})
@@ -119,7 +115,6 @@ class JobService(BaseService):
 
         Returns:
             values (list) : 'list of statistics data'
-
         """
 
         query = params.get('query', {})
