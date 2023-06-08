@@ -74,7 +74,7 @@ class CollectorService(BaseService):
                                                                 domain_id,
                                                                 plugin_info.get('upgrade_mode', 'AUTO'))
 
-        plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}), domain_id)
+        plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}))
 
         if updated_version:
             plugin_info['version'] = updated_version
@@ -306,7 +306,7 @@ class CollectorService(BaseService):
                                                                 domain_id,
                                                                 plugin_info.get('upgrade_mode', 'AUTO'))
 
-        plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}), domain_id)
+        plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}))
 
         if updated_version:
             plugin_info['version'] = updated_version
@@ -345,7 +345,7 @@ class CollectorService(BaseService):
         if secret_ids:
             secret_data_info = secret_manager.get_secret_data(secret_ids[0], domain_id)
             secret_data = secret_data_info.get('data', {})
-            collector_plugin_mgr.verify_plugin(endpoint, plugin_info.get('options', {}), None, secret_data)
+            collector_plugin_mgr.verify_plugin(endpoint, plugin_info.get('options', {}), secret_data)
 
     def list_secret_from_secret_filter(self, secret_filter, secret_id):
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)

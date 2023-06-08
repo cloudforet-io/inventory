@@ -11,6 +11,7 @@ from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.plugin_manager import PluginManager
+from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
 from spaceone.inventory.error import *
 from spaceone.inventory.lib import rule_matcher
 
@@ -174,15 +175,18 @@ class CollectingManager(BaseManager):
             _LOGGER.debug('[collect] Before call collect')
 
             plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
+            collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
             endpoint, updated_version = plugin_manager.get_endpoint(plugin_info['plugin_id'],
                                                                     plugin_info.get('version'),
                                                                     domain_id,
                                                                     plugin_info.get('upgrade_mode', 'AUTO'))
 
-            plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}), domain_id)
+            results = collector_plugin_mgr.collect(endpoint,
+                                                   plugin_info['options'],
+                                                   secret_data.get('data', {}),
+                                                   collect_filter,
+                                                   None)
 
-
-            results = connector.collect(plugin_info['options'], secret_data.get('data', {}), collect_filter)
             _LOGGER.debug('[collect] generator: %s' % results)
 
         except ERROR_BASE as e:
