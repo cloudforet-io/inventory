@@ -13,3 +13,7 @@ from spaceone.inventory.manager.record_manager import RecordManager
 from spaceone.inventory.manager.collector_rule_manager import CollectorRuleManager
 from spaceone.inventory.manager.secret_manager import SecretManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
+from spaceone.inventory.manager.repository_manager import RepositoryManager
+from spaceone.inventory.manager.job_manager import JobManager
+from spaceone.inventory.manager.job_task_manager import JobTaskManager
+from spaceone.inventory.manager.plugin_manager import PluginManager

@@ -410,7 +410,7 @@ class CollectorService(BaseService):
         return collector_mgr.list_collectors(query)
 
     def _get_plugin_from_repository(self, plugin_info, domain_id):
-        repo_mgr: RepositoryManager = self.locator.get_manager('RepositoryManager')
+        repo_mgr: RepositoryManager = self.locator.get_manager(RepositoryManager)
         return repo_mgr.get_plugin(plugin_info['plugin_id'], domain_id)
 
     def create_collector_rules_by_metadata(self, plugin_metadata, domain_id, collector_id):
