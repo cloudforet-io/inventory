@@ -1,9 +1,13 @@
+"""
+Deprecated
+"""
+
 import logging
 
 from spaceone.core import cache
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.error import *
-from spaceone.inventory.manager.collector_manager.collecting_manager import RESOURCE_MAP
+from spaceone.inventory.manager.collecting_manager import RESOURCE_MAP
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -6,11 +6,11 @@ from google.protobuf.json_format import MessageToDict
 
 from spaceone.core import config, cache
 from spaceone.core import queue
-from spaceone.core.error import *
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
-from spaceone.inventory.manager.collector_manager.job_manager import JobManager
-from spaceone.inventory.manager.collector_manager.job_task_manager import JobTaskManager
+from spaceone.inventory.manager.job_manager import JobManager
+from spaceone.inventory.manager.job_task_manager import JobTaskManager
+from spaceone.inventory.manager.plugin_manager import PluginManager
 from spaceone.inventory.error import *
 from spaceone.inventory.lib import rule_matcher
 
@@ -145,26 +145,18 @@ class CollectingManager(BaseManager):
 
         except ERROR_BASE as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                e.error_code,
-                e.message,
-                {'resource_type': 'secret.Secret', 'resource_id': secret_id}
-            )
+            self.job_task_mgr.add_error(job_task_id, domain_id, e.error_code, e.message,
+                                        {'resource_type': 'secret.Secret', 'resource_id': secret_id})
+
             self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
 
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                'ERROR_COLLECTOR_SECRET',
-                e,
-                {'resource_type': 'secret.Secret', 'resource_id': secret_id}
-            )
+            self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_SECRET', e,
+                                        {'resource_type': 'secret.Secret', 'resource_id': secret_id})
+
             self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
@@ -180,6 +172,16 @@ class CollectingManager(BaseManager):
         ##########################################################
         try:
             _LOGGER.debug('[collect] Before call collect')
+
+            plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
+            endpoint, updated_version = plugin_manager.get_endpoint(plugin_info['plugin_id'],
+                                                                    plugin_info.get('version'),
+                                                                    domain_id,
+                                                                    plugin_info.get('upgrade_mode', 'AUTO'))
+
+            plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}), domain_id)
+
+
             results = connector.collect(plugin_info['options'], secret_data.get('data', {}), collect_filter)
             _LOGGER.debug('[collect] generator: %s' % results)
 

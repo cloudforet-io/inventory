@@ -34,17 +34,16 @@ class JobManager(BaseManager):
         job_vo = self.get(job_id, domain_id)
         job_vo.delete()
 
-    @staticmethod
-    def delete_job_by_vo(job_vo):
-        job_vo.delete()
-
     def delete_by_collector_id(self, collector_id, domain_id):
-        query = {'filter': [
-                        {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
-                        {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
-                    ]
-                }
+        query = {
+            'filter': [
+                {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
+            ]
+        }
+
         jobs, total_count = self.list_jobs(query)
+
         for job in jobs:
             job.delete()
 
@@ -67,19 +66,6 @@ class JobManager(BaseManager):
         _LOGGER.debug(f'[create_job] params: {job_params}')
         job_vo = self.job_model.create(job_params)
 
-        return job_vo
-
-    def update_job_by_vo(self, params, job_vo: Job):
-        return job_vo.update(params)
-
-    def increase_total_tasks_by_vo(self, job_vo: Job):
-        job_vo = job_vo.increment('total_tasks')
-        _LOGGER.debug(f'[increase_total_tasks] {job_vo.job_id} : {job_vo.total_tasks}')
-        return job_vo
-
-    def increase_remained_tasks_by_vo(self, job_vo: Job):
-        job_vo = job_vo.increment('remained_tasks')
-        _LOGGER.debug(f'[increase_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
         return job_vo
 
     def decrease_remained_tasks_by_vo(self, job_vo: Job):
@@ -169,17 +155,6 @@ class JobManager(BaseManager):
         for job in jobs:
             self.make_timeout_by_vo(job)
 
-    @staticmethod
-    def _update_job_status_by_vo(job_vo, status):
-        ###############
-        # Update by VO
-        ###############
-        params = {'status': status}
-        if status == 'SUCCESS' or status == 'TIMEOUT' or status == 'ERROR' or status == 'CANCELED':
-            params.update({'finished_at': datetime.utcnow()})
-        _LOGGER.debug(f'[update_job_status] job_id: {job_vo.job_id}, status: {status}')
-        return job_vo.update(params)
-
     def make_inprogress_by_vo(self, job_vo):
         """ Make status to in-progress
         """
@@ -262,16 +237,14 @@ class JobManager(BaseManager):
             return True
         return False
 
-    def mark_error_by_vo(self, job_vo):
-        job_vo.update({'mark_error': 1})
-
     def mark_error(self, job_id, domain_id):
         """ Mark Job has error
         """
         job_vo = self.get(job_id, domain_id)
         job_vo.update({'mark_error': 1})
 
-    def _check_filter(self, params):
+    @staticmethod
+    def _check_filter(params):
         """ Schedule request may have filter
         Change filter -> filters, since mongodb does not support filter as member key
         """
@@ -279,6 +252,41 @@ class JobManager(BaseManager):
             params['filters'] = params['filter']
             del params['filter']
         return params
+
+    @staticmethod
+    def mark_error_by_vo(job_vo):
+        job_vo.update({'mark_error': 1})
+
+    @staticmethod
+    def delete_job_by_vo(job_vo):
+        job_vo.delete()
+
+    @staticmethod
+    def _update_job_status_by_vo(job_vo, status):
+        ###############
+        # Update by VO
+        ###############
+        params = {'status': status}
+        if status == 'SUCCESS' or status == 'TIMEOUT' or status == 'ERROR' or status == 'CANCELED':
+            params.update({'finished_at': datetime.utcnow()})
+        _LOGGER.debug(f'[update_job_status] job_id: {job_vo.job_id}, status: {status}')
+        return job_vo.update(params)
+
+    @staticmethod
+    def update_job_by_vo(params, job_vo: Job):
+        return job_vo.update(params)
+
+    @staticmethod
+    def increase_total_tasks_by_vo(job_vo: Job):
+        job_vo = job_vo.increment('total_tasks')
+        _LOGGER.debug(f'[increase_total_tasks] {job_vo.job_id} : {job_vo.total_tasks}')
+        return job_vo
+
+    @staticmethod
+    def increase_remained_tasks_by_vo(job_vo: Job):
+        job_vo = job_vo.increment('remained_tasks')
+        _LOGGER.debug(f'[increase_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
+        return job_vo
 
 
 CREATED = 'CREATED'

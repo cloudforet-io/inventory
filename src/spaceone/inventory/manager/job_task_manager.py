@@ -49,10 +49,6 @@ class JobTaskManager(BaseManager):
         job_task_vo = self.get(job_task_id, domain_id)
         job_task_vo.delete()
 
-    @staticmethod
-    def delete_job_task_by_vo(job_task_vo):
-        job_task_vo.delete()
-
     def check_duplicate_job_tasks(self, collector_id, secret_id, domain_id):
         started_at = datetime.utcnow() - timedelta(minutes=10)
 
@@ -162,6 +158,10 @@ class JobTaskManager(BaseManager):
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.canceled()
         self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+
+    @staticmethod
+    def delete_job_task_by_vo(job_task_vo):
+        job_task_vo.delete()
 
 
 PENDING = 'PENDING'

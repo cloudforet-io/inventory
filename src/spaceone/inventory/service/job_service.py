@@ -1,6 +1,6 @@
 from spaceone.core.service import *
 from spaceone.inventory.model.job_model import Job
-from spaceone.inventory.manager.collector_manager.job_manager import JobManager
+from spaceone.inventory.manager.job_manager import JobManager
 
 
 @authentication_handler
