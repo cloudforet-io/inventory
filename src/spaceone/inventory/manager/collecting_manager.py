@@ -220,8 +220,9 @@ class CollectingManager(BaseManager):
 
         for res in results:
             try:
+                _LOGGER.debug(f'[_process_results] RESULT: {res}')
                 res_dict = MessageToDict(res, preserving_proto_field_name=True)
-                _LOGGER.debug(f'[_process_results] RESULT: {res_dict}')
+                _LOGGER.debug(f'[_process_results] RESULT DICT: {res_dict}')
 
                 idx += 1
                 # _LOGGER.debug(f'[_process_results] idx: {idx}')
