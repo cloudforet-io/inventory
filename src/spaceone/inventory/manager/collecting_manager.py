@@ -87,9 +87,7 @@ class CollectingManager(BaseManager):
 
         try:
             self.secret = secret_mgr.get_secret(secret_id, domain_id)
-            _LOGGER.debug(f'[collecting_resources] SECRET = {self.secret}')
             secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
-            _LOGGER.debug(f'[collecting_resources] SECRET_DATA = {secret_data}')
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_SECRET', e,
@@ -223,6 +221,8 @@ class CollectingManager(BaseManager):
         for res in results:
             try:
                 res_dict = MessageToDict(res, preserving_proto_field_name=True)
+                _LOGGER.debug(f'[_process_results] RESULT: {res_dict}')
+
                 idx += 1
                 # _LOGGER.debug(f'[_process_results] idx: {idx}')
                 ######################################
