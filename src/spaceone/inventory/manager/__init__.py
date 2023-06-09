@@ -2,6 +2,7 @@ from spaceone.inventory.manager.change_history_manager import ChangeHistoryManag
 from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
+from spaceone.inventory.manager.cloud_service_query_set_manager import CloudServiceQuerySetManager
 from spaceone.inventory.manager.collecting_manager import CollectingManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.collector_manager import CollectorManager

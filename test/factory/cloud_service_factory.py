@@ -1,7 +1,7 @@
 import factory
 from spaceone.core import utils
 
-from spaceone.inventory.model import CloudService, CloudServiceTag
+from spaceone.inventory.model import CloudService
 
 
 class CloudServiceTagFactory(factory.mongoengine.MongoEngineFactory):
