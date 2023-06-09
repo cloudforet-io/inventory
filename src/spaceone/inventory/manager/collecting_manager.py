@@ -220,19 +220,19 @@ class CollectingManager(BaseManager):
 
         for res in results:
             try:
-                _LOGGER.debug(f'[_process_results] RESULT: {res}')
-                res_dict = MessageToDict(res, preserving_proto_field_name=True)
-                _LOGGER.debug(f'[_process_results] RESULT DICT: {res_dict}')
+                # _LOGGER.debug(f'[_process_results] RESULT: {res}')
+                # res_dict = MessageToDict(res, preserving_proto_field_name=True)
+                # _LOGGER.debug(f'[_process_results] RESULT DICT: {res_dict}')
 
                 idx += 1
-                # _LOGGER.debug(f'[_process_results] idx: {idx}')
+                # _LOGGER.debug(f'[_process_results] idx: {idx}')   # too many logs
                 ######################################
                 # Asynchronous DB Updater (using Queue)
                 ######################################
                 if self.use_db_queue:
                     _LOGGER.debug(f'[_process_results] use db queue: {idx}')
                     # Create Asynchronous Task
-                    pushed = self._create_db_update_task(res_dict, params)
+                    pushed = self._create_db_update_task(res, params)
                     if pushed is False:
                         failure += 1
                     continue
@@ -241,7 +241,7 @@ class CollectingManager(BaseManager):
                 # Synchronous Update
                 # If you here, processing in worker
                 #####################################
-                res_state = self._process_single_result(res_dict, params)
+                res_state = self._process_single_result(res, params)
 
                 if res_state == NOT_COUNT:
                     pass
