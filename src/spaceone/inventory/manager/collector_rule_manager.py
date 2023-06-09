@@ -23,8 +23,7 @@ class CollectorRuleManager(BaseManager):
 
     def create_collector_rule(self, params):
         def _rollback(collector_rule_vo: CollectorRule):
-            _LOGGER.info(f'[create_collector_rule._rollback] '
-                         f'Delete event rule : {collector_rule_vo.name} '
+            _LOGGER.info(f'[create_collector_rule._rollback] Delete event rule : {collector_rule_vo.name} '
                          f'({collector_rule_vo.collector_rule_id})')
             collector_rule_vo.delete()
 

@@ -58,22 +58,15 @@ class CollectorManager(BaseManager):
         return self.collector_model.stat(**query)
 
     def update_last_collected_time(self, collector_vo):
-        """ Update last_updated_time of collector
-        """
         params = {'last_collected_at': datetime.utcnow()}
         self.update_collector_by_vo(collector_vo, params)
 
     @staticmethod
     def update_collector_by_vo(collector_vo, params):
-        """ Update collector
-        Get collector_vo, then update with this
-        """
         return collector_vo.update(params)
 
     @staticmethod
     def get_queue_name(name='collect_queue'):
-        """ Return queue
-        """
         try:
             return config.get_global(name)
         except Exception as e:
@@ -82,32 +75,27 @@ class CollectorManager(BaseManager):
 
     @staticmethod
     def create_task_pipeline(req_params, domain_id):
-        """ Create Pipeline Task
-        """
-        try:
-            task = {
-                'locator': 'MANAGER',
-                'name': 'CollectingManager',
-                'metadata': {'token': get_token(), 'domain_id': domain_id},
-                'method': 'collecting_resources',
-                'params': req_params
-            }
-            stp = {'name': 'collecting_resources',
-                   'version': 'v1',
-                   'executionEngine': 'BaseWorker',
-                   'stages': [task]
-                   }
-            _LOGGER.debug(f'[_create_task] tasks: {stp}')
-            return stp
-        except Exception as e:
-            _LOGGER.warning(f'[_create_task] failed asynchronous collect, {e}')
-            return None
+        task = {
+            'locator': 'MANAGER',
+            'name': 'CollectingManager',
+            'metadata': {'token': get_token(), 'domain_id': domain_id},
+            'method': 'collecting_resources',
+            'params': req_params
+        }
+
+        stp = {
+            'name': 'collecting_resources',
+            'version': 'v1',
+            'executionEngine': 'BaseWorker',
+            'stages': [task]
+        }
+        _LOGGER.debug(f'[_create_task] tasks: {stp}')
+        return stp
 
     @staticmethod
-    def _make_collecting_parameters(**kwargs):
-        """ Make parameters for collecting_resources
-
-        Args:
+    def make_collecting_parameters(**kwargs):
+        """
+        kwargs:
             collector_dict
             secret_id
             domain_id
@@ -115,27 +103,16 @@ class CollectorManager(BaseManager):
             job_vo
             job_task_vo
             params
-
         """
-
-        new_params = {
+        return {
             'secret_id': kwargs['secret_id'],
-            'job_id':    kwargs['job_vo'].job_id,
-            'job_task_id':    kwargs['job_task_vo'].job_task_id,
+            'job_id': kwargs['job_vo'].job_id,
+            'job_task_id': kwargs['job_task_vo'].job_task_id,
             'domain_id': kwargs['domain_id'],
-            'collector_id': kwargs['collector_dict']['collector_id']
+            'collector_id': kwargs['collector_dict']['collector_id'],
+            'plugin_info': kwargs['collector_dict']['plugin_info'].to_dict(),
+            'use_cache': kwargs['params'].get('use_cache', False)
         }
-
-        # plugin_info dict
-        new_params.update({'plugin_info': kwargs['collector_dict']['plugin_info'].to_dict()})
-
-        # use_cache
-        params = kwargs['params']
-        use_cache = params.get('use_cache', False)
-        new_params.update({'use_cache': use_cache})
-
-        # _LOGGER.debug(f'[_make_collecting_parameters] params: {new_params}')
-        return new_params
 
     @staticmethod
     def is_supported_schedule(plugin_info, schedule):
