@@ -21,5 +21,5 @@ class SecretManager(BaseManager):
     def get_secret(self, secret_id, domain_id):
         return self.secret_connector.dispatch('Secret.get', {'secret_id': secret_id, 'domain_id': domain_id})
 
-    def list_secrets(self, query):
-        return self.secret_connector.dispatch('Secret.list', {'query': query})
+    def list_secrets(self, query, domain_id):
+        return self.secret_connector.dispatch('Secret.list', {'query': query, 'domain_id': domain_id})

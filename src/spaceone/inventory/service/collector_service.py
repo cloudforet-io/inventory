@@ -212,7 +212,9 @@ class CollectorService(BaseService):
         created_job = job_mgr.create_job(collector_vo, params)
 
         try:
-            secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filters', {}), params.get('secret_id'))
+            secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filters', {}),
+                                                             params.get('secret_id'),
+                                                             domain_id)
 
             if not secret_ids:
                 # nothing to do
@@ -340,19 +342,21 @@ class CollectorService(BaseService):
                                                                 domain_id,
                                                                 plugin_info.get('upgrade_mode', 'AUTO'))
 
-        secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filter', {}), params.get('secret_id'))
+        secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filter', {}),
+                                                         params.get('secret_id'),
+                                                         domain_id)
 
         if secret_ids:
             secret_data_info = secret_manager.get_secret_data(secret_ids[0], domain_id)
             secret_data = secret_data_info.get('data', {})
             collector_plugin_mgr.verify_plugin(endpoint, plugin_info.get('options', {}), secret_data)
 
-    def list_secret_from_secret_filter(self, secret_filter, secret_id):
+    def list_secret_from_secret_filter(self, secret_filter, secret_id, domain_id):
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)
 
         _filter = self._set_secret_filter(secret_filter, secret_id)
         query = {'filter': _filter} if _filter else {}
-        response = secret_manager.list_secrets(query)
+        response = secret_manager.list_secrets(query, domain_id)
 
         return [secret_info.get('secret_id') for secret_info in response['results']]
 
