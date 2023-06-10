@@ -74,47 +74,6 @@ class CollectorManager(BaseManager):
             return None
 
     @staticmethod
-    def create_task_pipeline(req_params, domain_id):
-        task = {
-            'locator': 'MANAGER',
-            'name': 'CollectingManager',
-            'metadata': {'token': get_token(), 'domain_id': domain_id},
-            'method': 'collecting_resources',
-            'params': req_params
-        }
-
-        stp = {
-            'name': 'collecting_resources',
-            'version': 'v1',
-            'executionEngine': 'BaseWorker',
-            'stages': [task]
-        }
-        _LOGGER.debug(f'[_create_task] tasks: {stp}')
-        return stp
-
-    @staticmethod
-    def make_collecting_parameters(**kwargs):
-        """
-        kwargs:
-            collector_dict
-            secret_id
-            domain_id
-            filter
-            job_vo
-            job_task_vo
-            params
-        """
-        return {
-            'secret_id': kwargs['secret_id'],
-            'job_id': kwargs['job_vo'].job_id,
-            'job_task_id': kwargs['job_task_vo'].job_task_id,
-            'domain_id': kwargs['domain_id'],
-            'collector_id': kwargs['collector_dict']['collector_id'],
-            'plugin_info': kwargs['collector_dict']['plugin_info'].to_dict(),
-            'use_cache': kwargs['params'].get('use_cache', False)
-        }
-
-    @staticmethod
     def is_supported_schedule(plugin_info, schedule):
         """ Check metadata.supported_schedule
         ex) metadata.supported_schedule: ["hours", "interval", "cron"]

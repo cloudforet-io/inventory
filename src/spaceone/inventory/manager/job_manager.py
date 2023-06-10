@@ -33,6 +33,10 @@ class JobManager(BaseManager):
         job_params['collector'] = collector_vo
         return self.job_model.create(job_params)
 
+    def update(self, job_id, params, domain_id):
+        job_vo = self.get_job(job_id, domain_id)
+        return self.update_job_by_vo(params, job_vo)
+
     def delete(self, job_id, domain_id):
         job_vo = self.get_job(job_id, domain_id)
         job_vo.delete()
@@ -48,27 +52,6 @@ class JobManager(BaseManager):
 
     def stat_jobs(self, query):
         return self.job_model.stat(**query)
-
-    # def delete_by_collector_id(self, collector_id, domain_id):
-    #     query = {
-    #         'filter': [
-    #             {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
-    #             {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
-    #         ]
-    #     }
-    #
-    #     jobs, total_count = self.list_jobs(query)
-    #
-    #     for job in jobs:
-    #         job.delete()
-
-    def increase_total_tasks(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        return self.increase_total_tasks_by_vo(job_vo)
-
-    def increase_remained_tasks(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        return self.increase_remained_tasks_by_vo(job_vo)
 
     def decrease_remained_tasks(self, job_id, domain_id):
         job_vo: Job = self.get_job(job_id, domain_id)
@@ -152,8 +135,6 @@ class JobManager(BaseManager):
     # Update by job_id
     ###################
     def make_inprogress(self, job_id, domain_id):
-        """ Make status to in-progress
-        """
         job_vo = self.get_job(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
         job_state_machine.inprogress()
@@ -184,17 +165,13 @@ class JobManager(BaseManager):
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
     def is_canceled(self, job_id, domain_id):
-        """ Return True/False
-        """
         job_vo = self.get_job(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
         if job_state_machine.get_status() == CANCELED:
             return True
         return False
 
-    def should_cancel(self, job_id, domain_id):
-        """ Return True/False
-        """
+    def check_cancel(self, job_id, domain_id):
         job_vo = self.get_job(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
         job_status = job_state_machine.get_status()
@@ -204,8 +181,6 @@ class JobManager(BaseManager):
         return False
 
     def mark_error(self, job_id, domain_id):
-        """ Mark Job has error
-        """
         job_vo = self.get_job(job_id, domain_id)
         job_vo.update({'mark_error': 1})
 
@@ -229,18 +204,6 @@ class JobManager(BaseManager):
     @staticmethod
     def update_job_by_vo(params, job_vo: Job):
         return job_vo.update(params)
-
-    @staticmethod
-    def increase_total_tasks_by_vo(job_vo: Job):
-        job_vo = job_vo.increment('total_tasks')
-        # _LOGGER.debug(f'[increase_total_tasks] {job_vo.job_id} : {job_vo.total_tasks}')
-        return job_vo
-
-    @staticmethod
-    def increase_remained_tasks_by_vo(job_vo: Job):
-        job_vo = job_vo.increment('remained_tasks')
-        # _LOGGER.debug(f'[increase_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
-        return job_vo
 
 
 CREATED = 'CREATED'
