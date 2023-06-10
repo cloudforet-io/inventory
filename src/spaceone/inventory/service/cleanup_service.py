@@ -20,16 +20,8 @@ class CleanupService(BaseService):
     @transaction
     @append_query_filter([])
     def list_domains(self, params):
-        """
-        Returns:
-            response (dict): {
-                'results': 'list',
-                'total_count': 'int'
-            }
-        """
-        identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
-        query = params.get('query', {})
-        return identity_mgr.list_domains(query)
+        identity_mgr: IdentityManager = self.locator.get_manager(IdentityManager)
+        return identity_mgr.list_domains(params.get('query', {}))
 
     @transaction
     @check_required(['domain_id'])
@@ -41,7 +33,7 @@ class CleanupService(BaseService):
                 'domain_id': 'str'
             }
 
-        Based on domain's cleanup policy update  job.state
+        Based on domain's cleanup policy update job.state
 
         Returns:
             None
@@ -96,13 +88,14 @@ class CleanupService(BaseService):
             ]
         }
 
-        job_vos, total_count = job_mgr.list_jobs(query)
-        _LOGGER.info(f'[terminate_jobs] Terminate jobs: {str(total_count)}')
-        job_vos.delete()
+        job_vos, job_total_count = job_mgr.list_jobs(query)
+        job_task_vos, job_task_total_count = job_task_mgr.list(query)
 
-        job_task_vos, total_count = job_task_mgr.list(query)
-        _LOGGER.info(f'[terminate_jobs] Terminate job tasks: {str(total_count)}')
+        job_vos.delete()
         job_task_vos.delete()
+
+        _LOGGER.info(f'[terminate_jobs] Terminate jobs: {str(job_total_count)}')
+        _LOGGER.info(f'[terminate_jobs] Terminate job tasks: {str(job_task_total_count)}')
 
     @transaction
     @check_required(['domain_id'])
@@ -121,22 +114,20 @@ class CleanupService(BaseService):
         """
 
         domain_id = params['domain_id']
-
         exclude_domains = config.get_global('DELETE_EXCLUDE_DOMAINS', [])
 
         if domain_id not in exclude_domains:
             # Get Delete Policy of domain
             # TODO: from domain config
-
             # policies = self._get_domain_config(state, domain_id)
 
             policies = config.get_global('DEFAULT_DELETE_POLICIES', {})
             _LOGGER.debug(f'[delete_resources] {policies}')
 
-            cleanup_mgr: CleanupManager = self.locator.get_manager('CleanupManager')
+            cleanup_mgr: CleanupManager = self.locator.get_manager(CleanupManager)
             for resource_type, hour in policies.items():
                 try:
-                    _LOGGER.debug(f'[delete_resources] {resource_type}, {hour}, {domain_id}')
+                    # _LOGGER.debug(f'[delete_resources] {resource_type}, {hour}, {domain_id}')
                     deleted_count = cleanup_mgr.delete_resources_by_policy(resource_type, hour, domain_id)
                     _LOGGER.debug(f'[delete_resources] number of deleted count: {deleted_count}')
 
@@ -156,49 +147,33 @@ class CleanupService(BaseService):
                 'domain_id': 'str'
             }
 
-        terminate old resources
-
         Returns:
             None
         """
-
-        cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
-        record_mgr: RecordManager = self.locator.get_manager('RecordManager')
-        note_mgr: NoteManager = self.locator.get_manager('NoteManager')
+        cloud_svc_mgr: CloudServiceManager = self.locator.get_manager(CloudServiceManager)
+        record_mgr: RecordManager = self.locator.get_manager(RecordManager)
+        note_mgr: NoteManager = self.locator.get_manager(NoteManager)
 
         domain_id = params['domain_id']
-
         termination_time = config.get_global('RESOURCE_TERMINATION_TIME', 30 * 6)  # days
+        _LOGGER.debug(f'[terminate_resources] RESOURCE_TERMINATION_TIME = {termination_time}')
 
         query = {
             'filter': [
-                {
-                    'k': 'deleted_at',
-                    'v': datetime.utcnow() - timedelta(days=termination_time),
-                    'o': 'lt'
-                },
-                {
-                    'k': 'state',
-                    'v': 'DELETED',
-                    'o': 'eq'
-                },
-                {
-                    'k': 'domain_id',
-                    'v': domain_id,
-                    'o': 'eq'
-                }
+                {'k': 'deleted_at', 'v': datetime.utcnow() - timedelta(days=termination_time), 'o': 'lt'},
+                {'k': 'state', 'v': 'DELETED', 'o': 'eq'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
             ],
             'only': ['cloud_service_id']
         }
-
-        _LOGGER.debug(f'[terminate_resources] RESOURCE_TERMINATION_TIME = {termination_time}')
-        _LOGGER.debug(f'[terminate_resources] query: {query}')
+        # _LOGGER.debug(f'[terminate_resources] query: {query}')
 
         cloud_svc_vos, total_count = cloud_svc_mgr.list_cloud_services(query)
         _LOGGER.info(f'[terminate_resources] Terminate cloud services: {str(total_count)}')
+
         for cloud_svc_vo in cloud_svc_vos:
             cloud_service_id = cloud_svc_vo.cloud_service_id
-            _LOGGER.info(f'[terminate_resources] Terminate cloud service / record / note: {cloud_service_id}')
+            # _LOGGER.info(f'[terminate_resources] Terminate cloud service / record / note: {cloud_service_id}')
 
             # Cascade Delete Records
             record_vos = record_mgr.filter_records(cloud_service_id=cloud_service_id, domain_id=domain_id)

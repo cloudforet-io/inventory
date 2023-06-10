@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from spaceone.core import config
-from spaceone.core.token import get_token
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.error import *
 from spaceone.inventory.model.collector_model import Collector
