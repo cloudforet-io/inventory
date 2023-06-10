@@ -1,14 +1,12 @@
 import logging
 import json
 import time
-from google.protobuf.json_format import MessageToDict
 from spaceone.core import config, cache
 from spaceone.core import queue
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.plugin_manager import PluginManager
-from spaceone.inventory.manager.secret_manager import SecretManager
 from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
 from spaceone.inventory.error import *
@@ -22,7 +20,7 @@ class CollectingManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.secret = None                                  # secret info for update meta
+        # self.secret = None
         self.use_db_queue = False
         self.initialize()
         self.job_mgr: JobManager = self.locator.get_manager(JobManager)
@@ -36,30 +34,37 @@ class CollectingManager(BaseManager):
 
         _LOGGER.debug(f'[initialize] use db_queue: {self.use_db_queue}')
 
-    def collecting_resources(self, plugin_info, secret_id, domain_id, **kwargs):
-        """ This is single call of real plugin with endpoint
-        All parameter should be primitive type(Json), not object.
-        Because this method will be executed by worker.
+    def collecting_resources(self, params):
+        """ Execute collecting task to get resources from plugin
         Args:
-            plugin_info(dict)
-            secret_id(str)
-            domain_id(str)
-            kwargs: {
-                'job_id': 'str',
-                'use_cache': bool
+            params(dict): {
+                collector_id(str)
+                job_id(str)
+                job_task_id(str)
+                domain_id(str)
+                plugin_info(dict)
+                task_options(dict)
+                secret_info(dict)
+                secret_data(dict)
             }
         """
-        secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
         plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
         collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
 
-        job_task_id = kwargs['job_task_id']
-        job_id = kwargs['job_id']
-        collector_id = kwargs['collector_id']
+        collector_id = params['collector_id']
+        job_id = params['job_id']
+        job_task_id = params['job_task_id']
+        domain_id = params['domain_id']
+        task_options = params['task_options']
+
+        secret_info = params['secret_info']
+        secret_id = secret_info['secret_id']
+        secret_data = params['secret_data']
+        plugin_info = params['plugin_info']
 
         _LOGGER.debug(f'[collecting_resources] Job Task ID: {job_task_id}')
 
-        if self.job_mgr.should_cancel(job_id, domain_id):
+        if self.job_mgr.check_cancel(job_id, domain_id):
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECT_CANCELED', 'The job has been canceled.')
             self.job_task_mgr.make_canceled(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
@@ -73,50 +78,21 @@ class CollectingManager(BaseManager):
 
         collect_filter = {}
         try:
-            # use_cache
-            use_cache = kwargs['use_cache']
-            if use_cache:
-                key = f'collector-filter:{collector_id}:{secret_id}'
-                value = cache.get(key)
-                _LOGGER.debug(f'[collecting_resources] cache -> {key}: {value}')
-                if value:
-                    collect_filter.update(value)
-
+            if params.get('use_cache'):
+                collect_filter = self._collector_filter_from_cache(collect_filter, collector_id, secret_id)
         except Exception as e:
             _LOGGER.debug(f'[collecting_resources] cache error,{e}')
 
         try:
-            self.secret = secret_mgr.get_secret(secret_id, domain_id)
-            secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
-        except Exception as e:
-            _LOGGER.error(f'[collecting_resources] fail to get secret_data: {secret_id}')
-            self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_SECRET', e,
-                                        {'resource_type': 'secret.Secret', 'resource_id': secret_id})
-
-            self.job_task_mgr.make_failure(job_task_id, domain_id)
-            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            raise ERROR_COLLECTOR_SECRET(plugin_info=plugin_info, param=secret_id)
-
-        try:
-            # Update JobTask (In-progress)
-            self._update_job_task(job_task_id, 'IN_PROGRESS', domain_id, secret=self.secret)
+            # JOB TASK: IN_PROGRESS
+            self._update_job_task(job_task_id, 'IN_PROGRESS', domain_id, secret=secret_info)
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] fail to update job_task: {e}')
 
         try:
             _LOGGER.debug('[collect] Before call collect')
-            endpoint, updated_version = plugin_manager.get_endpoint(plugin_info['plugin_id'],
-                                                                    plugin_info.get('version'),
-                                                                    domain_id,
-                                                                    plugin_info.get('upgrade_mode', 'AUTO'))
-
-            results = collector_plugin_mgr.collect(endpoint,
-                                                   plugin_info['options'],
-                                                   secret_data.get('data', {}),
-                                                   collect_filter,
-                                                   None)
-
-            _LOGGER.debug('[collect] generator: %s' % results)
+            endpoint, updated_version = plugin_manager.get_endpoint(plugin_info['plugin_id'], plugin_info.get('version'), domain_id, plugin_info.get('upgrade_mode', 'AUTO'))
+            results = collector_plugin_mgr.collect(endpoint, plugin_info['options'], secret_data.get('data', {}), collect_filter, task_options)     # task_options = None
 
         except Exception as e:
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e)
@@ -167,12 +143,9 @@ class CollectingManager(BaseManager):
                 pass
             else:
                 if self.use_db_queue:
-                    # delete cache
                     self._delete_job_task_stat_cache(job_id, job_task_id, domain_id)
-                # Update Statistics of JobTask
                 self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, stat=stat)
-                # Update Job
-                self.job_mgr.decrease_remained_tasks(kwargs['job_id'], domain_id)
+                self.job_mgr.decrease_remained_tasks(job_id, domain_id)
 
         _LOGGER.debug("[collecting_resources] system tracker")
         return True
@@ -567,6 +540,16 @@ class CollectingManager(BaseManager):
             key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
 
         cache.increment(key)
+
+    @staticmethod
+    def _collector_filter_from_cache(collect_filter, collector_id, secret_id):
+        key = f'collector-filter:{collector_id}:{secret_id}'
+
+        if value := cache.get(key):
+            _LOGGER.debug(f'[collecting_resources] cache -> {key}: {value}')
+            collect_filter.update(value)
+
+        return collect_filter
 
     def _watchdog_job_task_stat(self, param):
         """ WatchDog for cache stat

@@ -34,3 +34,16 @@ class CollectorPluginManager(BaseManager):
             params['task_options'] = task_options
 
         return plugin_connector.dispatch('Collector.collect', params)
+
+    def get_task(self, endpoint, options, secret_data, start, last_synchronized_at):
+        plugin_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', endpoint=endpoint)
+
+        params = {'options': options, 'secret_data': secret_data}
+
+        if start:
+            params['start'] = start
+
+        if last_synchronized_at:
+            params['last_synchronized_at'] = last_synchronized_at
+
+        return plugin_connector.dispatch('Job.get_task', params)
