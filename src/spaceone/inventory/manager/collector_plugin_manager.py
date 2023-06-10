@@ -2,7 +2,6 @@ import logging
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
 
-
 __ALL__ = ['CollectorPluginManager']
 
 _LOGGER = logging.getLogger(__name__)

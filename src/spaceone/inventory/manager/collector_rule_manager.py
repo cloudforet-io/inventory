@@ -1,9 +1,6 @@
-import copy
 import logging
 import functools
-from typing import List
-
-from spaceone.core import utils, cache
+from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.model.collector_rule_model import CollectorRule, CollectorRuleCondition

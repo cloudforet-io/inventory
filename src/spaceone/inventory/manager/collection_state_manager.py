@@ -1,9 +1,6 @@
 import logging
-
-from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.model.collection_state_model import CollectionState
-from spaceone.inventory.error import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,17 +71,17 @@ class CollectionStateManager(BaseManager):
         return self.collection_state_model.query(**query)
 
     def delete_collection_state_by_resource_id(self, resource_id, domain_id):
-        _LOGGER.debug(f'[delete_collection_state_by_resource_id] delete collection state: {resource_id}')
+        # _LOGGER.debug(f'[delete_collection_state_by_resource_id] delete collection state: {resource_id}')
         state_vos = self.collection_state_model.filter(resource_id=resource_id, domain_id=domain_id)
         state_vos.delete()
 
     def delete_collection_state_by_resource_ids(self, resource_ids):
-        _LOGGER.debug(f'[delete_collection_state_by_resource_ids] delete collection state: {resource_ids}')
+        # _LOGGER.debug(f'[delete_collection_state_by_resource_ids] delete collection state: {resource_ids}')
         _filter = [{'k': 'resource_id', 'v': resource_ids, 'o': 'in'}]
         state_vos, total_count = self.collection_state_model.query(filter=_filter)
         state_vos.delete()
 
     def delete_collection_state_by_collector_id(self, collector_id, domain_id):
-        _LOGGER.debug(f'[delete_collection_state_by_collector_id] delete collection state: {collector_id}')
+        # _LOGGER.debug(f'[delete_collection_state_by_collector_id] delete collection state: {collector_id}')
         state_vos = self.collection_state_model.filter(collector_id=collector_id, domain_id=domain_id)
         state_vos.delete()

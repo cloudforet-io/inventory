@@ -1,7 +1,6 @@
 import logging
 from spaceone.core.service import *
 from spaceone.core import utils
-from spaceone.inventory.error import *
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 

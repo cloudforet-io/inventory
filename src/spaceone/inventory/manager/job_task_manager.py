@@ -6,9 +6,10 @@ from datetime import datetime, timedelta
 from spaceone.core import config, queue
 from spaceone.core.token import get_token
 from spaceone.core.manager import BaseManager
+from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
+from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.model.job_task_model import JobTask
 from spaceone.inventory.error import *
-from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
 
 
 _LOGGER = logging.getLogger(__name__)
@@ -81,48 +82,21 @@ class JobTaskManager(BaseManager):
         return False
 
     def add_error(self, job_task_id, domain_id, error_code, msg, additional=None):
-        # message = repr(msg)
-        error_info = {
-            'error_code': error_code,
-            'message': str(msg).strip()
-            # 'message': message[:MAX_MESSAGE_LENGTH]
-        }
+        job_mgr: JobManager = self.locator.get_manager(JobManager)
+
+        error_info = {'error_code': error_code, 'message': str(msg).strip()}
 
         if additional:
             error_info['additional'] = additional
 
         job_task_vo = self.get(job_task_id, domain_id)
         job_task_vo.append('errors', error_info)
-        _LOGGER.debug(f'[add_error] {job_task_id}: {error_info}')
-
-        # self.make_failure(job_task_id, domain_id)
-
-        # Update Job Failure
-        job_mgr = self.locator.get_manager('JobManager')
         job_mgr.mark_error(job_task_vo.job_id, domain_id)
+        _LOGGER.debug(f'[add_error] {job_task_id}: {error_info}')
 
         return job_task_vo
 
-    #######################
-    # Secret
-    #######################
-    def update_secret(self, job_task_id, secret_info, domain_id):
-        job_task_vo = self.get(job_task_id, domain_id)
-        return job_task_vo.update(secret_info)
-
-    def update_stat(self, job_task_id, stat, domain_id):
-        job_task_vo = self.get(job_task_id, domain_id)
-        return job_task_vo.update(stat)
-
-    #######################
-    # State
-    #######################
-    def _update_job_status(self, job_task_id, status, domain_id, started_at=None, finished_at=None, secret=None, stat=None):
-        """
-        Args:
-            secret(dict)
-            stat(dict)
-        """
+    def _update_job_status(self, job_task_id, status, domain_id, started_at=None, finished_at=None, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
         params = {'status': status}
 
@@ -132,41 +106,50 @@ class JobTaskManager(BaseManager):
         if finished_at:
             params['finished_at'] = finished_at
 
-        if secret:
-            params.update(secret)
+        if secret_info:
+            params.update(secret_info)
 
-        if stat:
-            params.update(stat)
+        if collecting_count_info:
+            params.update(collecting_count_info)
 
         _LOGGER.debug(f'[update_job_status] job_task_id: {job_task_id}, status: {status}')
         return job_task_vo.update(params)
 
-    def make_inprogress(self, job_task_id, domain_id, secret=None, stat=None):
-        """ Make state to in-progress
-        """
+    def make_inprogress(self, job_task_id, domain_id, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
-        # Update started_at automatically
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.inprogress()
-        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, started_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id,
+                                started_at=datetime.utcnow(),
+                                secret_info=secret_info,
+                                collecting_count_info=collecting_count_info)
 
-    def make_success(self, job_task_id, domain_id, secret=None, stat=None):
+    def make_success(self, job_task_id, domain_id, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.success()
-        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id,
+                                finished_at=datetime.utcnow(),
+                                secret_info=secret_info,
+                                collecting_count_info=collecting_count_info)
 
-    def make_failure(self, job_task_id, domain_id, secret=None, stat=None):
+    def make_failure(self, job_task_id, domain_id, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.failure()
-        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id,
+                                finished_at=datetime.utcnow(),
+                                secret_info=secret_info,
+                                collecting_count_info=collecting_count_info)
 
-    def make_canceled(self, job_task_id, domain_id, secret=None, stat=None):
+    def make_canceled(self, job_task_id, domain_id, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.canceled()
-        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id,
+                                finished_at=datetime.utcnow(),
+                                secret_info=secret_info,
+                                collecting_count_info=collecting_count_info)
 
     @staticmethod
     def delete_job_task_by_vo(job_task_vo):

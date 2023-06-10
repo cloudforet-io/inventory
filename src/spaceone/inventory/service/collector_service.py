@@ -347,7 +347,6 @@ class CollectorService(BaseService):
         """
 
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
-
         filter_query = [{'k': 'collector.state', 'v': 'ENABLED', 'o': 'eq'}]
 
         if 'domain_id' in params:
