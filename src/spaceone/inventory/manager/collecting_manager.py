@@ -164,7 +164,6 @@ class CollectingManager(BaseManager):
         created_count = 0
         updated_count = 0
         failure_count = 0
-        # index = 0
         total_count = 0
 
         job_id = params['job_id']
@@ -235,7 +234,7 @@ class CollectingManager(BaseManager):
         state = resource.get('state', 'None')
         data = resource.get('resource', {})
 
-        if update_mode := resource.get('options').get('update_mode'):   # MERGE | REPLACE
+        if update_mode := resource.get('options', {}).get('update_mode'):   # MERGE | REPLACE
             self.transaction.set_meta('update_mode', update_mode)
 
         resource_service, resource_manager = self._get_resource_map(resource_type)
