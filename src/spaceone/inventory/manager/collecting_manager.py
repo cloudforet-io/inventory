@@ -165,6 +165,7 @@ class CollectingManager(BaseManager):
         updated_count = 0
         failure_count = 0
         # index = 0
+        total_count = 0
 
         job_id = params['job_id']
         job_task_id = params['job_task_id']
@@ -174,6 +175,7 @@ class CollectingManager(BaseManager):
             self._create_job_task_stat_cache(job_id, job_task_id, domain_id)
 
         for res in results:
+            total_count += 1
             try:
                 if self.use_db_queue:
                     pushed = self._create_db_update_task(res, params)
@@ -198,10 +200,10 @@ class CollectingManager(BaseManager):
         # Add watchdog for resource status checking
         if self.use_db_queue:
             _LOGGER.debug(f'[_process_results] push watchdog, {job_task_id}')
-            self._create_db_update_task_watchdog(len(results), job_id, job_task_id, domain_id)
+            self._create_db_update_task_watchdog(total_count, job_id, job_task_id, domain_id)
 
         return {
-            'total_count': len(results),
+            'total_count': total_count,
             'created_count': created_count,
             'updated_count': updated_count,
             'failure_count': failure_count
