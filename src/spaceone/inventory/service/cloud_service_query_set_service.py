@@ -18,7 +18,8 @@ class CloudServiceQuerySetService(BaseService):
         self.cloud_svc_query_set_mgr: CloudServiceQuerySetManager = self.locator.get_manager('CloudServiceQuerySetManager')
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['name', 'query_options', 'provider', 'cloud_service_group', 'cloud_service_type', 'domain_id'])
+    @check_required(['name', 'query_options', 'query_options.fields', 'provider', 'cloud_service_group',
+                     'cloud_service_type', 'domain_id'])
     def create(self, params):
         """ Create Cloud Service Query Set
         Args:
@@ -184,6 +185,7 @@ class CloudServiceQuerySetService(BaseService):
     @append_query_filter(['query_set_id', 'name', 'state', 'query_type', 'provider', 'cloud_service_group',
                           'cloud_service_type', 'domain_id'])
     @append_keyword_filter(_KEYWORD_FILTER)
+    @set_query_page_limit(1000)
     def list(self, params):
         """ List Cloud Service Query Sets
         Args:

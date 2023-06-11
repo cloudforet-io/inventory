@@ -16,6 +16,7 @@ class CloudServiceQuerySet(MongoModel):
     tags = DictField()
     domain_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now_add=True)
+    updated_at = DateTimeField(auto_now=True)
 
     meta = {
         'updatable_fields': [
@@ -23,7 +24,8 @@ class CloudServiceQuerySet(MongoModel):
             'state',
             'query_options',
             'unit',
-            'tags'
+            'tags',
+            'updated_at'
         ],
         'minimal_fields': [
             'query_set_id',

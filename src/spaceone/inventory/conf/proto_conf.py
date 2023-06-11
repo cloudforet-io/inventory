@@ -6,6 +6,7 @@ PROTO = {
     'spaceone.inventory.api.v1.cloud_service': ['CloudService'],
     'spaceone.inventory.api.v1.cloud_service_type': ['CloudServiceType'],
     'spaceone.inventory.api.v1.cloud_service_query_set': ['CloudServiceQuerySet'],
+    'spaceone.inventory.api.v1.cloud_service_stats': ['CloudServiceStats'],
     'spaceone.inventory.api.v1.resource_group': ['ResourceGroup'],
     'spaceone.inventory.api.v1.change_history': ['ChangeHistory'],
     'spaceone.inventory.api.v1.note': ['Note'],

@@ -24,7 +24,8 @@ def CloudServiceQuerySetInfo(cloud_svc_query_set_vo: CloudServiceQuerySet, minim
             'unit': change_struct_type(cloud_svc_query_set_vo.unit),
             'tags': change_struct_type(cloud_svc_query_set_vo.tags),
             'domain_id': cloud_svc_query_set_vo.domain_id,
-            'created_at': utils.datetime_to_iso8601(cloud_svc_query_set_vo.created_at)
+            'created_at': utils.datetime_to_iso8601(cloud_svc_query_set_vo.created_at),
+            'updated_at': utils.datetime_to_iso8601(cloud_svc_query_set_vo.updated_at)
         })
 
     return cloud_service_query_set_pb2.CloudServiceQuerySetInfo(**info)
