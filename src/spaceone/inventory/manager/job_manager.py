@@ -1,15 +1,12 @@
-import abc
 import logging
-
 from datetime import datetime, timedelta
-
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.model.job_model import Job
 from spaceone.inventory.error import *
+from spaceone.inventory.lib.job_state import JobStateMachine
+from spaceone.inventory.conf.collector_conf import *
 
 _LOGGER = logging.getLogger(__name__)
-
-MAX_MESSAGE_LENGTH = 2000
 
 
 class JobManager(BaseManager):
@@ -33,6 +30,10 @@ class JobManager(BaseManager):
         job_params['collector'] = collector_vo
         return self.job_model.create(job_params)
 
+    def update(self, job_id, params, domain_id):
+        job_vo = self.get_job(job_id, domain_id)
+        return self.update_job_by_vo(params, job_vo)
+
     def delete(self, job_id, domain_id):
         job_vo = self.get_job(job_id, domain_id)
         job_vo.delete()
@@ -48,27 +49,6 @@ class JobManager(BaseManager):
 
     def stat_jobs(self, query):
         return self.job_model.stat(**query)
-
-    # def delete_by_collector_id(self, collector_id, domain_id):
-    #     query = {
-    #         'filter': [
-    #             {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
-    #             {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
-    #         ]
-    #     }
-    #
-    #     jobs, total_count = self.list_jobs(query)
-    #
-    #     for job in jobs:
-    #         job.delete()
-
-    def increase_total_tasks(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        return self.increase_total_tasks_by_vo(job_vo)
-
-    def increase_remained_tasks(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        return self.increase_remained_tasks_by_vo(job_vo)
 
     def decrease_remained_tasks(self, job_id, domain_id):
         job_vo: Job = self.get_job(job_id, domain_id)
@@ -97,7 +77,6 @@ class JobManager(BaseManager):
             'additional': dict
         }
         """
-
         message = repr(msg)
         error_info = {'error_code': error_code, 'message': message[:MAX_MESSAGE_LENGTH]}
 
@@ -148,12 +127,7 @@ class JobManager(BaseManager):
         job_state_machine.timeout()
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
-    ###################
-    # Update by job_id
-    ###################
     def make_inprogress(self, job_id, domain_id):
-        """ Make status to in-progress
-        """
         job_vo = self.get_job(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
         job_state_machine.inprogress()
@@ -184,28 +158,22 @@ class JobManager(BaseManager):
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
     def is_canceled(self, job_id, domain_id):
-        """ Return True/False
-        """
         job_vo = self.get_job(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
-        if job_state_machine.get_status() == CANCELED:
+        if job_state_machine.get_status() == 'CANCELED':
             return True
         return False
 
-    def should_cancel(self, job_id, domain_id):
-        """ Return True/False
-        """
+    def check_cancel(self, job_id, domain_id):
         job_vo = self.get_job(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
         job_status = job_state_machine.get_status()
 
-        if job_status == CANCELED or job_status == TIMEOUT:
+        if job_status == 'CANCELED' or job_status == 'TIMEOUT':
             return True
         return False
 
     def mark_error(self, job_id, domain_id):
-        """ Mark Job has error
-        """
         job_vo = self.get_job(job_id, domain_id)
         job_vo.update({'mark_error': 1})
 
@@ -229,139 +197,3 @@ class JobManager(BaseManager):
     @staticmethod
     def update_job_by_vo(params, job_vo: Job):
         return job_vo.update(params)
-
-    @staticmethod
-    def increase_total_tasks_by_vo(job_vo: Job):
-        job_vo = job_vo.increment('total_tasks')
-        # _LOGGER.debug(f'[increase_total_tasks] {job_vo.job_id} : {job_vo.total_tasks}')
-        return job_vo
-
-    @staticmethod
-    def increase_remained_tasks_by_vo(job_vo: Job):
-        job_vo = job_vo.increment('remained_tasks')
-        # _LOGGER.debug(f'[increase_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
-        return job_vo
-
-
-CREATED = 'CREATED'
-INPROGRESS = 'IN_PROGRESS'
-CANCELED = 'CANCELED'
-SUCCESS = 'SUCCESS'
-ERROR = 'ERROR'
-TIMEOUT = 'TIMEOUT'
-
-
-class JobState(metaclass=abc.ABCMeta):
-    def __init__(self):
-        self.handle()
-
-    @abc.abstractmethod
-    def handle(self):
-        pass
-
-
-class InprogressState(JobState):
-    def handle(self):
-        pass
-
-    def __str__(self):
-        return INPROGRESS
-
-
-class CreatedState(JobState):
-    def handle(self):
-        pass
-
-    def __str__(self):
-        return CREATED
-
-
-class CanceledState(JobState):
-    def handle(self):
-        pass
-
-    def __str__(self):
-        return CANCELED
-
-
-class SuccessState(JobState):
-    def handle(self):
-        pass
-
-    def __str__(self):
-        return SUCCESS
-
-
-class ErrorState(JobState):
-    def handle(self):
-        pass
-
-    def __str__(self):
-        return ERROR
-
-
-class TimeoutState(JobState):
-    def handle(self):
-        pass
-
-    def __str__(self):
-        return TIMEOUT
-
-
-STATE_DIC = {
-    'CREATED': CreatedState(),
-    'IN_PROGRESS': InprogressState(),
-    'CANCELED': CanceledState(),
-    'SUCCESS': SuccessState(),
-    'ERROR': ErrorState(),
-    'TIMEOUT': TimeoutState()
-}
-
-
-class JobStateMachine():
-    def __init__(self, job_vo):
-        self.job_id = job_vo.job_id
-        self._status = STATE_DIC[job_vo.status]
-
-    def inprogress(self):
-        if isinstance(self._status, (CreatedState, InprogressState, SuccessState)):
-            # if collect is synchronous mode,
-            # Job status can change: Inprogress -> Succcess -> Inprogress -> Success ...
-            self._status = InprogressState()
-        elif isinstance(self._status, (ErrorState)):
-            pass
-        else:
-            raise ERROR_JOB_STATE_CHANGE(action='INPROGRESS', job_id=self.job_id, status=str(self._status))
-        return self.get_status()
-
-    def canceled(self):
-        if isinstance(self._status, (CreatedState, InprogressState)):
-            self._status = CanceledState()
-        else:
-            raise ERROR_JOB_STATE_CHANGE(action='CANCELED', job_id=self.job_id, status=str(self._status))
-        return self.get_status()
-
-    def success(self):
-        if isinstance(self._status, (CreatedState, InprogressState, SuccessState)):
-            # if collect is synchronous mode
-            # Job status can change: Finished -> Finished
-            self._status = SuccessState()
-        elif isinstance(self._status, (ErrorState)):
-            pass
-        else:
-            raise ERROR_JOB_STATE_CHANGE(action='SUCCESS', job_id=self.job_id, status=str(self._status))
-        return self.get_status()
-
-    def timeout(self):
-        if isinstance(self._status, (CreatedState, InprogressState)):
-            self._status = TimeoutState()
-        else:
-            raise ERROR_JOB_STATE_CHANGE(action='TIMEOUT', job_id=self.job_id, status=str(self._status))
-        return self.get_status()
-
-    def error(self):
-        self._status = ErrorState()
-        return self.get_status()
-
-    def get_status(self):
-        return str(self._status)

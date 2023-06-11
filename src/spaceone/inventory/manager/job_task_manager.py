@@ -1,11 +1,16 @@
 import abc
 import logging
-
+import json
+from jsonschema import validate
 from datetime import datetime, timedelta
-
+from spaceone.core import config, queue
+from spaceone.core.token import get_token
 from spaceone.core.manager import BaseManager
+from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
+from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.model.job_task_model import JobTask
 from spaceone.inventory.error import *
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,7 +23,7 @@ class JobTaskManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.job_task_model: JobTask = self.locator.get_model('JobTask')
 
-    def create_job_task(self, job_vo, secret_info, domain_id):
+    def create_job_task(self, job_vo, domain_id, task_options):
         def _rollback(job_task_vo):
             _LOGGER.info(f'[ROLLBACK] Delete job_task: {job_task_vo.job_task_id}')
             job_task_vo.delete()
@@ -26,14 +31,12 @@ class JobTaskManager(BaseManager):
         params = {
             'job_id': job_vo.job_id,
             'collector_id': job_vo.collector_id,
-            'domain_id': domain_id
+            'domain_id': domain_id,
+            'options': task_options
         }
-        params.update(secret_info)
 
         job_task_vo: JobTask = self.job_task_model.create(params)
-
         self.transaction.add_rollback(_rollback, job_task_vo)
-
         return job_task_vo
 
     def get(self, job_task_id, domain_id, only=None):
@@ -49,6 +52,12 @@ class JobTaskManager(BaseManager):
         job_task_vo = self.get(job_task_id, domain_id)
         job_task_vo.delete()
 
+    def push_job_task(self, params):
+        task = self.create_task_pipeline(params)
+        validate(task, schema=SPACEONE_TASK_SCHEMA)
+        json_task = json.dumps(task)
+        queue.put(self.get_queue_name(name='collect_queue'), json_task)
+
     def check_duplicate_job_tasks(self, collector_id, secret_id, domain_id):
         started_at = datetime.utcnow() - timedelta(minutes=10)
 
@@ -63,6 +72,7 @@ class JobTaskManager(BaseManager):
         }
 
         job_task_vos, total_count = self.list(query)
+
         if total_count > 0:
             for job_task_vo in job_task_vos:
                 _LOGGER.debug(f'[check_duplicate_job_tasks] Duplicate Job Info: {job_task_vo.job_id} '
@@ -72,48 +82,21 @@ class JobTaskManager(BaseManager):
         return False
 
     def add_error(self, job_task_id, domain_id, error_code, msg, additional=None):
-        # message = repr(msg)
-        error_info = {
-            'error_code': error_code,
-            'message': str(msg).strip()
-            # 'message': message[:MAX_MESSAGE_LENGTH]
-        }
+        job_mgr: JobManager = self.locator.get_manager(JobManager)
+
+        error_info = {'error_code': error_code, 'message': str(msg).strip()}
 
         if additional:
             error_info['additional'] = additional
 
         job_task_vo = self.get(job_task_id, domain_id)
         job_task_vo.append('errors', error_info)
-        _LOGGER.debug(f'[add_error] {job_task_id}: {error_info}')
-
-        # self.make_failure(job_task_id, domain_id)
-
-        # Update Job Failure
-        job_mgr = self.locator.get_manager('JobManager')
         job_mgr.mark_error(job_task_vo.job_id, domain_id)
+        _LOGGER.debug(f'[add_error] {job_task_id}: {error_info}')
 
         return job_task_vo
 
-    #######################
-    # Secret
-    #######################
-    def update_secret(self, job_task_id, secret_info, domain_id):
-        job_task_vo = self.get(job_task_id, domain_id)
-        return job_task_vo.update(secret_info)
-
-    def update_stat(self, job_task_id, stat, domain_id):
-        job_task_vo = self.get(job_task_id, domain_id)
-        return job_task_vo.update(stat)
-
-    #######################
-    # State
-    #######################
-    def _update_job_status(self, job_task_id, status, domain_id, started_at=None, finished_at=None, secret=None, stat=None):
-        """
-        Args:
-            secret(dict)
-            stat(dict)
-        """
+    def _update_job_status(self, job_task_id, status, domain_id, started_at=None, finished_at=None, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
         params = {'status': status}
 
@@ -123,45 +106,81 @@ class JobTaskManager(BaseManager):
         if finished_at:
             params['finished_at'] = finished_at
 
-        if secret:
-            params.update(secret)
+        if secret_info:
+            params.update(secret_info)
 
-        if stat:
-            params.update(stat)
+        if collecting_count_info:
+            params.update(collecting_count_info)
 
         _LOGGER.debug(f'[update_job_status] job_task_id: {job_task_id}, status: {status}')
         return job_task_vo.update(params)
 
-    def make_inprogress(self, job_task_id, domain_id, secret=None, stat=None):
-        """ Make state to in-progress
-        """
+    def make_inprogress(self, job_task_id, domain_id, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
-        # Update started_at automatically
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.inprogress()
-        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, started_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id,
+                                started_at=datetime.utcnow(),
+                                secret_info=secret_info,
+                                collecting_count_info=collecting_count_info)
 
-    def make_success(self, job_task_id, domain_id, secret=None, stat=None):
+    def make_success(self, job_task_id, domain_id, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.success()
-        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id,
+                                finished_at=datetime.utcnow(),
+                                secret_info=secret_info,
+                                collecting_count_info=collecting_count_info)
 
-    def make_failure(self, job_task_id, domain_id, secret=None, stat=None):
+    def make_failure(self, job_task_id, domain_id, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.failure()
-        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id,
+                                finished_at=datetime.utcnow(),
+                                secret_info=secret_info,
+                                collecting_count_info=collecting_count_info)
 
-    def make_canceled(self, job_task_id, domain_id, secret=None, stat=None):
+    def make_canceled(self, job_task_id, domain_id, secret_info=None, collecting_count_info=None):
         job_task_vo = self.get(job_task_id, domain_id)
         job_state_machine = JobTaskStateMachine(job_task_vo)
         job_state_machine.canceled()
-        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id, finished_at=datetime.utcnow(), secret=secret, stat=stat)
+        self._update_job_status(job_task_id, job_state_machine.get_state(), domain_id,
+                                finished_at=datetime.utcnow(),
+                                secret_info=secret_info,
+                                collecting_count_info=collecting_count_info)
 
     @staticmethod
     def delete_job_task_by_vo(job_task_vo):
         job_task_vo.delete()
+
+    @staticmethod
+    def get_queue_name(name='collect_queue'):
+        try:
+            return config.get_global(name)
+        except Exception as e:
+            _LOGGER.warning(f'[_get_queue_name] name: {name} is not configured')
+            return None
+
+    @staticmethod
+    def create_task_pipeline(params):
+        task = {
+            'locator': 'MANAGER',
+            'name': 'CollectingManager',
+            'metadata': {'token': get_token(), 'domain_id': params.get('domain_id')},
+            'method': 'collecting_resources',
+            'params': {'params': params}
+        }
+
+        stp = {
+            'name': 'collecting_resources',
+            'version': 'v1',
+            'executionEngine': 'BaseWorker',
+            'stages': [task]
+        }
+        _LOGGER.debug(f'[_create_task] tasks: {stp}')
+        return stp
 
 
 PENDING = 'PENDING'

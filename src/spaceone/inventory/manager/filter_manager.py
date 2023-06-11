@@ -257,7 +257,7 @@ class FilterManager(BaseManager):
             """
             _LOGGER.debug(f'[_search_resources] query: {query}')
             try:
-                mgr = self.locator.get_manager(RESOURCE_MAP[res_type])
+                mgr = self.locator.get_manager(RESOURCE_MAP[res_type][1])
             except Exception as e:
                 _LOGGER.error('########## NOTICE to Developer (bug) ###################################')
                 _LOGGER.error(f'[_search_resources] Not found manager based on resource_type: {res_type}')

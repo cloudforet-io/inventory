@@ -1,14 +1,9 @@
 import logging
-import json
-from jsonschema import validate
 from spaceone.core.service import *
 from spaceone.core import utils
-from spaceone.core import queue
-from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.collector_manager import CollectorManager
-from spaceone.inventory.manager.collecting_manager import CollectingManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
 from spaceone.inventory.manager.collector_rule_manager import CollectorRuleManager
 from spaceone.inventory.manager.repository_manager import RepositoryManager
@@ -181,8 +176,6 @@ class CollectorService(BaseService):
     @check_required(['collector_id', 'domain_id'])
     def collect(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
-        collecting_mgr = self.locator.get_manager(CollectingManager)
-        collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
         plugin_mgr: PluginManager = self.locator.get_manager(PluginManager)
         job_mgr: JobManager = self.locator.get_manager(JobManager)
         job_task_mgr: JobTaskManager = self.locator.get_manager(JobTaskManager)
@@ -195,95 +188,50 @@ class CollectorService(BaseService):
         plugin_info = collector_dict['plugin_info']
         plugin_id = plugin_info['plugin_id']
         version = plugin_info['version']
-        options = plugin_info.get('options', {})
         upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
 
         endpoint, updated_version = plugin_mgr.get_endpoint(plugin_id, version, domain_id, upgrade_mode)
 
         if updated_version:
+            collector_vo = self._update_collector_plugin(endpoint, updated_version, plugin_info, collector_vo, domain_id)
             _LOGGER.debug(f'[collect] upgrade plugin version: {version} -> {updated_version}')
-            response = collector_plugin_mgr.init_plugin(endpoint, options)
-            plugin_info.update({'version': updated_version, 'metadata': response['metadata']})
-            collector_vo = collector_vo.update({'plugin_info': plugin_info})
 
-            self.delete_collector_rules(collector_id, domain_id),
-            self.create_collector_rules_by_metadata(response['metadata'], collector_id, domain_id)
+        tasks = self.get_tasks(params, endpoint, collector_vo.provider, plugin_info, domain_id)
+        projects = self.list_projects_from_tasks(tasks)
 
-        created_job = job_mgr.create_job(collector_vo, params)
+        params.update({'total_tasks': len(tasks), 'remained_tasks': len(tasks)})
 
-        try:
-            secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filters', {}), params.get('secret_id'))
+        # JOB: CREATED
+        job_vo = job_mgr.create_job(collector_vo, params)
 
-            if not secret_ids:
-                # nothing to do
-                job_mgr.make_success_by_vo(created_job)
-                return created_job
+        # JOB: IN-PROGRESS
+        job_mgr.make_inprogress_by_vo(job_vo)
 
-        except Exception as e:
-            _LOGGER.debug(f'[collect] failed in Secret Patch stage: {e}')
-            job_mgr.add_error(created_job.job_id, domain_id, 'ERROR_COLLECT_INITIALIZE', e, params)
-            job_mgr.make_error_by_vo(created_job)
-            raise ERROR_COLLECT_INITIALIZE(stage='Secret Patch', params=params)
+        if tasks:
+            for task in tasks:
+                task_options = task['task_options']
+                task.update({'collector_id': collector_id, 'job_id': job_vo.job_id})
 
-        try:
-            job_mgr.make_inprogress_by_vo(created_job)
-        except Exception as e:
-            _LOGGER.debug(f'[collect] {e}')
-            _LOGGER.debug(f'[collect] fail to change {collector_id} job state to in-progress')
+                try:
+                    job_task_vo = job_task_mgr.create_job_task(job_vo, domain_id, task_options)
+                    task.update({'job_task_id': job_task_vo.job_task_id})
+                    job_task_mgr.push_job_task(task)
 
-        count = 0
-        projects = []
+                except Exception as e:
+                    job_mgr.add_error(job_vo.job_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e, {'task_options': task_options})
+                    _LOGGER.error(f'[collect] collecting failed: task_options={task_options}: {e}')
+        else:
+            # JOB: SUCCESS (No tasks)
+            job_mgr.make_success_by_vo(job_vo)
+            return job_vo
 
-        for secret_id in secret_ids:
-            count += 1
-            try:
-                job_mgr.increase_total_tasks_by_vo(created_job)
-                job_mgr.increase_remained_tasks_by_vo(created_job)
-
-                secret_info = self._set_secret_info(secret_id, domain_id)
-
-                if project_id := secret_info.get('project_id'):
-                    projects.append(project_id)
-
-                job_task_vo = job_task_mgr.create_job_task(created_job, secret_info, domain_id)
-
-                req_params = collector_mgr.make_collecting_parameters(collector_dict=collector_dict,
-                                                                      secret_id=secret_id,
-                                                                      domain_id=domain_id,
-                                                                      job_vo=created_job,
-                                                                      job_task_vo=job_task_vo,
-                                                                      params=params)
-
-                task = collector_mgr.create_task_pipeline(req_params, domain_id)
-                queue_name = collector_mgr.get_queue_name(name='collect_queue')
-
-                if task and queue_name:
-                    _LOGGER.warning(f'[collect] Asynchronous collect {count}/{len(secret_ids)}')
-                    validate(task, schema=SPACEONE_TASK_SCHEMA)
-                    json_task = json.dumps(task)
-                    queue.put(queue_name, json_task)
-                else:
-                    _LOGGER.warning(f'[collect] Synchronous collect {count}/{len(secret_ids)}')
-                    kwargs = {'job_id': req_params['job_id'], 'use_cache': req_params['use_cache']}
-                    collecting_mgr.collecting_resources(req_params['plugin_info'],
-                                                        req_params['secret_data'],
-                                                        req_params['domain_id'],
-                                                        **kwargs)
-
-            except Exception as e:
-                job_mgr.add_error(created_job.job_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e, {'secret_id': secret_id})
-                _LOGGER.error(f'[collect] collect failed {count}/{len(secret_ids)}')
-                _LOGGER.error(f'[collect] collecting failed with {secret_id}: {e}')
-
-        # Update Timestamp
         collector_mgr.update_last_collected_time(collector_vo)
-        return job_mgr.update_job_by_vo({'projects': list(set(projects))}, created_job)
+        return job_mgr.update_job_by_vo({'projects': projects}, job_vo)
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['collector_id', 'domain_id'])
     def update_plugin(self, params):
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
-        collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
         plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
 
         collector_id = params['collector_id']
@@ -306,19 +254,7 @@ class CollectorService(BaseService):
                                                                 domain_id,
                                                                 plugin_info.get('upgrade_mode', 'AUTO'))
 
-        plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}))
-
-        if updated_version:
-            plugin_info['version'] = updated_version
-
-        plugin_info['metadata'] = plugin_response.get('metadata', {})
-
-        params = {'plugin_info': plugin_info}
-        collector_vo = self.update_collector_by_vo(collector_vo, params)
-
-        self.delete_collector_rules(collector_id, domain_id),
-        self.create_collector_rules_by_metadata(plugin_info['metadata'], collector_id, domain_id)
-
+        collector_vo = self._update_collector_plugin(endpoint, updated_version, plugin_info, collector_vo, domain_id)
         return collector_vo
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
@@ -340,19 +276,59 @@ class CollectorService(BaseService):
                                                                 domain_id,
                                                                 plugin_info.get('upgrade_mode', 'AUTO'))
 
-        secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filter', {}), params.get('secret_id'))
+        secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filter', {}),
+                                                         params.get('secret_id'),
+                                                         collector_vo.provider,
+                                                         domain_id)
 
         if secret_ids:
             secret_data_info = secret_manager.get_secret_data(secret_ids[0], domain_id)
             secret_data = secret_data_info.get('data', {})
             collector_plugin_mgr.verify_plugin(endpoint, plugin_info.get('options', {}), secret_data)
 
-    def list_secret_from_secret_filter(self, secret_filter, secret_id):
+    def get_tasks(self, params, endpoint, collector_provider, plugin_info, domain_id):
+        secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
+
+        tasks = []
+        secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filters', {}),
+                                                         params.get('secret_id'),
+                                                         collector_provider,
+                                                         domain_id)
+
+        for secret_id in secret_ids:
+            tasks.append({
+                'plugin_info': plugin_info,
+                'task_options': None,
+                'secret_info': secret_mgr.get_secret(secret_id, domain_id),
+                'secret_data': secret_mgr.get_secret_data(secret_id, domain_id),
+                'domain_id': domain_id
+            })
+
+        return tasks
+
+    def _update_collector_plugin(self, endpoint, updated_version, plugin_info, collector_vo, domain_id):
+        collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
+        plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}))
+
+        if updated_version:
+            plugin_info['version'] = updated_version
+
+        plugin_info['metadata'] = plugin_response.get('metadata', {})
+
+        params = {'plugin_info': plugin_info}
+        collector_vo = self.update_collector_by_vo(collector_vo, params)
+
+        self.delete_collector_rules(collector_vo.collector_id, collector_vo.domain_id),
+        self.create_collector_rules_by_metadata(plugin_info['metadata'], collector_vo.collector_id, domain_id)
+
+        return collector_vo
+
+    def list_secret_from_secret_filter(self, secret_filter, secret_id, collector_provider, domain_id):
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)
 
-        _filter = self._set_secret_filter(secret_filter, secret_id)
+        _filter = self._set_secret_filter(secret_filter, secret_id, collector_provider)
         query = {'filter': _filter} if _filter else {}
-        response = secret_manager.list_secrets(query)
+        response = secret_manager.list_secrets(query, domain_id)
 
         return [secret_info.get('secret_id') for secret_info in response['results']]
 
@@ -375,7 +351,6 @@ class CollectorService(BaseService):
         """
 
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
-
         filter_query = [{'k': 'collector.state', 'v': 'ENABLED', 'o': 'eq'}]
 
         if 'domain_id' in params:
@@ -434,7 +409,7 @@ class CollectorService(BaseService):
         return secret_info
 
     @staticmethod
-    def _set_secret_filter(secret_filter, secret_id):
+    def _set_secret_filter(secret_filter, secret_id, collector_provider):
         _filter = []
         if 'secrets' in secret_filter:
             _filter.append({'k': 'secret_id', 'v': secret_filter['secrets'], 'o': 'in'})
@@ -444,6 +419,8 @@ class CollectorService(BaseService):
             _filter.append({'k': 'schema', 'v': secret_filter['schemas'], 'o': 'in'})
         if secret_id:
             _filter.append({'k': 'secret_id', 'v': secret_id, 'o': 'eq'})
+        if collector_provider:
+            _filter.append({'k': 'provider', 'v': collector_provider, 'o': 'eq'})
 
         return _filter
 
@@ -467,3 +444,12 @@ class CollectorService(BaseService):
             return utils.tags_to_dict(tags)
         else:
             return tags
+
+    @staticmethod
+    def list_projects_from_tasks(tasks):
+        projects = []
+        for task in tasks:
+            if project_id := task['secret_info'].get('project_id'):
+                projects.append(project_id)
+
+        return list(set(projects))
