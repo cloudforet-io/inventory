@@ -88,7 +88,7 @@ class CloudServiceQuerySetManager(BaseManager):
 
         results = self._run_analyze_query(cloud_svc_query_set_vo)
 
-        created_at = datetime.utcnow() - timedelta(hours=48)
+        created_at = datetime.utcnow()
 
         try:
             self._save_query_results(cloud_svc_query_set_vo, results, created_at)
