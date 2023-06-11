@@ -104,7 +104,7 @@ class CloudServiceQuerySetManager(BaseManager):
     def _run_analyze_query(self, cloud_svc_query_set_vo: CloudServiceQuerySet):
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
 
-        analyze_query = cloud_svc_query_set_vo.query_options
+        analyze_query = copy.deepcopy(cloud_svc_query_set_vo.query_options)
         provider = cloud_svc_query_set_vo.provider
         cloud_service_group = cloud_svc_query_set_vo.cloud_service_group
         cloud_service_type = cloud_svc_query_set_vo.cloud_service_type
