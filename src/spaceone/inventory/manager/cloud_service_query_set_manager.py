@@ -51,8 +51,21 @@ class CloudServiceQuerySetManager(BaseManager):
     def delete_cloud_service_query_set(self, query_set_id, domain_id):
         self.delete_cloud_service_query_set_by_vo(self.get_cloud_service_query_set(query_set_id, domain_id))
 
-    @staticmethod
-    def delete_cloud_service_query_set_by_vo(cloud_svc_query_set_vo: CloudServiceQuerySet):
+    def delete_cloud_service_query_set_by_vo(self, cloud_svc_query_set_vo: CloudServiceQuerySet):
+        cloud_svc_stats_mgr: CloudServiceStatsManager = self.locator.get_manager('CloudServiceStatsManager')
+
+        query_set_id = cloud_svc_query_set_vo.query_set_id
+        domain_id = cloud_svc_query_set_vo.domain_id
+
+        # Delete Cloud Service Stats Data
+        stats_vos = cloud_svc_stats_mgr.filter_cloud_service_stats(query_set_id=query_set_id, domain_id=domain_id)
+        stats_vos.delete()
+
+        # Delete Monthly Cloud Service Stats Data
+        monthly_stats_vos = cloud_svc_stats_mgr.filter_monthly_cloud_service_stats(query_set_id=query_set_id,
+                                                                                   domain_id=domain_id)
+        monthly_stats_vos.delete()
+
         cloud_svc_query_set_vo.delete()
 
     def get_cloud_service_query_set(self, query_set_id, domain_id, only=None):
@@ -75,7 +88,7 @@ class CloudServiceQuerySetManager(BaseManager):
 
         results = self._run_analyze_query(cloud_svc_query_set_vo)
 
-        created_at = datetime.utcnow()
+        created_at = datetime.utcnow() - timedelta(hours=48)
 
         try:
             self._save_query_results(cloud_svc_query_set_vo, results, created_at)
@@ -99,7 +112,7 @@ class CloudServiceQuerySetManager(BaseManager):
         analyze_query['filter'] = analyze_query.get('filter', [])
         analyze_query['filter'] += self._make_query_filter(provider, cloud_service_group, cloud_service_type)
 
-        analyze_query['group_by'] += _DEFAULT_GROUP_BY
+        analyze_query['group_by'] = analyze_query.get('group_by', []) + _DEFAULT_GROUP_BY
 
         if 'select' in analyze_query:
             for group_by_key in _DEFAULT_GROUP_BY:
