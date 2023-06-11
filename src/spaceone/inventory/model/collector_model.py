@@ -30,7 +30,7 @@ class Collector(MongoModel):
     collector_id = StringField(max_length=40, generate_id='collector', unique=True)
     name = StringField(max_length=255)
     state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))
-    provider = StringField(max_length=40)
+    provider = StringField(max_length=40, default=None, null=True)
     capability = DictField()
     is_public = BooleanField(default=True)                                      # Deprecated
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)

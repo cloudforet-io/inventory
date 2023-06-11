@@ -196,7 +196,7 @@ class CollectorService(BaseService):
             collector_vo = self._update_collector_plugin(endpoint, updated_version, plugin_info, collector_vo, domain_id)
             _LOGGER.debug(f'[collect] upgrade plugin version: {version} -> {updated_version}')
 
-        tasks = self.get_tasks(params, endpoint, plugin_info, domain_id)
+        tasks = self.get_tasks(params, endpoint, collector_vo.provider, plugin_info, domain_id)
         projects = self.list_projects_from_tasks(tasks)
 
         params.update({'total_tasks': len(tasks), 'remained_tasks': len(tasks)})
@@ -278,6 +278,7 @@ class CollectorService(BaseService):
 
         secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filter', {}),
                                                          params.get('secret_id'),
+                                                         collector_vo.provider,
                                                          domain_id)
 
         if secret_ids:
@@ -285,11 +286,14 @@ class CollectorService(BaseService):
             secret_data = secret_data_info.get('data', {})
             collector_plugin_mgr.verify_plugin(endpoint, plugin_info.get('options', {}), secret_data)
 
-    def get_tasks(self, params, endpoint, plugin_info, domain_id):
+    def get_tasks(self, params, endpoint, collector_provider, plugin_info, domain_id):
         secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
 
         tasks = []
-        secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filters', {}), params.get('secret_id'), domain_id)
+        secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filters', {}),
+                                                         params.get('secret_id'),
+                                                         collector_provider,
+                                                         domain_id)
 
         for secret_id in secret_ids:
             tasks.append({
@@ -319,10 +323,10 @@ class CollectorService(BaseService):
 
         return collector_vo
 
-    def list_secret_from_secret_filter(self, secret_filter, secret_id, domain_id):
+    def list_secret_from_secret_filter(self, secret_filter, secret_id, collector_provider, domain_id):
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)
 
-        _filter = self._set_secret_filter(secret_filter, secret_id)
+        _filter = self._set_secret_filter(secret_filter, secret_id, collector_provider)
         query = {'filter': _filter} if _filter else {}
         response = secret_manager.list_secrets(query, domain_id)
 
@@ -405,7 +409,7 @@ class CollectorService(BaseService):
         return secret_info
 
     @staticmethod
-    def _set_secret_filter(secret_filter, secret_id):
+    def _set_secret_filter(secret_filter, secret_id, collector_provider):
         _filter = []
         if 'secrets' in secret_filter:
             _filter.append({'k': 'secret_id', 'v': secret_filter['secrets'], 'o': 'in'})
@@ -415,6 +419,8 @@ class CollectorService(BaseService):
             _filter.append({'k': 'schema', 'v': secret_filter['schemas'], 'o': 'in'})
         if secret_id:
             _filter.append({'k': 'secret_id', 'v': secret_id, 'o': 'eq'})
+        if collector_provider:
+            _filter.append({'k': 'provider', 'v': collector_provider, 'o': 'eq'})
 
         return _filter
 
