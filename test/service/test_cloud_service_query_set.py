@@ -45,7 +45,7 @@ class TestCloudServiceQuerySet(unittest.TestCase):
                 'group_by': ['instance_type'],
                 'fields': {
                     'instance_count': {
-                        'operator': 'sum',
+                        'operator': 'count',
                     }
                 }
             },
@@ -67,9 +67,8 @@ class TestCloudServiceQuerySet(unittest.TestCase):
         query_set_vo: CloudServiceQuerySet = cloud_service_query_set_svc.create(params.copy())
         print_data(query_set_vo.to_dict(), 'test_create_cloud_service_query_set')
 
-        CloudServiceQuerySetInfo(query_set_vo)
-
         query_set_data = dict(query_set_vo.to_dict())
+
         self.assertEqual(params['name'], query_set_data['name'])
         self.assertEqual(params['query_options'], query_set_data['query_options'])
         self.assertEqual('CUSTOM', query_set_data['query_type'])
@@ -79,6 +78,8 @@ class TestCloudServiceQuerySet(unittest.TestCase):
         self.assertEqual(params['cloud_service_type'], query_set_data['cloud_service_type'])
         self.assertEqual(params['tags'], query_set_data['tags'])
         self.assertEqual(params['domain_id'], query_set_data['domain_id'])
+
+        CloudServiceQuerySetInfo(query_set_vo)
 
     def test_update_cloud_service_query_set(self, *args):
         new_query_set_vo: CloudServiceQuerySet = CloudServiceQuerySetFactory(domain_id=self.domain_id,
@@ -108,12 +109,12 @@ class TestCloudServiceQuerySet(unittest.TestCase):
         query_set_vo: CloudServiceQuerySet = cloud_service_query_set_svc.update(params.copy())
         print_data(query_set_vo.to_dict(), 'test_update_cloud_service_query_set')
 
-        CloudServiceQuerySetInfo(query_set_vo)
-
         query_set_data = dict(query_set_vo.to_dict())
         self.assertEqual(params['name'], query_set_data['name'])
         self.assertEqual(params['query_options'], query_set_data['query_options'])
         self.assertEqual(params['tags'], query_set_data['tags'])
+
+        CloudServiceQuerySetInfo(query_set_vo)
 
     def test_update_managed_query_type(self, *args):
         new_query_set_vo: CloudServiceQuerySet = CloudServiceQuerySetFactory(domain_id=self.domain_id,
@@ -160,10 +161,10 @@ class TestCloudServiceQuerySet(unittest.TestCase):
         query_set_vo: CloudServiceQuerySet = cloud_service_query_set_svc.enable(params.copy())
         print_data(query_set_vo.to_dict(), 'test_enable_cloud_service_query_set')
 
-        CloudServiceQuerySetInfo(query_set_vo)
-
         query_set_data = dict(query_set_vo.to_dict())
         self.assertEqual('ENABLED', query_set_data['state'])
+
+        CloudServiceQuerySetInfo(query_set_vo)
 
     def test_disable_cloud_service_query_set(self, *args):
         new_query_set_vo: CloudServiceQuerySet = CloudServiceQuerySetFactory(domain_id=self.domain_id,
@@ -181,10 +182,10 @@ class TestCloudServiceQuerySet(unittest.TestCase):
         query_set_vo: CloudServiceQuerySet = cloud_service_query_set_svc.disable(params.copy())
         print_data(query_set_vo.to_dict(), 'test_disable_cloud_service_query_set')
 
-        CloudServiceQuerySetInfo(query_set_vo)
-
         query_set_data = dict(query_set_vo.to_dict())
         self.assertEqual('DISABLED', query_set_data['state'])
+
+        CloudServiceQuerySetInfo(query_set_vo)
 
     def test_get_cloud_service_query_set(self, *args):
         new_query_set_vo: CloudServiceQuerySet = CloudServiceQuerySetFactory(domain_id=self.domain_id,
