@@ -31,6 +31,9 @@ class CloudServiceQuerySetManager(BaseManager):
         cloud_svc_query_set_vo: CloudServiceQuerySet = self.cloud_svc_query_set_model.create(params)
         self.transaction.add_rollback(_rollback, cloud_svc_query_set_vo)
 
+        # Check Analyze Query
+        self._run_analyze_query(cloud_svc_query_set_vo)
+
         return cloud_svc_query_set_vo
 
     def update_cloud_service_query_set(self, params):
@@ -92,12 +95,15 @@ class CloudServiceQuerySetManager(BaseManager):
         provider = cloud_svc_query_set_vo.provider
         cloud_service_group = cloud_svc_query_set_vo.cloud_service_group
         cloud_service_type = cloud_svc_query_set_vo.cloud_service_type
-        original_group_by = analyze_query.get('group_by', [])
 
         analyze_query['filter'] = analyze_query.get('filter', [])
         analyze_query['filter'] += self._make_query_filter(provider, cloud_service_group, cloud_service_type)
 
-        analyze_query['group_by'] = list(set(original_group_by + _DEFAULT_GROUP_BY))
+        analyze_query['group_by'] += _DEFAULT_GROUP_BY
+
+        if 'select' in analyze_query:
+            for group_by_key in _DEFAULT_GROUP_BY:
+                analyze_query['select'][group_by_key] = group_by_key
 
         _LOGGER.debug(f'[run_cloud_service_query_set] Run Analyze Query: {analyze_query}')
         response = cloud_svc_mgr.analyze_cloud_services(analyze_query)

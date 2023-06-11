@@ -6,8 +6,8 @@ class ERROR_NOT_ALLOWED_QUERY_TYPE(ERROR_INVALID_ARGUMENT):
 
 
 class ERROR_CLOUD_SERVICE_QUERY_SET_STATE(ERROR_INVALID_ARGUMENT):
-    _message = 'Cloud Service Query Set is not available. (state = {state})'
+    _message = 'Query set is not available. (state = {state})'
 
 
 class ERROR_CLOUD_SERVICE_QUERY_SET_RUN_FAILED(ERROR_UNKNOWN):
-    _message = 'Cloud Service Query Set run failed. (query_set_id = {query_set_id})'
+    _message = 'Query set run failed. (query_set_id = {query_set_id})'
