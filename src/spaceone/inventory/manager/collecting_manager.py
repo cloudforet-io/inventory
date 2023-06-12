@@ -320,6 +320,8 @@ class CollectingManager(BaseManager):
             self.transaction.set_meta('plugin_id', plugin_id)
         if 'provider' in secret_info:
             self.transaction.set_meta('secret.provider', secret_info['provider'])
+
+        _LOGGER.debug(f'[_set_transaction_meta] secret_info: {secret_info}')
         if 'project_id' in secret_info:
             self.transaction.set_meta('secret.project_id', secret_info['project_id'])
         if 'service_account_id' in secret_info:
@@ -329,6 +331,7 @@ class CollectingManager(BaseManager):
         if resource_type not in RESOURCE_MAP:
             raise ERROR_UNSUPPORTED_RESOURCE_TYPE(resource_type=resource_type)
 
+        _LOGGER.debug(f'[_get_resource_map] TRANSACTION META: {self.transaction.meta}')
         svc = self.locator.get_service(RESOURCE_MAP[resource_type][0], metadata=self.transaction.meta)
         mgr = self.locator.get_manager(RESOURCE_MAP[resource_type][1])
         return svc, mgr
