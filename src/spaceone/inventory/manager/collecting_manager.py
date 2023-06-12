@@ -310,6 +310,7 @@ class CollectingManager(BaseManager):
     def _set_transaction_meta(self, params):
         secret_info = params['secret_info']
 
+        _LOGGER.debug(f'[_set_transaction_meta] {self.transaction}/// ID : {id(self.transaction)}')
         self.transaction.set_meta('job_id', params['job_id'])
         self.transaction.set_meta('job_task_id', params['job_task_id'])
         self.transaction.set_meta('collector_id', params['collector_id'])
@@ -332,6 +333,7 @@ class CollectingManager(BaseManager):
             raise ERROR_UNSUPPORTED_RESOURCE_TYPE(resource_type=resource_type)
 
         _LOGGER.debug(f'[_get_resource_map] TRANSACTION META: {self.transaction.meta}')
+        _LOGGER.debug(f'[_get_resource_map] {self.transaction}/// ID : {id(self.transaction)}')
         svc = self.locator.get_service(RESOURCE_MAP[resource_type][0], metadata=self.transaction.meta)
         mgr = self.locator.get_manager(RESOURCE_MAP[resource_type][1])
         return svc, mgr
