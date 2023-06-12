@@ -329,6 +329,7 @@ class CollectingManager(BaseManager):
         if resource_type not in RESOURCE_MAP:
             raise ERROR_UNSUPPORTED_RESOURCE_TYPE(resource_type=resource_type)
 
+        _LOGGER.debug(f'[_get_resource_map] TRANSACTION META: {self.transaction.meta}')
         svc = self.locator.get_service(RESOURCE_MAP[resource_type][0], metadata=self.transaction.meta)
         mgr = self.locator.get_manager(RESOURCE_MAP[resource_type][1])
         return svc, mgr
