@@ -46,8 +46,7 @@ def PluginInfo(vo, minimal=False):
         info.update({
             'options': change_struct_type(vo.options),
             'metadata': change_struct_type(vo.metadata),
-            'upgrade_mode': vo.upgrade_mode,
-            'secret_filter': change_struct_type(vo.secret_filter),
+            'upgrade_mode': vo.upgrade_mode
         })
     return collector_pb2.PluginInfo(**info)
 
