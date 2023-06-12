@@ -172,7 +172,7 @@ class CollectorService(BaseService):
         collector_dict = collector_vo.to_dict()
 
         plugin_info = collector_dict['plugin_info']
-        secret_filter = collector_dict['secret_filter']
+        secret_filter = collector_dict.get('secret_filter', {})
         plugin_id = plugin_info['plugin_id']
         version = plugin_info['version']
         upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
@@ -398,7 +398,7 @@ class CollectorService(BaseService):
     @staticmethod
     def _set_secret_filter(secret_filter, secret_id, collector_provider):
         _filter = []
-        if secret_filter.get('state') == 'ENABLED':
+        if secret_filter and secret_filter.get('state') == 'ENABLED':
             if 'secrets' in secret_filter and secret_filter['secrets']:
                 _filter.append({'k': 'secret_id', 'v': secret_filter['secrets'], 'o': 'in'})
             if 'service_accounts' in secret_filter and secret_filter['service_accounts']:
