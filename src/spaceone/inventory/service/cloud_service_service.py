@@ -42,7 +42,6 @@ class CloudServiceService(BaseService):
         'authorization.scope': 'PROJECT',
         'authorization.require_project_id': True
     })
-    @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
     def create(self, params):
         """
         Args:
@@ -68,7 +67,10 @@ class CloudServiceService(BaseService):
             cloud_service_vo (object)
 
         """
+        return self.create_cloud_service(params)
 
+    @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
+    def create_cloud_service(self, params):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
         domain_id = params['domain_id']
@@ -116,7 +118,6 @@ class CloudServiceService(BaseService):
         return cloud_svc_vo
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['cloud_service_id', 'domain_id'])
     def update(self, params):
         """
         Args:
@@ -140,9 +141,11 @@ class CloudServiceService(BaseService):
 
         Returns:
             cloud_service_vo (object)
-
         """
+        return self.update_cloud_service(params)
 
+    @check_required(['cloud_service_id', 'domain_id'])
+    def update_cloud_service(self, params):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
         secret_project_id = self.transaction.get_meta('secret.project_id')
@@ -237,20 +240,20 @@ class CloudServiceService(BaseService):
         return cloud_svc_vo
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['cloud_service_id', 'domain_id'])
     def delete(self, params):
+        self.delete_cloud_service(params)
+
+    @check_required(['cloud_service_id', 'domain_id'])
+    def delete_cloud_service(self, params):
         """
         Args:
-            params (dict): {
-                    'cloud_service_id': 'str',
-                    'domain_id': 'str'
-                }
-
+        params (dict): {
+            'cloud_service_id': 'str',
+            'domain_id': 'str'
+        }
         Returns:
             None
-
         """
-
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
         cloud_service_id = params['cloud_service_id']
