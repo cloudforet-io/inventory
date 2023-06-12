@@ -19,21 +19,23 @@ class RegionService(BaseService):
         self.region_mgr: RegionManager = self.locator.get_manager('RegionManager')
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['name', 'region_code', 'provider', 'domain_id'])
     def create(self, params):
         """
         Args:
-            params (dict): {
-                    'name': 'str',
-                    'region_code': 'str',
-                    'provider': 'str',
-                    'tags': 'list',
-                    'domain_id': 'str'
-                }
-
+        params (dict): {
+            'name': 'str',
+            'region_code': 'str',
+            'provider': 'str',
+            'tags': 'list',
+            'domain_id': 'str'
+        }
         Returns:
             region_vo (object)
         """
+        return self.create_region(params)
+
+    @check_required(['name', 'region_code', 'provider', 'domain_id'])
+    def create_region(self, params):
 
         if 'tags' in params:
             if isinstance(params['tags'], list):
@@ -45,22 +47,22 @@ class RegionService(BaseService):
         return self.region_mgr.create_region(params)
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['region_id', 'domain_id'])
     def update(self, params):
         """
         Args:
-            params (dict): {
-                    'region_id': 'str',
-                    'name': 'str',
-                    'tags': 'list',
-                    'domain_id': 'str'
-                }
-
+        params (dict): {
+            'region_id': 'str',
+            'name': 'str',
+            'tags': 'list',
+            'domain_id': 'str'
+        }
         Returns:
             region_vo (object)
-
         """
+        return self.update_region(params)
 
+    @check_required(['region_id', 'domain_id'])
+    def update_region(self, params):
         if 'tags' in params:
             if isinstance(params['tags'], list):
                 params['tags'] = utils.tags_to_dict(params['tags'])
@@ -75,22 +77,21 @@ class RegionService(BaseService):
         return self.region_mgr.update_region_by_vo(params, region_vo)
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['region_id', 'domain_id'])
     def delete(self, params):
         """
         Args:
-            params (dict): {
-                    'region_id': 'str',
-                    'domain_id': 'str'
-                }
-
+        params (dict): {
+            'region_id': 'str',
+            'domain_id': 'str'
+        }
         Returns:
             None
-
         """
+        self.delete_region(params)
 
+    @check_required(['region_id', 'domain_id'])
+    def delete_region(self, params):
         region_vo = self.region_mgr.get_region(params['region_id'], params['domain_id'])
-
         self.region_mgr.delete_region_by_vo(region_vo)
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
@@ -108,7 +109,6 @@ class RegionService(BaseService):
             region_vo (object)
 
         """
-
         return self.region_mgr.get_region(params['region_id'], params['domain_id'], params.get('only'))
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
