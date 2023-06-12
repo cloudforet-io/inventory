@@ -35,6 +35,7 @@ class CollectorService(BaseService):
                 'plugin_info': 'dict',
                 'provider': 'str',
                 'schedule': 'dict',
+                'secret_filter': 'dict',
                 'tags': 'dict',
                 'domain_id': 'str'
             }
@@ -93,6 +94,7 @@ class CollectorService(BaseService):
                 'priority': 'int',
                 'tags': 'dict',
                 'schedule': 'dict',
+                'secret_filter': 'dict',
                 'domain_id': 'str'
             }
 
@@ -128,22 +130,6 @@ class CollectorService(BaseService):
         domain_id = params['domain_id']
         only = params.get('only')
         return collector_mgr.get_collector(collector_id, domain_id, only)
-
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['collector_id', 'domain_id'])
-    def enable(self, params):
-        collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
-        collector_id = params['collector_id']
-        domain_id = params['domain_id']
-        return collector_mgr.enable_collector(collector_id, domain_id)
-
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['collector_id', 'domain_id'])
-    def disable(self, params):
-        collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
-        collector_id = params['collector_id']
-        domain_id = params['domain_id']
-        return collector_mgr.disable_collector(collector_id, domain_id)
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['domain_id'])
@@ -186,6 +172,7 @@ class CollectorService(BaseService):
         collector_dict = collector_vo.to_dict()
 
         plugin_info = collector_dict['plugin_info']
+        secret_filter = collector_dict['secret_filter']
         plugin_id = plugin_info['plugin_id']
         version = plugin_info['version']
         upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
@@ -196,7 +183,7 @@ class CollectorService(BaseService):
             collector_vo = self._update_collector_plugin(endpoint, updated_version, plugin_info, collector_vo, domain_id)
             _LOGGER.debug(f'[collect] upgrade plugin version: {version} -> {updated_version}')
 
-        tasks = self.get_tasks(params, endpoint, collector_vo.provider, plugin_info, domain_id)
+        tasks = self.get_tasks(params, endpoint, collector_vo.provider, plugin_info, secret_filter, domain_id)
         projects = self.list_projects_from_tasks(tasks)
 
         params.update({'total_tasks': len(tasks), 'remained_tasks': len(tasks)})
@@ -286,11 +273,11 @@ class CollectorService(BaseService):
             secret_data = secret_data_info.get('data', {})
             collector_plugin_mgr.verify_plugin(endpoint, plugin_info.get('options', {}), secret_data)
 
-    def get_tasks(self, params, endpoint, collector_provider, plugin_info, domain_id):
+    def get_tasks(self, params, endpoint, collector_provider, plugin_info, secret_filter, domain_id):
         secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
 
         tasks = []
-        secret_ids = self.list_secret_from_secret_filter(plugin_info.get('secret_filters', {}),
+        secret_ids = self.list_secret_from_secret_filter(secret_filter,
                                                          params.get('secret_id'),
                                                          collector_provider,
                                                          domain_id)
@@ -411,16 +398,17 @@ class CollectorService(BaseService):
     @staticmethod
     def _set_secret_filter(secret_filter, secret_id, collector_provider):
         _filter = []
-        if 'secrets' in secret_filter:
-            _filter.append({'k': 'secret_id', 'v': secret_filter['secrets'], 'o': 'in'})
-        if 'service_accounts' in secret_filter:
-            _filter.append({'k': 'service_account_id', 'v': secret_filter['service_accounts'], 'o': 'in'})
-        if 'schemas' in secret_filter:
-            _filter.append({'k': 'schema', 'v': secret_filter['schemas'], 'o': 'in'})
-        if secret_id:
-            _filter.append({'k': 'secret_id', 'v': secret_id, 'o': 'eq'})
-        if collector_provider:
-            _filter.append({'k': 'provider', 'v': collector_provider, 'o': 'eq'})
+        if secret_filter.get('state') == 'ENABLED':
+            if 'secrets' in secret_filter and secret_filter['secrets']:
+                _filter.append({'k': 'secret_id', 'v': secret_filter['secrets'], 'o': 'in'})
+            if 'service_accounts' in secret_filter and secret_filter['service_accounts']:
+                _filter.append({'k': 'service_account_id', 'v': secret_filter['service_accounts'], 'o': 'in'})
+            if 'schemas' in secret_filter and secret_filter['schemas']:
+                _filter.append({'k': 'schema', 'v': secret_filter['schemas'], 'o': 'in'})
+            if secret_id:
+                _filter.append({'k': 'secret_id', 'v': secret_id, 'o': 'eq'})
+            if collector_provider:
+                _filter.append({'k': 'provider', 'v': collector_provider, 'o': 'eq'})
 
         return _filter
 

@@ -32,18 +32,6 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
         with self.locator.get_service('CollectorService', metadata) as collector_service:
             return self.locator.get_info('CollectorInfo', collector_service.get(params))
 
-    def enable(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('CollectorService', metadata) as collector_service:
-            return self.locator.get_info('CollectorInfo', collector_service.enable(params))
-
-    def disable(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('CollectorService', metadata) as collector_service:
-            return self.locator.get_info('CollectorInfo', collector_service.disable(params))
-
     def list(self, request, context):
         params, metadata = self.parse_request(request, context)
 

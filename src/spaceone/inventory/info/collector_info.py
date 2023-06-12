@@ -12,12 +12,23 @@ _LOGGER = logging.getLogger(__name__)
 def ScheduledInfo(schedule_vo):
     if schedule_vo:
         info = {
-            'cron': schedule_vo.cron,
-            'interval': schedule_vo.interval,
-            'hours': schedule_vo.hours,
-            'minutes': schedule_vo.minutes
+            'state': schedule_vo.state,
+            'hours': schedule_vo.hours
         }
         return collector_pb2.Scheduled(**info)
+    else:
+        return None
+
+
+def SecretFilterInfo(secret_filter_vo):
+    if secret_filter_vo:
+        info = {
+            'state': secret_filter_vo.state,
+            'secrets': secret_filter_vo.sercets,
+            'service_accounts': secret_filter_vo.serice_accounts,
+            'schemas': secret_filter_vo.schemas
+        }
+        return collector_pb2.SecretFilter(**info)
     else:
         return None
 
@@ -54,6 +65,7 @@ def CollectorInfo(vo, minimal=False):
     if not minimal:
         info.update({
             'schedule': ScheduledInfo(vo.schedule),
+            'secret_filter': SecretFilterInfo(vo.secret_filter),
             'created_at': utils.datetime_to_iso8601(vo.created_at),
             'last_collected_at': utils.datetime_to_iso8601(vo.last_collected_at),
             'tags': change_struct_type(vo.tags),
