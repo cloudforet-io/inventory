@@ -42,7 +42,7 @@ class Collector(MongoModel):
     is_public = BooleanField(default=True)                                                  # Deprecated
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)
     schedule = EmbeddedDocumentField(Scheduled, default=None, null=False)
-    secret_filters = EmbeddedDocumentField(SecretFilter, default=None, null=True)
+    secret_filter = EmbeddedDocumentField(SecretFilter, default=None, null=True)
     priority = IntField(min_value=0, default=10, max_value=99)
     tags = DictField()
     domain_id = StringField(max_length=255)
@@ -55,7 +55,7 @@ class Collector(MongoModel):
             'state',
             'plugin_info',
             'schedule',
-            'secret_filters',
+            'secret_filter',
             'tags',
             'last_collected_at'
         ],
