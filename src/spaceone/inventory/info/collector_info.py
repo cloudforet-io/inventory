@@ -56,7 +56,6 @@ def CollectorInfo(vo, minimal=False):
     info = {
         'collector_id': vo.collector_id,
         'name': vo.name,
-        'state': vo.state,
         'provider': vo.provider,
         'capability': change_struct_type(vo.capability),
         'plugin_info': PluginInfo(vo.plugin_info, minimal=minimal),
