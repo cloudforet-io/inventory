@@ -32,10 +32,10 @@ class RegionService(BaseService):
         Returns:
             region_vo (object)
         """
-        return self.create_region(params)
+        return self.create_resource(params)
 
     @check_required(['name', 'region_code', 'provider', 'domain_id'])
-    def create_region(self, params):
+    def create_resource(self, params):
 
         if 'tags' in params:
             if isinstance(params['tags'], list):
@@ -59,10 +59,10 @@ class RegionService(BaseService):
         Returns:
             region_vo (object)
         """
-        return self.update_region(params)
+        return self.update_resource(params)
 
     @check_required(['region_id', 'domain_id'])
-    def update_region(self, params):
+    def update_resource(self, params):
         if 'tags' in params:
             if isinstance(params['tags'], list):
                 params['tags'] = utils.tags_to_dict(params['tags'])
@@ -87,10 +87,10 @@ class RegionService(BaseService):
         Returns:
             None
         """
-        self.delete_region(params)
+        self.delete_resource(params)
 
     @check_required(['region_id', 'domain_id'])
-    def delete_region(self, params):
+    def delete_resource(self, params):
         region_vo = self.region_mgr.get_region(params['region_id'], params['domain_id'])
         self.region_mgr.delete_region_by_vo(region_vo)
 

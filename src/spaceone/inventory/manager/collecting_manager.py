@@ -234,12 +234,12 @@ class CollectingManager(BaseManager):
             # CREATE
             if total_count == 0 and update_mode is None:
                 _LOGGER.debug(f'[_process_single_result] Create Resource: {resource_type}')
-                resource_service.create(data)
+                resource_service.create_resource(data)
                 response = CREATED
             # UPDATE
             elif total_count == 1:
                 data.update(res_info[0])
-                resource_service.update(data)
+                resource_service.update_resource(data)
                 response = UPDATED
             elif total_count > 1:
                 _LOGGER.error(f'[_process_single_result] will not reach here!')

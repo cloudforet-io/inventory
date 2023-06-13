@@ -37,10 +37,10 @@ class CloudServiceTypeService(BaseService):
         Returns:
             cloud_service_type_vo (object)
         """
-        return self.create_cloud_service_type(params)
+        return self.create_resource(params)
 
     @check_required(['name', 'provider', 'group', 'domain_id'])
-    def create_cloud_service_type(self, params):
+    def create_resource(self, params):
         params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
 
         provider = params.get('provider', self.transaction.get_meta('secret.provider'))
@@ -80,10 +80,10 @@ class CloudServiceTypeService(BaseService):
         Returns:
             cloud_service_type_vo (object)
         """
-        return self.update_cloud_service_type(params)
+        return self.update_resource(params)
 
     @check_required(['cloud_service_type_id', 'domain_id'])
-    def update_cloud_service_type(self, params):
+    def update_resource(self, params):
         if 'tags' in params:
             if isinstance(params['tags'], list):
                 params['tags'] = utils.tags_to_dict(params['tags'])
@@ -113,11 +113,10 @@ class CloudServiceTypeService(BaseService):
         Returns:
             None
         """
-        self.delete_cloud_service_type(params)
+        self.delete_resource(params)
 
     @check_required(['cloud_service_type_id', 'domain_id'])
-    def delete_cloud_service_type(self, params):
-
+    def delete_resource(self, params):
         cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
                                                                            params['domain_id'])
 
