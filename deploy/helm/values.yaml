@@ -62,19 +62,19 @@ application_scheduler:
 
     SCHEDULERS:
         hourly_scheduler:
-            backend: spaceone.inventory.scheduler.inventory_scheduler.InventoryHourlyScheduler
+            backend: spaceone.inventory.interface.task.v1.inventory_scheduler.InventoryHourlyScheduler
             queue: collector_q
             interval: 1
             minute: ':00'
 
         interval_scheduler:
-            backend: spaceone.inventory.scheduler.interval_scheduler.InventoryIntervalScheduler
+            backend: spaceone.inventory.interface.task.v1.interval_scheduler.InventoryIntervalScheduler
             queue: collector_q
             interval: 60
 
 
         cleanup_scheduler:
-            backend: spaceone.inventory.scheduler.cleanup_scheduler.CleanupScheduler
+            backend: spaceone.inventory.interface.task.v1.cleanup_scheduler.CleanupScheduler
             queue: collector_q
             interval: 1
             minute: ':35'
