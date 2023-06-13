@@ -1,3 +1,6 @@
+"""
+DEPRECATED
+"""
 import logging
 import time
 import schedule
