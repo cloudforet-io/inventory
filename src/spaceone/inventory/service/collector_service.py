@@ -429,6 +429,13 @@ class CollectorService(BaseService):
     @staticmethod
     def _set_secret_filter(secret_filter, secret_id, collector_provider):
         _filter = []
+
+        if secret_id:
+            _filter.append({'k': 'secret_id', 'v': secret_id, 'o': 'eq'})
+
+        if collector_provider:
+            _filter.append({'k': 'provider', 'v': collector_provider, 'o': 'eq'})
+
         if secret_filter and secret_filter.get('state') == 'ENABLED':
             if 'secrets' in secret_filter and secret_filter['secrets']:
                 _filter.append({'k': 'secret_id', 'v': secret_filter['secrets'], 'o': 'in'})
@@ -436,10 +443,6 @@ class CollectorService(BaseService):
                 _filter.append({'k': 'service_account_id', 'v': secret_filter['service_accounts'], 'o': 'in'})
             if 'schemas' in secret_filter and secret_filter['schemas']:
                 _filter.append({'k': 'schema', 'v': secret_filter['schemas'], 'o': 'in'})
-            if secret_id:
-                _filter.append({'k': 'secret_id', 'v': secret_id, 'o': 'eq'})
-            if collector_provider:
-                _filter.append({'k': 'provider', 'v': collector_provider, 'o': 'eq'})
 
         return _filter
 
