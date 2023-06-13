@@ -75,10 +75,12 @@ class CollectorManager(BaseManager):
     @staticmethod
     def is_supported_schedule(plugin_info, schedule):
         """ Check metadata.supported_schedule
-        ex) metadata.supported_schedule: ["hours", "interval", "cron"]
+        ex) metadata.supported_schedule: ["hours"]
+            schedule: {"state": "ENABLED", "hours": [1, 2, 3]}
         """
         supported_schedules = plugin_info.get('metadata', {}).get('supported_schedules', [])
-        if schedule not in supported_schedules:
+
+        if 'hours' in schedule and 'hours' not in supported_schedules:
             raise ERROR_UNSUPPORTED_SCHEDULE(supported=supported_schedules, requested=schedule)
 
         return True
