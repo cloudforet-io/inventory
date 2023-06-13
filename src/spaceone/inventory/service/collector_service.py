@@ -308,18 +308,22 @@ class CollectorService(BaseService):
             _query = {'filter': [{'k': 'secret_id', 'v': secret_filter['secrets'], 'o': 'in'}]}
             secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
             response = secret_mgr.list_secrets(_query, domain_id)
+            _LOGGER.debug(f'[validate_secret_filter] Secret : {response}')
+
             if response['total_count'] != len(secret_filter['secrets']):
                 raise ERROR_INVALID_PARAMETER(key='secret_filter.secrets', reason='Secrets not found')
         if 'service_accounts' in secret_filter:
             _query = {'filter': [{'k': 'service_account_id', 'v': secret_filter['service_accounts'], 'o': 'in'}]}
             identity_mgr: IdentityManager = self.locator.get_manager(IdentityManager)
             response = identity_mgr.list_service_accounts(_query, domain_id)
+            _LOGGER.debug(f'[validate_secret_filter] Service Account : {response}')
             if response['total_count'] != len(secret_filter['service_accounts']):
                 raise ERROR_INVALID_PARAMETER(key='secret_filter.service_accounts', reason='Service accounts not found')
         if 'schemas' in secret_filter:
             _query = {'filter': [{'k': 'name', 'v': secret_filter['schemas'], 'o': 'in'}]}
             repo_mgr: RepositoryManager = self.locator.get_manager(RepositoryManager)
             response = repo_mgr.list_schemas(_query, domain_id)
+            _LOGGER.debug(f'[validate_secret_filter] Schema : {response}')
             if response['total_count'] != len(secret_filter['schemas']):
                 raise ERROR_INVALID_PARAMETER(key='secret_filter.schema', reason='Schema not found')
 
