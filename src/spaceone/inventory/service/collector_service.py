@@ -348,7 +348,7 @@ class CollectorService(BaseService):
         query = {'filter': _filter} if _filter else {}
         response = secret_manager.list_secrets(query, domain_id)
 
-        return [secret_info.get('secret_id') for secret_info in response['results']]
+        return [secret_info.get('secret_id') for secret_info in response.get('results', [])]
 
     @check_required(['schedule'])
     def scheduled_collectors(self, params):
