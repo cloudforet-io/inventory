@@ -294,6 +294,7 @@ class CollectorService(BaseService):
         return tasks
 
     def _update_collector_plugin(self, endpoint, updated_version, plugin_info, collector_vo, domain_id):
+        collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
         collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
         plugin_response = collector_plugin_mgr.init_plugin(endpoint, plugin_info.get('options', {}))
 
@@ -303,7 +304,7 @@ class CollectorService(BaseService):
         plugin_info['metadata'] = plugin_response.get('metadata', {})
 
         params = {'plugin_info': plugin_info}
-        collector_vo = self.update_collector_by_vo(collector_vo, params)
+        collector_vo = collector_mgr.update_collector_by_vo(collector_vo, params)
 
         self.delete_collector_rules(collector_vo.collector_id, collector_vo.domain_id),
         self.create_collector_rules_by_metadata(plugin_info['metadata'], collector_vo.collector_id, domain_id)
