@@ -332,9 +332,10 @@ class CloudServiceService(BaseService):
         return self.cloud_svc_mgr.list_cloud_services(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['query', 'domain_id'])
+    @check_required(['query', 'query.fields', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(_KEYWORD_FILTER)
+    @set_query_page_limit(1000)
     def analyze(self, params):
         """
         Args:
