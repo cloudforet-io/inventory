@@ -20,18 +20,9 @@ class CollectingManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.use_db_queue = False
-        self.initialize()
         self.job_mgr: JobManager = self.locator.get_manager(JobManager)
         self.job_task_mgr: JobTaskManager = self.locator.get_manager(JobTaskManager)
         self.db_queue = DB_QUEUE_NAME
-
-    def initialize(self):
-        queues = config.get_global('QUEUES', {})
-        if DB_QUEUE_NAME in queues:
-            self.use_db_queue = True
-
-        _LOGGER.debug(f'[initialize] use db_queue: {self.use_db_queue}')
 
     def collecting_resources(self, params):
         """ Execute collecting task to get resources from plugin
@@ -103,7 +94,6 @@ class CollectingManager(BaseManager):
 
         JOB_TASK_STATE = 'SUCCESS'
         collecting_count_info = {}
-        error_flag = False
 
         try:
             collecting_count_info = self._check_collecting_results(results, params)
@@ -114,7 +104,6 @@ class CollectingManager(BaseManager):
             _LOGGER.error(f'[collecting_resources] {e}', exc_info=True)
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e)
             JOB_TASK_STATE = 'FAILURE'
-            error_flag = True
 
         finally:
             cleanup_mode = self._check_garbage_collection_mode(plugin_info)
@@ -126,14 +115,8 @@ class CollectingManager(BaseManager):
             else:
                 _LOGGER.debug(f'[collecting_resources] skip garbage_collection, {cleanup_mode}, {JOB_TASK_STATE}')
 
-            if self.use_db_queue and error_flag is False:
-                pass
-            else:
-                if self.use_db_queue:
-                    self._delete_job_task_stat_cache(job_id, job_task_id, domain_id)
-
-                self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, secret_info=secret_info, collecting_count_info=collecting_count_info)
-                self.job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, secret_info=secret_info, collecting_count_info=collecting_count_info)
+            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
 
         return True
 
@@ -158,48 +141,30 @@ class CollectingManager(BaseManager):
                 secret_info(dict)
             }
         """
-
-        self._set_transaction_meta(params)
-
         created_count = 0
         updated_count = 0
         failure_count = 0
         total_count = 0
 
-        job_id = params['job_id']
-        job_task_id = params['job_task_id']
-        domain_id = params['domain_id']
-
-        if self.use_db_queue:
-            self._create_job_task_stat_cache(job_id, job_task_id, domain_id)
+        self._set_transaction_meta(params)
 
         for res in results:
             total_count += 1
             try:
-                if self.use_db_queue:
-                    pushed = self._create_db_update_task(res, params)
-                    if pushed is False:
-                        failure_count += 1
-                else:
-                    res_state = self.check_resource_state(res, params)
+                res_state = self.check_resource_state(res, params)
 
-                    if res_state == NOT_COUNT:
-                        pass
-                    elif res_state == CREATED:
-                        created_count += 1
-                    elif res_state == UPDATED:
-                        updated_count += 1
-                    else:
-                        failure_count += 1
+                if res_state == NOT_COUNT:
+                    pass
+                elif res_state == CREATED:
+                    created_count += 1
+                elif res_state == UPDATED:
+                    updated_count += 1
+                else:
+                    failure_count += 1
 
             except Exception as e:
                 _LOGGER.error(f'[_process_results] failed single result {e}')
                 failure_count += 1
-
-        # Add watchdog for resource status checking
-        if self.use_db_queue:
-            _LOGGER.debug(f'[_process_results] push watchdog, {job_task_id}')
-            self._create_db_update_task_watchdog(total_count, job_id, job_task_id, domain_id)
 
         return {
             'total_count': total_count,
@@ -227,7 +192,6 @@ class CollectingManager(BaseManager):
             2: UPDATED
             3: ERROR
         """
-        job_id = params['job_id']
         job_task_id = params['job_task_id']
         domain_id = params['domain_id']
         resource_type = resource.get('resource_type')
@@ -245,10 +209,6 @@ class CollectingManager(BaseManager):
             err_message = resource.get('message', 'No message from plugin')
             _LOGGER.error(f'[_process_single_result] Error resource: {err_message}')
             self.job_task_mgr.add_error(job_task_id, domain_id, "ERROR_PLUGIN", err_message, data)
-
-            if self.use_db_queue:
-                self._update_job_task_stat_to_cache(job_id, job_task_id, ERROR, domain_id)
-
             return ERROR
 
         match_rules = resource.get('match_rules')
@@ -257,10 +217,6 @@ class CollectingManager(BaseManager):
             _msg = 'No match rule'
             _LOGGER.error(f'[_process_single_result] {_msg}')
             self.job_task_mgr.add_error(job_task_id, domain_id, "ERROR_MATCH_RULE", f"{_msg}: {resource}", {'resource_type': resource_type})
-
-            if self.use_db_queue:
-                self._update_job_task_stat_to_cache(job_id, job_task_id, ERROR, domain_id)
-
             return ERROR
 
         try:
@@ -288,9 +244,6 @@ class CollectingManager(BaseManager):
             elif total_count > 1:
                 _LOGGER.error(f'[_process_single_result] will not reach here!')
                 response = ERROR
-
-            if self.use_db_queue:
-                self._update_job_task_stat_to_cache(job_id, job_task_id, response, domain_id)
         except ERROR_BASE as e:
             _LOGGER.error(f'[_process_single_result] ERROR: {data}')
             additional = self._set_error_addition_info(resource_type, total_count, data)
@@ -310,7 +263,6 @@ class CollectingManager(BaseManager):
     def _set_transaction_meta(self, params):
         secret_info = params['secret_info']
 
-        _LOGGER.debug(f'[_set_transaction_meta] {self.transaction}/// ID : {id(self.transaction)}')
         self.transaction.set_meta('job_id', params['job_id'])
         self.transaction.set_meta('job_task_id', params['job_task_id'])
         self.transaction.set_meta('collector_id', params['collector_id'])
@@ -380,29 +332,12 @@ class CollectingManager(BaseManager):
         return additional
 
     @staticmethod
-    def _create_job_task_stat_cache(job_id, job_task_id, domain_id):
-        try:
-            for state in ['CREATED', 'UPDATED', 'FAILURE']:
-                cache.set(f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:{state}', 0, expire=JOB_TASK_STAT_EXPIRE_TIME)
-        except Exception as e:
-            _LOGGER.error(f'[_create_job_task_stat_cache] {e}')
-
-    @staticmethod
     def _delete_job_task_stat_cache(job_id, job_task_id, domain_id):
         try:
             for state in ['CREATED', 'UPDATED', 'FAILURE']:
                 cache.delete(f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:{state}')
         except Exception as e:
             _LOGGER.error(f'[_delete_job_task_stat_cache] {e}')
-
-    @staticmethod
-    def _update_job_task_stat_to_cache(job_id, job_task_id, kind, domain_id):
-        if kind in [CREATED, UPDATED]:
-            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:{kind}'
-        else:
-            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
-
-        cache.increment(key)
 
     @staticmethod
     def _collector_filter_from_cache(collect_filter, collector_id, secret_id):
@@ -457,29 +392,6 @@ class CollectingManager(BaseManager):
         finally:
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
 
-    def _create_db_update_task(self, res, param):
-        try:
-            _LOGGER.debug(f'[_create_db_update_task] Push Update Task Queue')
-            task = {'method': 'check_resource_state', 'res': res, 'param': param, 'meta': self.transaction.meta}
-            json_task = json.dumps(task)
-            queue.put(self.db_queue, json_task)
-            return True
-        except Exception as e:
-            _LOGGER.error(f'[_create_db_update_task] {e}')
-            return False
-
-    def _create_db_update_task_watchdog(self, total_count, job_id, job_task_id, domain_id):
-        try:
-            # PUSH QUEUE
-            param = {'job_id': job_id, 'job_task_id': job_task_id, 'domain_id': domain_id, 'total_count': total_count}
-            task = {'method': 'watchdog_job_task_stat', 'res': {}, 'param': param, 'meta': self.transaction.meta}
-            json_task = json.dumps(task)
-            queue.put(self.db_queue, json_task)
-            return True
-        except Exception as e:
-            _LOGGER.error(f'[_create_db_update_task_watchdog] {e}')
-            return False
-
     @staticmethod
     def _check_garbage_collection_mode(plugin_info):
         return True if 'garbage_collection' in plugin_info.get('metadata', {}).get('supported_features', []) else False
@@ -513,3 +425,55 @@ class CollectingManager(BaseManager):
                 return match_resource, total_count
 
         return match_resource, total_count
+
+    """
+    Deprecated
+    """
+    def _create_db_update_task_watchdog(self, total_count, job_id, job_task_id, domain_id):
+        try:
+            # PUSH QUEUE
+            param = {'job_id': job_id, 'job_task_id': job_task_id, 'domain_id': domain_id, 'total_count': total_count}
+            task = {'method': 'watchdog_job_task_stat', 'res': {}, 'param': param, 'meta': self.transaction.meta}
+            json_task = json.dumps(task)
+            queue.put(self.db_queue, json_task)
+            return True
+        except Exception as e:
+            _LOGGER.error(f'[_create_db_update_task_watchdog] {e}')
+            return False
+
+    """
+    Deprecated
+    """
+    def _create_db_update_task(self, res, param):
+        try:
+            _LOGGER.debug(f'[_create_db_update_task] Push Update Task Queue')
+            task = {'method': 'check_resource_state', 'res': res, 'param': param, 'meta': self.transaction.meta}
+            json_task = json.dumps(task)
+            queue.put(self.db_queue, json_task)
+            return True
+        except Exception as e:
+            _LOGGER.error(f'[_create_db_update_task] {e}')
+            return False
+
+    """
+    Deprecated
+    """
+    @staticmethod
+    def _update_job_task_stat_to_cache(job_id, job_task_id, kind, domain_id):
+        if kind in [CREATED, UPDATED]:
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:{kind}'
+        else:
+            key = f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE'
+
+        cache.increment(key)
+
+    """
+    Deprecated
+    """
+    @staticmethod
+    def _create_job_task_stat_cache(job_id, job_task_id, domain_id):
+        try:
+            for state in ['CREATED', 'UPDATED', 'FAILURE']:
+                cache.set(f'job_task_stat:{domain_id}:{job_id}:{job_task_id}:{state}', 0, expire=JOB_TASK_STAT_EXPIRE_TIME)
+        except Exception as e:
+            _LOGGER.error(f'[_create_job_task_stat_cache] {e}')
