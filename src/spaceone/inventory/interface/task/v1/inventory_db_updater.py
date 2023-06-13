@@ -1,3 +1,6 @@
+"""
+DEPRECATED (NOT USED)
+"""
 import json
 import logging
 from spaceone.core.scheduler.worker import BaseWorker
