@@ -114,9 +114,6 @@ class CollectorService(BaseService):
         if 'schedule' in params:
             collector_dict = collector_vo.to_dict()
             collector_mgr.is_supported_schedule(collector_dict.get('plugin_info', {}), params['schedule'])
-            _schedule = collector_dict.get('schedule', {})
-            _schedule.update(params['schedule'])
-            params['schedule'] = _schedule
 
         if 'secret_filter' in params:
             self.validate_secret_filter(params['secret_filter'], params['domain_id'])
