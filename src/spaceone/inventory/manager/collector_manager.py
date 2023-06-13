@@ -77,20 +77,8 @@ class CollectorManager(BaseManager):
         """ Check metadata.supported_schedule
         ex) metadata.supported_schedule: ["hours", "interval", "cron"]
         """
-        metadata = plugin_info.get('metadata')
+        supported_schedules = plugin_info.get('metadata', {}).get('supported_schedules', [])
+        if schedule not in supported_schedules:
+            raise ERROR_UNSUPPORTED_SCHEDULE(supported=supported_schedules, requested=schedule)
 
-        if metadata is None:
-            _LOGGER.warning(f'[is_supported_schedule] no metadata: {plugin_info}')
-            return True
-
-        supported_schedule = metadata.get('supported_schedules')
-
-        if supported_schedule is None:
-            _LOGGER.warning(f'[is_supported_schedule] no schedule: {plugin_info}')
-            return True
-
-        requested = schedule.keys()
-        if set(requested).issubset(set(supported_schedule)):
-            return True
-
-        raise ERROR_UNSUPPORTED_SCHEDULE(supported=supported_schedule, requested=requested)
+        return True
