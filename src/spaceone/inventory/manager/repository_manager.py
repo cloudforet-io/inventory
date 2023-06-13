@@ -22,3 +22,6 @@ class RepositoryManager(BaseManager):
 
         if version not in response.get('results', []):
             raise ERROR_INVALID_PLUGIN_VERSION(plugin_id=plugin_id, version=version)
+
+    def list_schemas(self, query, domain_id):
+        return self.repo_connector.dispatch('Schema.list', {'query': query, 'domain_id': domain_id})
