@@ -369,7 +369,7 @@ class CollectorService(BaseService):
         """
 
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
-        filter_query = [{'k': 'collector.state', 'v': 'ENABLED', 'o': 'eq'}]
+        filter_query = [{'k': 'schedule.state', 'v': 'ENABLED', 'o': 'eq'}]
 
         if 'domain_id' in params:
             filter_query.append({'k': 'domain_id', 'v': params['domain_id'], 'o': 'eq'})
@@ -377,13 +377,6 @@ class CollectorService(BaseService):
         schedule = params.get('schedule', {})
         if 'hour' in schedule:
             filter_query.append({'k': 'schedule.hours', 'v': schedule['hour'], 'o': 'contain'})
-        elif 'minute' in schedule:
-            filter_query.append({'k': 'schedule.minute', 'v': schedule['minute'], 'o': 'contain'})
-        elif 'interval' in schedule:
-            filter_query.append({'k': 'schedule.interval', 'v': 0, 'o': 'gt'})
-        else:
-            # TODO: CRON
-            pass
 
         return collector_mgr.list_collectors({'filter': filter_query})
 
