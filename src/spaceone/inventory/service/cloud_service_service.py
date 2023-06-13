@@ -67,10 +67,10 @@ class CloudServiceService(BaseService):
             cloud_service_vo (object)
 
         """
-        return self.create_cloud_service(params)
+        return self.create_resource(params)
 
     @check_required(['cloud_service_type', 'cloud_service_group', 'provider', 'data', 'domain_id'])
-    def create_cloud_service(self, params):
+    def create_resource(self, params):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
         domain_id = params['domain_id']
@@ -142,10 +142,10 @@ class CloudServiceService(BaseService):
         Returns:
             cloud_service_vo (object)
         """
-        return self.update_cloud_service(params)
+        return self.update_resource(params)
 
     @check_required(['cloud_service_id', 'domain_id'])
-    def update_cloud_service(self, params):
+    def update_resource(self, params):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
         secret_project_id = self.transaction.get_meta('secret.project_id')
@@ -241,10 +241,10 @@ class CloudServiceService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     def delete(self, params):
-        self.delete_cloud_service(params)
+        self.delete_resource(params)
 
     @check_required(['cloud_service_id', 'domain_id'])
-    def delete_cloud_service(self, params):
+    def delete_resource(self, params):
         """
         Args:
         params (dict): {
@@ -322,7 +322,6 @@ class CloudServiceService(BaseService):
             total_count (int)
 
         """
-
         query = params.get('query', {})
         query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
