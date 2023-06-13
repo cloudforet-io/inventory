@@ -184,14 +184,14 @@ class CollectorService(BaseService):
         plugin_info = collector_dict['plugin_info']
         secret_filter = collector_dict.get('secret_filter', {})
         plugin_id = plugin_info['plugin_id']
-        version = plugin_info['version']
+        version = plugin_info.get('version')
         upgrade_mode = plugin_info.get('upgrade_mode', 'AUTO')
 
         endpoint, updated_version = plugin_mgr.get_endpoint(plugin_id, version, domain_id, upgrade_mode)
 
-        if updated_version:
-            collector_vo = self._update_collector_plugin(endpoint, updated_version, plugin_info, collector_vo, domain_id)
+        if updated_version and version != updated_version:
             _LOGGER.debug(f'[collect] upgrade plugin version: {version} -> {updated_version}')
+            collector_vo = self._update_collector_plugin(endpoint, updated_version, plugin_info, collector_vo, domain_id)
 
         tasks = self.get_tasks(params, endpoint, collector_vo.provider, plugin_info, secret_filter, domain_id)
         projects = self.list_projects_from_tasks(tasks)
