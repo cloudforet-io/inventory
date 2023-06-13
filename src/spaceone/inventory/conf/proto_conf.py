@@ -9,4 +9,6 @@ PROTO = {
     'spaceone.inventory.interface.grpc.v1.change_history': ['ChangeHistory'],
     'spaceone.inventory.interface.grpc.v1.note': ['Note'],
     'spaceone.inventory.interface.grpc.v1.collector_rule': ['CollectorRule'],
+    'spaceone.inventory.interface.grpc.v1.cloud_service_query_set': ['CloudServiceQuerySet'],
+    'spaceone.inventory.interface.grpc.v1.cloud_service_stats': ['CloudServiceStats']
 }
