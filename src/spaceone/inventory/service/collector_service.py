@@ -11,6 +11,7 @@ from spaceone.inventory.manager.plugin_manager import PluginManager
 from spaceone.inventory.manager.secret_manager import SecretManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
+from spaceone.inventory.manager.identity_manager import IdentityManager
 
 _LOGGER = logging.getLogger(__name__)
 _KEYWORD_FILTER = ['collector_id', 'name', 'provider']
@@ -63,6 +64,9 @@ class CollectorService(BaseService):
         if 'schedule' in params:
             collector_mgr.is_supported_schedule(params['plugin_info'], params['schedule'])
 
+        if 'secret_filter' in params:
+            self.validate_secret_filter(params['secret_filter'], domain_id)
+
         collector_vo = collector_mgr.create_collector(params)
 
         endpoint, updated_version = plugin_manager.get_endpoint(plugin_info['plugin_id'],
@@ -110,6 +114,12 @@ class CollectorService(BaseService):
         if 'schedule' in params:
             collector_dict = collector_vo.to_dict()
             collector_mgr.is_supported_schedule(collector_dict.get('plugin_info', {}), params['schedule'])
+            _schedule = collector_dict.get('schedule', {})
+            _schedule.update(params['schedule'])
+            params['schedule'] = _schedule
+
+        if 'secret_filter' in params:
+            self.validate_secret_filter(params['secret_filter'], params['domain_id'])
 
         return collector_mgr.update_collector_by_vo(collector_vo, params)
 
@@ -292,6 +302,26 @@ class CollectorService(BaseService):
             })
 
         return tasks
+
+    def validate_secret_filter(self, secret_filter, domain_id):
+        if 'secrets' in secret_filter:
+            _query = {'filter': [{'k': 'secret_id', 'v': secret_filter['secrets'], 'o': 'in'}]}
+            secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
+            response = secret_mgr.list_secrets(_query, domain_id)
+            if response['total_count'] != len(secret_filter['secrets']):
+                raise ERROR_INVALID_PARAMETER(key='secret_filter.secrets', reason='Secrets not found')
+        if 'service_accounts' in secret_filter:
+            _query = {'filter': [{'k': 'service_account_id', 'v': secret_filter['service_accounts'], 'o': 'in'}]}
+            identity_mgr: IdentityManager = self.locator.get_manager(IdentityManager)
+            response = identity_mgr.list_service_accounts(_query, domain_id)
+            if response['total_count'] != len(secret_filter['service_accounts']):
+                raise ERROR_INVALID_PARAMETER(key='secret_filter.service_accounts', reason='Service accounts not found')
+        if 'schemas' in secret_filter:
+            _query = {'filter': [{'k': 'name', 'v': secret_filter['schemas'], 'o': 'in'}]}
+            repo_mgr: RepositoryManager = self.locator.get_manager(RepositoryManager)
+            response = repo_mgr.list_schemas(_query, domain_id)
+            if response['total_count'] != len(secret_filter['schemas']):
+                raise ERROR_INVALID_PARAMETER(key='secret_filter.schema', reason='Schema not found')
 
     def _update_collector_plugin(self, endpoint, updated_version, plugin_info, collector_vo, domain_id):
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
