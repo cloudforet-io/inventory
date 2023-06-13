@@ -62,36 +62,3 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
         with self.locator.get_service('CollectorService', metadata) as collector_service:
             collector_service.verify_plugin(params)
             return self.locator.get_info('EmptyInfo')
-
-    def add_schedule(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('CollectorService', metadata) as collector_service:
-            return self.locator.get_info('ScheduleInfo', collector_service.add_schedule(params))
-
-    def get_schedule(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('CollectorService', metadata) as collector_service:
-            return self.locator.get_info('ScheduleInfo', collector_service.get_schedule(params))
-
-    def update_schedule(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('CollectorService', metadata) as collector_service:
-            return self.locator.get_info('ScheduleInfo', collector_service.update_schedule(params))
-
-    def delete_schedule(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('CollectorService', metadata) as collector_service:
-            collector_service.delete_schedule(params)
-            return self.locator.get_info('EmptyInfo')
-
-    def list_schedules(self, request, context):
-        params, metadata = self.parse_request(request, context)
-
-        with self.locator.get_service('CollectorService', metadata) as collector_service:
-            schedule_vos, total_count = collector_service.list_schedules(params)
-            return self.locator.get_info('SchedulesInfo', schedule_vos, total_count, minimal=self.get_minimal(params))
-
