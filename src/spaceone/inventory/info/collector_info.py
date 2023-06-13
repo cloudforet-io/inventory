@@ -24,7 +24,7 @@ def SecretFilterInfo(secret_filter_vo):
     if secret_filter_vo:
         info = {
             'state': secret_filter_vo.state,
-            'secrets': secret_filter_vo.sercets,
+            'secrets': secret_filter_vo.secrets,
             'service_accounts': secret_filter_vo.serice_accounts,
             'schemas': secret_filter_vo.schemas
         }
