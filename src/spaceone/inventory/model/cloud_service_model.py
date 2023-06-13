@@ -21,7 +21,7 @@ class CollectionInfo(EmbeddedDocument):
 
 class CloudService(MongoModel):
     cloud_service_id = StringField(max_length=40, generate_id='cloud-svc', unique=True)
-    name = StringField(max_length=255, default=None, null=True)
+    name = StringField(default=None, null=True)
     state = StringField(max_length=20, choices=('ACTIVE', 'DISCONNECTED', 'DELETED'), default='ACTIVE')
     account = StringField(max_length=255, default=None, null=True)
     instance_type = StringField(max_length=255, default=None, null=True)

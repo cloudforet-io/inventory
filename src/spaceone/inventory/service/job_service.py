@@ -80,9 +80,10 @@ class JobService(BaseService):
         return self.job_mgr.list_jobs(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['query', 'domain_id'])
+    @check_required(['query', 'query.fields', 'domain_id'])
     @append_query_filter(['domain_id', 'user_projects'])
     @append_keyword_filter(['job_id'])
+    @set_query_page_limit(1000)
     def analyze(self, params):
         """
         Args:
