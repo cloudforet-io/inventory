@@ -275,11 +275,12 @@ class CollectingManager(BaseManager):
         if 'provider' in secret_info:
             self.transaction.set_meta('secret.provider', secret_info['provider'])
 
-        _LOGGER.debug(f'[_set_transaction_meta] secret_info: {secret_info}')
         if 'project_id' in secret_info:
             self.transaction.set_meta('secret.project_id', secret_info['project_id'])
         if 'service_account_id' in secret_info:
             self.transaction.set_meta('secret.service_account_id', secret_info['service_account_id'])
+
+        _LOGGER.debug(f'[_set_transaction_meta] TRANSACTION: {self.transaction.meta}')
 
     def _get_resource_map(self, resource_type):
         if resource_type not in RESOURCE_MAP:
