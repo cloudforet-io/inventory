@@ -275,21 +275,36 @@ class CollectorService(BaseService):
 
     def get_tasks(self, params, endpoint, collector_provider, plugin_info, secret_filter, domain_id):
         secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
+        collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(CollectorPluginManager)
 
         tasks = []
-        secret_ids = self.list_secret_from_secret_filter(secret_filter,
-                                                         params.get('secret_id'),
-                                                         collector_provider,
-                                                         domain_id)
+        secret_ids = self.list_secret_from_secret_filter(secret_filter, params.get('secret_id'), collector_provider, domain_id)
 
         for secret_id in secret_ids:
-            tasks.append({
-                'plugin_info': plugin_info,
-                'task_options': None,
-                'secret_info': secret_mgr.get_secret(secret_id, domain_id),
-                'secret_data': secret_mgr.get_secret_data(secret_id, domain_id),
-                'domain_id': domain_id
-            })
+            secret_info = secret_mgr.get_secret(secret_id, domain_id)
+            secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
+
+            try:
+                response = collector_plugin_mgr.get_task(endpoint, secret_data, plugin_info.get('options', {}))
+
+                for task_options in response.get('tasks', []):
+                    tasks.append({
+                        'plugin_info': plugin_info,
+                        'task_options': task_options,
+                        'secret_info': secret_info,
+                        'secret_data': secret_data,
+                        'domain_id': domain_id
+                    })
+
+            except Exception as e:
+                _LOGGER.debug(f'[get_tasks] Error to get tasks from plugin. set task from secret')
+                tasks.append({
+                    'plugin_info': plugin_info,
+                    'task_options': None,
+                    'secret_info': secret_info,
+                    'secret_data': secret_data,
+                    'domain_id': domain_id
+                })
 
         return tasks
 
