@@ -20,7 +20,6 @@ class CloudServiceQuerySet(MongoModel):
 
     meta = {
         'updatable_fields': [
-            'name',
             'state',
             'query_options',
             'unit',
@@ -42,6 +41,7 @@ class CloudServiceQuerySet(MongoModel):
             'cloud_service_type'
         ],
         'indexes': [
+            'query_set_id'
             'name',
             'state',
             'query_type',
