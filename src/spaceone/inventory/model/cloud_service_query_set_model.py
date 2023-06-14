@@ -41,7 +41,6 @@ class CloudServiceQuerySet(MongoModel):
             'cloud_service_type'
         ],
         'indexes': [
-            'query_set_id'
             'name',
             'state',
             'query_type',
