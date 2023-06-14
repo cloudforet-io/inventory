@@ -1,5 +1,7 @@
+import copy
 import logging
 
+from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
 from spaceone.inventory.lib.resource_manager import ResourceManager
@@ -17,6 +19,7 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.cloud_svc_type_model: CloudServiceType = self.locator.get_model('CloudServiceType')
+        self.cloud_svc_query_set_mgr: CloudServiceQuerySetManager = self.locator.get_manager('CloudServiceQuerySetManager')
 
     def create_cloud_service_type(self, params):
         def _rollback(cloud_svc_type_vo):
@@ -74,44 +77,41 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
         return total_count
 
     def _create_cloud_service_query_sets(self, metadata: dict, cloud_service_type_vo: CloudServiceType):
-        cloud_svc_query_set_mgr: CloudServiceQuerySetManager = self.locator.get_manager('CloudServiceQuerySetManager')
-
         for query_set in metadata.get('query_sets', []):
             if 'name' in query_set:
-                query_set['query_type'] = 'MANAGED'
-                query_set['provider'] = cloud_service_type_vo.provider
-                query_set['cloud_service_group'] = cloud_service_type_vo.group
-                query_set['cloud_service_type'] = cloud_service_type_vo.name
-                query_set['domain_id'] = cloud_service_type_vo.domain_id
-                cloud_svc_query_set_mgr.create_cloud_service_query_set(query_set)
+                create_params = copy.deepcopy(query_set)
+                self._create_cloud_service_query_set(create_params, cloud_service_type_vo)
 
     def _update_cloud_service_query_sets(self, metadata: dict, cloud_service_type_vo: CloudServiceType):
-        cloud_svc_query_set_mgr: CloudServiceQuerySetManager = self.locator.get_manager('CloudServiceQuerySetManager')
-
         for query_set in metadata.get('query_sets', []):
             if 'name' in query_set:
-                filter_params = {
-                    'name': query_set['name'],
-                    'provider': cloud_service_type_vo.provider,
-                    'cloud_service_group': cloud_service_type_vo.group,
-                    'cloud_service_type': cloud_service_type_vo.name,
-                    'domain_id': cloud_service_type_vo.domain_id
-                }
+                query_set_vos = self._filter_cloud_service_query_sets(cloud_service_type_vo, query_set['name'])
 
-                query_set_vos = cloud_svc_query_set_mgr.filter_cloud_service_query_sets(**filter_params)
                 if len(query_set_vos) > 0:
-                    cloud_svc_query_set_mgr.update_cloud_service_query_set_by_vo(query_set, query_set_vos[0])
+                    update_params = copy.deepcopy(query_set)
+                    query_options = update_params.get('query_options', {})
+                    if query_set_vos[0].query_hash != utils.dict_to_hash(query_options):
+                        self.cloud_svc_query_set_mgr.update_cloud_service_query_set_by_vo(update_params,
+                                                                                          query_set_vos[0])
 
                 else:
-                    query_set['query_type'] = 'MANAGED'
-                    query_set['provider'] = cloud_service_type_vo.provider
-                    query_set['cloud_service_group'] = cloud_service_type_vo.group
-                    query_set['cloud_service_type'] = cloud_service_type_vo.name
-                    query_set['domain_id'] = cloud_service_type_vo.domain_id
-                    cloud_svc_query_set_mgr.create_cloud_service_query_set(query_set)
+                    create_params = copy.deepcopy(query_set)
+                    self._create_cloud_service_query_set(create_params, cloud_service_type_vo)
 
     def _delete_cloud_service_query_sets(self, cloud_service_type_vo: CloudServiceType):
-        cloud_svc_query_set_mgr: CloudServiceQuerySetManager = self.locator.get_manager('CloudServiceQuerySetManager')
+        query_set_vos = self._filter_cloud_service_query_sets(cloud_service_type_vo)
+        for query_set_vo in query_set_vos:
+            self.cloud_svc_query_set_mgr.delete_cloud_service_query_set_by_vo(query_set_vo)
+
+    def _create_cloud_service_query_set(self, create_params: dict, cloud_service_type_vo: CloudServiceType):
+        create_params['query_type'] = 'MANAGED'
+        create_params['provider'] = cloud_service_type_vo.provider
+        create_params['cloud_service_group'] = cloud_service_type_vo.group
+        create_params['cloud_service_type'] = cloud_service_type_vo.name
+        create_params['domain_id'] = cloud_service_type_vo.domain_id
+        self.cloud_svc_query_set_mgr.create_cloud_service_query_set(create_params)
+
+    def _filter_cloud_service_query_sets(self, cloud_service_type_vo: CloudServiceType, name: str = None):
         filter_params = {
             'provider': cloud_service_type_vo.provider,
             'cloud_service_group': cloud_service_type_vo.group,
@@ -119,6 +119,7 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
             'domain_id': cloud_service_type_vo.domain_id
         }
 
-        query_set_vos = cloud_svc_query_set_mgr.filter_cloud_service_query_sets(**filter_params)
-        for query_set_vo in query_set_vos:
-            cloud_svc_query_set_mgr.delete_cloud_service_query_set_by_vo(query_set_vo)
+        if name:
+            filter_params['name'] = name
+
+        return self.cloud_svc_query_set_mgr.filter_cloud_service_query_sets(**filter_params)

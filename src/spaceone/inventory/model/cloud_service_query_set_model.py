@@ -8,6 +8,7 @@ class CloudServiceQuerySet(MongoModel):
     name = StringField(max_length=255, unique_with=['provider', 'cloud_service_group', 'cloud_service_type', 'domain_id'])
     state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))
     query_options = DictField()
+    query_hash = StringField(max_length=255)
     query_type = StringField(max_length=20, required=True, choices=('MANAGED', 'CUSTOM'))
     unit = DictField()
     provider = StringField(max_length=255, default=None, null=True)
@@ -22,6 +23,7 @@ class CloudServiceQuerySet(MongoModel):
         'updatable_fields': [
             'state',
             'query_options',
+            'query_hash',
             'unit',
             'tags',
             'updated_at'
@@ -43,6 +45,7 @@ class CloudServiceQuerySet(MongoModel):
         'indexes': [
             'name',
             'state',
+            'query_hash',
             'query_type',
             'provider',
             'cloud_service_group',
