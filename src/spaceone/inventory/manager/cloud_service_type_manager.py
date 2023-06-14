@@ -97,10 +97,11 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
                     if query_set_vos[0].query_hash != utils.dict_to_hash(query_options):
                         self.cloud_svc_query_set_mgr.update_cloud_service_query_set_by_vo(update_params,
                                                                                           query_set_vos[0])
-                        del query_set_info[name]
                 else:
                     create_params = copy.deepcopy(query_set)
                     self._create_cloud_service_query_set(create_params, cloud_service_type_vo)
+
+                del query_set_info[name]
 
         for query_set_id in query_set_info.values():
             self.cloud_svc_query_set_mgr.delete_cloud_service_query_set(query_set_id, cloud_service_type_vo.domain_id)
