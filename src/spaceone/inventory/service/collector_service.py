@@ -61,9 +61,6 @@ class CollectorService(BaseService):
             'provider': self._get_plugin_providers(params.get('provider'), plugin_info_from_repository)
         })
 
-        if 'schedule' in params:
-            collector_mgr.is_supported_schedule(params['plugin_info'], params['schedule'])
-
         if 'secret_filter' in params:
             self.validate_secret_filter(params['secret_filter'], domain_id)
 
@@ -110,10 +107,6 @@ class CollectorService(BaseService):
 
         if 'tags' in params:
             params['tags'] = self._convert_tags(params.get('tags'))
-
-        if 'schedule' in params:
-            collector_dict = collector_vo.to_dict()
-            collector_mgr.is_supported_schedule(collector_dict.get('plugin_info', {}), params['schedule'])
 
         if 'secret_filter' in params:
             self.validate_secret_filter(params['secret_filter'], params['domain_id'])
