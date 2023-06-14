@@ -54,6 +54,11 @@ class CloudServiceQuerySetManager(BaseManager):
         _LOGGER.debug(f'[update_cloud_service_query_set_by_vo] update query set: {cloud_svc_query_set_vo.query_set_id}')
 
         self.transaction.add_rollback(_rollback, cloud_svc_query_set_vo.to_dict())
+
+        if 'query_options' in params:
+            # Check Analyze Query
+            self._run_analyze_query(cloud_svc_query_set_vo)
+
         return cloud_svc_query_set_vo.update(params)
 
     def delete_cloud_service_query_set(self, query_set_id, domain_id):
