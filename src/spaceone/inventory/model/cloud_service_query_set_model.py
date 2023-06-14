@@ -21,6 +21,7 @@ class CloudServiceQuerySet(MongoModel):
 
     meta = {
         'updatable_fields': [
+            'name',
             'state',
             'query_options',
             'query_hash',
