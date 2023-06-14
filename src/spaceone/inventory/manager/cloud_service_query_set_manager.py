@@ -3,7 +3,7 @@ import logging
 import time
 from datetime import datetime, timedelta
 
-from spaceone.core import cache
+from spaceone.core import cache, utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.error.cloud_service_query_set import *
 from spaceone.inventory.model.cloud_service_query_set_model import CloudServiceQuerySet
@@ -28,6 +28,9 @@ class CloudServiceQuerySetManager(BaseManager):
                 f'[ROLLBACK] Delete Cloud Service Query Set : {cloud_svc_query_set_vo.name} ({cloud_svc_query_set_vo.query_set_id})')
             cloud_svc_query_set_vo.delete()
 
+        params['query_hash'] = utils.dict_to_hash(params['query_options'])
+
+        _LOGGER.debug(f'[create_cloud_service_query_set] create query set: {params["name"]}')
         cloud_svc_query_set_vo: CloudServiceQuerySet = self.cloud_svc_query_set_model.create(params)
         self.transaction.add_rollback(_rollback, cloud_svc_query_set_vo)
 
@@ -45,6 +48,11 @@ class CloudServiceQuerySetManager(BaseManager):
             _LOGGER.info(f'[ROLLBACK] Revert Data : {old_data.get("query_set_id")}')
             cloud_svc_query_set_vo.update(old_data)
 
+        if 'query_options' in params:
+            params['query_hash'] = utils.dict_to_hash(params['query_options'])
+
+        _LOGGER.debug(f'[update_cloud_service_query_set_by_vo] update query set: {cloud_svc_query_set_vo.query_set_id}')
+
         self.transaction.add_rollback(_rollback, cloud_svc_query_set_vo.to_dict())
         return cloud_svc_query_set_vo.update(params)
 
@@ -56,6 +64,8 @@ class CloudServiceQuerySetManager(BaseManager):
 
         query_set_id = cloud_svc_query_set_vo.query_set_id
         domain_id = cloud_svc_query_set_vo.domain_id
+
+        _LOGGER.debug(f'[delete_cloud_service_query_set_by_vo] delete query set: {query_set_id}')
 
         # Delete Cloud Service Stats Data
         stats_vos = cloud_svc_stats_mgr.filter_cloud_service_stats(query_set_id=query_set_id, domain_id=domain_id)
