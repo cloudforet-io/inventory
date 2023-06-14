@@ -264,6 +264,9 @@ class CollectingManager(BaseManager):
     def _set_transaction_meta(self, params):
         secret_info = params['secret_info']
 
+        _LOGGER.debug(f'[_set_transaction_meta] (BEFORE) TRANSACTION: {self.transaction}')
+        _LOGGER.debug(f'[_set_transaction_meta] (BEFORE) TRANSACTION META: {self.transaction.meta}')
+
         self.transaction.set_meta('job_id', params['job_id'])
         self.transaction.set_meta('job_task_id', params['job_task_id'])
         self.transaction.set_meta('collector_id', params['collector_id'])
@@ -280,7 +283,8 @@ class CollectingManager(BaseManager):
         if 'service_account_id' in secret_info:
             self.transaction.set_meta('secret.service_account_id', secret_info['service_account_id'])
 
-        _LOGGER.debug(f'[_set_transaction_meta] TRANSACTION: {self.transaction.meta}')
+        _LOGGER.debug(f'[_set_transaction_meta] (AFTER) TRANSACTION: {self.transaction}')
+        _LOGGER.debug(f'[_set_transaction_meta] (AFTER) TRANSACTION: {self.transaction.meta}')
 
     def _get_resource_map(self, resource_type):
         if resource_type not in RESOURCE_MAP:
