@@ -72,15 +72,3 @@ class CollectorManager(BaseManager):
             _LOGGER.warning(f'[_get_queue_name] name: {name} is not configured')
             return None
 
-    @staticmethod
-    def is_supported_schedule(plugin_info, schedule):
-        """ Check metadata.supported_schedule
-        ex) metadata.supported_schedule: ["hours"]
-            schedule: {"state": "ENABLED", "hours": [1, 2, 3]}
-        """
-        supported_schedules = plugin_info.get('metadata', {}).get('supported_schedules', [])
-
-        if 'hours' in schedule and 'hours' not in supported_schedules:
-            raise ERROR_UNSUPPORTED_SCHEDULE(supported=supported_schedules, requested=schedule)
-
-        return True
