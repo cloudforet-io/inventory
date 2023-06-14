@@ -1,7 +1,9 @@
 from spaceone.core.service import *
 from spaceone.core import utils
-from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
 from spaceone.inventory.error import *
+from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
+from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
+
 
 _KEYWORD_FILTER = ['cloud_service_type_id', 'name', 'group', 'service_code']
 
@@ -37,6 +39,7 @@ class CloudServiceTypeService(BaseService):
         Returns:
             cloud_service_type_vo (object)
         """
+
         return self.create_resource(params)
 
     @check_required(['name', 'provider', 'group', 'domain_id'])
@@ -80,6 +83,7 @@ class CloudServiceTypeService(BaseService):
         Returns:
             cloud_service_type_vo (object)
         """
+
         return self.update_resource(params)
 
     @check_required(['cloud_service_type_id', 'domain_id'])
