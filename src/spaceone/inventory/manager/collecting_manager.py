@@ -233,13 +233,11 @@ class CollectingManager(BaseManager):
         try:
             # CREATE
             if total_count == 0 and update_mode is None:
-                _LOGGER.debug(f'[_process_single_result][CREATE-RESOURCE] TRANSACTION: {self.transaction.meta}')
                 resource_service.create_resource(data)
                 response = CREATED
             # UPDATE
             elif total_count == 1:
                 data.update(res_info[0])
-                _LOGGER.debug(f'[_process_single_result][UPDATE-RESOURCE] TRANSACTION: {self.transaction.meta}')
                 resource_service.update_resource(data)
                 response = UPDATED
             elif total_count > 1:
@@ -264,9 +262,6 @@ class CollectingManager(BaseManager):
     def _set_transaction_meta(self, params):
         secret_info = params['secret_info']
 
-        _LOGGER.debug(f'[_set_transaction_meta] (BEFORE) TRANSACTION: {self.transaction}')
-        _LOGGER.debug(f'[_set_transaction_meta] (BEFORE) TRANSACTION META: {self.transaction.meta}')
-
         self.transaction.set_meta('job_id', params['job_id'])
         self.transaction.set_meta('job_task_id', params['job_task_id'])
         self.transaction.set_meta('collector_id', params['collector_id'])
@@ -282,9 +277,6 @@ class CollectingManager(BaseManager):
             self.transaction.set_meta('secret.project_id', secret_info['project_id'])
         if 'service_account_id' in secret_info:
             self.transaction.set_meta('secret.service_account_id', secret_info['service_account_id'])
-
-        _LOGGER.debug(f'[_set_transaction_meta] (AFTER) TRANSACTION: {self.transaction}')
-        _LOGGER.debug(f'[_set_transaction_meta] (AFTER) TRANSACTION: {self.transaction.meta}')
 
     def _get_resource_map(self, resource_type):
         if resource_type not in RESOURCE_MAP:
