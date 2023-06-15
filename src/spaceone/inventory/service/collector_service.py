@@ -200,6 +200,7 @@ class CollectorService(BaseService):
                 task.update({'collector_id': collector_id, 'job_id': job_vo.job_id})
 
                 try:
+                    # JOB: CREATE TASK JOB
                     job_task_vo = job_task_mgr.create_job_task(job_vo, domain_id, task_options)
                     task.update({'job_task_id': job_task_vo.job_task_id})
                     job_task_mgr.push_job_task(task)
