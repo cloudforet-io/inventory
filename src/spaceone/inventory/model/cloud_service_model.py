@@ -128,6 +128,11 @@ class CloudService(MongoModel):
                 "name": "COMPOUND_INDEX_FOR_SEARCH_4"
             },
             {
+                "fields": ['domain_id', 'state', 'provider', 'cloud_service_group', 'cloud_service_type',
+                           'project_id', 'instance_type'],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_5"
+            },
+            {
                 "fields": ['domain_id', 'cloud_service_id', 'project_id'],
                 "name": "COMPOUND_INDEX_FOR_GET"
             }
