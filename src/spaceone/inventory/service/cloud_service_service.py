@@ -620,7 +620,7 @@ class CloudServiceService(BaseService):
                         })
                 query['sort']['keys'] = change_filter
 
-            else:
+            elif 'key' in query['sort']:
                 change_filter = {}
                 sort_key = query['sort']['key']
                 desc = query['sort'].get('desc', False)
