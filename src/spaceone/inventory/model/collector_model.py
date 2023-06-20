@@ -9,10 +9,10 @@ class PluginInfo(EmbeddedDocument):
     options = DictField()
     metadata = DictField()
     upgrade_mode = StringField(max_length=20, default='AUTO', choices=('AUTO', 'MANUAL'))
-    secret_id = StringField(max_length=40, default=None, null=True)             # Deprecated
-    secret_group_id = StringField(max_length=40, default=None, null=True)       # Deprecated
-    service_account_id = StringField(max_length=40, default=None, null=True)    # Deprecated
-    provider = StringField(max_length=40, default=None, null=True)              # Deprecated
+    # secret_id = StringField(max_length=40, default=None, null=True)             # Deprecated
+    # secret_group_id = StringField(max_length=40, default=None, null=True)       # Deprecated
+    # service_account_id = StringField(max_length=40, default=None, null=True)    # Deprecated
+    # provider = StringField(max_length=40, default=None, null=True)              # Deprecated
 
     def to_dict(self):
         return dict(self.to_mongo())
@@ -27,19 +27,19 @@ class SecretFilter(EmbeddedDocument):
 
 class Scheduled(EmbeddedDocument):
     state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))
-    cron = StringField(max_length=1024, default=None, null=True)                # Deprecated
-    interval = IntField(min_value=1, max_value=3600, default=None, null=True)   # Deprecated
-    minutes = ListField(defualt=None, null=True)                                # Deprecated
+    # cron = StringField(max_length=1024, default=None, null=True)                # Deprecated
+    # interval = IntField(min_value=1, max_value=3600, default=None, null=True)   # Deprecated
+    # minutes = ListField(default=None, null=True)                                # Deprecated
     hours = ListField(default=None, null=True)
 
 
 class Collector(MongoModel):
     collector_id = StringField(max_length=40, generate_id='collector', unique=True)
     name = StringField(max_length=255)
-    state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))  # Deprecated
+    # state = StringField(max_length=20, default='ENABLED', choices=('ENABLED', 'DISABLED'))  # Deprecated
     provider = StringField(max_length=40, default=None, null=True)
     capability = DictField()
-    is_public = BooleanField(default=True)                                                  # Deprecated
+    # is_public = BooleanField(default=True)                                                  # Deprecated
     plugin_info = EmbeddedDocumentField(PluginInfo, default=None, null=True)
     schedule = EmbeddedDocumentField(Scheduled, default=None, null=False)
     secret_filter = EmbeddedDocumentField(SecretFilter, default=None, null=True)
@@ -52,7 +52,6 @@ class Collector(MongoModel):
     meta = {
         'updatable_fields': [
             'name',
-            'state',
             'plugin_info',
             'schedule',
             'secret_filter',
@@ -83,47 +82,47 @@ class Collector(MongoModel):
 """
 Deprecated
 """
-class Schedule(MongoModel):
-    schedule_id = StringField(max_length=40, generate_id='sched', unique=True)
-    name = StringField(max_length=255)
-    collector = ReferenceField('Collector', reverse_delete_rule=CASCADE)
-    collector_id = StringField(max_length=40)
-    schedule = EmbeddedDocumentField(Scheduled, default=None, null=False)
-    filters = DictField()
-    collect_mode = StringField(max_length=8, default='ALL', choice=('ALL', 'CREATE', 'UPDATE'))
-    domain_id = StringField(max_length=255)
-    created_at = DateTimeField(auto_now_add=True)
-    last_scheduled_at = DateTimeField()
-
-    meta = {
-        'updatable_fields': [
-            'name',
-            'collector_id',
-            'collect_mode',
-            'schedule',
-            'last_scheduled_at'
-        ],
-        'minimal_fields': [
-            'schedule_id',
-            'name',
-            'collect_mode',
-            'schedule',
-            'collector',
-            'collector_id'
-        ],
-        'change_query_keys': {
-            'collector_id': 'collector.collector_id'
-        },
-        'reference_query_keys': {
-            'collector': Collector
-        },
-        'ordering': [
-            'name'
-        ],
-        'indexes': [
-            'schedule_id',
-            'collector',
-            'collector_id',
-            'domain_id'
-        ]
-    }
+# class Schedule(MongoModel):
+#     schedule_id = StringField(max_length=40, generate_id='sched', unique=True)
+#     name = StringField(max_length=255)
+#     collector = ReferenceField('Collector', reverse_delete_rule=CASCADE)
+#     collector_id = StringField(max_length=40)
+#     schedule = EmbeddedDocumentField(Scheduled, default=None, null=False)
+#     filters = DictField()
+#     collect_mode = StringField(max_length=8, default='ALL', choice=('ALL', 'CREATE', 'UPDATE'))
+#     domain_id = StringField(max_length=255)
+#     created_at = DateTimeField(auto_now_add=True)
+#     last_scheduled_at = DateTimeField()
+#
+#     meta = {
+#         'updatable_fields': [
+#             'name',
+#             'collector_id',
+#             'collect_mode',
+#             'schedule',
+#             'last_scheduled_at'
+#         ],
+#         'minimal_fields': [
+#             'schedule_id',
+#             'name',
+#             'collect_mode',
+#             'schedule',
+#             'collector',
+#             'collector_id'
+#         ],
+#         'change_query_keys': {
+#             'collector_id': 'collector.collector_id'
+#         },
+#         'reference_query_keys': {
+#             'collector': Collector
+#         },
+#         'ordering': [
+#             'name'
+#         ],
+#         'indexes': [
+#             'schedule_id',
+#             'collector',
+#             'collector_id',
+#             'domain_id'
+#         ]
+#     }
