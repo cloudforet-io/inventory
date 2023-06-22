@@ -74,7 +74,6 @@ class CloudServiceService(BaseService):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
         domain_id = params['domain_id']
-        _LOGGER.debug(f'[create_resource] TRANSACTION META: {self.transaction.meta}')
         secret_project_id = self.transaction.get_meta('secret.project_id')
         provider = params['provider']
 
@@ -149,7 +148,6 @@ class CloudServiceService(BaseService):
     def update_resource(self, params):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager('ChangeHistoryManager')
 
-        _LOGGER.debug(f'[update_resource] TRANSACTION META: {self.transaction.meta}')
         secret_project_id = self.transaction.get_meta('secret.project_id')
 
         cloud_service_id = params['cloud_service_id']
