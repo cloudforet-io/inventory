@@ -3,7 +3,7 @@ import json
 import time
 from spaceone.core import config, cache
 from spaceone.core import queue
-from spaceone.core.transaction import LOCAL_STORAGE
+# from spaceone.core.transaction import LOCAL_STORAGE
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
@@ -120,9 +120,9 @@ class CollectingManager(BaseManager):
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
 
             # debug code for memory leak
-            local_storage = LOCAL_STORAGE.__dict__
-            _LOGGER.info(
-                f'[collecting_resources] / number of items in local storage: {len(local_storage)} / items => {local_storage}')
+            # local_storage = LOCAL_STORAGE.__dict__
+            # _LOGGER.info(
+            #     f'[collecting_resources] / number of items in local storage: {len(local_storage)} / items => {local_storage}')
         return True
 
     def _update_disconnected_and_deleted_count(self, collector_id, secret_id, job_task_id, domain_id):
