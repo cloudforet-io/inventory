@@ -300,7 +300,7 @@ class CollectorService(BaseService):
                     tasks.append(_task)
 
             except Exception as e:
-                _LOGGER.debug(f'[get_tasks] Error to get tasks from plugin. set task from secret')
+                # _LOGGER.debug(f'[get_tasks] Error to get tasks from plugin. set task from secret')
                 _task.update({'task_options': None})
                 tasks.append(_task)
 
