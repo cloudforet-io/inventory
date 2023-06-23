@@ -175,5 +175,5 @@ class JobTaskManager(BaseManager):
             'executionEngine': 'BaseWorker',
             'stages': [task]
         }
-        _LOGGER.debug(f'[_create_task] tasks: {stp}')
+        # _LOGGER.debug(f'[_create_task] tasks: {stp}')
         return stp
