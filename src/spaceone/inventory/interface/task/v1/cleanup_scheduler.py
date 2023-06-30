@@ -1,11 +1,8 @@
 import copy
 import datetime
 import logging
-from spaceone.core import config
-from spaceone.core.token import _validate_token, Consul
 from spaceone.core.locator import Locator
 from spaceone.core.scheduler import HourlyScheduler
-from spaceone.core.auth.jwt.jwt_util import JWTUtil
 from spaceone.inventory.service.cleanup_service import CleanupService
 from spaceone.inventory.lib.scheduler import init_count, update_token, get_domain_id_from_token
 

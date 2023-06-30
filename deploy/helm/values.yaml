@@ -71,6 +71,11 @@ application_scheduler:
             queue: collector_q
             interval: 1
             minute: ':35'
+        stats_scheduler:
+            backend: spaceone.inventory.interface.task.v1.cloud_service_stats_scheduler.CloudServiceStatsScheduler
+            queue: collector_q
+            interval: 1
+            minute: ':30'
 
 # Overwrite worker config
 #application_worker: {}
