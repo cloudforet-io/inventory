@@ -1,9 +1,9 @@
 import copy
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 
-from spaceone.core import cache, utils
+from spaceone.core import cache, utils, queue
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.error.cloud_service_query_set import *
 from spaceone.inventory.model.cloud_service_query_set_model import CloudServiceQuerySet
@@ -21,6 +21,34 @@ class CloudServiceQuerySetManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.cloud_svc_query_set_model: CloudServiceQuerySet = self.locator.get_model('CloudServiceQuerySet')
         self.cloud_svc_stats_mgr = None
+
+    @staticmethod
+    def push_task(domain_id, system_token):
+        task = {
+            'name': 'run_query_sets_by_domain',
+            'version': 'v1',
+            'executionEngine': 'BaseWorker',
+            'stages': [{
+                'locator': 'SERVICE',
+                'name': 'CloudServiceQuerySetService',
+                'metadata': {
+                    'service': 'inventory',
+                    'resource': 'CloudServiceQuerySet',
+                    'verb': 'run_query_sets_by_domain',
+                    'token': system_token
+                },
+                'method': 'run_query_sets_by_domain',
+                'params': {
+                    'params': {
+                        'domain_id': domain_id
+                    }
+                }
+            }]
+        }
+
+        _LOGGER.debug(f'[push_task] run query sets by domain: {domain_id}')
+
+        queue.put('collector_q', utils.dump_json(task))
 
     def create_cloud_service_query_set(self, params):
         def _rollback(cloud_svc_query_set_vo: CloudServiceQuerySet):
@@ -101,6 +129,8 @@ class CloudServiceQuerySetManager(BaseManager):
 
         self.cloud_svc_stats_mgr: CloudServiceStatsManager = self.locator.get_manager('CloudServiceStatsManager')
 
+        _LOGGER.debug(f'[run_cloud_service_query_set] run query set: {cloud_svc_query_set_vo.query_set_id} '
+                      f'({cloud_svc_query_set_vo.domain_id})')
         results = self._run_analyze_query(cloud_svc_query_set_vo)
 
         created_at = datetime.utcnow()

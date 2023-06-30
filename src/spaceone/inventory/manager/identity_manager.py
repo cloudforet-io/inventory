@@ -10,7 +10,11 @@ class IdentityManager(BaseManager):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.identity_conn: SpaceConnector = self.locator.get_connector('SpaceConnector', service='identity')
+        if token := kwargs.get('token'):
+            self.identity_conn: SpaceConnector = self.locator.get_connector('SpaceConnector', service='identity',
+                                                                            token=token)
+        else:
+            self.identity_conn: SpaceConnector = self.locator.get_connector('SpaceConnector', service='identity')
 
     def get_user(self, user_id, domain_id):
         return self.identity_conn.dispatch('User.get', {'user_id': user_id, 'domain_id': domain_id})

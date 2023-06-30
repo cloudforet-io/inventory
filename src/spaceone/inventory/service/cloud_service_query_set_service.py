@@ -1,9 +1,14 @@
+import logging
+
+from spaceone.core import config
 from spaceone.core.service import *
 from spaceone.inventory.error import *
 from spaceone.inventory.model.cloud_service_query_set_model import CloudServiceQuerySet
 from spaceone.inventory.manager.cloud_service_query_set_manager import CloudServiceQuerySetManager
+from spaceone.inventory.manager.identity_manager import IdentityManager
 
 
+_LOGGER = logging.getLogger(__name__)
 _KEYWORD_FILTER = ['query_set_id', 'name']
 
 
@@ -228,3 +233,54 @@ class CloudServiceQuerySetService(BaseService):
 
         query = params.get('query', {})
         return self.cloud_svc_query_set_mgr.stat_cloud_service_query_sets(query)
+
+    @transaction(append_meta={'authorization.scope': 'SYSTEM'})
+    @check_required(['domain_id'])
+    def run_query_sets_by_domain(self, params):
+        """ Run cloud service query sets by domain_id
+
+        Args:
+            params (dict): {
+                'domain_id': 'str'
+            }
+
+        Returns:
+            None
+        """
+
+        domain_id = params['domain_id']
+        query_set_vos = self.cloud_svc_query_set_mgr.filter_cloud_service_query_sets(domain_id=domain_id)
+        for query_set_vo in query_set_vos:
+            self.cloud_svc_query_set_mgr.run_cloud_service_query_set(query_set_vo)
+
+    @transaction(append_meta={'authorization.scope': 'SYSTEM'})
+    def run_all_query_sets(self, params):
+        """ Run all cloud service query sets
+
+        Args:
+            params (dict): {}
+
+        Returns:
+            None
+        """
+
+        system_token = config.get_global('TOKEN')
+
+        for domain_info in self._get_all_domains_info(system_token):
+            domain_id = domain_info['domain_id']
+            try:
+                self.cloud_svc_query_set_mgr.push_task(domain_id, system_token)
+            except Exception as e:
+                _LOGGER.error(f'[run_query_sets_by_domain] query error({domain_id}): {e}', exc_info=True)
+
+    def _get_all_domains_info(self, system_token):
+        identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager', token=system_token)
+        response = identity_mgr.list_domains({
+            'only': ['domain_id'],
+            'filter': [{'k': 'state', 'v': 'ENABLED', 'o': 'eq'}]
+        })
+
+        return response.get('results', [])
+
+    def _list_query_sets_by_domain(self, domain_id):
+        return self.cloud_svc_query_set_mgr.filter_cloud_service_query_sets(domain_id=domain_id)
