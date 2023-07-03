@@ -30,7 +30,7 @@ class CollectionStateManager(BaseManager):
                 'domain_id': domain_id
             }
 
-            _LOGGER.debug(f'[create_collection_state] create collection state: {state_data}')
+            # _LOGGER.debug(f'[create_collection_state] create collection state: {state_data}')
             state_vo = self.collection_state_model.create(state_data)
             self.transaction.add_rollback(_rollback, state_vo)
 
