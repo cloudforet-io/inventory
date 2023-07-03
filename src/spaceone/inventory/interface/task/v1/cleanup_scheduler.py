@@ -149,5 +149,5 @@ class CleanupScheduler(HourlyScheduler):
             'stages': [update_job_state, delete_resources, terminate_jobs, terminate_resources]
         }
 
-        _LOGGER.debug(f'[_create_job_request] tasks: {stp}')
+        _LOGGER.debug(f'[_create_job_request] tasks: inventory_cleanup_schedule')
         return stp
