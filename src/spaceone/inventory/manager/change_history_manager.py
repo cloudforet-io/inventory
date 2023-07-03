@@ -174,7 +174,8 @@ class ChangeHistoryManager(BaseManager):
 
             return dict(sorted(value.items()))
         except Exception as e:
-            _LOGGER.warning(f'[_sort_dict_value] dict value sort error: {e}', exc_info=True)
+            pass
+            # _LOGGER.warning(f'[_sort_dict_value] dict value sort error: {e}', exc_info=True)
 
         return value
 
@@ -191,8 +192,9 @@ class ChangeHistoryManager(BaseManager):
                     try:
                         return sorted(changed_list_values, key=itemgetter(*sort_keys[:3]))
                     except Exception as e:
-                        _LOGGER.warning(f'[_sort_list_values] list value sort error (sort_keys={sort_keys[:3]}, '
-                                        f'reason={e})', exc_info=True)
+                        pass
+                        # _LOGGER.warning(f'[_sort_list_values] list value sort error (sort_keys={sort_keys[:3]}, '
+                        #                 f'reason={e})', exc_info=True)
 
                 return changed_list_values
 
