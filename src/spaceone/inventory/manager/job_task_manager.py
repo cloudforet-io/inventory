@@ -88,7 +88,7 @@ class JobTaskManager(BaseManager):
         job_task_vo = self.get(job_task_id, domain_id)
         job_task_vo.append('errors', error_info)
         job_mgr.mark_error(job_task_vo.job_id, domain_id)
-        _LOGGER.debug(f'[add_error] {job_task_id}: {error_info}')
+        _LOGGER.error(f'[add_error] {job_task_id}: {error_info}', exc_info=True)
 
         return job_task_vo
 
