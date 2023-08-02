@@ -59,20 +59,23 @@ class CollectingManager(BaseManager):
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECT_CANCELED', 'The job has been canceled.')
             self.job_task_mgr.make_canceled(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self.job_mgr.increase_failure_tasks(job_id, domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
-        if self.job_task_mgr.check_duplicate_job_tasks(collector_id, secret_id, domain_id):
-            self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_DUPLICATE_JOB', 'A duplicate job is already running.')
-            self.job_task_mgr.make_canceled(job_task_id, domain_id)
-            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            raise ERROR_COLLECT_CANCELED(job_id=job_id)
+        # if self.job_task_mgr.check_duplicate_job_tasks(collector_id, secret_id, domain_id):
+        #     self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_DUPLICATE_JOB', 'A duplicate job is already running.')
+        #     self.job_task_mgr.make_canceled(job_task_id, domain_id)
+        #     self.job_mgr.decrease_remained_tasks(job_id, domain_id)
+        #     raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
         collect_filter = {}
-        try:
-            if params.get('use_cache'):
-                collect_filter = self._collector_filter_from_cache(collect_filter, collector_id, secret_id)
-        except Exception as e:
-            _LOGGER.debug(f'[collecting_resources] cache error,{e}')
+
+        # DEPRECATED
+        # try:
+        #     if params.get('use_cache'):
+        #         collect_filter = self._collector_filter_from_cache(collect_filter, collector_id, secret_id)
+        # except Exception as e:
+        #     _LOGGER.debug(f'[collecting_resources] cache error,{e}')
 
         try:
             # JOB TASK: IN_PROGRESS
@@ -91,6 +94,7 @@ class CollectingManager(BaseManager):
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e)
             self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self.job_mgr.increase_failure_tasks(job_id, domain_id)
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info, filters=collect_filter)
 
         JOB_TASK_STATE = 'SUCCESS'
@@ -118,6 +122,7 @@ class CollectingManager(BaseManager):
 
             self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, secret_info=secret_info, collecting_count_info=collecting_count_info)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
+            self.job_mgr.increase_success_tasks(job_id, domain_id)
 
             # debug code for memory leak
             # local_storage = LOCAL_STORAGE.__dict__

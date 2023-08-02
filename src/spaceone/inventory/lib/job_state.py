@@ -1,12 +1,13 @@
 import abc
 from spaceone.inventory.error import *
 
-CREATED = 'CREATED'
+# CREATED = 'CREATED'
 INPROGRESS = 'IN_PROGRESS'
 CANCELED = 'CANCELED'
 SUCCESS = 'SUCCESS'
-ERROR = 'ERROR'
-TIMEOUT = 'TIMEOUT'
+# ERROR = 'ERROR'
+FAILURE = 'FAILURE'
+# TIMEOUT = 'TIMEOUT'
 
 
 class JobState(metaclass=abc.ABCMeta):
@@ -25,13 +26,13 @@ class InprogressState(JobState):
     def __str__(self):
         return INPROGRESS
 
-
-class CreatedState(JobState):
-    def handle(self):
-        pass
-
-    def __str__(self):
-        return CREATED
+# DEPRECATED
+# class CreatedState(JobState):
+#     def handle(self):
+#         pass
+#
+#     def __str__(self):
+#         return CREATED
 
 
 class CanceledState(JobState):
@@ -49,30 +50,39 @@ class SuccessState(JobState):
     def __str__(self):
         return SUCCESS
 
-
-class ErrorState(JobState):
+class FailureState(JobState):
     def handle(self):
         pass
 
     def __str__(self):
-        return ERROR
+        return FAILURE
+
+# DEPRECATED
+# class ErrorState(JobState):
+#     def handle(self):
+#         pass
+#
+#     def __str__(self):
+#         return ERROR
 
 
-class TimeoutState(JobState):
-    def handle(self):
-        pass
-
-    def __str__(self):
-        return TIMEOUT
+# DEPRECATED
+# class TimeoutState(JobState):
+#     def handle(self):
+#         pass
+#
+#     def __str__(self):
+#         return TIMEOUT
 
 
 STATE_DIC = {
-    'CREATED': CreatedState(),
+    # 'CREATED': CreatedState(),
     'IN_PROGRESS': InprogressState(),
     'CANCELED': CanceledState(),
     'SUCCESS': SuccessState(),
-    'ERROR': ErrorState(),
-    'TIMEOUT': TimeoutState()
+    'FAILURE': SuccessState(),
+    # 'ERROR': ErrorState(),
+    # 'TIMEOUT': TimeoutState()
 }
 
 
@@ -82,44 +92,46 @@ class JobStateMachine():
         self._status = STATE_DIC[job_vo.status]
 
     def inprogress(self):
-        if isinstance(self._status, (CreatedState, InprogressState, SuccessState)):
-            # if collect is synchronous mode,
-            # Job status can change: Inprogress -> Succcess -> Inprogress -> Success ...
+        if isinstance(self._status, (InprogressState, SuccessState)):
             self._status = InprogressState()
-        elif isinstance(self._status, (ErrorState,)):
+        elif isinstance(self._status, (FailureState,)):
             pass
         else:
             raise ERROR_JOB_STATE_CHANGE(action='INPROGRESS', job_id=self.job_id, status=str(self._status))
         return self.get_status()
 
     def canceled(self):
-        if isinstance(self._status, (CreatedState, InprogressState)):
+        if isinstance(self._status, InprogressState):
             self._status = CanceledState()
         else:
             raise ERROR_JOB_STATE_CHANGE(action='CANCELED', job_id=self.job_id, status=str(self._status))
         return self.get_status()
 
     def success(self):
-        if isinstance(self._status, (CreatedState, InprogressState, SuccessState)):
-            # if collect is synchronous mode
-            # Job status can change: Finished -> Finished
+        if isinstance(self._status, (InprogressState, SuccessState)):
             self._status = SuccessState()
-        elif isinstance(self._status, (ErrorState,)):
+        elif isinstance(self._status, (FailureState,)):
             pass
         else:
             raise ERROR_JOB_STATE_CHANGE(action='SUCCESS', job_id=self.job_id, status=str(self._status))
         return self.get_status()
 
-    def timeout(self):
-        if isinstance(self._status, (CreatedState, InprogressState)):
-            self._status = TimeoutState()
-        else:
-            raise ERROR_JOB_STATE_CHANGE(action='TIMEOUT', job_id=self.job_id, status=str(self._status))
-        return self.get_status()
-
-    def error(self):
-        self._status = ErrorState()
+    def failure(self):
+        self._status = FailureState()
         return self.get_status()
 
     def get_status(self):
         return str(self._status)
+
+    # DEPRECATED
+    # def timeout(self):
+    #     if isinstance(self._status, (CreatedState, InprogressState)):
+    #         self._status = TimeoutState()
+    #     else:
+    #         raise ERROR_JOB_STATE_CHANGE(action='TIMEOUT', job_id=self.job_id, status=str(self._status))
+    #     return self.get_status()
+
+    # DEPRECATED
+    def error(self):
+        self._status = ErrorState()
+        return self.get_status()
