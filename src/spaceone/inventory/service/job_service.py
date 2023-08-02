@@ -52,7 +52,7 @@ class JobService(BaseService):
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
     @change_only_key({'collector_info': 'collector'}, key_path='query.only')
-    @append_query_filter(['job_id', 'status', 'collector_id', 'project_id', 'domain_id', 'user_projects'])
+    @append_query_filter(['job_id', 'status', 'collector_id', 'secret_id', 'domain_id', 'user_projects'])
     @append_keyword_filter(['job_id'])
     def list(self, params):
         """
@@ -62,6 +62,7 @@ class JobService(BaseService):
                 'status': 'str',
                 'collector_id': 'dict',
                 'project_id': 'str',
+                'secret_id': 'str',
                 'domain_id  ': 'str',
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
                 'user_projects': 'list', // from meta

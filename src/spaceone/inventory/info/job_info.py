@@ -27,19 +27,18 @@ def JobInfo(job_vo: Job, minimal=False):
 
     if not minimal:
         info.update({
-            'filter': change_struct_type(job_vo.filters),
+            'secret_id': job_vo.secret_id,
             'total_tasks': job_vo.total_tasks,
             'remained_tasks': job_vo.remained_tasks,
-            'errors': list(map(functools.partial(ErrorInfo), job_vo.errors)),
-            'collector_info': CollectorInfo(job_vo.collector, minimal=True) if job_vo.collector else None,
-            'project_id': job_vo.project_id,
+            'success_tasks': job_vo.success_tasks,
+            'failure_tasks': job_vo.failure_tasks,
             'domain_id': job_vo.domain_id,
             'updated_at': utils.datetime_to_iso8601(job_vo.updated_at),
         })
 
         # Temporary code for DB migration
-        if not job_vo.collector_id and job_vo.collector:
-            job_vo.update({'collector_id': job_vo.collector.collector_id})
+        # if not job_vo.collector_id and job_vo.collector:
+        #    job_vo.update({'collector_id': job_vo.collector.collector_id})
 
     return collector_pb2.JobInfo(**info)
 

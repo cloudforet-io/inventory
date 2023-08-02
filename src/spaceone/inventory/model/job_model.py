@@ -12,15 +12,19 @@ class Error(EmbeddedDocument):
 
 class Job(MongoModel):
     job_id = StringField(max_length=40, generate_id='job', unique=True)
-    status = StringField(max_length=20, default='CREATED',
-                         choices=('CREATED', 'CANCELED', 'IN_PROGRESS', 'SUCCESS', 'ERROR', 'TIMEOUT'))
-    filters = DictField()
+    status = StringField(max_length=20, default='IN_PROGRESS',
+                         choices=('CANCELED', 'IN_PROGRESS', 'FAILURE', 'SUCCESS', 'ERROR'))
+    # filters = DictField()                                                                     # Deprecated
     total_tasks = IntField(min_value=0, max_value=65000, default=0)
     remained_tasks = IntField(max_value=65000, default=0)
-    errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))
-    collector = ReferenceField('Collector', reverse_delete_rule=NULLIFY)
+    success_tasks = IntField(min_value=0, max_value=65000, default=0)
+    failure_tasks = IntField(min_value=0, max_value=65000, default=0)
+    # errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))                 # Deprecated
+    # collector = ReferenceField('Collector', reverse_delete_rule=NULLIFY)                      # Deprecated
     collector_id = StringField(max_length=40)
-    project_id = StringField(max_length=40, default=None, null=True)
+    secret_id = StringField(max_length=40, null=True, default=None)
+    plugin_id = StringField(max_length=40)
+    # project_id = StringField(max_length=40, default=None, null=True)                          # Deprecated
     projects = ListField(StringField(max_length=40), default=[])
     domain_id = StringField(max_length=255)
     created_at = DateTimeField(auto_now_add=True)
@@ -33,9 +37,11 @@ class Job(MongoModel):
             'status',
             'total_tasks',
             'remained_tasks',
-            'errors',
+            'success_tasks',
+            'failure_tasks',
+            # 'errors',
             'collector_id',
-            'projects',
+            # 'projects',
             'finished_at',
             'mark_error',
         ],
@@ -48,19 +54,19 @@ class Job(MongoModel):
         'change_query_keys': {
             'user_projects': 'projects'
         },
-        'reference_query_keys': {
-            'collector': Collector
-        },
+        # 'reference_query_keys': {
+        #     'collector': Collector
+        # },
         'ordering': [
             '-created_at'
         ],
         'indexes': [
             # 'job_id',
             'status',
-            'collector',
+            # 'collector',
             'collector_id',
-            'project_id',
-            'projects',
+            # 'project_id',
+            # 'projects',
             'domain_id',
             'created_at',
             'finished_at'

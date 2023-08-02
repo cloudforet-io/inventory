@@ -50,6 +50,14 @@ class JobManager(BaseManager):
     def stat_jobs(self, query):
         return self.job_model.stat(**query)
 
+    def increase_success_tasks(self, job_id, domain_id):
+        job_vo: Job = self.get_job(job_id, domain_id)
+        return self.increase_success_tasks_by_vo(job_vo)
+
+    def increase_failure_tasks(self, job_id, domain_id):
+        job_vo: Job = self.get_job(job_id, domain_id)
+        return self.increase_failure_tasks_by_vo(job_vo)
+
     def decrease_remained_tasks(self, job_id, domain_id):
         job_vo: Job = self.get_job(job_id, domain_id)
         return self.decrease_remained_tasks_by_vo(job_vo)
@@ -61,7 +69,7 @@ class JobManager(BaseManager):
             if job_vo.mark_error == 0:
                 self.make_success_by_vo(job_vo)
             else:
-                self.make_error_by_vo(job_vo)
+                self.make_failure_by_vo(job_vo)
 
         if job_vo.remained_tasks < 0:
             _LOGGER.debug(f'[decrease_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
@@ -102,6 +110,22 @@ class JobManager(BaseManager):
         for job in jobs:
             self.make_timeout_by_vo(job)
 
+    def list_duplicate_jobs(self, collector_id, secret_id, domain_id):
+        # started_at = datetime.utcnow() - timedelta(minutes=10)
+
+        query = {
+            'filter': [
+                {'k': 'collector_id', 'v': collector_id, 'o': 'eq'},
+                {'k': 'secret_id', 'v': secret_id, 'o': 'eq'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
+                {'k': 'status', 'v': 'IN_PROGRESS', 'o': 'eq'},
+                # {'k': 'started_at', 'v': started_at, 'o': 'gte'},
+            ]
+        }
+
+        job_vos, total_count = self.list_jobs(query)
+        return job_vos
+
     def make_inprogress_by_vo(self, job_vo):
         job_state_machine = JobStateMachine(job_vo)
         job_state_machine.inprogress()
@@ -112,20 +136,21 @@ class JobManager(BaseManager):
         job_state_machine.success()
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
+    def make_failure_by_vo(self, job_vo):
+        job_state_machine = JobStateMachine(job_vo)
+        job_state_machine.failure()
+        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
+
     def make_canceled_by_vo(self, job_vo):
         job_state_machine = JobStateMachine(job_vo)
         job_state_machine.canceled()
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
-    def make_error_by_vo(self, job_vo):
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.error()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
-
-    def make_timeout_by_vo(self, job_vo):
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.timeout()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
+    # DEPRECATED
+    # def make_timeout_by_vo(self, job_vo):
+    #     job_state_machine = JobStateMachine(job_vo)
+    #     job_state_machine.timeout()
+    #     self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
     def make_inprogress(self, job_id, domain_id):
         job_vo = self.get_job(job_id, domain_id)
@@ -145,17 +170,18 @@ class JobManager(BaseManager):
         job_state_machine.canceled()
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
-    def make_error(self, job_id, domain_id):
+    def make_failure(self, job_id, domain_id):
         job_vo = self.get_job(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.error()
+        job_state_machine.failure()
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
-    def make_timeout(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.timeout()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
+    # DEPRECATED
+    # def make_timeout(self, job_id, domain_id):
+    #     job_vo = self.get_job(job_id, domain_id)
+    #     job_state_machine = JobStateMachine(job_vo)
+    #     job_state_machine.timeout()
+    #     self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
     def is_canceled(self, job_id, domain_id):
         job_vo = self.get_job(job_id, domain_id)
@@ -169,7 +195,7 @@ class JobManager(BaseManager):
         job_state_machine = JobStateMachine(job_vo)
         job_status = job_state_machine.get_status()
 
-        if job_status == 'CANCELED' or job_status == 'TIMEOUT':
+        if job_status == 'CANCELED':
             return True
         return False
 
@@ -188,7 +214,7 @@ class JobManager(BaseManager):
     @staticmethod
     def _update_job_status_by_vo(job_vo, status):
         params = {'status': status}
-        if status in ['SUCCESS', 'TIMEOUT', 'ERROR', 'CANCELED']:
+        if status in ['SUCCESS', 'FAILURE', 'CANCELED']:
             params.update({'finished_at': datetime.utcnow()})
 
         _LOGGER.debug(f'[update_job_status] job_id: {job_vo.job_id}, status: {status}')
@@ -197,3 +223,11 @@ class JobManager(BaseManager):
     @staticmethod
     def update_job_by_vo(params, job_vo: Job):
         return job_vo.update(params)
+
+    @staticmethod
+    def increase_success_tasks_by_vo(job_vo: Job):
+        return job_vo.increment('success_tasks')
+
+    @staticmethod
+    def increase_failure_tasks_by_vo(job_vo: Job):
+        return job_vo.increment('failure_tasks')

@@ -26,7 +26,10 @@ def SecretFilterInfo(secret_filter_vo):
             'state': secret_filter_vo.state,
             'secrets': secret_filter_vo.secrets,
             'service_accounts': secret_filter_vo.service_accounts,
-            'schemas': secret_filter_vo.schemas
+            'schemas': secret_filter_vo.schemas,
+            'exclude_secrets': secret_filter_vo.exclude_secrets,
+            'exclude_service_accounts': secret_filter_vo.exclude_service_accounts,
+            'exclude_schemas': secret_filter_vo.exclude_schemas
         }
         return collector_pb2.SecretFilter(**info)
     else:

@@ -188,11 +188,14 @@ class CollectorService(BaseService):
 
         params.update({'total_tasks': len(tasks), 'remained_tasks': len(tasks)})
 
-        # JOB: CREATED
-        job_vo = job_mgr.create_job(collector_vo, params)
+        duplicated_job_vos = job_mgr.list_duplicate_jobs(collector_id, params.get('secret_id'), domain_id)
+        for job_vo in duplicated_job_vos:
+            job_mgr.make_canceled_by_vo(job_vo)
 
         # JOB: IN-PROGRESS
-        job_mgr.make_inprogress_by_vo(job_vo)
+        job_vo = job_mgr.create_job(collector_vo, params)
+
+        # job_mgr.make_inprogress_by_vo(job_vo)
 
         if tasks:
             for task in tasks:
@@ -439,6 +442,12 @@ class CollectorService(BaseService):
                 _filter.append({'k': 'service_account_id', 'v': secret_filter['service_accounts'], 'o': 'in'})
             if 'schemas' in secret_filter and secret_filter['schemas']:
                 _filter.append({'k': 'schema', 'v': secret_filter['schemas'], 'o': 'in'})
+            if 'exclude_secrets' in secret_filter and secret_filter['exclude_secrets']:
+                _filter.append({'k': 'secret_id', 'v': secret_filter['exclude_secrets'], 'o': 'not_in'})
+            if 'exclude_service_accounts' in secret_filter and secret_filter['exclude_service_accounts']:
+                _filter.append({'k': 'service_account_id', 'v': secret_filter['exclude_service_accounts'], 'o': 'not_in'})
+            if 'exclude_schemas' in secret_filter and secret_filter['exclude_schemas']:
+                _filter.append({'k': 'exclude_schemas', 'v': secret_filter['exclude_schemas'], 'o': 'not_in'})
 
         return _filter
 
