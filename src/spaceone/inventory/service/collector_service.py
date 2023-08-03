@@ -185,7 +185,7 @@ class CollectorService(BaseService):
 
         tasks = self.get_tasks(params, endpoint, collector_vo.provider, plugin_info, secret_filter, domain_id)
         projects = self.list_projects_from_tasks(tasks)
-        params.update({'total_tasks': len(tasks), 'remained_tasks': len(tasks)})
+        params.update({'plugin_id': plugin_id, 'total_tasks': len(tasks), 'remained_tasks': len(tasks)})
 
         duplicated_job_vos = job_mgr.list_duplicate_jobs(collector_id, params.get('secret_id'), domain_id)
         for job_vo in duplicated_job_vos:
