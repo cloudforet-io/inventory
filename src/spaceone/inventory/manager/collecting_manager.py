@@ -85,7 +85,6 @@ class CollectingManager(BaseManager):
 
         try:
             # EXECUTE PLUGIN COLLECTION
-            _LOGGER.debug('[collecting_resources] Before call collect')
             endpoint, updated_version = plugin_manager.get_endpoint(plugin_info['plugin_id'], plugin_info.get('version'), domain_id, plugin_info.get('upgrade_mode', 'AUTO'))
             results = collector_plugin_mgr.collect(endpoint, plugin_info['options'], secret_data.get('data', {}), collect_filter, task_options)     # task_options = None
             # DELETE secret_data in params for Secure
@@ -102,6 +101,7 @@ class CollectingManager(BaseManager):
         collecting_count_info = {}
 
         try:
+            _LOGGER.debug(f'[collecting_resources] results: {results}')
             collecting_count_info = self._check_collecting_results(results, params)
             _LOGGER.debug(f'[collecting_resources] collecting_count_info: {collecting_count_info}')
 
