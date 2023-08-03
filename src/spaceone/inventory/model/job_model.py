@@ -20,7 +20,7 @@ class Job(MongoModel):
     success_tasks = IntField(min_value=0, max_value=65000, default=0)
     failure_tasks = IntField(min_value=0, max_value=65000, default=0)
     # errors = ListField(EmbeddedDocumentField(Error, default=None, null=True))                 # Deprecated
-    # collector = ReferenceField('Collector', reverse_delete_rule=NULLIFY)                      # Deprecated
+    collector = ReferenceField('Collector', reverse_delete_rule=CASCADE)
     collector_id = StringField(max_length=40)
     secret_id = StringField(max_length=40, null=True, default=None)
     plugin_id = StringField(max_length=40)
@@ -54,9 +54,9 @@ class Job(MongoModel):
         'change_query_keys': {
             'user_projects': 'projects'
         },
-        # 'reference_query_keys': {
-        #     'collector': Collector
-        # },
+        'reference_query_keys': {
+            'collector': Collector
+        },
         'ordering': [
             '-created_at'
         ],
