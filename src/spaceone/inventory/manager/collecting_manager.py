@@ -62,20 +62,7 @@ class CollectingManager(BaseManager):
             self.job_mgr.increase_failure_tasks(job_id, domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
-        # if self.job_task_mgr.check_duplicate_job_tasks(collector_id, secret_id, domain_id):
-        #     self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_DUPLICATE_JOB', 'A duplicate job is already running.')
-        #     self.job_task_mgr.make_canceled(job_task_id, domain_id)
-        #     self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-        #     raise ERROR_COLLECT_CANCELED(job_id=job_id)
-
         collect_filter = {}
-
-        # DEPRECATED
-        # try:
-        #     if params.get('use_cache'):
-        #         collect_filter = self._collector_filter_from_cache(collect_filter, collector_id, secret_id)
-        # except Exception as e:
-        #     _LOGGER.debug(f'[collecting_resources] cache error,{e}')
 
         try:
             # JOB TASK: IN_PROGRESS
@@ -111,6 +98,7 @@ class CollectingManager(BaseManager):
         except Exception as e:
             _LOGGER.error(f'[collecting_resources] {e}', exc_info=True)
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e)
+            self.job_task_mgr.make_failure(job_task_id, domain_id)
             JOB_TASK_STATE = 'FAILURE'
 
         finally:
@@ -126,7 +114,11 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(f'[collecting_resources] {job_task_id} | collecting_count_info: {collecting_count_info}')
             self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, secret_info=secret_info, collecting_count_info=collecting_count_info)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            self.job_mgr.increase_success_tasks(job_id, domain_id)
+
+            if JOB_TASK_STATE == 'SUCCESS':
+                self.job_mgr.increase_success_tasks(job_id, domain_id)
+            elif JOB_TASK_STATE == 'FAILURE':
+                self.job_mgr.increase_failure_tasks(job_id, domain_id)
 
             # debug code for memory leak
             # local_storage = LOCAL_STORAGE.__dict__
