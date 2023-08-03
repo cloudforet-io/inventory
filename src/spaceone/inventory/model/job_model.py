@@ -41,7 +41,7 @@ class Job(MongoModel):
             'failure_tasks',
             # 'errors',
             'collector_id',
-            # 'projects',
+            'projects',
             'finished_at',
             'mark_error',
         ],
