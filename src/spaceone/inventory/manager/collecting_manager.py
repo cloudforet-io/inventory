@@ -85,12 +85,13 @@ class CollectingManager(BaseManager):
 
         try:
             # EXECUTE PLUGIN COLLECTION
-            _LOGGER.debug('[collect] Before call collect')
+            _LOGGER.debug('[collecting_resources] Before call collect')
             endpoint, updated_version = plugin_manager.get_endpoint(plugin_info['plugin_id'], plugin_info.get('version'), domain_id, plugin_info.get('upgrade_mode', 'AUTO'))
             results = collector_plugin_mgr.collect(endpoint, plugin_info['options'], secret_data.get('data', {}), collect_filter, task_options)     # task_options = None
             # DELETE secret_data in params for Secure
             del params['secret_data']
         except Exception as e:
+            _LOGGER.error(f'[collecting_resources - ERROR {job_id}/{job_task_id}] {e}', exc_info=True)
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECTOR_COLLECTING', e)
             self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
@@ -102,6 +103,8 @@ class CollectingManager(BaseManager):
 
         try:
             collecting_count_info = self._check_collecting_results(results, params)
+            _LOGGER.debug(f'[collecting_resources] collecting_count_info: {collecting_count_info}')
+
             if collecting_count_info['failure_count'] > 0:
                 JOB_TASK_STATE = 'FAILURE'
 
@@ -120,6 +123,7 @@ class CollectingManager(BaseManager):
             else:
                 _LOGGER.debug(f'[collecting_resources] skip garbage_collection, {cleanup_mode}, {JOB_TASK_STATE}')
 
+            _LOGGER.debug(f'[collecting_resources] {job_task_id} | collecting_count_info: {collecting_count_info}')
             self._update_job_task(job_task_id, JOB_TASK_STATE, domain_id, secret_info=secret_info, collecting_count_info=collecting_count_info)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             self.job_mgr.increase_success_tasks(job_id, domain_id)

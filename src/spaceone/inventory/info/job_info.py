@@ -21,6 +21,7 @@ def JobInfo(job_vo: Job, minimal=False):
     info = {
         'job_id': job_vo.job_id,
         'status': job_vo.status,
+        'collector_id': job_vo.collector_id,
         'created_at': utils.datetime_to_iso8601(job_vo.created_at),
         'finished_at': utils.datetime_to_iso8601(job_vo.finished_at),
     }
