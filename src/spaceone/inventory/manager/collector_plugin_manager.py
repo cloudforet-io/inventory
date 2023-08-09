@@ -34,8 +34,8 @@ class CollectorPluginManager(BaseManager):
 
         return plugin_connector.dispatch('Collector.collect', params)
 
-    def get_task(self, endpoint, secret_data, options):
+    def get_tasks(self, endpoint, secret_data, options):
         plugin_connector: SpaceConnector = self.locator.get_connector('SpaceConnector', endpoint=endpoint)
 
         params = {'options': options, 'secret_data': secret_data}
-        return plugin_connector.dispatch('Job.get_task', params)
+        return plugin_connector.dispatch('Job.get_tasks', params)
