@@ -88,9 +88,7 @@ class CollectingManager(BaseManager):
         collecting_count_info = {}
 
         try:
-            _LOGGER.debug(f'[collecting_resources] results: {results}')
             collecting_count_info = self._check_collecting_results(results, params)
-            _LOGGER.debug(f'[collecting_resources] collecting_count_info: {collecting_count_info}')
 
             if collecting_count_info['failure_count'] > 0:
                 JOB_TASK_STATE = 'FAILURE'
