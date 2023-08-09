@@ -65,11 +65,11 @@ class JobManager(BaseManager):
     def decrease_remained_tasks_by_vo(self, job_vo: Job):
         job_vo = job_vo.decrement('remained_tasks')
 
-        if job_vo.remained_tasks == 0:
-            if job_vo.mark_error == 0:
-                self.make_success_by_vo(job_vo)
-            else:
+        if job_vo.remained_tasks == 0 and job_vo.status != 'CANCELLED':
+            if job_vo.mark_error:
                 self.make_failure_by_vo(job_vo)
+            else:
+                self.make_success_by_vo(job_vo)
 
         if job_vo.remained_tasks < 0:
             _LOGGER.debug(f'[decrease_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}')
