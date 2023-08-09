@@ -298,7 +298,7 @@ class CollectorService(BaseService):
                 response = collector_plugin_mgr.get_tasks(endpoint, secret_data, plugin_info.get('options', {}))
 
                 for task_options in response.get('tasks', []):
-                    _task.update({'task_options': task_options})
+                    _task.update(task_options)
                     tasks.append(_task)
 
             except Exception as e:
