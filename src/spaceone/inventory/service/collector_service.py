@@ -184,6 +184,7 @@ class CollectorService(BaseService):
             collector_vo = self._update_collector_plugin(endpoint, updated_version, plugin_info, collector_vo, domain_id)
 
         tasks = self.get_tasks(params, endpoint, collector_vo.provider, plugin_info, secret_filter, domain_id)
+        _LOGGER.debug(f'[collect] tasks: {tasks}')
         projects = self.list_projects_from_tasks(tasks)
         params.update({'plugin_id': plugin_id, 'total_tasks': len(tasks), 'remained_tasks': len(tasks)})
 
