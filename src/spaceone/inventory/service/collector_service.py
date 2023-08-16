@@ -1,4 +1,5 @@
 import logging
+import copy
 from spaceone.core.service import *
 from spaceone.core import utils
 from spaceone.inventory.error import *
@@ -184,7 +185,6 @@ class CollectorService(BaseService):
             collector_vo = self._update_collector_plugin(endpoint, updated_version, plugin_info, collector_vo, domain_id)
 
         tasks = self.get_tasks(params, endpoint, collector_vo.provider, plugin_info, secret_filter, domain_id)
-        _LOGGER.debug(f'[collect] tasks: {tasks}')
         projects = self.list_projects_from_tasks(tasks)
         params.update({'plugin_id': plugin_id, 'total_tasks': len(tasks), 'remained_tasks': len(tasks)})
 
@@ -300,8 +300,9 @@ class CollectorService(BaseService):
                 _LOGGER.debug(f'[get_tasks] response: {response}')
 
                 for task_options in response.get('tasks', []):
-                    _task.update(task_options)
-                    tasks.append(_task)
+                    _task_dict = copy.deepcopy(_task)
+                    _task_dict.update(task_options)
+                    tasks.append(_task_dict)
 
             except Exception as e:
                 # _LOGGER.debug(f'[get_tasks] Error to get tasks from plugin. set task from secret')
