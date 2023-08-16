@@ -297,6 +297,7 @@ class CollectorService(BaseService):
 
             try:
                 response = collector_plugin_mgr.get_tasks(endpoint, secret_data, plugin_info.get('options', {}))
+                _LOGGER.debug(f'[get_tasks] response: {response}')
 
                 for task_options in response.get('tasks', []):
                     _task.update(task_options)
