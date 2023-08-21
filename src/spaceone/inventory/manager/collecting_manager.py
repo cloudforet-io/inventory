@@ -57,7 +57,7 @@ class CollectingManager(BaseManager):
 
         if self.job_mgr.check_cancel(job_id, domain_id):
             self.job_task_mgr.add_error(job_task_id, domain_id, 'ERROR_COLLECT_CANCELED', 'The job has been canceled.')
-            self.job_task_mgr.make_canceled(job_task_id, domain_id)
+            self.job_task_mgr.make_failure(job_task_id, domain_id)
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
             self.job_mgr.increase_failure_tasks(job_id, domain_id)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
