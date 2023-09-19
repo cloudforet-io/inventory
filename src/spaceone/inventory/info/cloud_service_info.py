@@ -26,7 +26,7 @@ def CollectionInfo(vos: list):
         return None
 
 
-def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
+def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False, include_metadata=True):
     info = {
         'cloud_service_id': cloud_svc_vo.cloud_service_id,
         'name': cloud_svc_vo.name,
@@ -47,7 +47,6 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'instance_size': cloud_svc_vo.instance_size,
             'ip_addresses': cloud_svc_vo.ip_addresses,
             'data': change_struct_type(cloud_svc_vo.data),
-            'metadata': change_struct_type(cloud_svc_vo.metadata),
             'tags': change_struct_type(_change_tags_without_hash(cloud_svc_vo.tags)),
             'tag_keys': change_struct_type(cloud_svc_vo.tag_keys),
             'collection_info': CollectionInfo(cloud_svc_vo.collection_info),
@@ -56,6 +55,12 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False):
             'updated_at': utils.datetime_to_iso8601(cloud_svc_vo.updated_at),
             'deleted_at': utils.datetime_to_iso8601(cloud_svc_vo.deleted_at),
         })
+
+        if include_metadata:
+            info.update({
+                'metadata': change_struct_type(cloud_svc_vo.metadata),
+            })
+
     return cloud_service_pb2.CloudServiceInfo(**info)
 
 
