@@ -330,7 +330,6 @@ class CloudServiceService(BaseService):
         query = self._change_only_tags(query)
         query = self._change_sort_tags(query)
 
-        print(query)
         return self.cloud_svc_mgr.list_cloud_services(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
