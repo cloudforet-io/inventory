@@ -295,6 +295,7 @@ class CloudServiceService(BaseService):
                           'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
                           'project_group_id', 'domain_id', 'user_projects', 'ip_address'])
     @append_keyword_filter(_KEYWORD_FILTER)
+    @set_query_page_limit(1000)
     def list(self, params):
         """
         Args:
@@ -329,6 +330,7 @@ class CloudServiceService(BaseService):
         query = self._change_only_tags(query)
         query = self._change_sort_tags(query)
 
+        print(query)
         return self.cloud_svc_mgr.list_cloud_services(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
