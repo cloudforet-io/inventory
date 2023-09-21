@@ -34,9 +34,8 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
         return cloud_svc_type_vo
 
     def update_cloud_service_type(self, params):
-        return self.update_cloud_service_type_by_vo(params,
-                                                    self.get_cloud_service_type(params['cloud_service_type_id'],
-                                                                                params['domain_id']))
+        cloud_service_type_vo = self.get_cloud_service_type(params['cloud_service_type_id'], params['domain_id'])
+        return self.update_cloud_service_type_by_vo(params, cloud_service_type_vo)
 
     def update_cloud_service_type_by_vo(self, params, cloud_svc_type_vo):
         def _rollback(old_data):
