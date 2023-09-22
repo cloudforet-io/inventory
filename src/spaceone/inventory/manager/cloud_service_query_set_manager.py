@@ -1,7 +1,7 @@
 import copy
 import logging
-import time
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 from spaceone.core import cache, utils, queue
 from spaceone.core.manager import BaseManager
@@ -59,6 +59,20 @@ class CloudServiceQuerySetManager(BaseManager):
         params['query_hash'] = utils.dict_to_hash(params['query_options'])
 
         _LOGGER.debug(f'[create_cloud_service_query_set] create query set: {params["name"]}')
+
+        keys, additional_info_keys = self._get_keys_from_query(params['query_options'])
+        params['keys'] = keys
+        params['additional_info_keys'] = additional_info_keys
+
+        provider = params.get('provider')
+        cloud_service_group = params.get('cloud_service_group')
+        cloud_service_type = params.get('cloud_service_type')
+
+        if provider and cloud_service_group and cloud_service_type:
+            params['ref_cloud_service_type'] = self._make_cloud_service_type_key(params['domain_id'], provider,
+                                                                                 cloud_service_group,
+                                                                                 cloud_service_type)
+
         cloud_svc_query_set_vo: CloudServiceQuerySet = self.cloud_svc_query_set_model.create(params)
         self.transaction.add_rollback(_rollback, cloud_svc_query_set_vo)
 
@@ -78,6 +92,9 @@ class CloudServiceQuerySetManager(BaseManager):
 
         if 'query_options' in params:
             params['query_hash'] = utils.dict_to_hash(params['query_options'])
+            keys, additional_info_keys = self._get_keys_from_query(params['query_options'])
+            params['keys'] = keys
+            params['additional_info_keys'] = additional_info_keys
 
         _LOGGER.debug(f'[update_cloud_service_query_set_by_vo] update query set: {cloud_svc_query_set_vo.query_set_id}')
 
@@ -137,14 +154,29 @@ class CloudServiceQuerySetManager(BaseManager):
 
         try:
             self._save_query_results(cloud_svc_query_set_vo, results, created_at)
-            self._delete_old_cloud_service_stats(cloud_svc_query_set_vo, created_at)
-            self._delete_old_monthly_cloud_service_stats(cloud_svc_query_set_vo, created_at)
+            self._delete_changed_cloud_service_stats(cloud_svc_query_set_vo, created_at)
+            self._delete_changed_monthly_cloud_service_stats(cloud_svc_query_set_vo, created_at)
         except Exception as e:
             _LOGGER.error(f'[run_cloud_service_query_set] Failed to save query result: {e}', exc_info=True)
             self._rollback_query_results(cloud_svc_query_set_vo, created_at)
             raise ERROR_CLOUD_SERVICE_QUERY_SET_RUN_FAILED(query_set_id=cloud_svc_query_set_vo.query_set_id)
 
-        self._remove_analyze_cache(cloud_svc_query_set_vo.domain_id)
+        self._update_status(cloud_svc_query_set_vo, created_at)
+        self._delete_invalid_cloud_service_stats(cloud_svc_query_set_vo)
+        self._delete_old_cloud_service_stats(cloud_svc_query_set_vo)
+        self._remove_analyze_cache(cloud_svc_query_set_vo.domain_id, cloud_svc_query_set_vo.query_set_id)
+
+    def test_cloud_service_query_set(self, cloud_svc_query_set_vo: CloudServiceQuerySet):
+        if cloud_svc_query_set_vo.state == 'DISABLED':
+            raise ERROR_CLOUD_SERVICE_QUERY_SET_STATE(state=cloud_svc_query_set_vo.state)
+
+        self.cloud_svc_stats_mgr: CloudServiceStatsManager = self.locator.get_manager('CloudServiceStatsManager')
+
+        _LOGGER.debug(f'[test_cloud_service_query_set] test query set: {cloud_svc_query_set_vo.query_set_id} '
+                      f'({cloud_svc_query_set_vo.domain_id})')
+        return {
+            'results': self._run_analyze_query(cloud_svc_query_set_vo)
+        }
 
     def _run_analyze_query(self, cloud_svc_query_set_vo: CloudServiceQuerySet):
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager('CloudServiceManager')
@@ -167,85 +199,129 @@ class CloudServiceQuerySetManager(BaseManager):
         response = cloud_svc_mgr.analyze_cloud_services(analyze_query)
         return response.get('results', [])
 
-    def _delete_old_cloud_service_stats(self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at):
+    def _delete_invalid_cloud_service_stats(self, cloud_svc_query_set_vo: CloudServiceQuerySet):
+        domain_id = cloud_svc_query_set_vo.domain_id
+        query_set_id = cloud_svc_query_set_vo.query_set_id
+
+        cloud_stats_vos = self.cloud_svc_stats_mgr.filter_cloud_service_stats(
+            query_set_id=query_set_id, domain_id=domain_id, status='IN_PROGRESS')
+
+        if cloud_stats_vos.count() > 0:
+            _LOGGER.debug(f'[_delete_invalid_cloud_service_stats] delete stats count: {cloud_stats_vos.count()}')
+            cloud_stats_vos.delete()
+
+        monthly_stats_vos = self.cloud_svc_stats_mgr.filter_monthly_cloud_service_stats(
+            query_set_id=query_set_id, domain_id=domain_id, status='IN_PROGRESS')
+
+        if monthly_stats_vos.count() > 0:
+            _LOGGER.debug(f'[_delete_invalid_cloud_service_stats] delete monthly stats count: {monthly_stats_vos.count()}')
+            monthly_stats_vos.delete()
+
+    def _delete_old_cloud_service_stats(self, cloud_svc_query_set_vo: CloudServiceQuerySet):
+        now = datetime.utcnow().date()
+        query_set_id = cloud_svc_query_set_vo.query_set_id
+        domain_id = cloud_svc_query_set_vo.domain_id
+        old_created_month = (now - relativedelta(months=12)).strftime('%Y-%m')
+        old_created_year = (now - relativedelta(months=36)).strftime('%Y')
+
+        delete_query = {
+            'filter': [
+                {'k': 'created_month', 'v': old_created_month, 'o': 'lt'},
+                {'k': 'query_set_id', 'v': query_set_id, 'o': 'eq'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
+            ]
+        }
+
+        stats_vos, total_count = self.cloud_svc_stats_mgr.list_cloud_service_stats(delete_query)
+
+        if total_count > 0:
+            _LOGGER.debug(f'[delete_old_cloud_service_stats] delete stats count: {total_count}')
+            stats_vos.delete()
+
+        monthly_delete_query = {
+            'filter': [
+                {'k': 'created_year', 'v': old_created_year, 'o': 'lt'},
+                {'k': 'query_set_id', 'v': query_set_id, 'o': 'eq'},
+                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
+            ]
+        }
+
+        monthly_stats_vos, total_count = self.cloud_svc_stats_mgr.list_monthly_cloud_service_stats(monthly_delete_query)
+
+        if total_count > 0:
+            _LOGGER.debug(f'[_delete_old_cloud_service_stats] delete monthly stats count: {total_count}')
+            monthly_stats_vos.delete()
+
+    def _update_status(self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at):
         domain_id = cloud_svc_query_set_vo.domain_id
         query_set_id = cloud_svc_query_set_vo.query_set_id
         created_date = created_at.strftime('%Y-%m-%d')
-        timestamp = int(time.mktime(created_at.timetuple()))
+        created_month = created_at.strftime('%Y-%m')
 
-        query = {
-            'filter': [
-                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
-                {'k': 'query_set_id', 'v': query_set_id, 'o': 'eq'},
-                {'k': 'created_date', 'v': created_date, 'o': 'eq'},
-                {'k': 'timestamp', 'v': timestamp, 'o': 'not'}
-            ]
-        }
+        cloud_stats_vos = self.cloud_svc_stats_mgr.filter_cloud_service_stats(
+            query_set_id=query_set_id, domain_id=domain_id, created_date=created_date, status='IN_PROGRESS')
+        cloud_stats_vos.update({'status': 'DONE'})
 
-        _LOGGER.debug(f'[_delete_old_cloud_service_stats] Query: {query}')
-        cloud_stats_vos, total_count = self.cloud_svc_stats_mgr.list_cloud_service_stats(query)
+        monthly_stats_vos = self.cloud_svc_stats_mgr.filter_monthly_cloud_service_stats(
+            query_set_id=query_set_id, domain_id=domain_id, created_month=created_month, status='IN_PROGRESS')
+        monthly_stats_vos.update({'status': 'DONE'})
+
+    def _delete_changed_cloud_service_stats(self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at):
+        domain_id = cloud_svc_query_set_vo.domain_id
+        query_set_id = cloud_svc_query_set_vo.query_set_id
+        created_date = created_at.strftime('%Y-%m-%d')
+
+        cloud_stats_vos = self.cloud_svc_stats_mgr.filter_cloud_service_stats(
+            query_set_id=query_set_id, domain_id=domain_id, created_date=created_date, status='DONE')
+
+        _LOGGER.debug(f'[_delete_old_cloud_service_stats] delete count: {cloud_stats_vos.count()}')
         cloud_stats_vos.delete()
 
-    def _delete_old_monthly_cloud_service_stats(self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at):
+    def _delete_changed_monthly_cloud_service_stats(self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at):
         domain_id = cloud_svc_query_set_vo.domain_id
         query_set_id = cloud_svc_query_set_vo.query_set_id
         created_month = created_at.strftime('%Y-%m')
-        timestamp = int(time.mktime(created_at.timetuple()))
 
-        query = {
-            'filter': [
-                {'k': 'domain_id', 'v': domain_id, 'o': 'eq'},
-                {'k': 'query_set_id', 'v': query_set_id, 'o': 'eq'},
-                {'k': 'created_month', 'v': created_month, 'o': 'eq'},
-                {'k': 'timestamp', 'v': timestamp, 'o': 'not'}
-            ]
-        }
+        monthly_stats_vos = self.cloud_svc_stats_mgr.filter_monthly_cloud_service_stats(
+            query_set_id=query_set_id, domain_id=domain_id, created_month=created_month, status='DONE')
 
-        _LOGGER.debug(f'[_delete_old_monthly_cloud_service_stats] Query: {query}')
-        monthly_stats_vos, total_count = self.cloud_svc_stats_mgr.list_monthly_cloud_service_stats(query)
+        _LOGGER.debug(f'[_delete_old_monthly_cloud_service_stats] delete count: {monthly_stats_vos.count()}')
         monthly_stats_vos.delete()
 
     def _rollback_query_results(self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at):
         _LOGGER.debug(f'[_rollback_query_results] Rollback Query Results: {cloud_svc_query_set_vo.query_set_id}')
         query_set_id = cloud_svc_query_set_vo.query_set_id
         domain_id = cloud_svc_query_set_vo.domain_id
-        timestamp = int(time.mktime(created_at.timetuple()))
 
         cloud_service_stats_vo = self.cloud_svc_stats_mgr.filter_cloud_service_stats(
-            query_set_id=query_set_id, domain_id=domain_id, timestamp=timestamp)
+            query_set_id=query_set_id, domain_id=domain_id, created_date=created_at.strftime('%Y-%m-%d'),
+            status='IN_PROGRESS')
         cloud_service_stats_vo.delete()
 
         monthly_stats_vo = self.cloud_svc_stats_mgr.filter_monthly_cloud_service_stats(
-            query_set_id=query_set_id, domain_id=domain_id, timestamp=timestamp)
+            query_set_id=query_set_id, domain_id=domain_id, created_month=created_at.strftime('%Y-%m'),
+            status='IN_PROGRESS')
         monthly_stats_vo.delete()
 
-    def _save_query_results(self, cloud_svc_query_set_vo: CloudServiceQuerySet, results, created_at):
-        query_set_id = cloud_svc_query_set_vo.query_set_id
-        domain_id = cloud_svc_query_set_vo.domain_id
-        analyze_query = cloud_svc_query_set_vo.query_options
-        unit = cloud_svc_query_set_vo.unit
-        original_group_by = set(analyze_query.get('group_by', [])) - set(_DEFAULT_GROUP_BY)
-        timestamp = int(time.mktime(created_at.timetuple()))
-
+    def _save_query_results(self, query_set_vo: CloudServiceQuerySet, results, created_at):
         for result in results:
-            self._save_query_result(result, query_set_id, original_group_by, unit, domain_id, created_at, timestamp)
+            self._save_query_result(result, query_set_vo, created_at)
 
-    @staticmethod
-    def _remove_analyze_cache(domain_id):
-        cache.delete_pattern(f'inventory:cloud-service-stats:{domain_id}:*')
-        cache.delete_pattern(f'inventory:monthly-cloud-service-stats:{domain_id}:*')
-
-    def _save_query_result(self, result, query_set_id, original_group_by, unit, domain_id, created_at, timestamp):
+    def _save_query_result(self, result, query_set_vo: CloudServiceQuerySet, created_at):
         provider = result['provider']
         cloud_service_group = result['cloud_service_group']
         cloud_service_type = result['cloud_service_type']
         region_code = result.get('region_code')
+        query_set_id = query_set_vo.query_set_id
+        domain_id = query_set_vo.domain_id
         ref_cloud_service_type = self._make_cloud_service_type_key(domain_id, provider, cloud_service_group,
                                                                    cloud_service_type)
         ref_region = self._make_region_key(domain_id, provider, region_code)
 
         data = {
             'query_set_id': query_set_id,
+            'values': {},
+            'unit': {},
             'provider': provider,
             'cloud_service_group': cloud_service_group,
             'cloud_service_type': cloud_service_type,
@@ -257,27 +333,29 @@ class CloudServiceQuerySetManager(BaseManager):
             'domain_id': domain_id,
             'additional_info': {},
             'created_at': created_at,
-            'timestamp': timestamp,
             'created_year': created_at.strftime('%Y'),
             'created_month': created_at.strftime('%Y-%m'),
             'created_date': created_at.strftime('%Y-%m-%d')
         }
 
-        group_by_keys = []
-        for key in original_group_by:
-            group_by_key = key.rsplit('.', 1)[-1]
-            data['additional_info'][group_by_key] = result.get(group_by_key)
-            group_by_keys.append(group_by_key)
+        for key in query_set_vo.keys:
+            data['values'][key] = result.get(key, 0)
 
-        field_keys = set(result.keys()) - set(group_by_keys) - set(_DEFAULT_GROUP_BY)
-        for key in field_keys:
-            field_data = copy.deepcopy(data)
-            field_data['key'] = key
-            field_data['value'] = result.get(key)
-            field_data['unit'] = unit.get(key, 'Count')
+            if key in query_set_vo.unit:
+                data['unit'][key] = query_set_vo.unit[key]
+            else:
+                data['unit'][key] = 'Count'
 
-            self.cloud_svc_stats_mgr.create_cloud_service_stats(field_data, False)
-            self.cloud_svc_stats_mgr.create_monthly_cloud_service_stats(field_data, False)
+        for key in query_set_vo.additional_info_keys:
+            data['additional_info'][key] = result.get(key)
+
+        self.cloud_svc_stats_mgr.create_cloud_service_stats(data, False)
+        self.cloud_svc_stats_mgr.create_monthly_cloud_service_stats(data, False)
+
+    @staticmethod
+    def _remove_analyze_cache(domain_id, query_set_id):
+        cache.delete_pattern(f'inventory:cloud-service-stats:*:{domain_id}:{query_set_id}:*')
+        cache.delete_pattern(f'inventory:monthly-cloud-service-stats:*:{domain_id}:{query_set_id}:*')
 
     @staticmethod
     def _make_cloud_service_type_key(domain_id, provider, cloud_service_group, cloud_service_type):
@@ -316,3 +394,12 @@ class CloudServiceQuerySetManager(BaseManager):
             })
 
         return _filter
+
+    @staticmethod
+    def _get_keys_from_query(query):
+        keys = query.get('fields', {}).keys()
+        additional_info_keys = []
+        for key in query.get('group_by', []):
+            if key not in _DEFAULT_GROUP_BY:
+                additional_info_keys.append(key.split('.')[-1:][0])
+        return keys, additional_info_keys

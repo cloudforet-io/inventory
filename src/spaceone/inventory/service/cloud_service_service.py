@@ -346,7 +346,7 @@ class CloudServiceService(BaseService):
             }
 
         Returns:
-            values (list) : 'list of statistics data'
+            results (list) : 'list of analyze data'
 
         """
 
@@ -371,7 +371,7 @@ class CloudServiceService(BaseService):
             }
 
         Returns:
-            values (list) : 'list of statistics data'
+            results (list) : 'list of statistics data'
 
         """
 

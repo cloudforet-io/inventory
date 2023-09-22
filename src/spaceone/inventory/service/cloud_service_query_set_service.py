@@ -120,6 +120,26 @@ class CloudServiceQuerySetService(BaseService):
 
     @transaction(append_meta={'authorization.scope': 'DOMAIN'})
     @check_required(['query_set_id', 'domain_id'])
+    def test(self, params):
+        """ Test Query Set Manually
+        Args:
+            params (dict): {
+                    'query_set_id': 'str',
+                    'domain_id': 'str'
+                }
+
+        Returns:
+            values (list) : 'list of analyze data'
+
+        """
+
+        cloud_svc_query_set_vo: CloudServiceQuerySet = \
+            self.cloud_svc_query_set_mgr.get_cloud_service_query_set(params['query_set_id'], params['domain_id'])
+
+        return self.cloud_svc_query_set_mgr.test_cloud_service_query_set(cloud_svc_query_set_vo)
+
+    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
+    @check_required(['query_set_id', 'domain_id'])
     def enable(self, params):
         """ Enable Cloud Service Query Set
         Args:

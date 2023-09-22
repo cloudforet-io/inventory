@@ -33,6 +33,12 @@ class CloudServiceQuerySet(BaseAPI, cloud_service_query_set_pb2_grpc.CloudServic
             cloud_svc_query_set_service.run(params)
             return self.locator.get_info('EmptyInfo')
 
+    def test(self, request, context):
+        params, metadata = self.parse_request(request, context)
+
+        with self.locator.get_service('CloudServiceQuerySetService', metadata) as cloud_svc_query_set_service:
+            return self.locator.get_info('AnalyzeInfo', cloud_svc_query_set_service.test(params))
+
     def enable(self, request, context):
         params, metadata = self.parse_request(request, context)
 

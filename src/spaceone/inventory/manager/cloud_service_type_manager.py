@@ -49,7 +49,11 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
         return cloud_svc_type_vo.update(params)
 
     def delete_cloud_service_type(self, cloud_service_type_id, domain_id):
-        self.delete_cloud_service_type_by_vo(self.get_cloud_service_type(cloud_service_type_id, domain_id))
+        cloud_svc_type_vo = self.get_cloud_service_type(cloud_service_type_id, domain_id)
+        query_set_vos = self._filter_cloud_service_query_sets(cloud_svc_type_vo)
+        query_set_vos.delete()
+
+        self.delete_cloud_service_type_by_vo(cloud_svc_type_vo)
 
     def get_cloud_service_type(self, cloud_service_type_id, domain_id, only=None):
         return self.cloud_svc_type_model.get(cloud_service_type_id=cloud_service_type_id, domain_id=domain_id,

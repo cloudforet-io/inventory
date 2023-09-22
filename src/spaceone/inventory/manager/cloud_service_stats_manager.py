@@ -58,47 +58,79 @@ class CloudServiceStatsManager(BaseManager):
         return self.monthly_stats_model.filter(**conditions)
 
     def list_cloud_service_stats(self, query):
+        query = self._append_status_filter(query)
+
         return self.cloud_svc_stats_model.query(**query)
 
     def list_monthly_cloud_service_stats(self, query):
+        query = self._append_status_filter(query)
+
         return self.monthly_stats_model.query(**query)
 
-    # @cache.cacheable(key='inventory:cloud-service-stats:{domain_id}:{query_hash}', expire=3600 * 24)
-    def analyze_cloud_service_stats_with_cache(self, query, query_hash, domain_id, target='SECONDARY_PREFERRED'):
-        query['target'] = target
-        query['date_field'] = 'created_date'
-        return self.cloud_svc_stats_model.analyze(**query)
-
-    # @cache.cacheable(key='inventory:monthly-cloud-service-stats:{domain_id}:{query_hash}', expire=3600 * 24)
-    def analyze_monthly_cloud_service_stats_with_cache(self, query, query_hash, domain_id, target='SECONDARY_PREFERRED'):
-        query['target'] = target
-        query['date_field'] = 'created_month'
-        return self.monthly_stats_model.analyze(**query)
-
-    def analyze_cloud_service_stats(self, query, domain_id):
-        granularity = query['granularity']
-        start, end = self._parse_date_range(query)
-        del query['start']
-        del query['end']
-
-        # Save query history to speed up data loading
-        self._create_analyze_query_history(query, granularity, start, end, domain_id)
-
-        # Add date range filter by granularity
-        query = self._add_date_range_filter(query, granularity, start, end)
-        query_hash = utils.dict_to_hash(query)
-
-        if self._is_monthly_cost(granularity, start, end):
-            return self.analyze_monthly_cloud_service_stats_with_cache(query, query_hash, domain_id)
-        else:
-            return self.analyze_cloud_service_stats_with_cache(query, query_hash, domain_id)
-
     def stat_cloud_service_stats(self, query):
+        query = self._append_status_filter(query)
+
         return self.cloud_svc_stats_model.stat(**query)
 
-    @cache.cacheable(key='inventory:cloud-service-stats-history:{domain_id}:{query_hash}', expire=600)
-    def create_cloud_service_stats_query_history(self, domain_id, query, query_hash, granularity=None,
-                                                 start=None, end=None):
+    def stat_monthly_cloud_service_stats(self, query):
+        query = self._append_status_filter(query)
+
+        return self.monthly_stats_model.stat(**query)
+
+    def analyze_cloud_service_stats(self, query, target='SECONDARY_PREFERRED'):
+        query['target'] = target
+        query['date_field'] = 'created_date'
+        query['date_field_format'] = '%Y-%m-%d'
+        _LOGGER.debug(f'[analyze_cloud_service_stats] query: {query}')
+        return self.cloud_svc_stats_model.analyze(**query)
+
+    def analyze_monthly_cloud_service_stats(self, query, target='SECONDARY_PREFERRED'):
+        query['target'] = target
+        query['date_field'] = 'created_month'
+        query['date_field_format'] = '%Y-%m'
+        _LOGGER.debug(f'[analyze_monthly_cloud_service_stats] query: {query}')
+        return self.monthly_stats_model.analyze(**query)
+
+    def analyze_yearly_cloud_service_stats(self, query, target='SECONDARY_PREFERRED'):
+        query['target'] = target
+        query['date_field'] = 'created_year'
+        query['date_field_format'] = '%Y'
+        _LOGGER.debug(f'[analyze_yearly_cloud_service_stats] query: {query}')
+        return self.monthly_stats_model.analyze(**query)
+
+    @cache.cacheable(key='inventory:cloud-service-stats:daily:{domain_id}:{query_set_id}:{query_hash}', expire=3600 * 24)
+    def analyze_cloud_service_stats_with_cache(self, query, query_hash, domain_id, query_set_id, target='SECONDARY_PREFERRED'):
+        return self.analyze_cloud_service_stats(query, target)
+
+    @cache.cacheable(key='analyze-costs:monthly:{domain_id}:{query_set_id}:{query_hash}', expire=3600 * 24)
+    def analyze_monthly_cloud_service_stats_with_cache(self, query, query_hash, domain_id, query_set_id,
+                                                       target='SECONDARY_PREFERRED'):
+        return self.analyze_monthly_cloud_service_stats(query, target)
+
+    @cache.cacheable(key='analyze-costs:yearly:{domain_id}:{query_set_id}:{query_hash}', expire=3600 * 24)
+    def analyze_yearly_cloud_service_stats_with_cache(self, query, query_hash, domain_id, query_set_id,
+                                                      target='SECONDARY_PREFERRED'):
+        return self.analyze_yearly_cloud_service_stats(query, target)
+
+    def analyze_cloud_service_stats_by_granularity(self, query, domain_id, query_set_id):
+        self._check_date_range(query)
+        granularity = query['granularity']
+
+        # Save query history to speed up data loading
+        query_hash = utils.dict_to_hash(query)
+        self.create_cloud_service_stats_query_history(query, query_hash, domain_id, query_set_id)
+
+        if granularity == 'DAILY':
+            response = self.analyze_cloud_service_stats_with_cache(query, query_hash, domain_id, query_set_id)
+        elif granularity == 'MONTHLY':
+            response = self.analyze_monthly_cloud_service_stats_with_cache(query, query_hash, domain_id, query_set_id)
+        else:
+            response = self.analyze_yearly_cloud_service_stats_with_cache(query, query_hash, domain_id, query_set_id)
+
+        return response
+
+    @cache.cacheable(key='inventory:stats-query-history:{domain_id}:{query_set_id}:{query_hash}', expire=600)
+    def create_cloud_service_stats_query_history(self, query, query_hash, domain_id, query_set_id):
         def _rollback(history_vo):
             _LOGGER.info(f'[create_cloud_service_stats_query_history._rollback] Delete query history: {query_hash}')
             history_vo.delete()
@@ -110,119 +142,101 @@ class CloudServiceStatsManager(BaseManager):
             history_vo = history_model.create({
                 'query_hash': query_hash,
                 'query_options': copy.deepcopy(query),
-                'granularity': granularity,
-                'start': start,
-                'end': end,
+                'query_set_id': query_set_id,
                 'domain_id': domain_id
             })
 
             self.transaction.add_rollback(_rollback, history_vo)
         else:
-            history_vos[0].update({
-                'start': start,
-                'end': end
-            })
+            history_vos[0].update({})
 
-    def _create_analyze_query_history(self, query, granularity, start, end, domain_id):
-        analyze_query = {
-            'group_by': query.get('group_by'),
-            'field_group': query.get('field_group'),
-            'filter': query.get('filter'),
-            'filter_or': query.get('filter_or'),
-            'page': query.get('page'),
-            'sort': query.get('sort'),
-            'fields': query.get('fields'),
-            'select': query.get('select'),
-        }
-        query_hash = utils.dict_to_hash(analyze_query)
-        self.create_cloud_service_stats_query_history(domain_id, analyze_query, query_hash, granularity, start, end)
-
-    def _parse_date_range(self, query):
+    def _check_date_range(self, query):
         start_str = query.get('start')
         end_str = query.get('end')
         granularity = query.get('granularity')
 
-        start = self._parse_start_time(start_str)
-        end = self._parse_end_time(end_str)
+        start = self._parse_start_time(start_str, granularity)
+        end = self._parse_end_time(end_str, granularity)
+        now = datetime.utcnow().date()
+
+        if len(start_str) != len(end_str):
+            raise ERROR_INVALID_DATE_RANGE(start=start_str, end=end_str,
+                                           reason='Start date and end date must be the same format.')
 
         if start >= end:
             raise ERROR_INVALID_DATE_RANGE(start=start_str, end=end_str,
                                            reason='End date must be greater than start date.')
 
-        if granularity in ['ACCUMULATED', 'MONTHLY']:
+        if granularity == 'DAILY':
+            if start + relativedelta(months=1) < end:
+                raise ERROR_INVALID_DATE_RANGE(start=start_str, end=end_str,
+                                               reason='Request up to a maximum of 1 month.')
+
+            if start + relativedelta(months=12) < now.replace(day=1):
+                raise ERROR_INVALID_DATE_RANGE(start=start_str, end=end_str,
+                                               reason='For DAILY, you cannot request data older than 1 year.')
+
+        elif granularity == 'MONTHLY':
             if start + relativedelta(months=12) < end:
                 raise ERROR_INVALID_DATE_RANGE(start=start_str, end=end_str,
                                                reason='Request up to a maximum of 12 months.')
-        elif granularity == 'DAILY':
-            if start + relativedelta(days=31) < end:
+
+            if start + relativedelta(months=36) < now.replace(day=1):
                 raise ERROR_INVALID_DATE_RANGE(start=start_str, end=end_str,
-                                               reason='Request up to a maximum of 31 days.')
+                                               reason='For MONTHLY, you cannot request data older than 3 years.')
+        elif granularity == 'YEARLY':
+            if start + relativedelta(years=3) < now.replace(month=1, day=1):
+                raise ERROR_INVALID_DATE_RANGE(start=start_str, end=end_str,
+                                               reason='For YEARLY, you cannot request data older than 3 years.')
 
-        if granularity == 'MONTHLY' and (start.day != 1 or end.day != 1):
-            raise ERROR_INVALID_DATE_RANGE(start=start_str, end=end_str,
-                                           reason='If the granularity is MONTHLY, '
-                                                  'the request must be in YYYY-MM format.')
+    def _parse_start_time(self, date_str, granularity):
+        return self._convert_date_from_string(date_str.strip(), 'start', granularity)
 
-        return start, end
+    def _parse_end_time(self, date_str, granularity):
+        end = self._convert_date_from_string(date_str.strip(), 'end', granularity)
 
-    def _parse_start_time(self, date_str):
-        return self._convert_date_from_string(date_str.strip(), 'start')
-
-    def _parse_end_time(self, date_str):
-        date = self._convert_date_from_string(date_str.strip(), 'end')
-
-        if len(date_str) == 7:
-            return date + relativedelta(months=1)
+        if granularity == 'YEARLY':
+            return end + relativedelta(years=1)
+        elif granularity == 'MONTHLY':
+            return end + relativedelta(months=1)
         else:
-            return date + relativedelta(days=1)
+            return end + relativedelta(days=1)
 
     @staticmethod
-    def _convert_date_from_string(date_str, key):
-        if len(date_str) == 7:
-            # Month (YYYY-MM)
-            date_format = '%Y-%m'
+    def _convert_date_from_string(date_str, key, granularity):
+        if granularity == 'YEARLY':
+            date_format = '%Y'
+            date_type = 'YYYY'
+        elif granularity == 'MONTHLY':
+            if len(date_str) == 4:
+                date_format = '%Y'
+                date_type = 'YYYY'
+            else:
+                date_format = '%Y-%m'
+                date_type = 'YYYY-MM'
         else:
-            # Date (YYYY-MM-DD)
-            date_format = '%Y-%m-%d'
+            if len(date_str) == 4:
+                date_format = '%Y'
+                date_type = 'YYYY'
+            elif len(date_str) == 7:
+                date_format = '%Y-%m'
+                date_type = 'YYYY-MM'
+            else:
+                date_format = '%Y-%m-%d'
+                date_type = 'YYYY-MM-DD'
 
         try:
             return datetime.strptime(date_str, date_format).date()
         except Exception as e:
-            raise ERROR_INVALID_PARAMETER_TYPE(key=key, type=date_format)
-
-    def _add_date_range_filter(self, query, granularity, start: date, end: date):
-        query['filter'] = query.get('filter') or []
-
-        if self._is_monthly_cost(granularity, start, end):
-            query['filter'].append({
-                'k': 'created_month',
-                'v': start.strftime('%Y-%m'),
-                'o': 'gte'
-            })
-
-            query['filter'].append({
-                'k': 'created_month',
-                'v': end.strftime('%Y-%m'),
-                'o': 'lt'
-            })
-        else:
-            query['filter'].append({
-                'k': 'created_date',
-                'v': start.strftime('%Y-%m-%d'),
-                'o': 'gte'
-            })
-
-            query['filter'].append({
-                'k': 'created_date',
-                'v': end.strftime('%Y-%m-%d'),
-                'o': 'lt'
-            })
-
-        return query
+            raise ERROR_INVALID_PARAMETER_TYPE(key=key, type=date_type)
 
     @staticmethod
-    def _is_monthly_cost(granularity, start, end):
-        if granularity in ['ACCUMULATED', 'MONTHLY'] and start.day == 1 and end.day == 1:
-            return True
-        else:
-            return False
+    def _append_status_filter(query):
+        query_filter = query.get('filter', [])
+        query_filter.append({
+            'k': 'status',
+            'v': 'DONE',
+            'o': 'eq'
+        })
+        query['filter'] = query_filter
+        return query
