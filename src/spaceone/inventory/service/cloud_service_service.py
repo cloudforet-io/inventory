@@ -292,8 +292,8 @@ class CloudServiceService(BaseService):
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['domain_id'])
     @append_query_filter(['cloud_service_id', 'name', 'state', 'account', 'instance_type', 'cloud_service_type',
-                          'cloud_service_group', 'provider', 'region_code', 'resource_group_id', 'project_id',
-                          'project_group_id', 'domain_id', 'user_projects', 'ip_address'])
+                          'cloud_service_group', 'provider', 'region_code', 'project_id', 'project_group_id',
+                          'domain_id', 'user_projects', 'ip_address'])
     @append_keyword_filter(_KEYWORD_FILTER)
     @set_query_page_limit(1000)
     def list(self, params):
@@ -309,7 +309,6 @@ class CloudServiceService(BaseService):
                     'cloud_service_group': 'str',
                     'provider': 'str',
                     'region_code': 'str',
-                    'resource_group_id': 'str',
                     'project_id': 'str',
                     'project_group_id': 'str',
                     'domain_id': 'str',
@@ -324,13 +323,12 @@ class CloudServiceService(BaseService):
 
         """
         query = params.get('query', {})
-        query = self._append_resource_group_filter(query, params['domain_id'])
+        # query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
         query = self._change_filter_tags(query)
         query = self._change_only_tags(query)
         query = self._change_sort_tags(query)
 
-        print(query)
         return self.cloud_svc_mgr.list_cloud_services(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
@@ -348,12 +346,12 @@ class CloudServiceService(BaseService):
             }
 
         Returns:
-            values (list) : 'list of statistics data'
+            results (list) : 'list of analyze data'
 
         """
 
         query = params.get('query', {})
-        query = self._append_resource_group_filter(query, params['domain_id'])
+        # query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
         query = self._change_filter_tags(query)
 
@@ -373,12 +371,12 @@ class CloudServiceService(BaseService):
             }
 
         Returns:
-            values (list) : 'list of statistics data'
+            results (list) : 'list of statistics data'
 
         """
 
         query = params.get('query', {})
-        query = self._append_resource_group_filter(query, params['domain_id'])
+        # query = self._append_resource_group_filter(query, params['domain_id'])
         query = self._change_project_group_filter(query, params['domain_id'])
         query = self._change_filter_tags(query)
         query = self._change_distinct_tags(query)

@@ -1,6 +1,7 @@
 from mongoengine import *
 
 from spaceone.core.model.mongo_model import MongoModel
+from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
 
 
 class CloudServiceQuerySet(MongoModel):
@@ -11,9 +12,12 @@ class CloudServiceQuerySet(MongoModel):
     query_hash = StringField(max_length=255)
     query_type = StringField(max_length=20, required=True, choices=('MANAGED', 'CUSTOM'))
     unit = DictField()
+    keys = ListField(StringField(max_length=255))
+    additional_info_keys = ListField(StringField(max_length=255))
     provider = StringField(max_length=255, default=None, null=True)
     cloud_service_group = StringField(max_length=255, default=None, null=True)
     cloud_service_type = StringField(max_length=255, default=None, null=True)
+    ref_cloud_service_type = StringField(max_length=255, default=None, null=True)
     tags = DictField()
     domain_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now_add=True)
@@ -26,6 +30,8 @@ class CloudServiceQuerySet(MongoModel):
             'query_options',
             'query_hash',
             'unit',
+            'keys',
+            'additional_info_keys',
             'tags',
             'updated_at'
         ],
@@ -43,6 +49,12 @@ class CloudServiceQuerySet(MongoModel):
             'cloud_service_group',
             'cloud_service_type'
         ],
+        'reference_query_keys': {
+            'ref_cloud_service_type': {
+                'model': CloudServiceType,
+                'foreign_key': 'ref_cloud_service_type'
+            }
+        },
         'indexes': [
             'name',
             'state',

@@ -18,8 +18,8 @@ class CloudServiceStatsService(BaseService):
         self.cloud_svc_stats_mgr: CloudServiceStatsManager = self.locator.get_manager('CloudServiceStatsManager')
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['domain_id'])
-    @append_query_filter(['query_set_id', 'key', 'provider', 'cloud_service_group', 'cloud_service_type',
+    @check_required(['query_set_id', 'domain_id'])
+    @append_query_filter(['query_set_id', 'provider', 'cloud_service_group', 'cloud_service_type',
                           'region_code', 'account', 'project_id', 'domain_id'])
     @append_keyword_filter(_KEYWORD_FILTER)
     @set_query_page_limit(1000)
@@ -28,7 +28,6 @@ class CloudServiceStatsService(BaseService):
         Args:
             params (dict): {
                     'query_set_id': 'str',
-                    'key': 'str',
                     'provider': 'str',
                     'cloud_service_group': 'str',
                     'cloud_service_type': 'str',
@@ -51,14 +50,16 @@ class CloudServiceStatsService(BaseService):
         return self.cloud_svc_stats_mgr.list_cloud_service_stats(query)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['query', 'query.granularity', 'query.start', 'query.end', 'query.fields', 'domain_id'])
-    @append_query_filter(['domain_id'])
+    @check_required(['query', 'query.granularity', 'query.start', 'query.end', 'query.fields',
+                     'query_set_id', 'domain_id'])
+    @append_query_filter(['query_set_id', 'domain_id'])
     @append_keyword_filter(_KEYWORD_FILTER)
     @set_query_page_limit(1000)
     def analyze(self, params):
         """ Analyze Cloud Service Statistics Data
         Args:
             params (dict): {
+                'query_set_id': 'str',
                 'domain_id': 'str',
                 'query': 'dict (spaceone.api.core.v1.TimeSeriesAnalyzeQuery)',
                 'user_projects': 'list', // from meta
@@ -69,20 +70,22 @@ class CloudServiceStatsService(BaseService):
 
         """
         domain_id = params['domain_id']
+        query_set_id = params['query_set_id']
         query = params.get('query', {})
 
         query = self._change_project_group_filter(query, domain_id)
 
-        return self.cloud_svc_stats_mgr.analyze_cloud_service_stats(query, domain_id)
+        return self.cloud_svc_stats_mgr.analyze_cloud_service_stats_by_granularity(query, domain_id, query_set_id)
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
-    @append_query_filter(['domain_id'])
+    @append_query_filter(['query_set_id', 'domain_id'])
     @append_keyword_filter(_KEYWORD_FILTER)
     def stat(self, params):
         """ Get Cloud Service Statistics Data
         Args:
             params (dict): {
+                'query_set_id': 'str',
                 'domain_id': 'str',
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
                 'user_projects': 'list', // from meta
