@@ -102,12 +102,12 @@ class CloudServiceStatsManager(BaseManager):
     def analyze_cloud_service_stats_with_cache(self, query, query_hash, domain_id, query_set_id, target='SECONDARY_PREFERRED'):
         return self.analyze_cloud_service_stats(query, target)
 
-    @cache.cacheable(key='analyze-costs:monthly:{domain_id}:{query_set_id}:{query_hash}', expire=3600 * 24)
+    @cache.cacheable(key='inventory:cloud-service-stats:monthly:{domain_id}:{query_set_id}:{query_hash}', expire=3600 * 24)
     def analyze_monthly_cloud_service_stats_with_cache(self, query, query_hash, domain_id, query_set_id,
                                                        target='SECONDARY_PREFERRED'):
         return self.analyze_monthly_cloud_service_stats(query, target)
 
-    @cache.cacheable(key='analyze-costs:yearly:{domain_id}:{query_set_id}:{query_hash}', expire=3600 * 24)
+    @cache.cacheable(key='inventory:cloud-service-stats:yearly:{domain_id}:{query_set_id}:{query_hash}', expire=3600 * 24)
     def analyze_yearly_cloud_service_stats_with_cache(self, query, query_hash, domain_id, query_set_id,
                                                       target='SECONDARY_PREFERRED'):
         return self.analyze_yearly_cloud_service_stats(query, target)

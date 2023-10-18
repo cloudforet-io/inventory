@@ -355,7 +355,7 @@ class CloudServiceQuerySetManager(BaseManager):
     @staticmethod
     def _remove_analyze_cache(domain_id, query_set_id):
         cache.delete_pattern(f'inventory:cloud-service-stats:*:{domain_id}:{query_set_id}:*')
-        cache.delete_pattern(f'inventory:monthly-cloud-service-stats:*:{domain_id}:{query_set_id}:*')
+        cache.delete_pattern(f'inventory:stats-query-history:{domain_id}:{query_set_id}:*')
 
     @staticmethod
     def _make_cloud_service_type_key(domain_id, provider, cloud_service_group, cloud_service_type):
