@@ -185,9 +185,10 @@ class CloudServiceQuerySetManager(BaseManager):
         provider = cloud_svc_query_set_vo.provider
         cloud_service_group = cloud_svc_query_set_vo.cloud_service_group
         cloud_service_type = cloud_svc_query_set_vo.cloud_service_type
+        domain_id = cloud_svc_query_set_vo.domain_id
 
         analyze_query['filter'] = analyze_query.get('filter', [])
-        analyze_query['filter'] += self._make_query_filter(provider, cloud_service_group, cloud_service_type)
+        analyze_query['filter'] += self._make_query_filter(domain_id, provider, cloud_service_group, cloud_service_type)
 
         analyze_query['group_by'] = analyze_query.get('group_by', []) + _DEFAULT_GROUP_BY
 
@@ -369,8 +370,14 @@ class CloudServiceQuerySetManager(BaseManager):
             return None
 
     @staticmethod
-    def _make_query_filter(provider=None, cloud_service_group=None, cloud_service_type=None):
-        _filter = []
+    def _make_query_filter(domain_id, provider=None, cloud_service_group=None, cloud_service_type=None):
+        _filter = [
+            {
+                'k': 'domain_id',
+                'v': domain_id,
+                'o': 'eq'
+            }
+        ]
 
         if provider:
             _filter.append({
