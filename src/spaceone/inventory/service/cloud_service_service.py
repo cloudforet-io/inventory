@@ -1,6 +1,7 @@
 import logging
 import copy
 from datetime import datetime
+from typing import List
 
 from spaceone.core.service import *
 from spaceone.core import utils
@@ -322,14 +323,10 @@ class CloudServiceService(BaseService):
             total_count (int)
 
         """
-        query = params.get('query', {})
-        # query = self._append_resource_group_filter(query, params['domain_id'])
-        query = self._change_project_group_filter(query, params['domain_id'])
-        query = self._change_filter_tags(query)
-        query = self._change_only_tags(query)
-        query = self._change_sort_tags(query)
 
-        return self.cloud_svc_mgr.list_cloud_services(query)
+        query = params.get('query', {})
+
+        return self.cloud_svc_mgr.list_cloud_services(query, change_filter=True, domain_id=params['domain_id'])
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'query.fields', 'domain_id'])
@@ -351,11 +348,8 @@ class CloudServiceService(BaseService):
         """
 
         query = params.get('query', {})
-        # query = self._append_resource_group_filter(query, params['domain_id'])
-        query = self._change_project_group_filter(query, params['domain_id'])
-        query = self._change_filter_tags(query)
 
-        return self.cloud_svc_mgr.analyze_cloud_services(query)
+        return self.cloud_svc_mgr.analyze_cloud_services(query, change_filter=True, domain_id=params['domain_id'])
 
     @transaction(append_meta={'authorization.scope': 'PROJECT'})
     @check_required(['query', 'domain_id'])
@@ -376,10 +370,6 @@ class CloudServiceService(BaseService):
         """
 
         query = params.get('query', {})
-        # query = self._append_resource_group_filter(query, params['domain_id'])
-        query = self._change_project_group_filter(query, params['domain_id'])
-        query = self._change_filter_tags(query)
-        query = self._change_distinct_tags(query)
 
         return self.cloud_svc_mgr.stat_cloud_services(query)
 
@@ -432,47 +422,6 @@ class CloudServiceService(BaseService):
             cloud_service_ids += result.get('results', [])
         return cloud_service_ids
 
-    def _change_project_group_filter(self, query, domain_id):
-        change_filter = []
-
-        project_group_query = {
-            'filter': [],
-            'only': ['project_group_id']
-        }
-
-        for condition in query.get('filter', []):
-            key = condition.get('key', condition.get('k'))
-            value = condition.get('value', condition.get('v'))
-            operator = condition.get('operator', condition.get('o'))
-
-            if not all([key, operator]):
-                raise ERROR_DB_QUERY(reason='filter condition should have key, value and operator.')
-
-            if key == 'project_group_id':
-                project_group_query['filter'].append(condition)
-            else:
-                change_filter.append(condition)
-
-        if len(project_group_query['filter']) > 0:
-            identity_mgr: IdentityManager = self.locator.get_manager('IdentityManager')
-            response = identity_mgr.list_project_groups(project_group_query, domain_id)
-            project_group_ids = []
-            project_ids = []
-            for project_group_info in response.get('results', []):
-                project_group_ids.append(project_group_info['project_group_id'])
-
-            for project_group_id in project_group_ids:
-                response = identity_mgr.list_projects_in_project_group(project_group_id, domain_id, True,
-                                                                       {'only': ['project_id']})
-                for project_info in response.get('results', []):
-                    if project_info['project_id'] not in project_ids:
-                        project_ids.append(project_info['project_id'])
-
-            change_filter.append({'k': 'project_id', 'v': project_ids, 'o': 'in'})
-
-        query['filter'] = change_filter
-        return query
-
     @staticmethod
     def _make_cloud_service_type_key(resource_data):
         return f'{resource_data["domain_id"]}.{resource_data["provider"]}.' \
@@ -486,7 +435,7 @@ class CloudServiceService(BaseService):
     def _convert_metadata(metadata, provider):
         return {provider: copy.deepcopy(metadata)}
 
-    def _get_collection_info(self, provider, collections: CollectionInfo = None):
+    def _get_collection_info(self, provider, collections: List[CollectionInfo] = None):
         collections = collections or []
 
         collector_id = self.transaction.get_meta('collector_id')
@@ -549,104 +498,3 @@ class CloudServiceService(BaseService):
 
     def _is_created_by_collector(self):
         return self.collector_id and self.job_id and self.service_account_id and self.plugin_id
-
-    def _change_filter_tags(self, query):
-        change_filter = []
-
-        for condition in query.get('filter', []):
-            key = condition.get('k', condition.get('key'))
-            value = condition.get('v', condition.get('value'))
-            operator = condition.get('o', condition.get('operator'))
-
-            if key.startswith('tags.'):
-                hashed_key = self._get_hashed_key(key)
-
-                change_filter.append({
-                    'key': hashed_key,
-                    'value': value,
-                    'operator': operator
-                })
-
-            else:
-                change_filter.append(condition)
-        query['filter'] = change_filter
-        return query
-
-    def _change_only_tags(self, query):
-        change_only_tags = []
-        if 'only' in query:
-            for key in query.get('only', []):
-                if key.startswith('tags.'):
-                    hashed_key = self._get_hashed_key(key, only=True)
-                    change_only_tags.append(hashed_key)
-                else:
-                    change_only_tags.append(key)
-            query['only'] = change_only_tags
-
-        return query
-
-    def _change_distinct_tags(self, query):
-        if 'distinct' in query:
-            distinct_key = query['distinct']
-            if distinct_key.startswith('tags.'):
-                hashed_key = self._get_hashed_key(distinct_key)
-                query['distinct'] = hashed_key
-
-        return query
-
-    def _change_sort_tags(self, query):
-        if 'sort' in query:
-            if 'keys' in query['sort']:
-                change_filter = []
-                sort_keys = query['sort'].get('keys', [])
-                for condition in sort_keys:
-                    sort_key = condition.get('key', '')
-                    desc = condition.get('desc', False)
-
-                    if sort_key.startswith('tags.'):
-                        hashed_key = self._get_hashed_key(sort_key)
-
-                        change_filter.append({
-                            'key': hashed_key,
-                            'desc': desc
-                        })
-
-                    else:
-                        change_filter.append({
-                            'key': sort_key,
-                            'desc': desc
-                        })
-                query['sort']['keys'] = change_filter
-
-            elif 'key' in query['sort']:
-                change_filter = {}
-                sort_key = query['sort']['key']
-                desc = query['sort'].get('desc', False)
-
-                if sort_key.startswith('tags.'):
-                    hashed_key = self._get_hashed_key(sort_key)
-
-                    change_filter.update({
-                        'key': hashed_key,
-                        'desc': desc
-                    })
-
-                else:
-                    change_filter.update({
-                        'key': sort_key,
-                        'desc': desc
-                    })
-                query['sort'] = change_filter
-        return query
-
-    @staticmethod
-    def _get_hashed_key(key, only=False):
-        if key.count('.') < 2:
-            return key
-
-        prefix, provider, key = key.split('.', 2)
-        hash_key = utils.string_to_hash(key)
-        if only:
-            return f'{prefix}.{provider}.{hash_key}'
-        else:
-            return f'{prefix}.{provider}.{hash_key}.value'
