@@ -1,4 +1,3 @@
-marisa-trie
 mongoengine
 redis
 langcodes
@@ -9,3 +8,4 @@ python-consul
 spaceone-core
 spaceone-api
 boto3
+pandas

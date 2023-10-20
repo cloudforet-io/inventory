@@ -35,7 +35,8 @@ setup(
         'ipaddress',
         'python-consul',
         'fakeredis',
-        'mongomock'
+        'mongomock',
+        'pandas'
     ],
     zip_safe=False,
 )
