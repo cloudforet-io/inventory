@@ -5,6 +5,7 @@ from spaceone.inventory.model.job_task_model import JobTask
 from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
 from spaceone.inventory.model.cloud_service_query_set_model import CloudServiceQuerySet
+from spaceone.inventory.model.cloud_service_report_model import CloudServiceReport
 from spaceone.inventory.model.cloud_service_stats_model import CloudServiceStats, MonthlyCloudServiceStats, \
     CloudServiceStatsQueryHistory
 from spaceone.inventory.model.collection_state_model import CollectionState

@@ -6,3 +6,5 @@ from spaceone.inventory.error.cloud_service_type import *
 from spaceone.inventory.error.cloud_service_query_set import *
 from spaceone.inventory.error.cloud_service_stats import *
 from spaceone.inventory.error.collector_rule import *
+from spaceone.inventory.error.smtp import *
+from spaceone.inventory.error.file_upload import *

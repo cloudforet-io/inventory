@@ -11,9 +11,9 @@ class CloudServiceStats(BaseAPI, cloud_service_stats_pb2_grpc.CloudServiceStatsS
         params, metadata = self.parse_request(request, context)
 
         with self.locator.get_service('CloudServiceStatsService', metadata) as cloud_svc_stats_service:
-            cloud_svc_type_vos, total_count = cloud_svc_stats_service.list(params)
+            cloud_svc_stats_vos, total_count = cloud_svc_stats_service.list(params)
             return self.locator.get_info('CloudServiceStatsInfo',
-                                         cloud_svc_type_vos,
+                                         cloud_svc_stats_vos,
                                          total_count,
                                          minimal=self.get_minimal(params))
 

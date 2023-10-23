@@ -27,7 +27,6 @@ setup(
     license='Apache License 2.0',
     packages=find_packages(),
     install_requires=[
-        'spaceone-core',
         'spaceone-api',
         'mongoengine',
         'redis',
@@ -35,7 +34,13 @@ setup(
         'ipaddress',
         'python-consul',
         'fakeredis',
-        'mongomock'
+        'mongomock',
+        'pandas',
+        'requests',
+        'jinja2',
     ],
+    package_data={
+        'spaceone': ['inventory/template/*.html']
+    },
     zip_safe=False,
 )
