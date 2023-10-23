@@ -36,6 +36,7 @@ setup(
         'fakeredis',
         'mongomock',
         'pandas',
+        'openpyxl',
         'requests',
         'jinja2',
     ],

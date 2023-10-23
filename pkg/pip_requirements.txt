@@ -8,5 +8,6 @@ mongomock
 python-consul
 boto3
 pandas
+openpyxl
 requests
 jinja2
