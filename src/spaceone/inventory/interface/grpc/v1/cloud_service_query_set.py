@@ -61,9 +61,9 @@ class CloudServiceQuerySet(BaseAPI, cloud_service_query_set_pb2_grpc.CloudServic
         params, metadata = self.parse_request(request, context)
 
         with self.locator.get_service('CloudServiceQuerySetService', metadata) as cloud_svc_query_set_service:
-            cloud_svc_type_vos, total_count = cloud_svc_query_set_service.list(params)
+            query_set_vos, total_count = cloud_svc_query_set_service.list(params)
             return self.locator.get_info('CloudServiceQuerySetsInfo',
-                                         cloud_svc_type_vos,
+                                         query_set_vos,
                                          total_count,
                                          minimal=self.get_minimal(params))
 
