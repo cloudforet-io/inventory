@@ -36,7 +36,11 @@ setup(
         'fakeredis',
         'mongomock',
         'pandas',
-        'requests'
+        'requests',
+        'jinja2',
     ],
+    package_data={
+        'spaceone': ['inventory/template/*.html']
+    },
     zip_safe=False,
 )

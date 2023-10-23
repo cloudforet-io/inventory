@@ -9,3 +9,4 @@ python-consul
 boto3
 pandas
 requests
+jinja2

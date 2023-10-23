@@ -27,7 +27,7 @@ class ExportManager(BaseManager):
         self._file_dir = None
         self._file_path = None
 
-    def export(self, export_options, domain_id):
+    def export(self, export_options, domain_id, **kwargs):
         with tempfile.TemporaryDirectory() as temp_dir:
             self._file_dir = temp_dir
             self._file_path = f'{self._file_dir}/{self._file_name}'
