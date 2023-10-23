@@ -49,6 +49,12 @@ class CloudService(BaseAPI, cloud_service_pb2_grpc.CloudServiceServicer):
                                          minimal=self.get_minimal(params),
                                          include_metadata=False)
 
+    def export(self, request, context):
+        params, metadata = self.parse_request(request, context)
+
+        with self.locator.get_service('CloudServiceService', metadata) as cloud_svc_service:
+            return self.locator.get_info('ExportInfo', cloud_svc_service.export(params))
+
     def analyze(self, request, context):
         params, metadata = self.parse_request(request, context)
 

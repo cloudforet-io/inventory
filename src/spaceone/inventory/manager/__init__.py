@@ -11,6 +11,7 @@ from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginM
 from spaceone.inventory.manager.collector_rule_manager import CollectorRuleManager
 from spaceone.inventory.manager.config_manager import ConfigManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
+from spaceone.inventory.manager.file_manager import FileManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.note_manager import NoteManager
@@ -20,3 +21,5 @@ from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.repository_manager import RepositoryManager
 from spaceone.inventory.manager.resource_group_manager import ResourceGroupManager
 from spaceone.inventory.manager.secret_manager import SecretManager
+from spaceone.inventory.manager.export_manager.email_manager import EmailManager
+from spaceone.inventory.manager.reference_manager import ReferenceManager

@@ -3,7 +3,6 @@ import logging
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.inventory.error import *
-from spaceone.inventory.connector.repository_connector import RepositoryConnector
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -46,6 +46,9 @@ class RegionManager(BaseManager, ResourceManager):
     def get_region_from_code(self, region_code, region_type, domain_id, only=None):
         return self.region_model.get(region_code=region_code, region_type=region_type, domain_id=domain_id, only=only)
 
+    def filter_regions(self, **conditions):
+        return self.region_model.filter(**conditions)
+
     def list_regions(self, query):
         return self.region_model.query(**query)
 

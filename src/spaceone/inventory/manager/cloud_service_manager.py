@@ -9,6 +9,7 @@ from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
+from spaceone.inventory.manager.reference_manager import ReferenceManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -95,6 +96,66 @@ class CloudServiceManager(BaseManager, ResourceManager):
         # Append Query for DELETED filter (Temporary Logic)
         query = self._append_state_query(query)
         return self.cloud_svc_model.query(**query, target=target)
+
+    def get_export_query_results(self, options, domain_id):
+        ref_mgr: ReferenceManager = self.locator.get_manager(ReferenceManager)
+
+        for export_option in options:
+            query_type = export_option['query_type']
+            if query_type == 'SEARCH':
+                export_option['results'] = self._get_search_query_results(export_option['search_query'], domain_id,
+                                                                          ref_mgr)
+            else:
+                export_option['results'] = self._get_analyze_query_results(export_option['analyze_query'], domain_id)
+
+        return options
+
+    def _get_search_query_results(self, query, domain_id, ref_mgr: ReferenceManager):
+        cloud_service_vos, total_count = self.list_cloud_services(query, change_filter=True, domain_id=domain_id)
+        results = []
+
+        fields = query.get('fields')
+        if fields is None:
+            raise ERROR_REQUIRED_PARAMETER(key='options[].search_query.fields')
+
+        for cloud_service_vo in cloud_service_vos:
+            cloud_service_data = cloud_service_vo.to_dict()
+
+            result = {}
+            for field in fields:
+                if isinstance(field, dict):
+                    key = field['key']
+                    name = field.get('name') or key
+                    reference = field.get('reference', {})
+
+                    value = utils.get_dict_value(cloud_service_data, key)
+
+                    if resource_type := reference.get('resource_type'):
+                        if isinstance(value, list):
+                            value = [ref_mgr.get_reference_name(resource_type, v, domain_id) for v in value]
+                        else:
+                            value = ref_mgr.get_reference_name(resource_type, value, domain_id)
+
+                else:
+                    key = field
+                    name = field
+                    value = utils.get_dict_value(cloud_service_data, key)
+
+                if key in ['created_at', 'updated_at', 'deleted_at']:
+                    name = f'{name} (UTC)'
+
+                if isinstance(value, list):
+                    value = '\n'.join(value)
+
+                result[name] = value
+
+            results.append(result)
+
+        return results
+
+    def _get_analyze_query_results(self, query, domain_id):
+        response = self.analyze_cloud_services(query, change_filter=True, domain_id=domain_id)
+        return response.get('results', [])
 
     def analyze_cloud_services(self, query, change_filter=False, domain_id=None):
         if change_filter:
