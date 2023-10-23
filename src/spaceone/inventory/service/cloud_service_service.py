@@ -351,17 +351,7 @@ class CloudServiceService(BaseService):
         options = copy.deepcopy(params['options'])
         file_format = params.get('file_format', 'EXCEL')
 
-        for export_option in options:
-            self._check_export_option(export_option)
-
-            if export_option['query_type'] == 'SEARCH':
-                export_option['search_query'] = self._change_export_query(
-                    'SEARCH', export_option['search_query'], domain_id, user_projects)
-            else:
-                export_option['analyze_query'] = self._change_export_query(
-                    'ANALYZE', export_option['analyze_query'], domain_id, user_projects)
-
-        options = self.cloud_svc_mgr.get_export_query_results(options, domain_id)
+        options = self.cloud_svc_mgr.get_export_query_results(options, domain_id, user_projects)
         export_mgr: ExportManager = self.locator.get_manager(ExportManager,
                                                              file_format=file_format,
                                                              file_name='cloud_service_export')
@@ -538,64 +528,3 @@ class CloudServiceService(BaseService):
 
     def _is_created_by_collector(self):
         return self.collector_id and self.job_id and self.service_account_id and self.plugin_id
-
-    @staticmethod
-    def _check_export_option(export_option):
-        if 'name' not in export_option:
-            raise ERROR_REQUIRED_PARAMETER(key='options[].name')
-
-        query_type = export_option.get('query_type')
-
-        if query_type == 'SEARCH':
-            if 'search_query' not in export_option:
-                raise ERROR_REQUIRED_PARAMETER(key='options[].search_query')
-        elif query_type == 'ANALYZE':
-            if 'analyze_query' not in export_option:
-                raise ERROR_REQUIRED_PARAMETER(key='options[].analyze_query')
-        else:
-            raise ERROR_REQUIRED_PARAMETER(key='options[].query_type')
-
-    @staticmethod
-    def _change_export_query(query_type, query, domain_id, user_projects):
-        query['filter'] = query.get('filter', [])
-        query['filter_or'] = query.get('filter_or', [])
-        keyword = query.get('keyword')
-
-        query['filter'].append({'k': 'domain_id', 'v': domain_id, 'o': 'eq'})
-        if user_projects:
-            query['filter'].append({'k': 'user_projects', 'v': user_projects, 'o': 'in'})
-
-        if keyword:
-            keyword = keyword.strip()
-            if len(keyword) > 0:
-                for key in _KEYWORD_FILTER:
-                    query['filter_or'].append({
-                        'k': key,
-                        'v': list(filter(None, keyword.split(' '))),
-                        'o': 'contain_in'
-                    })
-
-            del query['keyword']
-
-        if query_type == 'SEARCH':
-            query['only'] = []
-            fields = query.get('fields', [])
-            for field in fields:
-                if isinstance(field, dict):
-                    if key := field.get('key'):
-                        query['only'].append(key)
-                    else:
-                        raise ERROR_REQUIRED_PARAMETER(key='options[].search_query.fields.key')
-                elif isinstance(field, str):
-                    query['only'].append(field)
-                else:
-                    raise ERROR_INVALID_PARAMETER_TYPE(key='options[].search_query.fields', type='str or dict')
-
-            # Code for Query Compatibility
-            sort = query.get('sort', [])
-            if len(sort) > 0:
-                query['sort'] = {
-                    'keys': sort
-                }
-
-        return query

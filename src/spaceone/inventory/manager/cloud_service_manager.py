@@ -97,15 +97,20 @@ class CloudServiceManager(BaseManager, ResourceManager):
         query = self._append_state_query(query)
         return self.cloud_svc_model.query(**query, target=target)
 
-    def get_export_query_results(self, options, domain_id):
+    def get_export_query_results(self, options, domain_id, user_projects=None):
         ref_mgr: ReferenceManager = self.locator.get_manager(ReferenceManager)
 
         for export_option in options:
-            query_type = export_option['query_type']
-            if query_type == 'SEARCH':
+            self._check_export_option(export_option)
+
+            if export_option['query_type'] == 'SEARCH':
+                export_option['search_query'] = self._change_export_query(
+                    'SEARCH', export_option['search_query'], domain_id, user_projects)
                 export_option['results'] = self._get_search_query_results(export_option['search_query'], domain_id,
                                                                           ref_mgr)
             else:
+                export_option['analyze_query'] = self._change_export_query(
+                    'ANALYZE', export_option['analyze_query'], domain_id, user_projects)
                 export_option['results'] = self._get_analyze_query_results(export_option['analyze_query'], domain_id)
 
         return options
@@ -400,3 +405,65 @@ class CloudServiceManager(BaseManager, ResourceManager):
             return f'{prefix}.{provider}.{hash_key}'
         else:
             return f'{prefix}.{provider}.{hash_key}.value'
+
+    @staticmethod
+    def _check_export_option(export_option):
+        if 'name' not in export_option:
+            raise ERROR_REQUIRED_PARAMETER(key='options[].name')
+
+        query_type = export_option.get('query_type')
+
+        if query_type == 'SEARCH':
+            if 'search_query' not in export_option:
+                raise ERROR_REQUIRED_PARAMETER(key='options[].search_query')
+        elif query_type == 'ANALYZE':
+            if 'analyze_query' not in export_option:
+                raise ERROR_REQUIRED_PARAMETER(key='options[].analyze_query')
+        else:
+            raise ERROR_REQUIRED_PARAMETER(key='options[].query_type')
+
+    @staticmethod
+    def _change_export_query(query_type, query, domain_id, user_projects=None):
+        query['filter'] = query.get('filter', [])
+        query['filter_or'] = query.get('filter_or', [])
+        keyword = query.get('keyword')
+
+        query['filter'].append({'k': 'domain_id', 'v': domain_id, 'o': 'eq'})
+        if user_projects:
+            query['filter'].append({'k': 'user_projects', 'v': user_projects, 'o': 'in'})
+
+        if keyword:
+            keyword = keyword.strip()
+            if len(keyword) > 0:
+                for key in ['cloud_service_id', 'name', 'ip_addresses', 'cloud_service_group', 'cloud_service_type',
+                   'reference.resource_id']:
+                    query['filter_or'].append({
+                        'k': key,
+                        'v': list(filter(None, keyword.split(' '))),
+                        'o': 'contain_in'
+                    })
+
+            del query['keyword']
+
+        if query_type == 'SEARCH':
+            query['only'] = []
+            fields = query.get('fields', [])
+            for field in fields:
+                if isinstance(field, dict):
+                    if key := field.get('key'):
+                        query['only'].append(key)
+                    else:
+                        raise ERROR_REQUIRED_PARAMETER(key='options[].search_query.fields.key')
+                elif isinstance(field, str):
+                    query['only'].append(field)
+                else:
+                    raise ERROR_INVALID_PARAMETER_TYPE(key='options[].search_query.fields', type='str or dict')
+
+            # Code for Query Compatibility
+            sort = query.get('sort', [])
+            if len(sort) > 0:
+                query['sort'] = {
+                    'keys': sort
+                }
+
+        return query
