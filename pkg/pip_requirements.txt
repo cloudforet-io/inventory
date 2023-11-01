@@ -1,13 +1,7 @@
 spaceone-api
-mongoengine
-redis
 langcodes
 ipaddress
 fakeredis
-mongomock
-python-consul
-boto3
 pandas
-openpyxl
-requests
 jinja2
+openpyxl

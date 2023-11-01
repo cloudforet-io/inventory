@@ -16,6 +16,7 @@
 import os
 from setuptools import setup, find_packages
 
+
 setup(
     name='spaceone-inventory',
     version=os.environ.get('PACKAGE_VERSION'),
@@ -27,18 +28,14 @@ setup(
     license='Apache License 2.0',
     packages=find_packages(),
     install_requires=[
+        'spaceone-core',
         'spaceone-api',
-        'mongoengine',
-        'redis',
         'langcodes',
         'ipaddress',
-        'python-consul',
         'fakeredis',
-        'mongomock',
         'pandas',
-        'openpyxl',
-        'requests',
         'jinja2',
+        'openpyxl',
     ],
     package_data={
         'spaceone': ['inventory/template/*.html']
