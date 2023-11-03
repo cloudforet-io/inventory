@@ -10,7 +10,7 @@ on:
       container_arch:
         type: choice
         description: 'choose container architecture'
-        default: linux/amd64
+        default: linux/amd64,linux/arm64
         options:
         - "linux/amd64"
         - "linux/amd64,linux/arm64"
@@ -21,6 +21,7 @@ env:
   VERSION: ${{ github.event.inputs.version }}
   PACKAGE_VERSION: ${{ github.event.inputs.version }}
   SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+  BRANCH_NAME: ${{ github.ref_name }}
 
 jobs:
   tagging:
@@ -58,7 +59,7 @@ jobs:
       - name: Set python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.8' 
+          python-version: '3.8'
 
       - name: Install dependencies
         run: |
@@ -73,8 +74,8 @@ jobs:
       - name: Publish a Python distribution to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
-          user: ${{ secrets.PYPI_USERNAME }}
-          password: ${{ secrets.PYPI_PASSWORD }}
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
           verbose: true
           packages-dir: src/dist/
 
@@ -116,6 +117,7 @@ jobs:
           tags: cloudforet/${{ github.event.repository.name }}:${{ env.VERSION }}
           build-args: |
             PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
+            BRANCH_NAME=${{ env.BRANCH_NAME }}
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
@@ -136,6 +138,7 @@ jobs:
           tags: ${{ secrets.ECR_REPO }}/${{ github.event.repository.name }}:${{ env.VERSION }}
           build-args: |
             PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
+            BRANCH_NAME=${{ env.BRANCH_NAME }}
 
       - name: Notice when job fails
         if: failure()
