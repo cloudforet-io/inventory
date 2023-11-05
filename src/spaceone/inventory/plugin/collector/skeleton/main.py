@@ -2,6 +2,7 @@ from spaceone.inventory.plugin.collector.lib.server import CollectorPluginServer
 
 app = CollectorPluginServer()
 
+
 @app.route('Collector.init')
 def collector_init(params: dict) -> dict:
     """ init plugin by options
@@ -39,7 +40,7 @@ def collector_verify(params: dict) -> None:
 
 
 @app.route('Collector.collect')
-def collector_colllect(params: dict) -> dict:
+def collector_collect(params: dict) -> dict:
     """ Collect external data
 
     Args:
@@ -55,11 +56,15 @@ def collector_colllect(params: dict) -> dict:
         {
             'state': 'SUCCESS | FAILURE',
             'resource_type': 'inventory.CloudService | inventory.CloudServiceType | inventory.Region',
-            'resource_data': 'dict',
+            'cloud_service_type': CloudServiceType,
+            'cloud_service': CloudService,
+            'region': Region,
             'match_keys': 'list',
             'error_message': 'str'
             'metadata': 'dict'
         }
+
+        One of the cloud_service_type, cloud_service and region fields is required.
     """
     pass
 

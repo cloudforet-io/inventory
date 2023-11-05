@@ -1,10 +1,10 @@
 from spaceone.core.pygrpc import BaseAPI
 from spaceone.api.inventory.plugin import collector_pb2, collector_pb2_grpc
+from spaceone.inventory.plugin.collector.error.response import *
 from spaceone.inventory.plugin.collector.service.collector_service import CollectorService
 
 
 class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
-
     pb2 = collector_pb2
     pb2_grpc = collector_pb2_grpc
 
@@ -32,9 +32,20 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
                 error_message = response.pop('error_message')
                 response['message'] = error_message
 
-            if 'resource_data' in response:
-                resource_data = response.pop('resource_data')
-                response['resource'] = resource_data
+            if all(key in response for key in ('cloud_service_type', 'cloud_service', 'region')):
+                raise ERROR_REQUIRED_FIELDS_MISSING(fields=list(response.keys()))
+
+            if 'cloud_service_type' in response:
+                cloud_service_type = response.pop('cloud_service_type')
+                response['resource'] = cloud_service_type
+
+            if 'cloud_service' in response:
+                cloud_service = response.pop('cloud_service')
+                response['resource'] = cloud_service
+
+            if 'region' in response:
+                region = response.pop('region')
+                response['resource'] = region
 
             if 'match_keys' in response:
                 match_keys = response.pop('match_keys')
