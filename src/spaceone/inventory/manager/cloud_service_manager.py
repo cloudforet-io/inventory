@@ -150,7 +150,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
                     name = f'{name} (UTC)'
 
                 if isinstance(value, list):
-                    value = '\n'.join(value)
+                    value_str = [str(v) for v in value]
+                    value = '\n'.join(value_str)
 
                 result[name] = value
 
