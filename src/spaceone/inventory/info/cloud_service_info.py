@@ -1,5 +1,4 @@
 import functools
-from typing import List
 from spaceone.api.inventory.v1 import cloud_service_pb2
 from spaceone.core.pygrpc.message_type import *
 from spaceone.core import utils
