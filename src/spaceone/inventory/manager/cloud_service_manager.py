@@ -435,8 +435,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
         if keyword:
             keyword = keyword.strip()
             if len(keyword) > 0:
-                for key in ['cloud_service_id', 'name', 'ip_addresses', 'cloud_service_group', 'cloud_service_type',
-                   'reference.resource_id']:
+                for key in ['cloud_service_id', 'name', 'ip_addresses', 'cloud_service_group',
+                            'cloud_service_type', 'reference.resource_id']:
                     query['filter_or'].append({
                         'k': key,
                         'v': list(filter(None, keyword.split(' '))),
