@@ -43,7 +43,7 @@ spec:
           resources:
           {{- toYaml .Values.resources.scheduler | nindent 12 }}
 {{- end }}
-          command: ['spaceone', 'scheduler', 'spaceone.{{ regexReplaceAll "-" .Values.name "_" }}']
+          command: ['spaceone', 'run', 'scheduler', 'spaceone.{{ regexReplaceAll "-" .Values.name "_" }}']
           volumeMounts:
             - name: default-conf
               mountPath: /opt/spaceone/{{ .Values.name }}/config/config.yaml

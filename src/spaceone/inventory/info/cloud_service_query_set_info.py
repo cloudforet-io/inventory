@@ -21,8 +21,8 @@ def CloudServiceQuerySetInfo(cloud_svc_query_set_vo: CloudServiceQuerySet, minim
     if not minimal:
         info.update({
             'query_options': change_analyze_query(cloud_svc_query_set_vo.query_options),
-            'keys': cloud_svc_query_set_vo.keys,
             'additional_info_keys': cloud_svc_query_set_vo.additional_info_keys,
+            'data_keys': cloud_svc_query_set_vo.data_keys,
             'unit': change_struct_type(cloud_svc_query_set_vo.unit),
             'tags': change_struct_type(cloud_svc_query_set_vo.tags),
             'domain_id': cloud_svc_query_set_vo.domain_id,

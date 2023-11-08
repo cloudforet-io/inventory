@@ -43,7 +43,7 @@ spec:
           resources:
           {{- toYaml .Values.resources.rest | nindent 12 }}
 {{- end }}
-          command: ['spaceone', 'rest', 'spaceone.{{ regexReplaceAll "-" .Values.name "_" }}', '-p', '8000']
+          command: ['spaceone', 'run', 'rest-server', 'spaceone.{{ regexReplaceAll "-" .Values.name "_" }}', '-p', '8000']
           ports:
             - containerPort: 8000
           volumeMounts:
