@@ -1,6 +1,6 @@
 import functools
+from google.protobuf.json_format import ParseDict
 from spaceone.api.inventory.v1 import cloud_service_report_pb2
-from spaceone.core.pygrpc.message_type import *
 from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_report_model import CloudServiceReport, ReportSchedule
 
@@ -10,14 +10,12 @@ __all__ = ['CloudServiceReportInfo', 'CloudServiceReportsInfo']
 def ReportScheduleInfo(schedule_vo: ReportSchedule):
     if schedule_vo is None:
         return None
-
-    info = {
-        'state': schedule_vo.state,
-        'hours': schedule_vo.hours,
-        'days_of_week': schedule_vo.days_of_week
-    }
-
-    return cloud_service_report_pb2.ReportSchedule(**info)
+    else:
+        return {
+            'state': schedule_vo.state,
+            'hours': schedule_vo.hours,
+            'days_of_week': schedule_vo.days_of_week
+        }
 
 
 def CloudServiceReportInfo(cloud_svc_report_vo: CloudServiceReport, minimal=False):
@@ -32,19 +30,21 @@ def CloudServiceReportInfo(cloud_svc_report_vo: CloudServiceReport, minimal=Fals
     if not minimal:
         info.update({
             'options': [],
-            'target': change_struct_type(cloud_svc_report_vo.target),
-            'tags': change_struct_type(cloud_svc_report_vo.tags),
+            'target': cloud_svc_report_vo.target,
+            'tags': cloud_svc_report_vo.tags,
             'domain_id': cloud_svc_report_vo.domain_id,
             'created_at': utils.datetime_to_iso8601(cloud_svc_report_vo.created_at)
         })
 
         for option in cloud_svc_report_vo.options:
-            info['options'].append(change_export_option(option))
+            info['options'].append(option)
 
-    return cloud_service_report_pb2.CloudServiceReportInfo(**info)
+    return info
 
 
 def CloudServiceReportsInfo(cloud_svc_report_vos, total_count, **kwargs):
-    return cloud_service_report_pb2.CloudServiceReportsInfo(
-        results=list(map(functools.partial(CloudServiceReportInfo, **kwargs), cloud_svc_report_vos)),
-        total_count=total_count)
+    return ParseDict({
+        'results': list(map(functools.partial(CloudServiceReportInfo, **kwargs), cloud_svc_report_vos)),
+        'total_count': total_count
+    }, cloud_service_report_pb2.CloudServiceReportsInfo())
+
