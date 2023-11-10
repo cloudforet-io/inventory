@@ -25,14 +25,9 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
         collector_svc = CollectorService(metadata)
         for response in collector_svc.collect(params):
 
-            if response['state'] == 'FAILURE':
-                response['resource_type'] = 'inventory.ErrorResource'
-
-            if 'error_message' in response:
-                error_message = response.pop('error_message')
-                response['message'] = error_message
-
-            if all(key in response for key in ('cloud_service_type', 'cloud_service', 'region')):
+            if len([key for key in response.keys()
+                    if key in ('cloud_service_type', 'cloud_service', 'region')
+                    if response[key] is not None]) != 1:
                 raise ERROR_REQUIRED_FIELDS_MISSING(fields=list(response.keys()))
 
             if 'cloud_service_type' in response:
@@ -46,6 +41,13 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
             if 'region' in response:
                 region = response.pop('region')
                 response['resource'] = region
+
+            if response['state'] == 'FAILURE':
+                response['resource_type'] = 'inventory.ErrorResource'
+
+            if 'error_message' in response:
+                error_message = response.pop('error_message')
+                response['message'] = error_message
 
             if 'match_keys' in response:
                 match_keys = response.pop('match_keys')

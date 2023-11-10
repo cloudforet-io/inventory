@@ -64,6 +64,44 @@ def collector_collect(params: dict) -> dict:
             'metadata': 'dict'
         }
 
+        CloudServiceType
+        {
+            'name': 'str',           # Required
+            'group': 'str',          # Required
+            'provider': 'str',       # Required
+            'is_primary': 'bool',
+            'is_major': 'bool',
+            'metadata': 'dict',      # Required
+            'service_code': 'str',
+            'tags': 'dict'
+            'labels': 'list'
+        }
+
+        CloudService
+        {
+            'name': 'str',
+            'cloud_service_type': 'str',  # Required
+            'cloud_service_group': 'str', # Required
+            'provider': 'str',            # Required
+            'ip_addresses' : 'list',
+            'account' : 'str',
+            'instance_type': 'str',
+            'instance_size': 'float',
+            'region_code': 'str',
+            'data': 'dict'               # Required
+            'metadata': 'dict'           # Required
+            'reference': 'dict'
+            'tags' : 'dict'
+        }
+
+        Region
+        {
+            'name': 'str',
+            'region_code': 'str',        # Required
+            'provider': 'str',           # Required
+            'tags': 'dict'
+        }
+
         One of the cloud_service_type, cloud_service and region fields is required.
     """
     pass
