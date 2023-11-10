@@ -1,10 +1,13 @@
 import os
 import inspect
+import logging
 from spaceone.core.error import *
 from spaceone.core.utils import load_yaml_from_file
 from spaceone.inventory.plugin.collector.lib.metadata_generator import MetadataGenerator
 
 __all__ = ['convert_cloud_service_meta', 'convert_cloud_service_type_meta']
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def convert_cloud_service_meta(provider, cloud_service_group, cloud_service_type) -> dict:
@@ -33,6 +36,8 @@ def convert_cloud_service_type_meta(metadata_path: str) -> dict:
 def _get_yaml_path(metadata_path: str) -> str:
     # Get the previous path of call function
     manager_path = inspect.stack()[3][1]
+
+    _LOGGER.debug(f'[_get_yaml_path] manager_path: {manager_path}')
 
     try:
         app_path, unusable = manager_path.split('src', 1)
