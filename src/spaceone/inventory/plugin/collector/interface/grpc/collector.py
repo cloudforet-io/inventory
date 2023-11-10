@@ -3,6 +3,12 @@ from spaceone.api.inventory.plugin import collector_pb2, collector_pb2_grpc
 from spaceone.inventory.plugin.collector.error.response import *
 from spaceone.inventory.plugin.collector.service.collector_service import CollectorService
 
+VALID_RESOURCE_TYPES = {
+    'cloud_service_type': 'inventory.CloudServiceType',
+    'cloud_service': 'inventory.CloudService',
+    'region': 'inventory.Region'
+}
+
 
 class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
     pb2 = collector_pb2
@@ -25,10 +31,7 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
         collector_svc = CollectorService(metadata)
         for response in collector_svc.collect(params):
 
-            if len([key for key in response.keys()
-                    if key in ('cloud_service_type', 'cloud_service', 'region')
-                    if response[key] is not None]) != 1:
-                raise ERROR_REQUIRED_FIELDS_MISSING(fields=list(response.keys()))
+            self._check_resource_and_resource_type(response)
 
             if 'cloud_service_type' in response:
                 cloud_service_type = response.pop('cloud_service_type')
@@ -57,3 +60,13 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
                     response['match_rules'][str(idx)] = keys
 
             yield self.dict_to_message(response)
+
+    @staticmethod
+    def _check_resource_and_resource_type(response: dict) -> None:
+        resource = [key for key in response.keys() if key in VALID_RESOURCE_TYPES.keys() and response[key]]
+        if len(resource) != 1:
+            raise ERROR_INVAILD_INPUT_FIELD(fields=resource)
+
+        resource_type = response['resource_type']
+        if resource_type != VALID_RESOURCE_TYPES[resource[0]]:
+            raise ERROR_NOT_MATCH_RESOURCE_TYPE(resource_type=resource_type, resource=resource[0])
