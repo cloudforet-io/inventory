@@ -50,12 +50,48 @@ class MetadataGenerator:
         return {'layout': MainTableDynamicView(**table_metadata).dict()}
 
     def _generate_tabs(self, tabs_meta: list) -> dict:
-        new_tabs_metadata = {}
+        new_tabs_metadata = []
+
         for tab in tabs_meta:
             index, tab_meta = tab
-            tab_metadata = self._generate_default_dynamic_view(tab_meta['name'], tab_meta['type'])
-            # TODO: Not implemented yet
 
+            # generate multi dynamic view
+            if 'items' in tab_meta:
+                dynamic_view = self._generate_default_dynamic_view(
+                    name=tab_meta['name'],
+                    view_type=tab_meta['type']
+                )
+
+                inner_dynamic_views = []
+                for inner_tab_meta in tab_meta['items']:
+                    inner_dynamic_view = self._generate_default_dynamic_view(
+                        name=inner_tab_meta['name'],
+                        view_type=inner_tab_meta['type'],
+                    )
+
+                    if 'sort' in inner_tab_meta:
+                        inner_dynamic_view['options']['default_sort'] = self._generate_sort(inner_tab_meta['sort'])
+                    if 'fields' in inner_tab_meta:
+                        inner_dynamic_view['options']['fields'] = self._generate_fields(inner_tab_meta['fields'])
+
+                    inner_dynamic_views.append(inner_dynamic_view)
+                    dynamic_view['options']['layout'] = inner_dynamic_views
+                new_tabs_metadata.append(dynamic_view)
+
+            # generate single dynamic view
+            elif 'fields' in tab_meta:
+                dynamic_view = self._generate_default_dynamic_view(
+                    name=tab_meta['name'],
+                    view_type='list')
+                dynamic_view['options']['layout'] = []
+                dynamic_view['options']['layout'].append(
+                    self._generate_default_dynamic_view(
+                        name='',
+                        view_type=tab_meta['type']
+                    )
+                )
+                dynamic_view['options']['layout'][0]['options']['fields'] = self._generate_fields(tab_meta['fields'])
+                new_tabs_metadata.append(dynamic_view)
         return {'layout': new_tabs_metadata}
 
     @staticmethod
