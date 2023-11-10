@@ -1,10 +1,8 @@
 import logging
-from typing import Generator
+from typing import Generator, Union
 from spaceone.core.service import BaseService, transaction, convert_model
 from spaceone.inventory.plugin.collector.model.collector_request import CollectorInitRequest, CollectorVerifyRequest, CollectorCollectRequest
 from spaceone.inventory.plugin.collector.model.collector_response import PluginResponse, ResourceResponse
-from spaceone.inventory.plugin.collector.model.job_request import JobGetTaskRequest
-from spaceone.inventory.plugin.collector.model.job_response import TasksResponse
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -13,7 +11,7 @@ class CollectorService(BaseService):
 
     @transaction
     @convert_model
-    def init(self, params: CollectorInitRequest) -> PluginResponse:
+    def init(self, params: CollectorInitRequest) -> Union[dict, PluginResponse]:
         """ init plugin by options
 
         Args:
@@ -54,7 +52,7 @@ class CollectorService(BaseService):
 
     @transaction
     @convert_model
-    def collect(self, params: CollectorCollectRequest) -> Generator[ResourceResponse, None, None]:
+    def collect(self, params: CollectorCollectRequest) -> Union[Generator[ResourceResponse, None, None], dict]:
         """ Collect external data
 
         Args:
