@@ -20,8 +20,16 @@ class ResourceType(str, Enum):
     error = 'inventory.ErrorResource'
 
 
+class PluginMetadata(BaseModel):
+    supported_resource_type: List[str] = ['inventory.CloudService', 'inventory.CloudServiceType', 'inventory.Region']
+    supported_schedules: List[str] = ['hours']
+    supported_features: List[str] = ['garbage_collection']
+    filter_format: List[str] = []
+    options_schema: dict = {}
+
+
 class PluginResponse(BaseModel):
-    metadata: dict
+    metadata: PluginMetadata
 
 
 class ResourceResponse(BaseModel):
