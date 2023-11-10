@@ -6,8 +6,8 @@ from spaceone.inventory.plugin.collector.service.job_service import JobService
 
 __all__ = ['CollectorPluginServer']
 
-class CollectorPluginServer(PluginServer):
 
+class CollectorPluginServer(PluginServer):
     _grpc_app: GRPCServer = app
     _global_conf_path: str = 'spaceone.inventory.plugin.collector.conf.global_conf:global_conf'
     _plugin_methods = {

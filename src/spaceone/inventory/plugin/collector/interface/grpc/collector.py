@@ -30,8 +30,7 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
         params, metadata = self.parse_request(request, context)
         collector_svc = CollectorService(metadata)
         for response in collector_svc.collect(params):
-
-            self._check_resource_and_resource_type(response)
+            response = self._select_valid_resource_and_resource_type(response)
 
             if 'cloud_service_type' in response:
                 cloud_service_type = response.pop('cloud_service_type')
@@ -61,12 +60,26 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
 
             yield self.dict_to_message(response)
 
+    def _select_valid_resource_and_resource_type(self, response: dict) -> dict:
+        resources = list(VALID_RESOURCE_TYPES.keys())
+        valid_resource = [key for key in response.keys() if key in resources and response[key]]
+
+        self._check_resource_and_resource_type(valid_resource, response)
+
+        resources.remove(valid_resource[0])
+        for key in resources:
+            del response[key]
+
+        return response
+
     @staticmethod
-    def _check_resource_and_resource_type(response: dict) -> None:
-        resource = [key for key in response.keys() if key in VALID_RESOURCE_TYPES.keys() and response[key]]
-        if len(resource) != 1:
-            raise ERROR_INVAILD_INPUT_FIELD(fields=resource)
+    def _check_resource_and_resource_type(valid_resource, response) -> None:
+        if not len(valid_resource):
+            raise ERROR_NO_INPUT_FIELD()
+
+        if len(valid_resource) != 1:
+            raise ERROR_INVAILD_INPUT_FIELD(fields=valid_resource)
 
         resource_type = response['resource_type']
-        if resource_type != VALID_RESOURCE_TYPES[resource[0]]:
-            raise ERROR_NOT_MATCH_RESOURCE_TYPE(resource_type=resource_type, resource=resource[0])
+        if resource_type != VALID_RESOURCE_TYPES[valid_resource[0]]:
+            raise ERROR_NOT_MATCH_RESOURCE_TYPE(resource_type=resource_type, resource=valid_resource[0])

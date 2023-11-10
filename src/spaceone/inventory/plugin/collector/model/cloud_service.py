@@ -2,7 +2,7 @@ from typing import List, Optional
 from typing_extensions import TypedDict
 from pydantic import BaseModel, IPvAnyAddress
 
-__all__ = ['CloudService']
+__all__ = ['CloudService', 'Reference']
 
 
 class Reference(TypedDict, total=False):
