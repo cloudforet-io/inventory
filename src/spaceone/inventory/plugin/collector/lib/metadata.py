@@ -37,14 +37,10 @@ def _get_yaml_path(metadata_path: str) -> str:
     # Get the previous path of call function
     manager_path = inspect.stack()[3][1]
 
-    _LOGGER.debug(f'[_get_yaml_path] manager_path: {manager_path}')
-
     try:
-        app_path, unusable = manager_path.split('src', 1)
-        yaml_path = os.path.join(app_path, 'src', metadata_path)
-    except ValueError:
-        app_path, unusable = manager_path.split('source', 1)
-        yaml_path = os.path.join(app_path, 'source', metadata_path)
+        # Need to change to a better way
+        app_path, project, metadata, yaml_file = manager_path.rsplit('/', 3)
+        yaml_path = os.path.join(app_path, metadata_path)
     except Exception as e:
         raise ERROR_INVALID_PARAMETER(key='metadata_path', reason=f'Invalid metadata_path: {metadata_path}')
     return yaml_path
