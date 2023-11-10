@@ -48,6 +48,7 @@ def collector_collect(params: dict) -> dict:
             'options': 'dict',      # Required
             'secret_data': 'dict',  # Required
             'schema': 'str',
+            'task_options': 'dict',
             'domain_id': 'str'
         }
 
@@ -102,7 +103,7 @@ def collector_collect(params: dict) -> dict:
             'tags': 'dict'
         }
 
-        One of the cloud_service_type, cloud_service and region fields is required.
+        Only one of the cloud_service_type, cloud_service and region fields is required.
     """
     pass
 
