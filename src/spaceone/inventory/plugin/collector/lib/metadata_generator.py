@@ -75,7 +75,7 @@ class MetadataGenerator:
                         inner_dynamic_view['options']['fields'] = self._generate_fields(inner_tab_meta['fields'])
 
                     inner_dynamic_views.append(inner_dynamic_view)
-                    dynamic_view['options']['layout'] = inner_dynamic_views
+                    dynamic_view['options']['layouts'] = inner_dynamic_views
                 new_tabs_metadata.append(dynamic_view)
 
             # generate single dynamic view
@@ -83,16 +83,16 @@ class MetadataGenerator:
                 dynamic_view = self._generate_default_dynamic_view(
                     name=tab_meta['name'],
                     view_type='list')
-                dynamic_view['options']['layout'] = []
-                dynamic_view['options']['layout'].append(
+                dynamic_view['options']['layouts'] = []
+                dynamic_view['options']['layouts'].append(
                     self._generate_default_dynamic_view(
                         name='',
                         view_type=tab_meta['type']
                     )
                 )
-                dynamic_view['options']['layout'][0]['options']['fields'] = self._generate_fields(tab_meta['fields'])
+                dynamic_view['options']['layouts'][0]['options']['fields'] = self._generate_fields(tab_meta['fields'])
                 new_tabs_metadata.append(dynamic_view)
-        return {'layout': new_tabs_metadata}
+        return {'layouts': new_tabs_metadata}
 
     @staticmethod
     def _generate_default_dynamic_view(name, view_type, options=None):
