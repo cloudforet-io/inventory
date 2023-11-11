@@ -124,7 +124,7 @@ class MetadataGenerator:
             if 'type' not in field:
                 gen_fields.append(self._generate_text_field(field))
 
-            if field['type'] == 'text':
+            elif field['type'] == 'text':
                 gen_fields.append(self._generate_text_field(field))
         return gen_fields
 
