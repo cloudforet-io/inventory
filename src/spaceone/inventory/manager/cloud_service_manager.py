@@ -1,5 +1,7 @@
 import logging
 import copy
+import math
+import pytz
 from datetime import datetime
 
 from spaceone.core.manager import BaseManager
@@ -97,7 +99,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
         query = self._append_state_query(query)
         return self.cloud_svc_model.query(**query, target=target)
 
-    def get_export_query_results(self, options, domain_id, user_projects=None):
+    def get_export_query_results(self, options, timezone, domain_id, user_projects=None):
         ref_mgr: ReferenceManager = self.locator.get_manager(ReferenceManager)
 
         for export_option in options:
@@ -106,8 +108,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
             if export_option['query_type'] == 'SEARCH':
                 export_option['search_query'] = self._change_export_query(
                     'SEARCH', export_option['search_query'], domain_id, user_projects)
-                export_option['results'] = self._get_search_query_results(export_option['search_query'], domain_id,
-                                                                          ref_mgr)
+                export_option['results'] = self._get_search_query_results(export_option['search_query'], timezone,
+                                                                          domain_id, ref_mgr)
             else:
                 export_option['analyze_query'] = self._change_export_query(
                     'ANALYZE', export_option['analyze_query'], domain_id, user_projects)
@@ -115,13 +117,32 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
         return options
 
-    def _get_search_query_results(self, query, domain_id, ref_mgr: ReferenceManager):
+    def _convert_data(self, value):
+        if isinstance(value, float):
+            if math.ceil(value) == math.floor(value):
+                return int(value)
+        elif isinstance(value, bool):
+            return str(value)
+        elif isinstance(value, bool):
+            return str(value)
+        elif isinstance(value, list):
+            values = []
+            for v in value:
+                values.append(str(self._convert_data(v)))
+            return '\n'.join(values)
+        else:
+            return value
+
+    def _get_search_query_results(self, query, timezone, domain_id, ref_mgr: ReferenceManager):
         cloud_service_vos, total_count = self.list_cloud_services(query, change_filter=True, domain_id=domain_id)
         results = []
 
         fields = query.get('fields')
         if fields is None:
             raise ERROR_REQUIRED_PARAMETER(key='options[].search_query.fields')
+
+        tz = pytz.timezone(timezone)
+        tz_offset = tz.utcoffset(datetime.utcnow())
 
         for cloud_service_vo in cloud_service_vos:
             cloud_service_data = cloud_service_vo.to_dict()
@@ -132,6 +153,9 @@ class CloudServiceManager(BaseManager, ResourceManager):
                     key = field['key']
                     name = field.get('name') or key
                     reference = field.get('reference', {})
+
+                    if key.startswith('tags.'):
+                        key = self._get_hashed_key(key)
 
                     value = utils.get_dict_value(cloud_service_data, key)
 
@@ -144,16 +168,16 @@ class CloudServiceManager(BaseManager, ResourceManager):
                 else:
                     key = field
                     name = field
+
+                    if key.startswith('tags.'):
+                        key = self._get_hashed_key(key)
+
                     value = utils.get_dict_value(cloud_service_data, key)
 
                 if key in ['created_at', 'updated_at', 'deleted_at']:
-                    name = f'{name} (UTC)'
+                    value = value + tz_offset
 
-                if isinstance(value, list):
-                    value_str = [str(v) for v in value]
-                    value = '\n'.join(value_str)
-
-                result[name] = value
+                result[name] = self._convert_data(value)
 
             results.append(result)
 

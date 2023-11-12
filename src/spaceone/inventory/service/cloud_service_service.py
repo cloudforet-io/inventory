@@ -1,5 +1,6 @@
 import logging
 import copy
+import pytz
 from datetime import datetime
 from typing import List
 
@@ -338,6 +339,7 @@ class CloudServiceService(BaseService):
                 'domain_id': 'str',
                 'options': 'list of ExportOptions (spaceone.api.core.v1.ExportOptions)',
                 'file_format': 'str',
+                'timezone': 'str',
                 'user_projects': 'list', // from meta
             }
 
@@ -350,8 +352,11 @@ class CloudServiceService(BaseService):
         user_projects = params.get('user_projects')
         options = copy.deepcopy(params['options'])
         file_format = params.get('file_format', 'EXCEL')
+        timezone = params.get('timezone', 'UTC')
 
-        options = self.cloud_svc_mgr.get_export_query_results(options, domain_id, user_projects)
+        self._check_timezone(timezone)
+
+        options = self.cloud_svc_mgr.get_export_query_results(options, timezone, domain_id, user_projects)
         export_mgr: ExportManager = self.locator.get_manager(ExportManager,
                                                              file_format=file_format,
                                                              file_name='cloud_service_export')
@@ -528,3 +533,8 @@ class CloudServiceService(BaseService):
 
     def _is_created_by_collector(self):
         return self.collector_id and self.job_id and self.service_account_id and self.plugin_id
+
+    @staticmethod
+    def _check_timezone(timezone):
+        if timezone not in pytz.all_timezones:
+            raise ERROR_INVALID_PARAMETER(key='timezone', reason='Timezone is invalid.')
