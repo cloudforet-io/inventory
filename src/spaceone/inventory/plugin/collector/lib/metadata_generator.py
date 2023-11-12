@@ -126,17 +126,203 @@ class MetadataGenerator:
 
             elif field['type'] == 'text':
                 gen_fields.append(self._generate_text_field(field))
+
+            elif field['type'] == 'dict':
+                gen_fields.append(self._generate_dict_field(field))
+
+            elif field['type'] == 'size':
+                gen_fields.append(self._generate_size_field(field))
+
+            elif field['type'] == 'progress':
+                gen_fields.append(self._generate_progress_field(field))
+
+            elif field['type'] == 'datetime':
+                gen_fields.append(self._generate_datetime_field(field))
+
+            elif field['type'] == 'state':
+                gen_fields.append(self._generate_state_field(field))
+
+            elif field['type'] == 'badge':
+                gen_fields.append(self._generate_badge_field(field))
+
+            elif field['type'] == 'image':
+                gen_fields.append(self._generate_image_field(field))
+
+            elif field['type'] == 'enum':
+                gen_fields.append(self._generate_enum_field(field))
+
+            elif field['type'] == 'more':
+                gen_fields.append(self._generate_more_field(field))
         return gen_fields
 
-    @staticmethod
-    def _generate_text_field(field: dict):
+    def _generate_text_field(self, field: dict) -> dict:
         if 'key' not in field:
-            key = [key for key in field.keys() if key != 'type'][0]
-            field['name'] = key
-            field['key'] = field[key]
-            del field[key]
+            field = self._add_key_name_fields(field)
 
         if 'label' not in field:
             field['type'] = 'text'
 
-        return TextField(**field).dict()
+        return TextField(**field).dict(exclude_none=True)
+
+    def _generate_dict_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        return DictField(**field).dict(exclude_none=True)
+
+    def _generate_size_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        if 'display_unit' in field:
+            field = self._add_options_field(field, 'display_unit')
+
+        if 'source_unit' in field:
+            field = self._add_options_field(field, 'source_unit')
+
+        return SizeField(**field).dict(exclude_none=True)
+
+    def _generate_progress_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        if 'unit' in field:
+            field = self._add_options_field(field, 'unit')
+
+        return ProgressField(**field).dict(exclude_none=True)
+
+    def _generate_datetime_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        if 'source_type' in field:
+            field = self._add_options_field(field, 'source_type')
+
+        if 'source_format' in field:
+            field = self._add_options_field(field, 'source_format')
+
+        if 'display_format' in field:
+            field = self._add_options_field(field, 'display_format')
+
+        return DatetimeField(**field).dict(exclude_none=True)
+
+    def _generate_state_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        if 'text_color' in field:
+            field = self._add_options_field(field, 'text_color')
+
+        if 'icon_image' in field:
+            field = self._add_options_field(
+                field,
+                field_name='icon_image',
+                nested_field_name='icon',
+                change_field_name='image'
+            )
+
+        if 'icon_color' in field:
+            field = self._add_options_field(
+                field,
+                field_name='icon_color',
+                nested_field_name='icon',
+                change_field_name='color'
+            )
+        return StateField(**field).dict(exclude_none=True)
+
+    def _generate_badge_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        if 'text_color' in field:
+            field = self._add_options_field(field, 'text_color')
+
+        if 'shape' in field:
+            field = self._add_options_field(field, 'shape')
+
+        if 'outline_color' in field:
+            field = self._add_options_field(field, 'outline')
+
+        if 'background_color' in field:
+            field = self._add_options_field(field, 'background')
+
+        return BadgeField(**field).dict(exclude_none=True)
+
+    def _generate_image_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        if 'width' in field:
+            field = self._add_options_field(field, 'width')
+
+        if 'height' in field:
+            field = self._add_options_field(field, 'height')
+
+        if 'image_url' in field:
+            field = self._add_options_field(field, 'image_url')
+
+        return ImageField(**field).dict(exclude_none=True)
+
+    def _generate_enum_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        # Not Implemented
+
+        return EnumField(**field).dict(exclude_none=True)
+
+    def _generate_more_field(self, field: dict) -> dict:
+        if 'key' not in field:
+            field = self._add_key_name_fields(field)
+
+        if 'sub_key' in field:
+            field = self._add_options_field(field, 'sub_key')
+
+        # Not Implemented
+
+        return MoreField(**field).dict(exclude_none=True)
+
+    @staticmethod
+    def _add_key_name_fields(field: dict) -> dict:
+        key = [key for key in field.keys() if key != 'type'][0]
+        field['name'] = key
+        field['key'] = field[key]
+
+        del field[key]
+        return field
+
+    @staticmethod
+    def _add_options_field(field: dict, field_name: 'str',
+                           nested_field_name=None, change_field_name=None, ) -> dict:
+        if not nested_field_name:
+            if 'options' in field:
+                field['options'][field_name] = field[field_name]
+            else:
+                field['options'] = {field_name: field[field_name]}
+
+            del field[field_name]
+        else:
+            if 'options' in field:
+                if not change_field_name:
+                    if nested_field_name in field['options']:
+                        field['options'][nested_field_name][field_name] = field[field_name]
+                        del field[field_name]
+                    else:
+                        field['options'][nested_field_name] = {field_name: field[field_name]}
+                        del field[field_name]
+                else:
+                    if nested_field_name in field['options']:
+                        field['options'][nested_field_name][change_field_name] = field[field_name]
+                        del field[field_name]
+                    else:
+                        field['options'][nested_field_name] = {change_field_name: field[field_name]}
+                        del field[field_name]
+            else:
+                if not change_field_name:
+                    field['options'] = {nested_field_name: {field_name: field[field_name]}}
+                    del field[field_name]
+                else:
+                    field['options'] = {nested_field_name: {change_field_name: field[field_name]}}
+                    del field[field_name]
+
+        return field
