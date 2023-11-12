@@ -36,6 +36,7 @@ setup(
         'pandas',
         'jinja2',
         'openpyxl',
+        'pytz'
     ],
     package_data={
         'spaceone': ['inventory/template/*.html']

@@ -24,9 +24,10 @@ class CloudServiceReportManager(BaseManager):
             cloud_svc_report_vo.delete()
 
         options = copy.deepcopy(params.get('options', []))
+        timezone = params['timezone']
         domain_id = params['domain_id']
 
-        self.cloud_svc_mgr.get_export_query_results(options, domain_id)
+        self.cloud_svc_mgr.get_export_query_results(options, timezone, domain_id)
 
         cloud_svc_report_vo: CloudServiceReport = self.cloud_svc_report_model.create(params)
         self.transaction.add_rollback(_rollback, cloud_svc_report_vo)
