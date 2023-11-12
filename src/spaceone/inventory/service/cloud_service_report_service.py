@@ -1,4 +1,5 @@
 import logging
+import pytz
 
 from spaceone.core.service import *
 from spaceone.core.error import *
@@ -31,6 +32,8 @@ class CloudServiceReportService(BaseService):
                     'file_format': 'str',
                     'schedule': 'dict',
                     'target': 'dict',
+                    'timezone': 'str',
+                    'language': 'str',
                     'tags': 'dict',
                     'domain_id': 'str'
                 }
@@ -39,6 +42,9 @@ class CloudServiceReportService(BaseService):
             cloud_service_report_vo (object)
 
         """
+
+        params['timezone'] = params.get('timezone', 'UTC')
+        self._check_timezone(params['timezone'])
 
         return self.cloud_svc_report_mgr.create_cloud_service_report(params)
 
@@ -54,6 +60,8 @@ class CloudServiceReportService(BaseService):
                     'file_format': 'str',
                     'schedule': 'dict',
                     'target': 'dict',
+                    'timezone': 'str',
+                    'language': 'str',
                     'tags': 'dict',
                     'domain_id': 'str'
                 }
@@ -62,6 +70,9 @@ class CloudServiceReportService(BaseService):
             cloud_service_report_vo (object)
 
         """
+
+        if 'timezone' in params:
+            self._check_timezone(params['timezone'])
 
         cloud_svc_report_vo: CloudServiceReport = \
             self.cloud_svc_report_mgr.get_cloud_service_report(params['report_id'], params['domain_id'])
@@ -169,3 +180,9 @@ class CloudServiceReportService(BaseService):
 
         query = params.get('query', {})
         return self.cloud_svc_report_mgr.stat_cloud_service_reports(query)
+
+
+    @staticmethod
+    def _check_timezone(timezone):
+        if timezone not in pytz.all_timezones:
+            raise ERROR_INVALID_PARAMETER(key='timezone', reason='Timezone is invalid.')
