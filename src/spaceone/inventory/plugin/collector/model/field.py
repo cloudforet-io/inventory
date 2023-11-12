@@ -1,9 +1,9 @@
-from typing import Literal, List, Union, Any
+from typing import Literal, Union
 from pydantic import BaseModel
 
 __all__ = [
-    'TextField', 'DictField', 'SizeField', 'ProgressField', 'DatetimeField', 'StateField',
-    'BadgeField', 'ImageField', 'MoreField', 'EnumField'
+    'TextField', 'DictField', 'SizeField', 'ProgressField', 'DatetimeField', 'StateField', 'BadgeField', 'ImageField',
+    'MoreField', 'EnumField', 'EnumBadgeField', 'EnumStateField', 'EnumDatetimeField', 'EnumImageField'
 ]
 
 BACKGROUND_COLORS = (
@@ -133,7 +133,7 @@ class EnumField(BaseModel):
     name: str
     key: str
     type: str = 'enum'
-    options: dict = None
+    options: dict
 
 
 class MoreField(BaseModel):
@@ -141,3 +141,23 @@ class MoreField(BaseModel):
     key: str
     type: str = 'more'
     options: MoreOptions = None
+
+
+class EnumBadgeField(BaseModel):
+    type: str = 'badge'
+    options: BadgeOptions = None
+
+
+class EnumStateField(BaseModel):
+    type: str = 'state'
+    options: StateOptions = None
+
+
+class EnumDatetimeField(BaseModel):
+    type: str = 'datetime'
+    options: DatetimeOptions = None
+
+
+class EnumImageField(BaseModel):
+    type: str = 'image'
+    options: ImageOptions = None

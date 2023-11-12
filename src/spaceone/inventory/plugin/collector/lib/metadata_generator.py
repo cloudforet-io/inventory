@@ -191,9 +191,10 @@ class MetadataGenerator:
 
         return ProgressField(**field).dict(exclude_none=True)
 
-    def _generate_datetime_field(self, field: dict) -> dict:
-        if 'key' not in field:
-            field = self._add_key_name_fields(field)
+    def _generate_datetime_field(self, field: dict, is_enum=False) -> dict:
+        if not is_enum:
+            if 'key' not in field:
+                field = self._add_key_name_fields(field)
 
         if 'source_type' in field:
             field = self._add_options_field(field, 'source_type')
@@ -204,11 +205,15 @@ class MetadataGenerator:
         if 'display_format' in field:
             field = self._add_options_field(field, 'display_format')
 
-        return DatetimeField(**field).dict(exclude_none=True)
+        if not is_enum:
+            return DatetimeField(**field).dict(exclude_none=True)
+        else:
+            return EnumDatetimeField(**field).dict(exclude_none=True)
 
-    def _generate_state_field(self, field: dict) -> dict:
-        if 'key' not in field:
-            field = self._add_key_name_fields(field)
+    def _generate_state_field(self, field: dict, is_enum: bool = False) -> dict:
+        if not is_enum:
+            if 'key' not in field:
+                field = self._add_key_name_fields(field)
 
         if 'text_color' in field:
             field = self._add_options_field(field, 'text_color')
@@ -228,11 +233,16 @@ class MetadataGenerator:
                 nested_field_name='icon',
                 change_field_name='color'
             )
-        return StateField(**field).dict(exclude_none=True)
 
-    def _generate_badge_field(self, field: dict) -> dict:
-        if 'key' not in field:
-            field = self._add_key_name_fields(field)
+        if not is_enum:
+            return StateField(**field).dict(exclude_none=True)
+        else:
+            return EnumStateField(**field).dict(exclude_none=True)
+
+    def _generate_badge_field(self, field: dict, is_enum: bool = False) -> dict:
+        if not is_enum:
+            if 'key' not in field:
+                field = self._add_key_name_fields(field)
 
         if 'text_color' in field:
             field = self._add_options_field(field, 'text_color')
@@ -241,16 +251,20 @@ class MetadataGenerator:
             field = self._add_options_field(field, 'shape')
 
         if 'outline_color' in field:
-            field = self._add_options_field(field, 'outline')
+            field = self._add_options_field(field, 'outline_color')
 
         if 'background_color' in field:
-            field = self._add_options_field(field, 'background')
+            field = self._add_options_field(field, 'background_color')
 
-        return BadgeField(**field).dict(exclude_none=True)
+        if not is_enum:
+            return BadgeField(**field).dict(exclude_none=True)
+        else:
+            return EnumBadgeField(**field).dict(exclude_none=True)
 
-    def _generate_image_field(self, field: dict) -> dict:
-        if 'key' not in field:
-            field = self._add_key_name_fields(field)
+    def _generate_image_field(self, field: dict, is_enum: bool = False) -> dict:
+        if not is_enum:
+            if 'key' not in field:
+                field = self._add_key_name_fields(field)
 
         if 'width' in field:
             field = self._add_options_field(field, 'width')
@@ -261,13 +275,48 @@ class MetadataGenerator:
         if 'image_url' in field:
             field = self._add_options_field(field, 'image_url')
 
-        return ImageField(**field).dict(exclude_none=True)
+        if not is_enum:
+            return ImageField(**field).dict(exclude_none=True)
+        else:
+            return EnumImageField(**field).dict(exclude_none=True)
 
     def _generate_enum_field(self, field: dict) -> dict:
         if 'key' not in field:
             field = self._add_key_name_fields(field)
 
-        # Not Implemented
+        if 'enums' in field:
+            enable_enum_options = ['back_ground_color', 'text_color', 'shape', 'icon_color', 'icon_image', 'width',
+                                   'height', 'source_format', 'display_format', 'type']
+
+            enums = {}
+            for enum in field['enums']:
+                if 'type' not in enum:
+                    enum['type'] = 'badge'
+
+                main_key = [key for key in enum.keys() if key not in enable_enum_options][0]
+
+                if enum['type'] == 'badge':
+                    enum['outline_color'] = enum[main_key]
+                    del enum[main_key]
+                    enums[main_key] = self._generate_badge_field(field=enum, is_enum=True)
+
+                elif enum['type'] == 'state':
+                    enum['text_color'] = enum[main_key]
+                    del enum[main_key]
+                    enums[main_key] = self._generate_state_field(field=enum, is_enum=True)
+
+                elif enum['type'] == 'image':
+                    enum['image_url'] = enum[main_key]
+                    del enum[main_key]
+                    enums[main_key] = self._generate_image_field(field=enum, is_enum=True)
+
+                elif enum['type'] == 'datetime':
+                    enum['source_type'] = enum[main_key]
+                    del enum[main_key]
+                    enums[main_key] = self._generate_datetime_field(field=enum, is_enum=True)
+
+            field['options'] = enums
+            del field['enums']
 
         return EnumField(**field).dict(exclude_none=True)
 
