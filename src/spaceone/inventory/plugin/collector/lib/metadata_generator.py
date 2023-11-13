@@ -324,10 +324,28 @@ class MetadataGenerator:
         if 'key' not in field:
             field = self._add_key_name_fields(field)
 
-        if 'sub_key' in field:
-            field = self._add_options_field(field, 'sub_key')
+        if 'popup_key' in field:
+            field['options'] = {'sub_key': field['popup_key']}
+            del field['popup_key']
 
-        # Not Implemented
+        if 'popup_name' in field:
+            field = self._add_options_field(
+                field=field,
+                field_name='popup_name',
+                nested_field_name='layout',
+                change_field_name='name'
+            )
+            field['options']['layout']['type'] = 'popup'
+
+        if 'popup_type' in field:
+            field['options']['layout']['options'] = {'layout': {'type': field['popup_type']}}
+            del field['popup_type']
+
+        if 'popup_fields' in field:
+            field['options']['layout']['options']['layout']['options'] = {
+                'fields': self._generate_fields(field['popup_fields'])
+            }
+            del field['popup_fields']
 
         return MoreField(**field).dict(exclude_none=True)
 
