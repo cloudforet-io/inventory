@@ -125,12 +125,12 @@ class CloudServiceManager(BaseManager, ResourceManager):
                 return value
         elif isinstance(value, bool):
             return str(value)
-        elif isinstance(value, bool):
-            return str(value)
         elif isinstance(value, list):
             values = []
             for v in value:
-                values.append(str(self._convert_data(v)))
+                converted_value = self._convert_data(v)
+                if converted_value is not None:
+                    values.append(str(converted_value))
             return '\n'.join(values)
         else:
             return value
