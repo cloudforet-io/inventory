@@ -121,6 +121,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
         if isinstance(value, float):
             if math.ceil(value) == math.floor(value):
                 return int(value)
+            else:
+                return value
         elif isinstance(value, bool):
             return str(value)
         elif isinstance(value, bool):
