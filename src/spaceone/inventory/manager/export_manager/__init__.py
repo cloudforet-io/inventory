@@ -26,6 +26,7 @@ class ExportManager(BaseManager):
 
         self._file_dir = None
         self._file_path = None
+        self._sheet_name_count = {}
 
     def export(self, export_options, domain_id, **kwargs):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -47,6 +48,15 @@ class ExportManager(BaseManager):
     def _make_excel_file(self, idx, name, results):
         df = pd.DataFrame(results)
         sheet_name = name.replace(' ', '')[:30]
+
+        if sheet_name in self._sheet_name_count:
+            self._sheet_name_count[sheet_name] += 1
+            count = self._sheet_name_count[sheet_name]
+
+            sheet_name = f'{sheet_name[:29]}{count}'
+
+        else:
+            self._sheet_name_count[sheet_name] = 1
 
         if idx == 0:
             with pd.ExcelWriter(self._file_path, mode='w', engine='openpyxl') as writer:

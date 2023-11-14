@@ -339,6 +339,7 @@ class CloudServiceService(BaseService):
                 'domain_id': 'str',
                 'options': 'list of ExportOptions (spaceone.api.core.v1.ExportOptions)',
                 'file_format': 'str',
+                'file_name': 'str',
                 'timezone': 'str',
                 'user_projects': 'list', // from meta
             }
@@ -352,6 +353,7 @@ class CloudServiceService(BaseService):
         user_projects = params.get('user_projects')
         options = copy.deepcopy(params['options'])
         file_format = params.get('file_format', 'EXCEL')
+        file_name = params.get('file_name', 'cloud_service_export')
         timezone = params.get('timezone', 'UTC')
 
         self._check_timezone(timezone)
@@ -359,7 +361,7 @@ class CloudServiceService(BaseService):
         options = self.cloud_svc_mgr.get_export_query_results(options, timezone, domain_id, user_projects)
         export_mgr: ExportManager = self.locator.get_manager(ExportManager,
                                                              file_format=file_format,
-                                                             file_name='cloud_service_export')
+                                                             file_name=file_name)
 
         return export_mgr.export(options, domain_id)
 
