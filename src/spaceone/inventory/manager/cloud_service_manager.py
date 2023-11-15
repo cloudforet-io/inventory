@@ -176,7 +176,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
                     value = utils.get_dict_value(cloud_service_data, key)
 
-                if key in ['created_at', 'updated_at', 'deleted_at']:
+                if key in ['created_at', 'updated_at', 'deleted_at'] and isinstance(value, datetime):
                     value = value + tz_offset
 
                 result[name] = self._convert_data(value)
