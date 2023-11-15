@@ -45,9 +45,21 @@ class ExportManager(BaseManager):
 
             idx += 1
 
+    @staticmethod
+    def _change_sheet_name(name):
+        return (name
+                .replace(' ', '')
+                .replace('/', '')
+                .replace('\\', '')
+                .replace('?', '')
+                .replace('*', '')
+                .replace('[', '')
+                .replace(']', '')
+                .replace(':', ''))[:30]
+
     def _make_excel_file(self, idx, name, results):
         df = pd.DataFrame(results)
-        sheet_name = name.replace(' ', '')[:30]
+        sheet_name = self._change_sheet_name(name)
 
         if sheet_name in self._sheet_name_count:
             self._sheet_name_count[sheet_name] += 1
