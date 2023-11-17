@@ -42,12 +42,14 @@ class ExportManager(BaseManager):
             name = export_option['name']
             title = export_option.get('title')
             results = export_option['results']
-            if self._file_format == 'EXCEL':
-                self._make_excel_file(idx, name, results, title)
-            else:
-                self._make_csv_file(idx, name, results, title)
 
-            idx += 1
+            if len(results) > 0:
+                if self._file_format == 'EXCEL':
+                    self._make_excel_file(idx, name, results, title)
+                else:
+                    self._make_csv_file(idx, name, results, title)
+
+                idx += 1
 
     @staticmethod
     def _change_sheet_name(name):
