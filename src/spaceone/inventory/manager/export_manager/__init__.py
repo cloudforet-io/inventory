@@ -2,6 +2,7 @@ import tempfile
 import logging
 from datetime import datetime
 import pandas as pd
+from openpyxl.styles import Font, Border, PatternFill, Alignment, Side
 
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.file_manager import FileManager
@@ -38,10 +39,13 @@ class ExportManager(BaseManager):
     def make_file(self, export_options):
         idx = 0
         for export_option in export_options:
+            name = export_option['name']
+            title = export_option.get('title')
+            results = export_option['results']
             if self._file_format == 'EXCEL':
-                self._make_excel_file(idx, export_option['name'], export_option['results'])
+                self._make_excel_file(idx, name, results, title)
             else:
-                self._make_csv_file(idx, export_option['name'], export_option['results'])
+                self._make_csv_file(idx, name, results, title)
 
             idx += 1
 
@@ -57,8 +61,66 @@ class ExportManager(BaseManager):
                 .replace(']', '')
                 .replace(':', ''))[:30]
 
-    def _make_excel_file(self, idx, name, results):
+    @staticmethod
+    def _get_default_font(is_header=False):
+        return Font(size=12, bold=is_header, color='FFFFFF' if is_header else '000000')
+
+    @staticmethod
+    def _write_excel_file(writer, df, sheet_name, title=None):
+        start_row = 1 if title else 0
+
+        df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=start_row)
+        ws = writer.sheets[sheet_name]
+
+        # Set Title
+        if title:
+            ws = writer.sheets[sheet_name]
+            ws['A1'] = title
+            ws['A1'].font = Font(size=24, bold=True, color='0A3763')
+
+        # Set Excel Style
+        # Header Style
+        align = Alignment(horizontal='left', vertical='top', wrap_text=True)
+        header_font = Font(size=12, bold=True, color='FFFFFF')
+        header_border = Border(right=Side(style='thin', color='FFFFFF'),
+                               left=None, top=None, bottom=None)
+        header_fill = PatternFill(patternType='solid', fgColor='0A3764')
+
+        # Data Style
+        data_font = Font(size=12, bold=False, color='000000')
+        data_border = Border(left=Side(style='thin', color='E9E9EC'),
+                             top=Side(style='thin', color='E9E9EC'),
+                             right=Side(style='thin', color='E9E9EC'),
+                             bottom=Side(style='thin', color='E9E9EC'))
+        data_fill = PatternFill(patternType='solid', fgColor='F7f7f7')
+
+        for col in ws.columns:
+            max_width = 0
+            for i, cell in enumerate(col):
+                if i >= start_row:
+                    if i == start_row:
+                        cell.alignment = align
+                        cell.font = header_font
+                        cell.border = header_border
+                        cell.fill = header_fill
+                    else:
+                        cell.alignment = align
+                        cell.font = data_font
+                        cell.border = data_border
+
+                        if i % 2 == 0:
+                            cell.fill = data_fill
+
+                    if len(str(cell.value)) > max_width:
+                        for x in str(cell.value).split('\n'):
+                            if len(x) > max_width:
+                                max_width = len(x)
+
+                ws.column_dimensions[col[0].column_letter].width = (max_width + 2) * 1.1
+
+    def _make_excel_file(self, idx, name, results, title=None):
         df = pd.DataFrame(results)
+
         sheet_name = self._change_sheet_name(name)
 
         if sheet_name in self._sheet_name_count:
@@ -72,12 +134,12 @@ class ExportManager(BaseManager):
 
         if idx == 0:
             with pd.ExcelWriter(self._file_path, mode='w', engine='openpyxl') as writer:
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                self._write_excel_file(writer, df, sheet_name, title)
         else:
             with pd.ExcelWriter(self._file_path, mode='a', engine='openpyxl') as writer:
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                self._write_excel_file(writer, df, sheet_name, title)
 
-    def _make_csv_file(self, idx, name, results):
+    def _make_csv_file(self, idx, name, results, title=None):
         pass
 
     def upload_file(self, domain_id):
