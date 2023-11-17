@@ -2,6 +2,7 @@ import tempfile
 import logging
 from datetime import datetime
 import pandas as pd
+from openpyxl.styles import Font, Border, PatternFill, Alignment, Side
 
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.file_manager import FileManager
@@ -57,8 +58,54 @@ class ExportManager(BaseManager):
                 .replace(']', '')
                 .replace(':', ''))[:30]
 
+    @staticmethod
+    def _get_default_font(is_header=False):
+        return Font(size=12, bold=is_header, color='FFFFFF' if is_header else '000000')
+
+    def _write_excel_file(self, writer, df, sheet_name):
+        df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+        # Set Excel Style
+        ws = writer.sheets[sheet_name]
+        align = Alignment(horizontal='left', vertical='top', wrap_text=True)
+        header_font = self._get_default_font(is_header=True)
+        header_border = Border(right=Side(style='thin', color='FFFFFF'),
+                               left=None, top=None, bottom=None)
+        header_fill = PatternFill(patternType='solid', fgColor='0A3764')
+
+        data_font = self._get_default_font(is_header=False)
+        data_border = Border(left=Side(style='thin', color='E9E9EC'),
+                             top=Side(style='thin', color='E9E9EC'),
+                             right=Side(style='thin', color='E9E9EC'),
+                             bottom=Side(style='thin', color='E9E9EC'))
+        data_fill = PatternFill(patternType='solid', fgColor='F7f7f7')
+
+        for col in ws.columns:
+            max_width = 0
+            for i, cell in enumerate(col):
+                if i == 0:
+                    cell.alignment = align
+                    cell.font = header_font
+                    cell.border = header_border
+                    cell.fill = header_fill
+                else:
+                    cell.alignment = align
+                    cell.font = data_font
+                    cell.border = data_border
+
+                    if i % 2 == 0:
+                        cell.fill = data_fill
+
+                if len(str(cell.value)) > max_width:
+                    for x in str(cell.value).split('\n'):
+                        if len(x) > max_width:
+                            max_width = len(x)
+
+            ws.column_dimensions[col[0].column_letter].width = (max_width + 2) * 1.1
+
     def _make_excel_file(self, idx, name, results):
         df = pd.DataFrame(results)
+
         sheet_name = self._change_sheet_name(name)
 
         if sheet_name in self._sheet_name_count:
@@ -72,10 +119,10 @@ class ExportManager(BaseManager):
 
         if idx == 0:
             with pd.ExcelWriter(self._file_path, mode='w', engine='openpyxl') as writer:
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                self._write_excel_file(writer, df, sheet_name)
         else:
             with pd.ExcelWriter(self._file_path, mode='a', engine='openpyxl') as writer:
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
+                self._write_excel_file(writer, df, sheet_name)
 
     def _make_csv_file(self, idx, name, results):
         pass
