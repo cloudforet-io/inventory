@@ -129,7 +129,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
             values = []
             for v in value:
                 converted_value = self._convert_data(v)
-                if converted_value is not None:
+                if converted_value is not None and str(converted_value).strip() != '':
                     values.append(str(converted_value))
             return '\n'.join(values)
         else:
