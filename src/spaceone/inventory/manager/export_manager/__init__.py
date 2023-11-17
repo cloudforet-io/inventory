@@ -65,7 +65,8 @@ class ExportManager(BaseManager):
     def _get_default_font(is_header=False):
         return Font(size=12, bold=is_header, color='FFFFFF' if is_header else '000000')
 
-    def _write_excel_file(self, writer, df, sheet_name, title=None):
+    @staticmethod
+    def _write_excel_file(writer, df, sheet_name, title=None):
         start_row = 1 if title else 0
 
         df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=start_row)
