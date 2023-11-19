@@ -44,7 +44,10 @@ class CloudServiceReportService(BaseService):
         """
 
         params['timezone'] = params.get('timezone', 'UTC')
+        params['language'] = params.get('language', 'en')
+
         self._check_timezone(params['timezone'])
+        self._check_language(params['language'])
 
         return self.cloud_svc_report_mgr.create_cloud_service_report(params)
 
@@ -73,6 +76,9 @@ class CloudServiceReportService(BaseService):
 
         if 'timezone' in params:
             self._check_timezone(params['timezone'])
+
+        if 'language' in params:
+            self._check_language(params['language'])
 
         cloud_svc_report_vo: CloudServiceReport = \
             self.cloud_svc_report_mgr.get_cloud_service_report(params['report_id'], params['domain_id'])
@@ -181,8 +187,12 @@ class CloudServiceReportService(BaseService):
         query = params.get('query', {})
         return self.cloud_svc_report_mgr.stat_cloud_service_reports(query)
 
-
     @staticmethod
     def _check_timezone(timezone):
         if timezone not in pytz.all_timezones:
             raise ERROR_INVALID_PARAMETER(key='timezone', reason='Timezone is invalid.')
+
+    @staticmethod
+    def _check_language(language):
+        if language not in ['en', 'ko', 'jp']:
+            raise ERROR_INVALID_PARAMETER(key='language', reason='Language is invalid.')

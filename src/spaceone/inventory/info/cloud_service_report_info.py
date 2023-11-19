@@ -31,6 +31,8 @@ def CloudServiceReportInfo(cloud_svc_report_vo: CloudServiceReport, minimal=Fals
         info.update({
             'options': [],
             'target': cloud_svc_report_vo.target,
+            'language': cloud_svc_report_vo.language,
+            'timezone': cloud_svc_report_vo.timezone,
             'tags': cloud_svc_report_vo.tags,
             'domain_id': cloud_svc_report_vo.domain_id,
             'created_at': utils.datetime_to_iso8601(cloud_svc_report_vo.created_at)
