@@ -16,6 +16,8 @@ class CloudServiceReport(MongoModel):
     file_format = StringField(max_length=20, default='EXCEL', choices=('EXCEL', 'CSV'))
     schedule = EmbeddedDocumentField(ReportSchedule, required=True)
     target = DictField()
+    language = StringField(max_length=10, default='en')
+    timezone = StringField(max_length=255, default='UTC')
     tags = DictField()
     domain_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now_add=True)
@@ -28,6 +30,8 @@ class CloudServiceReport(MongoModel):
             'file_format',
             'schedule',
             'target',
+            'language',
+            'timezone',
             'tags',
             'last_sent_at'
         ],

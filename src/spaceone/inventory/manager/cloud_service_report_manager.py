@@ -71,14 +71,16 @@ class CloudServiceReportManager(BaseManager):
         file_format = cloud_svc_report_vo.file_format
         name = cloud_svc_report_vo.name
         target = cloud_svc_report_vo.target
+        language = cloud_svc_report_vo.language
+        timezone = cloud_svc_report_vo.timezone
 
         email_mgr: EmailManager = self.locator.get_manager(EmailManager,
                                                            file_format=file_format,
                                                            file_name=name)
 
-        self.cloud_svc_mgr.get_export_query_results(options, domain_id)
+        self.cloud_svc_mgr.get_export_query_results(options, timezone, domain_id)
 
-        email_mgr.export(options, domain_id, name=name, target=target)
+        email_mgr.export(options, domain_id, name=name, target=target, language=language)
 
         cloud_svc_report_vo.update({
             'last_sent_at': datetime.utcnow()
