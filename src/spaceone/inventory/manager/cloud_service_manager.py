@@ -28,6 +28,17 @@ MERGE_KEYS = [
     'data'
 ]
 
+SIZE_MAP = {
+    'KB': 1024,
+    'MB': 1024 * 1024,
+    'GB': 1024 * 1024 * 1024,
+    'TB': 1024 * 1024 * 1024 * 1024,
+    'PB': 1024 * 1024 * 1024 * 1024 * 1024,
+    'EB': 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    'ZB': 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+    'YB': 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
+}
+
 
 class CloudServiceManager(BaseManager, ResourceManager):
     resource_keys = ['cloud_service_id']
@@ -117,23 +128,56 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
         return options
 
-    def _convert_data(self, value):
+    @staticmethod
+    def _convert_size(value, source_unit):
+        if value is None:
+            value = 0
+
+        if isinstance(value, float) or isinstance(value, int):
+            value = value * SIZE_MAP.get(source_unit, 1)
+
+            if value == 0:
+                return "0 B"
+            size_name = ("B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB")
+            i = int(math.floor(math.log(value, 1024)))
+            p = math.pow(1024, i)
+            s = round(value / p, 2)
+
+            if math.ceil(s) == math.floor(s):
+                s = int(s)
+
+            return "%s %s" % (s, size_name[i])
+        else:
+            return value
+
+    def _convert_data(self, value, data_type, prefix=None, postfix=None, default=None, source_unit='BYTES'):
         if isinstance(value, float):
             if math.ceil(value) == math.floor(value):
-                return int(value)
-            else:
-                return value
+                value = int(value)
         elif isinstance(value, bool):
-            return str(value)
+            value = str(value)
         elif isinstance(value, list):
             values = []
             for v in value:
-                converted_value = self._convert_data(v)
+                converted_value = self._convert_data(v, data_type, prefix, postfix, default, source_unit)
                 if converted_value is not None and str(converted_value).strip() != '':
                     values.append(str(converted_value))
+
             return '\n'.join(values)
-        else:
-            return value
+
+        if value is None or str(value).strip() == '':
+            value = default
+
+        if data_type == 'size':
+            value = self._convert_size(value, source_unit)
+
+        if prefix:
+            value = f'{prefix}{value}'
+
+        if postfix:
+            value = f'{value}{postfix}'
+
+        return value
 
     def _get_search_query_results(self, query, timezone, domain_id, ref_mgr: ReferenceManager):
         cloud_service_vos, total_count = self.list_cloud_services(query, change_filter=True, domain_id=domain_id)
@@ -155,6 +199,12 @@ class CloudServiceManager(BaseManager, ResourceManager):
                     key = field['key']
                     name = field.get('name') or key
                     reference = field.get('reference', {})
+                    data_type = field.get('type', 'text')
+                    options = field.get('options', {})
+                    prefix = options.get('prefix')
+                    postfix = options.get('postfix')
+                    default = options.get('default')
+                    source_unit = options.get('source_unit')
 
                     if key.startswith('tags.'):
                         key = self._get_hashed_key(key)
@@ -170,6 +220,11 @@ class CloudServiceManager(BaseManager, ResourceManager):
                 else:
                     key = field
                     name = field
+                    data_type = 'text'
+                    prefix = None
+                    postfix = None
+                    default = None
+                    source_unit = None
 
                     if key.startswith('tags.'):
                         key = self._get_hashed_key(key)
@@ -179,7 +234,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
                 if key in ['created_at', 'updated_at', 'deleted_at'] and isinstance(value, datetime):
                     value = value + tz_offset
 
-                result[name] = self._convert_data(value)
+                result[name] = self._convert_data(value, data_type, prefix=prefix, postfix=postfix, default=default,
+                                                  source_unit=source_unit)
 
             results.append(result)
 
