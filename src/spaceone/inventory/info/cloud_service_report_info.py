@@ -1,6 +1,4 @@
 import functools
-from google.protobuf.json_format import ParseDict
-from spaceone.api.inventory.v1 import cloud_service_report_pb2
 from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_report_model import CloudServiceReport, ReportSchedule
 
@@ -45,8 +43,7 @@ def CloudServiceReportInfo(cloud_svc_report_vo: CloudServiceReport, minimal=Fals
 
 
 def CloudServiceReportsInfo(cloud_svc_report_vos, total_count, **kwargs):
-    return ParseDict({
+    return {
         'results': list(map(functools.partial(CloudServiceReportInfo, **kwargs), cloud_svc_report_vos)),
         'total_count': total_count
-    }, cloud_service_report_pb2.CloudServiceReportsInfo())
-
+    }

@@ -1,6 +1,4 @@
 import functools
-from google.protobuf.json_format import ParseDict
-from spaceone.api.inventory.v1 import cloud_service_query_set_pb2
 from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_query_set_model import CloudServiceQuerySet
 
@@ -34,7 +32,7 @@ def CloudServiceQuerySetInfo(cloud_svc_query_set_vo: CloudServiceQuerySet, minim
 
 
 def CloudServiceQuerySetsInfo(cloud_svc_query_set_vos, total_count, **kwargs):
-    return ParseDict({
+    return {
         'results': list(map(functools.partial(CloudServiceQuerySetInfo, **kwargs), cloud_svc_query_set_vos)),
         'total_count': total_count
-    }, cloud_service_query_set_pb2.CloudServiceQuerySetsInfo())
+    }
