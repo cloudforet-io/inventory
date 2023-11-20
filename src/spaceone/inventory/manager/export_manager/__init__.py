@@ -37,19 +37,22 @@ class ExportManager(BaseManager):
             return self.upload_file(domain_id)
 
     def make_file(self, export_options):
-        idx = 0
-        for export_option in export_options:
-            name = export_option['name']
-            title = export_option.get('title')
-            results = export_option['results']
+        if self._file_format == 'EXCEL':
+            with pd.ExcelWriter(self._file_path, mode='w', engine='openpyxl') as writer:
+                idx = 0
 
-            if len(results) > 0:
-                if self._file_format == 'EXCEL':
-                    self._make_excel_file(idx, name, results, title)
-                else:
-                    self._make_csv_file(idx, name, results, title)
+                for export_option in export_options:
+                    name = export_option['name']
+                    title = export_option.get('title')
+                    results = export_option['results']
 
-                idx += 1
+                    if len(results) > 0:
+                        if self._file_format == 'EXCEL':
+                            self._make_excel_file(writer, idx, name, results, title)
+
+                        idx += 1
+        else:
+            raise NotImplementedError('Not support file format!')
 
     @staticmethod
     def _change_sheet_name(name):
@@ -120,7 +123,7 @@ class ExportManager(BaseManager):
 
                 ws.column_dimensions[col[0].column_letter].width = (max_width + 2) * 1.1
 
-    def _make_excel_file(self, idx, name, results, title=None):
+    def _make_excel_file(self, writer, idx, name, results, title=None):
         df = pd.DataFrame(results)
 
         sheet_name = self._change_sheet_name(name)
@@ -135,14 +138,9 @@ class ExportManager(BaseManager):
             self._sheet_name_count[sheet_name] = 1
 
         if idx == 0:
-            with pd.ExcelWriter(self._file_path, mode='w', engine='openpyxl') as writer:
-                self._write_excel_file(writer, df, sheet_name, title)
+            self._write_excel_file(writer, df, sheet_name, title)
         else:
-            with pd.ExcelWriter(self._file_path, mode='a', engine='openpyxl') as writer:
-                self._write_excel_file(writer, df, sheet_name, title)
-
-    def _make_csv_file(self, idx, name, results, title=None):
-        pass
+            self._write_excel_file(writer, df, sheet_name, title)
 
     def upload_file(self, domain_id):
         file_mgr: FileManager = self.locator.get_manager(FileManager)
