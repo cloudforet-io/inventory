@@ -1,7 +1,6 @@
 import functools
 from spaceone.api.inventory.v1 import cloud_service_stats_pb2
 from spaceone.core.pygrpc.message_type import *
-from spaceone.core import utils
 from spaceone.inventory.model.cloud_service_stats_model import CloudServiceStats
 
 __all__ = ['CloudServiceStatInfo', 'CloudServiceStatsInfo']
