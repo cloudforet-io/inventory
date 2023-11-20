@@ -6,11 +6,11 @@ on:
       version:
         description: 'enter version(x.y.z)'
         required: true
-        default: '1.0.0'
+        default: '2.0.0'
       container_arch:
         type: choice
         description: 'choose container architecture'
-        default: linux/amd64,linux/arm64
+        default: linux/amd64
         options:
         - "linux/amd64"
         - "linux/amd64,linux/arm64"
@@ -139,6 +139,7 @@ jobs:
           build-args: |
             PACKAGE_VERSION=${{ env.PACKAGE_VERSION }}
             BRANCH_NAME=${{ env.BRANCH_NAME }}
+          provenance: false
 
       - name: Notice when job fails
         if: failure()
