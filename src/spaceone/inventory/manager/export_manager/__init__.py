@@ -6,6 +6,7 @@ from openpyxl.styles import Font, Border, PatternFill, Alignment, Side
 
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.manager.file_manager import FileManager
+from spaceone.inventory.error.export import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -37,6 +38,8 @@ class ExportManager(BaseManager):
             return self.upload_file(domain_id)
 
     def make_file(self, export_options):
+        self._check_results(export_options)
+
         if self._file_format == 'EXCEL':
             with pd.ExcelWriter(self._file_path, mode='w', engine='openpyxl') as writer:
                 idx = 0
@@ -47,12 +50,12 @@ class ExportManager(BaseManager):
                     results = export_option['results']
 
                     if len(results) > 0:
-                        if self._file_format == 'EXCEL':
-                            self._make_excel_file(writer, idx, name, results, title)
+                        self._make_excel_file(writer, idx, name, results, title)
 
                         idx += 1
+
         else:
-            raise NotImplementedError('Not support file format!')
+            raise ERROR_NOT_SUPPORT_FILE_FORMAT(file_format=self._file_format)
 
     @staticmethod
     def _change_sheet_name(name):
@@ -111,7 +114,7 @@ class ExportManager(BaseManager):
                     else:
                         cell.alignment = align
                         cell.font = data_font
-                        cell.border = data_border
+                        # cell.border = data_border
 
                         if i % 2 == 0:
                             cell.fill = data_fill
@@ -155,3 +158,16 @@ class ExportManager(BaseManager):
         return {
             'download_url': download_file_info['download_url']
         }
+
+    @staticmethod
+    def _check_results(export_options):
+        has_results = False
+
+        for export_option in export_options:
+            results = export_option['results']
+            if len(results) > 0:
+                has_results = True
+                break
+
+        if not has_results:
+            raise ERROR_NO_DATA_TO_EXPORT()
