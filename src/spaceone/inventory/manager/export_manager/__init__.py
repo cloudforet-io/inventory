@@ -114,7 +114,7 @@ class ExportManager(BaseManager):
                     else:
                         cell.alignment = align
                         cell.font = data_font
-                        # cell.border = data_border
+                        cell.border = data_border
 
                         if i % 2 == 0:
                             cell.fill = data_fill
