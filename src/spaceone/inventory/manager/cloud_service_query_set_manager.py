@@ -71,9 +71,11 @@ class CloudServiceQuerySetManager(BaseManager):
             f'[create_cloud_service_query_set] create query set: {params["name"]}'
         )
 
-        keys, additional_info_keys = self._get_keys_from_query(params["query_options"])
+        data_keys, additional_info_keys = self._get_keys_from_query(
+            params["query_options"]
+        )
         params["additional_info_keys"] = additional_info_keys
-        params["keys"] = keys
+        params["data_keys"] = data_keys
 
         provider = params.get("provider")
         cloud_service_group = params.get("cloud_service_group")
@@ -111,11 +113,11 @@ class CloudServiceQuerySetManager(BaseManager):
 
         if "query_options" in params:
             params["query_hash"] = utils.dict_to_hash(params["query_options"])
-            keys, additional_info_keys = self._get_keys_from_query(
+            data_keys, additional_info_keys = self._get_keys_from_query(
                 params["query_options"]
             )
             params["additional_info_keys"] = additional_info_keys
-            params["keys"] = keys
+            params["data_keys"] = data_keys
 
         _LOGGER.debug(
             f"[update_cloud_service_query_set_by_vo] update query set: {cloud_svc_query_set_vo.query_set_id}"
@@ -464,7 +466,7 @@ class CloudServiceQuerySetManager(BaseManager):
             "created_date": created_at.strftime("%Y-%m-%d"),
         }
 
-        for key in query_set_vo.keys:
+        for key in query_set_vo.data_keys:
             data["values"][key] = result.get(key, 0)
 
             if key in query_set_vo.unit:
@@ -523,9 +525,9 @@ class CloudServiceQuerySetManager(BaseManager):
 
     @staticmethod
     def _get_keys_from_query(query):
-        keys = query.get("fields", {}).keys()
+        data_keys = query.get("fields", {}).keys()
         additional_info_keys = []
         for key in query.get("group_by", []):
             if key not in _DEFAULT_GROUP_BY:
                 additional_info_keys.append(key.split(".")[-1:][0])
-        return keys, additional_info_keys
+        return data_keys, additional_info_keys
