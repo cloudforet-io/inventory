@@ -23,7 +23,7 @@ def CloudServiceQuerySetInfo(
             {
                 "query_options": cloud_svc_query_set_vo.query_options,
                 "additional_info_keys": cloud_svc_query_set_vo.additional_info_keys,
-                "keys": cloud_svc_query_set_vo.keys,
+                "data_keys": cloud_svc_query_set_vo.data_keys,
                 "unit": cloud_svc_query_set_vo.unit,
                 "tags": cloud_svc_query_set_vo.tags,
                 "domain_id": cloud_svc_query_set_vo.domain_id,

@@ -25,7 +25,7 @@ class CloudServiceQuerySet(MongoModel):
     )
     unit = DictField()
     additional_info_keys = ListField(StringField(max_length=255))
-    keys = ListField(StringField(max_length=255))
+    data_keys = ListField(StringField(max_length=255))
     provider = StringField(max_length=255, default=None, null=True)
     cloud_service_group = StringField(max_length=255, default=None, null=True)
     cloud_service_type = StringField(max_length=255, default=None, null=True)
@@ -43,7 +43,7 @@ class CloudServiceQuerySet(MongoModel):
             "query_hash",
             "unit",
             "additional_info_keys",
-            "keys",
+            "data_keys",
             "tags",
             "updated_at",
         ],
