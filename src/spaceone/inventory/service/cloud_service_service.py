@@ -408,7 +408,7 @@ class CloudServiceService(BaseService):
 
         query = params.get('query', {})
 
-        return self.cloud_svc_mgr.stat_cloud_services(query)
+        return self.cloud_svc_mgr.stat_cloud_services(query, change_filter=True, domain_id=params['domain_id'])
 
     def _append_resource_group_filter(self, query, domain_id):
         change_filter = []
