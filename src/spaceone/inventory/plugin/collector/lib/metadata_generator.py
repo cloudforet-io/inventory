@@ -60,7 +60,7 @@ class MetadataGenerator:
             # generate multi dynamic view
             if "items" in tab_meta:
                 dynamic_view = self._generate_default_dynamic_view(
-                    name=tab_meta["name"], view_type=tab_meta["type"]
+                    name=tab_meta["name"], view_type=tab_meta.get("type", "list")
                 )
 
                 inner_dynamic_views = []
@@ -69,6 +69,12 @@ class MetadataGenerator:
                         name=inner_tab_meta["name"],
                         view_type=inner_tab_meta["type"],
                     )
+
+                    if "markdown" in inner_tab_meta["type"]:
+                        inner_dynamic_view["options"]["markdown"] = inner_tab_meta[
+                            "root_path"
+                        ]
+                        del inner_tab_meta["root_path"]
 
                     if "sort" in inner_tab_meta:
                         inner_dynamic_view["options"][
@@ -107,7 +113,7 @@ class MetadataGenerator:
         return {"layouts": new_tabs_metadata}
 
     @staticmethod
-    def _generate_default_dynamic_view(name, view_type, options=None):
+    def _generate_default_dynamic_view(name, view_type="list", options=None):
         if options is None:
             options = {}
 
@@ -391,7 +397,7 @@ class MetadataGenerator:
     @staticmethod
     def _add_options_field(
         field: dict,
-        field_name: "str",
+        field_name: str,
         nested_field_name=None,
         change_field_name=None,
     ) -> dict:
