@@ -10,7 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class CollectorService(BaseService):
 
-    @transaction
+    @transaction(scope='public')
     @convert_model
     def init(self, params: CollectorInitRequest) -> Union[dict, PluginResponse]:
         """ init plugin by options
@@ -31,7 +31,7 @@ class CollectorService(BaseService):
         response = func(params.dict())
         return PluginResponse(**response)
 
-    @transaction
+    @transaction(scope='public')
     @convert_model
     def verify(self, params: CollectorVerifyRequest) -> None:
         """ Verifying collector plugin
@@ -51,7 +51,7 @@ class CollectorService(BaseService):
         func = self.get_plugin_method('verify')
         func(params.dict())
 
-    @transaction
+    @transaction(scope='public')
     @convert_model
     def collect(self, params: CollectorCollectRequest) -> Union[Generator[ResourceResponse, None, None], dict]:
         """ Collect external data
