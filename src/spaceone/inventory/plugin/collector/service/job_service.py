@@ -1,5 +1,6 @@
 import logging
-from spaceone.core.service import BaseService, transaction, convert_model
+from spaceone.core.service import *
+from spaceone.core.service.utils import *
 from spaceone.inventory.plugin.collector.model.job_request import JobGetTaskRequest
 from spaceone.inventory.plugin.collector.model.job_response import TasksResponse
 
