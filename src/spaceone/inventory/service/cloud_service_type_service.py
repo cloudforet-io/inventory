@@ -1,11 +1,15 @@
-from spaceone.core.service import *
+from typing import Tuple
+
 from spaceone.core import utils
-from spaceone.inventory.error import *
+from spaceone.core.service import *
+from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
-from spaceone.inventory.manager.cloud_service_type_manager import CloudServiceTypeManager
+from spaceone.inventory.manager.cloud_service_type_manager import (
+    CloudServiceTypeManager,
+)
 
 
-_KEYWORD_FILTER = ['cloud_service_type_id', 'name', 'group', 'service_code']
+_KEYWORD_FILTER = ["cloud_service_type_id", "name", "group", "service_code"]
 
 
 @authentication_handler
@@ -13,27 +17,34 @@ _KEYWORD_FILTER = ['cloud_service_type_id', 'name', 'group', 'service_code']
 @mutation_handler
 @event_handler
 class CloudServiceTypeService(BaseService):
+    resource = "CloudServiceType"
 
     def __init__(self, metadata):
         super().__init__(metadata)
-        self.cloud_svc_type_mgr: CloudServiceTypeManager = self.locator.get_manager('CloudServiceTypeManager')
+        self.cloud_svc_type_mgr: CloudServiceTypeManager = self.locator.get_manager(
+            "CloudServiceTypeManager"
+        )
 
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    def create(self, params):
+    @transaction(
+        permission="inventory:CloudServiceType.write",
+        role_types=["WORKSPACE_OWNER"],
+    )
+    def create(self, params: dict) -> CloudServiceType:
         """
         Args:
             params (dict): {
-                    'name': 'str',
-                    'group': 'str',
-                    'provider': 'str',
+                    'name': 'str',              # required
+                    'group': 'str',             # required
+                    'provider': 'str',          # required
                     'service_code': 'str',
                     'is_primary': 'bool',
                     'is_major': 'bool',
                     'resource_type': 'str',
                     'metadata': 'dict',
                     'labels': 'list,
-                    'tags': 'list or dict',
-                    'domain_id': 'str'
+                    'tags': 'dict',
+                    'workspace_id': 'str',      # injected from auth (required)
+                    'domain_id': 'str'          # injected from auth (required)
                 }
 
         Returns:
@@ -42,42 +53,50 @@ class CloudServiceTypeService(BaseService):
 
         return self.create_resource(params)
 
-    @check_required(['name', 'provider', 'group', 'domain_id'])
-    def create_resource(self, params):
-        params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
+    @check_required(["name", "group", "provider", "workspace_id", "domain_id"])
+    def create_resource(self, params: dict) -> CloudServiceType:
+        if "tags" in params:
+            if isinstance(params["tags"], list):
+                params["tags"] = utils.tags_to_dict(params["tags"])
 
-        provider = params.get('provider', self.transaction.get_meta('secret.provider'))
+        params["updated_by"] = self.transaction.get_meta("collector_id") or "manual"
+
+        provider = params.get("provider", self.transaction.get_meta("secret.provider"))
 
         if provider:
-            params['provider'] = provider
+            params["provider"] = provider
 
-        if 'tags' in params:
-            if isinstance(params['tags'], list):
-                params['tags'] = utils.tags_to_dict(params['tags'])
+        params["resource_type"] = params.get("resource_type", "inventory.CloudService")
 
-        params['resource_type'] = params.get('resource_type', 'inventory.CloudService')
+        params["ref_cloud_service_type"] = (
+            f'{params["domain_id"]}.{params["workspace_id"]}.{params["provider"]}.'
+            f'{params["group"]}.{params["name"]}'
+        )
 
-        params['ref_cloud_service_type'] = f'{params["domain_id"]}.{params["provider"]}.' \
-                                           f'{params["group"]}.{params["name"]}'
-
-        params['cloud_service_type_key'] = f'{params["provider"]}.{params["group"]}.{params["name"]}'
+        params[
+            "cloud_service_type_key"
+        ] = f'{params["provider"]}.{params["group"]}.{params["name"]}'
 
         return self.cloud_svc_type_mgr.create_cloud_service_type(params)
 
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    def update(self, params):
+    @transaction(
+        permission="inventory:CloudServiceType.write",
+        role_types=["WORKSPACE_OWNER"],
+    )
+    def update(self, params: dict) -> CloudServiceType:
         """
         Args:
             params (dict): {
-                    'cloud_service_type_id': 'str',
+                    'cloud_service_type_id': 'str',     # required
                     'service_code': 'str',
                     'is_primary': 'bool',
                     'is_major': 'bool',
                     'resource_type': 'str',
                     'metadata': 'dict',
                     'labels': 'list',
-                    'tags': 'list or dict',
-                    'domain_id': 'str'
+                    'tags': 'dict',
+                    'workspace_id': 'str',              # injected from auth (required)
+                    'domain_id': 'str'                  # injected from auth (required)
                 }
 
         Returns:
@@ -86,55 +105,61 @@ class CloudServiceTypeService(BaseService):
 
         return self.update_resource(params)
 
-    @check_required(['cloud_service_type_id', 'domain_id'])
-    def update_resource(self, params):
-        if 'tags' in params:
-            if isinstance(params['tags'], list):
-                params['tags'] = utils.tags_to_dict(params['tags'])
+    @check_required(["cloud_service_type_id", "workspace_id", "domain_id"])
+    def update_resource(self, params: dict) -> CloudServiceType:
+        if "tags" in params:
+            if isinstance(params["tags"], list):
+                params["tags"] = utils.tags_to_dict(params["tags"])
 
-        params['updated_by'] = self.transaction.get_meta('collector_id') or 'manual'
+        params["updated_by"] = self.transaction.get_meta("collector_id") or "manual"
+        domain_id = params["domain_id"]
 
-        provider = params.get('provider', self.transaction.get_meta('secret.provider'))
-        domain_id = params['domain_id']
+        cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(
+            params["cloud_service_type_id"], domain_id
+        )
 
-        cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
-                                                                           domain_id)
+        return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(
+            params, cloud_svc_type_vo
+        )
 
-        if not cloud_svc_type_vo.cloud_service_type_key:
-            params['cloud_service_type_key'] = f'{cloud_svc_type_vo.provider}.{cloud_svc_type_vo.group}.' \
-                                               f'{cloud_svc_type_vo.name}'
-
-        return self.cloud_svc_type_mgr.update_cloud_service_type_by_vo(params, cloud_svc_type_vo)
-
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    def delete(self, params):
+    @transaction(
+        permission="inventory:CloudServiceType.write",
+        role_types=["WORKSPACE_OWNER"],
+    )
+    def delete(self, params: dict) -> None:
         """
         Args:
         params (dict): {
-            'cloud_service_type_id': 'str',
-            'domain_id': 'str'
+            'cloud_service_type_id': 'str',     # required
+            'workspace_id': 'str',              # injected from auth (required)
+            'domain_id': 'str'                  # injected from auth (required)
         }
         Returns:
             None
         """
+
         self.delete_resource(params)
 
-    @check_required(['cloud_service_type_id', 'domain_id'])
-    def delete_resource(self, params):
-        cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'],
-                                                                           params['domain_id'])
+    @check_required(["cloud_service_type_id", "workspace_id", "domain_id"])
+    def delete_resource(self, params: dict) -> None:
+        cloud_svc_type_vo = self.cloud_svc_type_mgr.get_cloud_service_type(
+            params["cloud_service_type_id"], params["domain_id"], params["workspace_id"]
+        )
 
         self.cloud_svc_type_mgr.delete_cloud_service_type_by_vo(cloud_svc_type_vo)
 
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['cloud_service_type_id', 'domain_id'])
-    def get(self, params):
+    @transaction(
+        permission="inventory:CloudServiceType.read",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
+    )
+    @check_required(["cloud_service_type_id", "domain_id"])
+    def get(self, params: dict) -> CloudServiceType:
         """
         Args:
             params (dict): {
-                    'cloud_service_type_id': 'str',
-                    'domain_id': 'str',
-                    'only': 'list'
+                    'cloud_service_type_id': 'str',     # required
+                    'workspace_id': 'str',              # injected from auth
+                    'domain_id': 'str',                 # injected from auth (required)
                 }
 
         Returns:
@@ -142,18 +167,38 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        return self.cloud_svc_type_mgr.get_cloud_service_type(params['cloud_service_type_id'], params['domain_id'],
-                                                              params.get('only'))
+        return self.cloud_svc_type_mgr.get_cloud_service_type(
+            params["cloud_service_type_id"],
+            params["domain_id"],
+            params.get("workspace_id"),
+        )
 
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['domain_id'])
-    @append_query_filter(['cloud_service_type_id', 'name', 'provider', 'group', 'cloud_service_type_key',
-                          'service_code', 'is_primary', 'is_major', 'resource_type', 'domain_id'])
+    @transaction(
+        permission="inventory:CloudServiceType.read",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
+    )
+    @check_required(["domain_id"])
+    @append_query_filter(
+        [
+            "cloud_service_type_id",
+            "name",
+            "provider",
+            "group",
+            "cloud_service_type_key",
+            "service_code",
+            "is_primary",
+            "is_major",
+            "resource_type",
+            "workspace_id",
+            "domain_id",
+        ]
+    )
     @append_keyword_filter(_KEYWORD_FILTER)
-    def list(self, params):
+    def list(self, params: dict) -> Tuple[QuerySet, int]:
         """
         Args:
             params (dict): {
+                    'query': 'dict (spaceone.api.core.v1.Query)',
                     'cloud_service_type_id': 'str',
                     'name': 'str',
                     'group': 'str',
@@ -163,8 +208,8 @@ class CloudServiceTypeService(BaseService):
                     'is_primary': 'str',
                     'is_major': 'str',
                     'resource_type': 'str',
-                    'domain_id': 'str',
-                    'query': 'dict (spaceone.api.core.v1.Query)'
+                    'workspace_id': 'str',              # injected from auth
+                    'domain_id': 'str',                 # injected from auth (required)
                 }
 
         Returns:
@@ -173,18 +218,22 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        return self.cloud_svc_type_mgr.list_cloud_service_types(params.get('query', {}))
+        return self.cloud_svc_type_mgr.list_cloud_service_types(params.get("query", {}))
 
-    @transaction(append_meta={'authorization.scope': 'DOMAIN'})
-    @check_required(['query', 'domain_id'])
-    @append_query_filter(['domain_id'])
+    @transaction(
+        permission="inventory:CloudServiceType.read",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
+    )
+    @check_required(["query", "domain_id"])
+    @append_query_filter(["workspace_id", "domain_id"])
     @append_keyword_filter(_KEYWORD_FILTER)
-    def stat(self, params):
+    def stat(self, params: dict) -> dict:
         """
         Args:
             params (dict): {
-                'domain_id': 'str',
-                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)'
+                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
+                'workspace_id': 'str',              # injected from auth
+                'domain_id': 'str',                 # injected from auth (required)
             }
 
         Returns:
@@ -192,5 +241,5 @@ class CloudServiceTypeService(BaseService):
 
         """
 
-        query = params.get('query', {})
+        query = params.get("query", {})
         return self.cloud_svc_type_mgr.stat_cloud_service_types(query)

@@ -17,7 +17,6 @@ GLOBAL:
       backend: spaceone.core.cache.redis_cache.RedisCache
       host: redis
       port: 6379
-      db: 1
       encoding: utf-8
       socket_timeout: 10
       socket_connect_timeout: 10
@@ -31,26 +30,6 @@ GLOBAL:
       file:
         type: file
         filename: /var/log/spaceone/inventory.log
-  HANDLERS:
-    authentication:
-    - backend: spaceone.core.handler.authentication_handler.AuthenticationGRPCHandler
-      uri: grpc://identity:50051/v1/Domain/get_public_key
-    authorization:
-    - backend: spaceone.core.handler.authorization_handler.AuthorizationGRPCHandler
-      uri: grpc://identity:50051/v1/Authorization/verify
-  CONNECTORS:
-    IdentityConnector:
-      endpoint:
-        v1: grpc://identity:50051
-    SecretConnector:
-      endpoint:
-        v1: grpc://secret:50051
-    PluginConnector:
-      endpoint:
-        v1: grpc://plugin:50051
-    RepositoryConnector:
-      endpoint:
-        v1: grpc://repository:50051
   QUEUES:
       collector_q:
         backend: spaceone.core.queue.redis_queue.RedisQueue
