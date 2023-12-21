@@ -20,9 +20,11 @@ class CollectionInfo(EmbeddedDocument):
 
 
 class CloudService(MongoModel):
-    cloud_service_id = StringField(max_length=40, generate_id='cloud-svc', unique=True)
+    cloud_service_id = StringField(max_length=40, generate_id="cloud-svc", unique=True)
     name = StringField(default=None, null=True)
-    state = StringField(max_length=20, choices=('ACTIVE', 'DISCONNECTED', 'DELETED'), default='ACTIVE')
+    state = StringField(
+        max_length=20, choices=("ACTIVE", "DISCONNECTED", "DELETED"), default="ACTIVE"
+    )
     account = StringField(max_length=255, default=None, null=True)
     instance_type = StringField(max_length=255, default=None, null=True)
     instance_size = FloatField(max_length=255, default=None, null=True)
@@ -38,7 +40,8 @@ class CloudService(MongoModel):
     tag_keys = DictField()
     region_code = StringField(max_length=255, default=None, null=True)
     ref_region = StringField(max_length=255, default=None, null=True)
-    project_id = StringField(max_length=255, default=None, null=True)
+    project_id = StringField(max_length=40)
+    workspace_id = StringField(max_length=40)
     domain_id = StringField(max_length=40)
     collection_info = ListField(EmbeddedDocumentField(CollectionInfo), default=[])
     created_at = DateTimeField(auto_now_add=True)
@@ -46,110 +49,157 @@ class CloudService(MongoModel):
     deleted_at = DateTimeField(default=None, null=True)
 
     meta = {
-        'updatable_fields': [
-            'name',
-            'data',
-            'state',
-            'account',
-            'instance_type',
-            'instance_size',
-            'ip_addresses',
-            'metadata',
-            'reference',
-            'tags',
-            'tag_keys',
-            'project_id',
-            'region_code',
-            'cloud_service_group',
-            'cloud_service_type',
-            'collection_info',
-            'updated_at',
-            'deleted_at',
+        "updatable_fields": [
+            "name",
+            "data",
+            "state",
+            "account",
+            "instance_type",
+            "instance_size",
+            "ip_addresses",
+            "metadata",
+            "reference",
+            "tags",
+            "tag_keys",
+            "project_id",
+            "region_code",
+            "cloud_service_group",
+            "cloud_service_type",
+            "collection_info",
+            "updated_at",
+            "deleted_at",
         ],
-        'minimal_fields': [
-            'cloud_service_id',
-            'name',
-            'cloud_service_group',
-            'cloud_service_type',
-            'provider',
-            'reference.resource_id',
-            'region_code',
-            'project_id'
+        "minimal_fields": [
+            "cloud_service_id",
+            "name",
+            "cloud_service_group",
+            "cloud_service_type",
+            "provider",
+            "reference.resource_id",
+            "region_code",
+            "project_id",
         ],
-        'change_query_keys': {
-            'user_projects': 'project_id',
-            'ip_address': 'ip_addresses'
+        "change_query_keys": {
+            "user_projects": "project_id",
+            "ip_address": "ip_addresses",
         },
-        'reference_query_keys': {
-            'ref_cloud_service_type': {
-                'model': CloudServiceType,
-                'foreign_key': 'ref_cloud_service_type'
+        "reference_query_keys": {
+            "ref_cloud_service_type": {
+                "model": CloudServiceType,
+                "foreign_key": "ref_cloud_service_type",
             },
-            'ref_region': {
-                'model': Region,
-                'foreign_key': 'ref_region'
-            }
+            "ref_region": {"model": Region, "foreign_key": "ref_region"},
         },
-        'indexes': [
-            'reference.resource_id',
-            'state',
+        "indexes": [
+            "reference.resource_id",
+            "state",
             {
-                "fields": ['domain_id', 'state', 'cloud_service_id'],
-                "name": "COMPOUND_INDEX_FOR_GC_1"
+                "fields": ["domain_id", "workspace_id", "state", "cloud_service_id"],
+                "name": "COMPOUND_INDEX_FOR_GC_1",
             },
             {
-                "fields": ['domain_id', 'state', 'updated_at'],
-                "name": "COMPOUND_INDEX_FOR_GC_2"
+                "fields": ["domain_id", "workspace_id", "state", "updated_at"],
+                "name": "COMPOUND_INDEX_FOR_GC_2",
             },
             {
-                "fields": ['domain_id', 'state', '-deleted_at'],
-                "name": "COMPOUND_INDEX_FOR_GC_3"
+                "fields": ["domain_id", "workspace_id", "state", "-deleted_at"],
+                "name": "COMPOUND_INDEX_FOR_GC_3",
             },
             {
-                "fields": ['domain_id', 'state', 'provider', 'cloud_service_group', 'cloud_service_type',
-                           'reference.resource_id', 'account', 'cloud_service_id'],
-                "name": "COMPOUND_INDEX_FOR_COLLECTOR"
+                "fields": [
+                    "domain_id",
+                    "workspace_id",
+                    "state",
+                    "provider",
+                    "cloud_service_group",
+                    "cloud_service_type",
+                    "reference.resource_id",
+                    "account",
+                    "cloud_service_id",
+                ],
+                "name": "COMPOUND_INDEX_FOR_COLLECTOR",
             },
             {
-                "fields": ['domain_id', 'state', 'provider', 'cloud_service_group', 'cloud_service_type',
-                           'project_id', 'region_code'],
-                "name": "COMPOUND_INDEX_FOR_SEARCH_1"
+                "fields": [
+                    "domain_id",
+                    "workspace_id",
+                    "state",
+                    "provider",
+                    "cloud_service_group",
+                    "cloud_service_type",
+                    "project_id",
+                    "region_code",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1",
             },
             {
-                "fields": ['domain_id', 'state', 'ref_cloud_service_type', 'project_id', 'region_code'],
-                "name": "COMPOUND_INDEX_FOR_SEARCH_2"
+                "fields": [
+                    "domain_id",
+                    "workspace_id",
+                    "state",
+                    "ref_cloud_service_type",
+                    "project_id",
+                    "region_code",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_2",
             },
             {
-                "fields": ['domain_id', 'state', '-created_at', 'project_id'],
-                "name": "COMPOUND_INDEX_FOR_SEARCH_3"
+                "fields": [
+                    "domain_id",
+                    "workspace_id",
+                    "state",
+                    "-created_at",
+                    "project_id",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_3",
             },
             {
-                "fields": ['domain_id', 'state', '-deleted_at', 'project_id'],
-                "name": "COMPOUND_INDEX_FOR_SEARCH_4"
+                "fields": [
+                    "domain_id",
+                    "workspace_id",
+                    "state",
+                    "-deleted_at",
+                    "project_id",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_4",
             },
             {
-                "fields": ['domain_id', 'state', 'provider', 'cloud_service_group', 'cloud_service_type',
-                           'project_id', 'instance_type'],
-                "name": "COMPOUND_INDEX_FOR_SEARCH_5"
+                "fields": [
+                    "domain_id",
+                    "workspace_id",
+                    "state",
+                    "provider",
+                    "cloud_service_group",
+                    "cloud_service_type",
+                    "project_id",
+                    "instance_type",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_5",
             },
             {
-                "fields": ['domain_id', 'cloud_service_id', 'project_id'],
-                "name": "COMPOUND_INDEX_FOR_GET"
-            }
-        ]
+                "fields": [
+                    "domain_id",
+                    "workspace_id",
+                    "cloud_service_id",
+                    "project_id",
+                ],
+                "name": "COMPOUND_INDEX_FOR_GET",
+            },
+        ],
     }
 
     def update(self, data):
-        if self.state == 'DELETED':
-            raise ERROR_RESOURCE_ALREADY_DELETED(resource_type='CloudService', resource_id=self.cloud_service_id)
+        if self.state == "DELETED":
+            raise ERROR_RESOURCE_ALREADY_DELETED(
+                resource_type="CloudService", resource_id=self.cloud_service_id
+            )
 
         return super().update(data)
 
     def delete(self):
-        if self.state == 'DELETED':
-            raise ERROR_RESOURCE_ALREADY_DELETED(resource_type='CloudService', resource_id=self.cloud_service_id)
+        if self.state == "DELETED":
+            raise ERROR_RESOURCE_ALREADY_DELETED(
+                resource_type="CloudService", resource_id=self.cloud_service_id
+            )
 
-        self.update({
-            'state': 'DELETED',
-            'deleted_at': datetime.utcnow()
-        })
+        self.update({"state": "DELETED", "deleted_at": datetime.utcnow()})
