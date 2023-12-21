@@ -70,7 +70,7 @@ application_scheduler:
             backend: spaceone.inventory.interface.task.v1.cleanup_scheduler.CleanupScheduler
             queue: collector_q
             interval: 1
-            minute: ':35'
+            minute: ':10'
         stats_scheduler:
             backend: spaceone.inventory.interface.task.v1.cloud_service_stats_scheduler.CloudServiceStatsScheduler
             queue: collector_q
