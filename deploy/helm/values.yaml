@@ -87,7 +87,6 @@ application_worker:
             port: 6379
             channel: collector
 
-
     WORKERS:
         collector_worker:
             backend: spaceone.core.scheduler.worker.BaseWorker
