@@ -96,10 +96,9 @@ class CollectorService(BaseService):
             plugin_info.get("version"),
         )
 
-        # plugin_response = collector_plugin_mgr.init_plugin(
-        #     endpoint, plugin_info.get("options", {})
-        # )
-        plugin_response = {}
+        plugin_response = collector_plugin_mgr.init_plugin(
+            endpoint, plugin_info.get("options", {})
+        )
 
         if updated_version:
             plugin_info["version"] = updated_version
@@ -650,7 +649,6 @@ class CollectorService(BaseService):
                 }
                 domain_id: optional
             }
-        ex) {'hour': 3}
 
         Returns: collectors_info
         """
