@@ -7,25 +7,19 @@
 ######################################################################
 
 RESOURCE_MAP = {
-    'inventory.Server': ('ServerService', 'ServerManager'),                                 # Deprecated
-    'inventory.FilterCache': ('CollectorService', 'FilterManager'),                         # Deprecated
-    'inventory.CloudService': ('CloudServiceService', 'CloudServiceManager'),
-    'inventory.CloudServiceType': ('CloudServiceTypeService', 'CloudServiceTypeManager'),
-    'inventory.Region': ('RegionService', 'RegionManager'),
-    'inventory.ErrorResource': ('CollectorService', 'CollectingManager'),
+    "inventory.CloudService": ("CloudServiceService", "CloudServiceManager"),
+    "inventory.CloudServiceType": (
+        "CloudServiceTypeService",
+        "CloudServiceTypeManager",
+    ),
+    "inventory.Region": ("RegionService", "RegionManager"),
+    "inventory.ErrorResource": ("CollectorService", "CollectingManager"),
 }
 
 
-OP_MAP = {
-    '=': 'eq',
-    '>=': 'gte',
-    '<=': 'lte',
-    '>': 'gt',
-    '<': 'lt',
-    '!=': 'not'
-}
+OP_MAP = {"=": "eq", ">=": "gte", "<=": "lte", ">": "gt", "<": "lt", "!=": "not"}
 
-DB_QUEUE_NAME = 'db_q'
+DB_QUEUE_NAME = "db_q"
 
 NOT_COUNT = 0
 CREATED = 1

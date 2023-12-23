@@ -2,12 +2,13 @@
 DATABASE_AUTO_CREATE_INDEX = True
 DATABASES = {
     "default": {
-        "db": "inventory",
-        "host": "localhost",
-        "port": 27017,
-        "username": "",
-        "password": "",
-        "read_preference": "SECONDARY_PREFERRED",
+        # 'db': '',
+        # 'host': '',
+        # 'port': 0,
+        # 'username': '',
+        # 'password': '',
+        # 'ssl': False,
+        # 'ssl_ca_certs': ''
     }
 }
 
@@ -76,12 +77,17 @@ CONNECTORS = {
 LOG = {}
 
 # Queue Settings
-QUEUES = {}
+collect_queue = "collector_q"  # Queue name for asynchronous collect
+QUEUES = {
+    "collector_q": {
+        "backend": "spaceone.core.queue.redis_queue.RedisQueue",
+        "host": "redis",
+        "port": 6379,
+        "channel": "collector",
+    },
+}
 SCHEDULERS = {}
 WORKERS = {}
 
 # System Token Settings
 TOKEN = ""
-
-# Collector Settings
-collect_queue = ""  # Queue name for asynchronous collect

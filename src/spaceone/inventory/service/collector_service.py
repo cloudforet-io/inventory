@@ -1,6 +1,8 @@
 import logging
 import copy
+from typing import Tuple
 from spaceone.core.service import *
+from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.collector_manager import CollectorManager
@@ -13,6 +15,7 @@ from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.model.collector_model import Collector
+from spaceone.inventory.model.job_model import Job
 
 _LOGGER = logging.getLogger(__name__)
 _KEYWORD_FILTER = ["collector_id", "name", "provider"]
@@ -23,6 +26,8 @@ _KEYWORD_FILTER = ["collector_id", "name", "provider"]
 @mutation_handler
 @event_handler
 class CollectorService(BaseService):
+    resource = "Collector"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.collector_mgr: CollectorManager = self.locator.get_manager(
@@ -191,7 +196,7 @@ class CollectorService(BaseService):
         role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @check_required(["collector_id", "domain_id"])
-    def update_plugin(self, params):
+    def update_plugin(self, params: dict) -> Collector:
         """Update plugin info of collector
         Args:
             params (dict): {
@@ -244,7 +249,7 @@ class CollectorService(BaseService):
         role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @check_required(["collector_id", "domain_id"])
-    def verify_plugin(self, params):
+    def verify_plugin(self, params: dict) -> None:
         """Verify plugin info of collector
         Args:
             params (dict): {
@@ -283,7 +288,6 @@ class CollectorService(BaseService):
         secret_ids = self._get_secret_ids_from_filter(
             collector_vo.secret_filter.to_dict(),
             collector_vo.provider,
-            collector_vo.domain_id,
             params.get("secret_id"),
         )
 
@@ -315,6 +319,8 @@ class CollectorService(BaseService):
         state_mgr: CollectionStateManager = self.locator.get_manager(
             CollectionStateManager
         )
+        job_mgr: JobManager = self.locator.get_manager(JobManager)
+        job_task_mgr: JobTaskManager = self.locator.get_manager(JobTaskManager)
 
         collector_vo: Collector = self.collector_mgr.get_collector(
             params["collector_id"], params["domain_id"], params.get("workspace_id")
@@ -323,6 +329,17 @@ class CollectorService(BaseService):
         state_mgr.delete_collection_state_by_collector_id(
             params["collector_id"], params["domain_id"]
         )
+
+        job_vos = job_mgr.filter_jobs(
+            collector_id=params["collector_id"], domain_id=params["domain_id"]
+        )
+        job_vos.delete()
+
+        job_task_vos = job_task_mgr.filter_job_tasks(
+            collector_id=params["collector_id"], domain_id=params["domain_id"]
+        )
+        job_task_vos.delete()
+
         self.collector_mgr.delete_collector_by_vo(collector_vo)
 
     @transaction(
@@ -370,7 +387,7 @@ class CollectorService(BaseService):
         ]
     )
     @append_keyword_filter(_KEYWORD_FILTER)
-    def list(self, params):
+    def list(self, params: dict) -> Tuple[QuerySet, int]:
         """List collectors
         Args:
             params (dict): {
@@ -400,7 +417,7 @@ class CollectorService(BaseService):
     @check_required(["query", "domain_id"])
     @append_query_filter(["workspace_id", "domain_id"])
     @append_keyword_filter(_KEYWORD_FILTER)
-    def stat(self, params):
+    def stat(self, params: dict) -> dict:
         """Stat collectors
         Args:
             params (dict): {
@@ -422,7 +439,7 @@ class CollectorService(BaseService):
         role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @check_required(["collector_id", "domain_id"])
-    def collect(self, params):
+    def collect(self, params: dict) -> Job:
         """Collect data
         Args:
             params (dict): {
@@ -463,7 +480,7 @@ class CollectorService(BaseService):
                 endpoint, updated_version, plugin_info, collector_vo
             )
 
-        tasks = self.get_tasks(
+        tasks = self._get_tasks(
             params,
             endpoint,
             collector_vo.provider,
@@ -471,57 +488,45 @@ class CollectorService(BaseService):
             secret_filter,
             domain_id,
         )
-        projects = self.list_projects_from_tasks(tasks)
-        params.update(
-            {
-                "plugin_id": plugin_id,
-                "total_tasks": len(tasks),
-                "remained_tasks": len(tasks),
-            }
+
+        duplicated_job_vos = job_mgr.get_duplicate_jobs(
+            collector_id, domain_id, params.get("secret_id")
         )
 
-        duplicated_job_vos = job_mgr.list_duplicate_jobs(
-            collector_id, params.get("secret_id"), domain_id
-        )
         for job_vo in duplicated_job_vos:
             job_mgr.make_canceled_by_vo(job_vo)
 
         # JOB: IN-PROGRESS
+        params["plugin_id"] = plugin_id
+        params["remained_tasks"] = len(tasks)
         job_vo = job_mgr.create_job(collector_vo, params)
 
-        if tasks:
+        if len(tasks) > 0:
             for task in tasks:
                 task_options = task["task_options"]
                 task.update({"collector_id": collector_id, "job_id": job_vo.job_id})
 
                 try:
                     # JOB: CREATE TASK JOB
-                    job_task_vo = job_task_mgr.create_job_task(
-                        job_vo, domain_id, task_options
-                    )
+                    job_task_vo = job_task_mgr.create_job_task(job_vo, task_options)
                     task.update({"job_task_id": job_task_vo.job_task_id})
                     job_task_mgr.push_job_task(task)
 
                 except Exception as e:
-                    job_mgr.add_error(
-                        job_vo.job_id,
-                        domain_id,
-                        "ERROR_COLLECTOR_COLLECTING",
-                        e,
-                        {"task_options": task_options},
-                    )
                     _LOGGER.error(
-                        f"[collect] collecting failed: task_options={task_options}: {e}"
+                        f"[collect] Error to create job task ({job_vo.job_id}): {e}",
+                        exc_info=True,
                     )
+                    job_mgr.mark_error_by_vo(job_vo)
         else:
             # JOB: SUCCESS (No tasks)
             job_mgr.make_success_by_vo(job_vo)
             return job_vo
 
         self.collector_mgr.update_last_collected_time(collector_vo)
-        return job_mgr.update_job_by_vo({"projects": projects}, job_vo)
+        return job_vo
 
-    def get_tasks(
+    def _get_tasks(
         self,
         params: dict,
         endpoint: str,
@@ -529,7 +534,7 @@ class CollectorService(BaseService):
         plugin_info: dict,
         secret_filter: dict,
         domain_id: str,
-    ):
+    ) -> list:
         secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
         collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(
             CollectorPluginManager
@@ -539,12 +544,11 @@ class CollectorService(BaseService):
         secret_ids = self._get_secret_ids_from_filter(
             secret_filter,
             collector_provider,
-            domain_id,
             params.get("secret_id"),
         )
 
         for secret_id in secret_ids:
-            secret_info = secret_mgr.get_secret(secret_id, domain_id)
+            secret_info = secret_mgr.get_secret(secret_id)
             secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
 
             _task = {
@@ -717,7 +721,6 @@ class CollectorService(BaseService):
         self,
         secret_filter: dict,
         provider: str,
-        domain_id: str,
         secret_id: str = None,
     ) -> list:
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)
@@ -730,20 +733,19 @@ class CollectorService(BaseService):
         ]
 
     @check_required(["schedule"])
-    def scheduled_collectors(self, params):
-        """Search all collectors in this schedule
-        This is global search out-of domain
+    def scheduled_collectors(self, params: dict) -> Tuple[QuerySet, int]:
+        """Search all collectors in this schedule.
+        This is global search out-of domain.
 
         Args:
             params(dict): {
-                schedule(dict): {
-                  'hours': list,
-                  'minutes': list
-                }
-                domain_id: optional
+                'schedule': 'dict',     # required
+                'domain_id': 'str',
             }
 
-        Returns: collectors_info
+        Returns:
+            results (list)
+            total_count (int)
         """
 
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
@@ -855,12 +857,3 @@ class CollectorService(BaseService):
         else:
             # Single provider
             return provider if provider else plugin_info.get("provider")
-
-    @staticmethod
-    def list_projects_from_tasks(tasks: list) -> list:
-        projects = []
-        for task in tasks:
-            if project_id := task["secret_info"].get("project_id"):
-                projects.append(project_id)
-
-        return list(set(projects))

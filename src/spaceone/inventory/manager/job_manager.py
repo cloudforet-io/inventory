@@ -1,10 +1,12 @@
 import logging
+from typing import Tuple
 from datetime import datetime, timedelta
 from spaceone.core.manager import BaseManager
-from spaceone.inventory.model.job_model import Job
+from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.error import *
 from spaceone.inventory.lib.job_state import JobStateMachine
-from spaceone.inventory.conf.collector_conf import *
+from spaceone.inventory.model.collector_model import Collector
+from spaceone.inventory.model.job_model import Job
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -14,42 +16,57 @@ class JobManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.job_model: Job = self.locator.get_model("Job")
 
-    def create_job(self, collector_vo, params):
+    def create_job(self, collector_vo: Collector, params: dict) -> Job:
         """Create Job for collect method
         Args:
             collector_vo: collector model
             params(dict): {
-                'collector_id': str,
                 'secret_id': str,
-                'domain_id': str
             }
         Returns: job_vo
         """
+
         job_params = params.copy()
         job_params["collector"] = collector_vo
+        job_params["collector_id"] = collector_vo.collector_id
+        job_params["resource_group"] = collector_vo.resource_group
+        job_params["workspace_id"] = collector_vo.workspace_id
+        job_params["domain_id"] = collector_vo.domain_id
+
         return self.job_model.create(job_params)
 
-    def update(self, job_id, params, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        return self.update_job_by_vo(params, job_vo)
+    @staticmethod
+    def update_job_by_vo(params: dict, job_vo: Job) -> Job:
+        return job_vo.update(params)
 
-    def delete(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
+    @staticmethod
+    def delete_job_by_vo(job_vo: Job) -> None:
         job_vo.delete()
 
-    def get_job(self, job_id, domain_id, only=None):
-        return self.job_model.get(job_id=job_id, domain_id=domain_id, only=only)
+    def get_job(self, job_id: str, domain_id: str, workspace_id: str = None) -> Job:
+        conditions = {
+            "job_id": job_id,
+            "domain_id": domain_id,
+        }
 
-    def list_jobs(self, query):
+        if workspace_id:
+            conditions.update({"workspace_id": workspace_id})
+
+        return self.job_model.get(**conditions)
+
+    def filter_jobs(self, **conditions) -> QuerySet:
+        return self.job_model.filter(**conditions)
+
+    def list_jobs(self, query: dict) -> Tuple[QuerySet, int]:
         return self.job_model.query(**query)
 
-    def analyze_jobs(self, query):
+    def analyze_jobs(self, query: dict) -> dict:
         return self.job_model.analyze(**query)
 
-    def stat_jobs(self, query):
+    def stat_jobs(self, query: dict) -> dict:
         return self.job_model.stat(**query)
 
-    def increase_success_tasks(self, job_id, domain_id):
+    def increase_success_tasks(self, job_id: str, domain_id: str) -> Job:
         job_vo: Job = self.get_job(job_id, domain_id)
         return self.increase_success_tasks_by_vo(job_vo)
 
@@ -61,7 +78,7 @@ class JobManager(BaseManager):
         job_vo: Job = self.get_job(job_id, domain_id)
         return self.decrease_remained_tasks_by_vo(job_vo)
 
-    def decrease_remained_tasks_by_vo(self, job_vo: Job):
+    def decrease_remained_tasks_by_vo(self, job_vo: Job) -> Job:
         job_vo = job_vo.decrement("remained_tasks")
 
         if job_vo.remained_tasks == 0 and job_vo.status != "CANCELED":
@@ -78,41 +95,56 @@ class JobManager(BaseManager):
 
         return job_vo
 
-    def add_error(self, job_id, domain_id, error_code, msg, additional=None):
+    def add_error(
+        self,
+        job_id: str,
+        domain_id: str,
+        error_code: str,
+        error_message: str,
+        additional: dict = None,
+    ) -> Job:
         """
-        error_info (dict): {
-            'error_code': str,
-            'message': str,
-            'additional': dict
-        }
+        Args:
+            job_id: str
+            domain_id: str
+            error_code: str
+            error_message: str
+            additional: dict
+
+        Returns:
+            job_vo: Job
         """
-        message = repr(msg)
-        error_info = {"error_code": error_code, "message": message[:MAX_MESSAGE_LENGTH]}
 
         if additional:
-            error_info["additional"] = additional
+            error_message += f" ({additional})"
+
+        _LOGGER.error(f"[add_error] Job Error({job_id}): {error_code} {error_message}")
 
         job_vo = self.get_job(job_id, domain_id)
-        job_vo.append("errors", error_info)
         self.mark_error_by_vo(job_vo)
+
         return job_vo
 
-    def update_job_timeout_by_hour(self, hour, status, domain_id):
+    def update_job_timeout_by_hour(
+        self, hour: int, status: str, domain_id: str
+    ) -> None:
         created_at = datetime.utcnow() - timedelta(hours=hour)
         query = {
             "filter": [
                 {"k": "created_at", "v": created_at, "o": "lt"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
-                {"k": "status", "v": ["CREATED", "IN_PROGRESS"], "o": "in"},
+                {"k": "status", "v": "IN_PROGRESS", "o": "eq"},
             ]
         }
 
-        jobs, total_count = self.list_jobs(query)
-        for job in jobs:
-            self.make_timeout_by_vo(job)
+        job_vos, total_count = self.list_jobs(query)
+        for job_vo in job_vos:
+            self.make_failure_by_vo(job_vo)
 
-    def list_duplicate_jobs(self, collector_id: str, secret_id: str, domain_id: str):
-        # started_at = datetime.utcnow() - timedelta(minutes=10)
+    def get_duplicate_jobs(
+        self, collector_id: str, domain_id: str, secret_id: str = None
+    ) -> QuerySet:
+        # created_at = datetime.utcnow() - timedelta(minutes=10)
 
         query = {
             "filter": [
@@ -120,100 +152,44 @@ class JobManager(BaseManager):
                 {"k": "secret_id", "v": secret_id, "o": "eq"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
                 {"k": "status", "v": "IN_PROGRESS", "o": "eq"},
-                # {'k': 'started_at', 'v': started_at, 'o': 'gte'},
+                # {"k": "created_at", "v": created_at, "o": "gte"},
             ]
         }
 
         job_vos, total_count = self.list_jobs(query)
         return job_vos
 
-    def make_inprogress_by_vo(self, job_vo):
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.inprogress()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
-
-    def make_success_by_vo(self, job_vo):
+    def make_success_by_vo(self, job_vo: Job) -> None:
         job_state_machine = JobStateMachine(job_vo)
         job_state_machine.success()
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
-    def make_failure_by_vo(self, job_vo):
+    def make_failure_by_vo(self, job_vo: Job) -> None:
         job_state_machine = JobStateMachine(job_vo)
         job_state_machine.failure()
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
-    def make_canceled_by_vo(self, job_vo):
+    def make_canceled_by_vo(self, job_vo: Job) -> None:
+        _LOGGER.debug(f"[make_canceled_by_vo] cancel job: {job_vo.job_id}")
         job_state_machine = JobStateMachine(job_vo)
         job_state_machine.canceled()
         self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
 
-    # DEPRECATED
-    # def make_timeout_by_vo(self, job_vo):
-    #     job_state_machine = JobStateMachine(job_vo)
-    #     job_state_machine.timeout()
-    #     self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
-
-    def make_inprogress(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.inprogress()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
-
-    def make_success(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.success()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
-
-    def make_canceled(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.canceled()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
-
-    def make_failure(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.failure()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
-
-    # DEPRECATED
-    # def make_timeout(self, job_id, domain_id):
-    #     job_vo = self.get_job(job_id, domain_id)
-    #     job_state_machine = JobStateMachine(job_vo)
-    #     job_state_machine.timeout()
-    #     self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
-
-    def is_canceled(self, job_id, domain_id):
-        job_vo = self.get_job(job_id, domain_id)
-        job_state_machine = JobStateMachine(job_vo)
-        if job_state_machine.get_status() == "CANCELED":
-            return True
-        return False
-
-    def check_cancel(self, job_id, domain_id):
+    def check_cancel(self, job_id: str, domain_id: str) -> bool:
         job_vo = self.get_job(job_id, domain_id)
         job_state_machine = JobStateMachine(job_vo)
         job_status = job_state_machine.get_status()
+        return job_status == "CANCELED"
 
-        if job_status == "CANCELED":
-            return True
-        return False
-
-    def mark_error(self, job_id, domain_id):
+    def mark_error(self, job_id: str, domain_id: str) -> None:
         job_vo = self.get_job(job_id, domain_id)
-        job_vo.update({"mark_error": 1})
+        self.mark_error_by_vo(job_vo)
+
+    def mark_error_by_vo(self, job_vo: Job) -> None:
+        self.update_job_by_vo({"mark_error": 1}, job_vo)
 
     @staticmethod
-    def mark_error_by_vo(job_vo):
-        job_vo.update({"mark_error": 1})
-
-    @staticmethod
-    def delete_job_by_vo(job_vo):
-        job_vo.delete()
-
-    @staticmethod
-    def _update_job_status_by_vo(job_vo, status):
+    def _update_job_status_by_vo(job_vo: Job, status: str) -> Job:
         params = {"status": status}
         if status in ["SUCCESS", "FAILURE", "CANCELED"]:
             params.update({"finished_at": datetime.utcnow()})
@@ -222,13 +198,9 @@ class JobManager(BaseManager):
         return job_vo.update(params)
 
     @staticmethod
-    def update_job_by_vo(params, job_vo: Job):
-        return job_vo.update(params)
-
-    @staticmethod
-    def increase_success_tasks_by_vo(job_vo: Job):
+    def increase_success_tasks_by_vo(job_vo: Job) -> Job:
         return job_vo.increment("success_tasks")
 
     @staticmethod
-    def increase_failure_tasks_by_vo(job_vo: Job):
+    def increase_failure_tasks_by_vo(job_vo: Job) -> Job:
         return job_vo.increment("failure_tasks")
