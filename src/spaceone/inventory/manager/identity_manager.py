@@ -9,15 +9,9 @@ _LOGGER = logging.getLogger(__name__)
 class IdentityManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if token := kwargs.get("token"):
-            self.identity_conn: SpaceConnector = self.locator.get_connector(
-                "SpaceConnector", service="identity", token=token
-            )
-        else:
-            system_token = config.get_global("TOKEN")
-            self.identity_conn: SpaceConnector = self.locator.get_connector(
-                "SpaceConnector", service="identity", token=system_token
-            )
+        self.identity_conn: SpaceConnector = self.locator.get_connector(
+            "SpaceConnector", service="identity"
+        )
 
     def check_workspace(self, workspace_id, domain_id):
         return self.identity_conn.dispatch(
