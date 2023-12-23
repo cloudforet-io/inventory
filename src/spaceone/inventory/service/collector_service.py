@@ -459,7 +459,10 @@ class CollectorService(BaseService):
 
         collector_id = params["collector_id"]
         domain_id = params["domain_id"]
-        collector_vo = self.collector_mgr.get_collector(collector_id, domain_id)
+        workspace_id = params.get("workspace_id")
+        collector_vo = self.collector_mgr.get_collector(
+            collector_id, domain_id, workspace_id
+        )
         collector_data = collector_vo.to_dict()
 
         plugin_info = collector_data["plugin_info"]

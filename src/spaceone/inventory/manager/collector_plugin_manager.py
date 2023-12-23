@@ -33,10 +33,7 @@ class CollectorPluginManager(BaseManager):
             "SpaceConnector", endpoint=endpoint
         )
 
-        params = {
-            "options": options,
-            "secret_data": secret_data,
-        }
+        params = {"options": options, "secret_data": secret_data, "filter": {}}
 
         if task_options:
             params["task_options"] = task_options
