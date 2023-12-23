@@ -18,7 +18,7 @@ class PluginInfo(EmbeddedDocument):
 
 class SecretFilter(EmbeddedDocument):
     state = StringField(
-        max_length=20, default="ENABLED", choices=("ENABLED", "DISABLED")
+        max_length=20, default="DISABLED", choices=("ENABLED", "DISABLED")
     )
     secrets = ListField(StringField(max_length=40), defualt=None, null=True)
     service_accounts = ListField(StringField(max_length=40), default=None, null=True)
@@ -32,7 +32,7 @@ class SecretFilter(EmbeddedDocument):
 
 class Scheduled(EmbeddedDocument):
     state = StringField(
-        max_length=20, default="ENABLED", choices=("ENABLED", "DISABLED")
+        max_length=20, default="DISABLED", choices=("ENABLED", "DISABLED")
     )
     hours = ListField(default=None, null=True)
 

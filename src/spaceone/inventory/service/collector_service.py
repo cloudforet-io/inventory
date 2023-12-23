@@ -54,6 +54,7 @@ class CollectorService(BaseService):
         """
 
         identity_mgr: IdentityManager = self.locator.get_manager(IdentityManager)
+        secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
 
         # Check permission by resource group
         if params["resource_group"] == "WORKSPACE":
@@ -83,9 +84,19 @@ class CollectorService(BaseService):
         params["provider"] = plugin_provider
 
         if "secret_filter" in params:
-            self.validate_secret_filter(
-                identity_mgr, params["secret_filter"], domain_id
-            )
+            if params["secret_filter"].get("state") == "ENABLED":
+                self._validate_secret_filter(
+                    identity_mgr, secret_mgr, params["secret_filter"], plugin_provider
+                )
+            else:
+                del params["secret_filter"]
+
+        if "schedule" in params:
+            if params["schedule"].get("state") == "ENABLED":
+                if params["schedule"].get("hours") is None:
+                    raise ERROR_REQUIRED_PARAMETER(key="schedule.hours")
+            else:
+                del params["schedule"]
 
         collector_vo = self.collector_mgr.create_collector(params)
 
@@ -113,8 +124,8 @@ class CollectorService(BaseService):
         self.create_collector_rules_by_metadata(
             collector_rules,
             collector_vo.collector_id,
-            params["domain_id"],
             params["resource_group"],
+            params["domain_id"],
             params.get("workspace_id"),
         )
 
@@ -147,9 +158,141 @@ class CollectorService(BaseService):
         )
 
         if "secret_filter" in params:
-            self.validate_secret_filter(params["secret_filter"], params["domain_id"])
+            if params["secret_filter"].get("state") == "ENABLED":
+                identity_mgr: IdentityManager = self.locator.get_manager(
+                    IdentityManager
+                )
+                secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
+
+                self._validate_secret_filter(
+                    identity_mgr,
+                    secret_mgr,
+                    params["secret_filter"],
+                    collector_vo.provider,
+                )
+            else:
+                params["secret_filter"] = {
+                    "state": "DISABLED",
+                }
+
+        if "schedule" in params:
+            if params["schedule"].get("state") == "ENABLED":
+                if params["schedule"].get("hours") is None:
+                    raise ERROR_REQUIRED_PARAMETER(key="schedule.hours")
+            else:
+                params["schedule"] = {
+                    "state": "DISABLED",
+                }
 
         return self.collector_mgr.update_collector_by_vo(collector_vo, params)
+
+    @transaction(
+        permission="inventory:Collector.write",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
+    )
+    @check_required(["collector_id", "domain_id"])
+    def update_plugin(self, params):
+        """Update plugin info of collector
+        Args:
+            params (dict): {
+                'collector_id': 'str',      # required
+                'version': 'str',
+                'options': 'dict',
+                'upgrade_mode': 'str',
+                'workspace_id': 'str',      # injected from auth
+                'domain_id': 'str'          # injected from auth (required)
+            }
+
+        Returns:
+            collector_vo (object)
+        """
+
+        plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
+
+        collector_id = params["collector_id"]
+        domain_id = params["domain_id"]
+        workspace_id = params.get("workspace_id")
+
+        collector_vo = self.collector_mgr.get_collector(
+            collector_id, domain_id, workspace_id
+        )
+        plugin_info = collector_vo.plugin_info.to_dict()
+
+        if version := params.get("version"):
+            plugin_info["version"] = version
+
+        if options := params.get("options"):
+            plugin_info["options"] = options
+
+        if upgrade_mode := params.get("upgrade_mode"):
+            plugin_info["upgrade_mode"] = upgrade_mode
+
+        endpoint, updated_version = plugin_manager.get_endpoint(
+            plugin_info["plugin_id"],
+            plugin_info.get("version"),
+            domain_id,
+            plugin_info.get("upgrade_mode", "AUTO"),
+        )
+
+        collector_vo = self._update_collector_plugin(
+            endpoint, updated_version, plugin_info, collector_vo
+        )
+        return collector_vo
+
+    @transaction(
+        permission="inventory:Collector.write",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
+    )
+    @check_required(["collector_id", "domain_id"])
+    def verify_plugin(self, params):
+        """Verify plugin info of collector
+        Args:
+            params (dict): {
+                'collector_id': 'str',      # required
+                'secret_id': 'str',
+                'workspace_id': 'str',      # injected from auth
+                'domain_id': 'str'          # injected from auth (required)
+            }
+
+        Returns:
+            collector_vo (object)
+        """
+
+        collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(
+            CollectorPluginManager
+        )
+        plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
+        secret_manager: SecretManager = self.locator.get_manager(SecretManager)
+
+        collector_id = params["collector_id"]
+        domain_id = params["domain_id"]
+        workspace_id = params.get("workspace_id")
+
+        collector_vo = self.collector_mgr.get_collector(
+            collector_id, domain_id, workspace_id
+        )
+        plugin_info = collector_vo.plugin_info.to_dict()
+
+        endpoint, updated_version = plugin_manager.get_endpoint(
+            plugin_info["plugin_id"],
+            plugin_info.get("version"),
+            domain_id,
+            plugin_info.get("upgrade_mode", "AUTO"),
+        )
+
+        secret_ids = self._get_secret_ids_from_filter(
+            collector_vo.secret_filter,
+            collector_vo.provider,
+            collector_vo.domain_id,
+            params.get("secret_id"),
+        )
+
+        if secret_ids:
+            secret_data_info = secret_manager.get_secret_data(secret_ids[0], domain_id)
+            secret_data = secret_data_info.get("data", {})
+            collector_plugin_mgr.verify_plugin(
+                endpoint, plugin_info.get("options", {}), secret_data
+            )
 
     @transaction(
         permission="inventory:Collector.write",
@@ -173,14 +316,14 @@ class CollectorService(BaseService):
             CollectionStateManager
         )
 
-        collector_vo = self.collector_mgr.get_collector(
+        collector_vo: Collector = self.collector_mgr.get_collector(
             params["collector_id"], params["domain_id"], params.get("workspace_id")
         )
-        self.collector_mgr.delete_collector_by_vo(collector_vo)
 
         state_mgr.delete_collection_state_by_collector_id(
             params["collector_id"], params["domain_id"]
         )
+        self.collector_mgr.delete_collector_by_vo(collector_vo)
 
     @transaction(
         permission="inventory:Collector.read",
@@ -204,8 +347,9 @@ class CollectorService(BaseService):
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
         collector_id = params["collector_id"]
         domain_id = params["domain_id"]
-        only = params.get("only")
-        return collector_mgr.get_collector(collector_id, domain_id, only)
+        workspace_id = params.get("workspace_id")
+
+        return collector_mgr.get_collector(collector_id, domain_id, workspace_id)
 
     @transaction(
         permission="inventory:Collector.read",
@@ -218,7 +362,8 @@ class CollectorService(BaseService):
             "collector_id",
             "name",
             "state",
-            "priority",
+            "secret_filter_state",
+            "schedule_state",
             "plugin_id",
             "workspace_id",
             "domain_id",
@@ -315,7 +460,7 @@ class CollectorService(BaseService):
                 f"[collect] upgrade plugin version: {version} -> {updated_version}"
             )
             collector_vo = self._update_collector_plugin(
-                endpoint, updated_version, plugin_info, collector_vo, domain_id
+                endpoint, updated_version, plugin_info, collector_vo
             )
 
         tasks = self.get_tasks(
@@ -376,114 +521,6 @@ class CollectorService(BaseService):
         self.collector_mgr.update_last_collected_time(collector_vo)
         return job_mgr.update_job_by_vo({"projects": projects}, job_vo)
 
-    @transaction(
-        permission="inventory:Collector.write",
-        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
-    )
-    @check_required(["collector_id", "domain_id"])
-    def update_plugin(self, params):
-        """Update plugin info of collector
-        Args:
-            params (dict): {
-                'collector_id': 'str',      # required
-                'version': 'str',
-                'options': 'dict',
-                'upgrade_mode': 'str',
-                'workspace_id': 'str',      # injected from auth
-                'domain_id': 'str'          # injected from auth (required)
-            }
-
-        Returns:
-            collector_vo (object)
-        """
-
-        plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
-
-        collector_id = params["collector_id"]
-        domain_id = params["domain_id"]
-        workspace_id = params.get("workspace_id")
-
-        collector_vo = self.collector_mgr.get_collector(
-            collector_id, domain_id, workspace_id
-        )
-        plugin_info = collector_vo.plugin_info.to_dict()
-
-        if version := params.get("version"):
-            plugin_info["version"] = version
-
-        if options := params.get("options"):
-            plugin_info["options"] = options
-
-        if upgrade_mode := params.get("upgrade_mode"):
-            plugin_info["upgrade_mode"] = upgrade_mode
-
-        endpoint, updated_version = plugin_manager.get_endpoint(
-            plugin_info["plugin_id"],
-            plugin_info.get("version"),
-            domain_id,
-            plugin_info.get("upgrade_mode", "AUTO"),
-        )
-
-        collector_vo = self._update_collector_plugin(
-            endpoint, updated_version, plugin_info, collector_vo, domain_id
-        )
-        return collector_vo
-
-    @transaction(
-        permission="inventory:Collector.write",
-        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
-    )
-    @check_required(["collector_id", "domain_id"])
-    def verify_plugin(self, params):
-        """Verify plugin info of collector
-        Args:
-            params (dict): {
-                'collector_id': 'str',      # required
-                'secret_id': 'str',
-                'workspace_id': 'str',      # injected from auth
-                'domain_id': 'str'          # injected from auth (required)
-            }
-
-        Returns:
-            collector_vo (object)
-        """
-
-        collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(
-            CollectorPluginManager
-        )
-        plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
-        secret_manager: SecretManager = self.locator.get_manager(SecretManager)
-
-        collector_id = params["collector_id"]
-        domain_id = params["domain_id"]
-        workspace_id = params.get("workspace_id")
-
-        collector_vo = self.collector_mgr.get_collector(
-            collector_id, domain_id, workspace_id
-        )
-        plugin_info = collector_vo.plugin_info.to_dict()
-
-        endpoint, updated_version = plugin_manager.get_endpoint(
-            plugin_info["plugin_id"],
-            plugin_info.get("version"),
-            domain_id,
-            plugin_info.get("upgrade_mode", "AUTO"),
-        )
-
-        secret_ids = self.list_secret_from_secret_filter(
-            plugin_info.get("secret_filter", {}),
-            params.get("secret_id"),
-            collector_vo.provider,
-            domain_id,
-        )
-
-        if secret_ids:
-            secret_data_info = secret_manager.get_secret_data(secret_ids[0], domain_id)
-            secret_data = secret_data_info.get("data", {})
-            collector_plugin_mgr.verify_plugin(
-                endpoint, plugin_info.get("options", {}), secret_data
-            )
-
     def get_tasks(
         self,
         params: dict,
@@ -499,8 +536,11 @@ class CollectorService(BaseService):
         )
 
         tasks = []
-        secret_ids = self.list_secret_from_secret_filter(
-            secret_filter, params.get("secret_id"), collector_provider, domain_id
+        secret_ids = self._get_secret_ids_from_filter(
+            secret_filter,
+            collector_provider,
+            domain_id,
+            params.get("secret_id"),
         )
 
         for secret_id in secret_ids:
@@ -532,62 +572,110 @@ class CollectorService(BaseService):
 
         return tasks
 
-    def validate_secret_filter(
-        self, identity_mgr: IdentityManager, secret_filter: dict, domain_id: str
+    @staticmethod
+    def _check_secrets(
+        secret_mgr: SecretManager, secret_ids: list, provider: str
+    ) -> None:
+        _query = {
+            "filter": [
+                {"k": "secret_id", "v": secret_ids, "o": "in"},
+                {"k": "provider", "v": provider, "o": "eq"},
+            ],
+            "count_only": True,
+        }
+        response = secret_mgr.list_secrets(_query)
+        total_count = response.get("total_count", 0)
+
+        if total_count != len(secret_ids):
+            raise ERROR_INVALID_PARAMETER(
+                key="secret_filter.secrets",
+                reason=f"secrets are not found: {', '.join(secret_ids)}",
+            )
+
+    @staticmethod
+    def _check_service_accounts(
+        identity_mgr: IdentityManager,
+        service_account_ids: list,
+        provider: str,
+    ) -> None:
+        _query = {
+            "filter": [
+                {
+                    "k": "service_account_id",
+                    "v": service_account_ids,
+                    "o": "in",
+                },
+                {"k": "provider", "v": provider, "o": "eq"},
+            ],
+            "count_only": True,
+        }
+
+        response = identity_mgr.list_service_accounts(_query)
+        total_count = response.get("total_count", 0)
+
+        if total_count != len(service_account_ids):
+            raise ERROR_INVALID_PARAMETER(
+                key="secret_filter.service_accounts",
+                reason=f"service accounts are not found: {', '.join(service_account_ids)}",
+            )
+
+    @staticmethod
+    def _check_schemas(
+        identity_mgr: IdentityManager,
+        schema_ids: list,
+        provider: str,
+    ) -> None:
+        _query = {
+            "filter": [
+                {
+                    "k": "schema_id",
+                    "v": schema_ids,
+                    "o": "in",
+                },
+                {"k": "provider", "v": provider, "o": "eq"},
+            ],
+            "count_only": True,
+        }
+
+        response = identity_mgr.list_schemas(_query)
+        total_count = response.get("total_count", 0)
+
+        if total_count != len(schema_ids):
+            raise ERROR_INVALID_PARAMETER(
+                key="secret_filter.schemas",
+                reason=f"schemas are not found: {', '.join(schema_ids)}",
+            )
+
+    def _validate_secret_filter(
+        self,
+        identity_mgr: IdentityManager,
+        secret_mgr: SecretManager,
+        secret_filter: dict,
+        provider: str,
     ) -> None:
         if "secrets" in secret_filter:
-            _query = {
-                "filter": [
-                    {"k": "secret_id", "v": secret_filter["secrets"], "o": "in"}
-                ],
-                "count_only": True,
-            }
-            secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
-            response = secret_mgr.list_secrets(_query, domain_id)
-            total_count = response.get("total_count", 0)
-
-            if total_count != len(secret_filter["secrets"]):
-                raise ERROR_INVALID_PARAMETER(
-                    key="secret_filter.secrets", reason="secrets not found."
-                )
+            self._check_secrets(secret_mgr, secret_filter["secrets"], provider)
 
         if "service_accounts" in secret_filter:
-            _query = {
-                "filter": [
-                    {
-                        "k": "service_account_id",
-                        "v": secret_filter["service_accounts"],
-                        "o": "in",
-                    }
-                ],
-                "count_only": True,
-            }
-
-            response = identity_mgr.list_service_accounts(_query)
-            total_count = response.get("total_count", 0)
-
-            if total_count != len(secret_filter["service_accounts"]):
-                raise ERROR_INVALID_PARAMETER(
-                    key="secret_filter.service_accounts",
-                    reason="service accounts not found.",
-                )
+            self._check_service_accounts(
+                identity_mgr, secret_filter["service_accounts"], provider
+            )
 
         if "schemas" in secret_filter:
-            _query = {
-                "filter": [
-                    {"k": "name", "v": secret_filter["schemas"], "o": "in"},
-                    {"k": "schema_type", "v": ["SECRET", "TRUSTING_SECRET"], "o": "in"},
-                ],
-                "count_only": True,
-            }
+            self._check_schemas(identity_mgr, secret_filter["schemas"], provider)
 
-            response = identity_mgr.list_schemas(_query)
-            total_count = response.get("total_count", 0)
+        if "exclude_secrets" in secret_filter:
+            self._check_secrets(secret_mgr, secret_filter["exclude_secrets"], provider)
 
-            if total_count != len(secret_filter["schemas"]):
-                raise ERROR_INVALID_PARAMETER(
-                    key="secret_filter.schema", reason="schema not found."
-                )
+        if "exclude_service_accounts" in secret_filter:
+            self._check_service_accounts(
+                identity_mgr, secret_filter["exclude_service_accounts"], provider
+            )
+
+        if "exclude_schemas" in secret_filter:
+            self._check_schemas(
+                identity_mgr, secret_filter["exclude_schemas"], provider
+            )
 
     def _update_collector_plugin(
         self,
@@ -595,7 +683,6 @@ class CollectorService(BaseService):
         updated_version: str,
         plugin_info: dict,
         collector_vo: Collector,
-        domain_id: str,
     ) -> Collector:
         collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(
             CollectorPluginManager
@@ -609,27 +696,33 @@ class CollectorService(BaseService):
 
         plugin_info["metadata"] = plugin_response.get("metadata", {})
 
-        params = {"plugin_info": plugin_info}
-        collector_vo = self.collector_mgr.update_collector_by_vo(collector_vo, params)
+        collector_vo = self.collector_mgr.update_collector_by_vo(
+            collector_vo, {"plugin_info": plugin_info}
+        )
 
         self.delete_collector_rules(collector_vo.collector_id, collector_vo.domain_id),
+
+        collector_rules = plugin_info["metadata"].get("collector_rules", [])
         self.create_collector_rules_by_metadata(
-            plugin_info["metadata"], collector_vo.collector_id, domain_id
+            collector_rules,
+            collector_vo.collector_id,
+            collector_vo.resource_group,
+            collector_vo.domain_id,
+            collector_vo.workspace_id,
         )
 
         return collector_vo
 
-    def list_secret_from_secret_filter(
+    def _get_secret_ids_from_filter(
         self,
         secret_filter: dict,
-        secret_id: str,
-        collector_provider: str,
+        provider: str,
         domain_id: str,
+        secret_id: str = None,
     ) -> list:
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)
 
-        _filter = self._set_secret_filter(secret_filter, secret_id, collector_provider)
-        query = {"filter": _filter} if _filter else {}
+        query = {"filter": self._make_secret_filter(secret_filter, provider, secret_id)}
         response = secret_manager.list_secrets(query, domain_id)
 
         return [
@@ -674,9 +767,9 @@ class CollectorService(BaseService):
     def create_collector_rules_by_metadata(
         self,
         collector_rules: list,
-        domain_id: str,
         collector_id: str,
         resource_group: str,
+        domain_id: str,
         workspace_id: str = None,
     ):
         collector_rule_mgr: CollectorRuleManager = self.locator.get_manager(
@@ -706,64 +799,42 @@ class CollectorService(BaseService):
         old_collector_rule_vos.delete()
 
     @staticmethod
-    def _set_secret_filter(
-        secret_filter: dict, secret_id: str, collector_provider: str
+    def _make_secret_filter(
+        secret_filter: dict, provider: str, secret_id: str = None
     ) -> list:
-        _filter = []
+        _filter = [{"k": "provider", "v": provider, "o": "eq"}]
 
         if secret_id:
             _filter.append({"k": "secret_id", "v": secret_id, "o": "eq"})
 
-        if collector_provider:
-            _filter.append({"k": "provider", "v": collector_provider, "o": "eq"})
+        if secret_filter.get("state") == "ENABLED":
+            if secrets := secret_filter.get("secrets"):
+                _filter.append({"k": "secret_id", "v": secrets, "o": "in"})
 
-        if secret_filter and secret_filter.get("state") == "ENABLED":
-            if "secrets" in secret_filter and secret_filter["secrets"]:
+            if service_accounts := secret_filter.get("service_accounts"):
                 _filter.append(
-                    {"k": "secret_id", "v": secret_filter["secrets"], "o": "in"}
+                    {"k": "service_account_id", "v": service_accounts, "o": "in"}
                 )
-            if (
-                "service_accounts" in secret_filter
-                and secret_filter["service_accounts"]
+
+            if schemas := secret_filter.get("schemas"):
+                _filter.append({"k": "schema", "v": schemas, "o": "in"})
+
+            if exclude_secrets := secret_filter.get("exclude_secrets"):
+                _filter.append({"k": "secret_id", "v": exclude_secrets, "o": "not_in"})
+
+            if exclude_service_accounts := secret_filter.get(
+                "exclude_service_accounts"
             ):
                 _filter.append(
                     {
                         "k": "service_account_id",
-                        "v": secret_filter["service_accounts"],
-                        "o": "in",
-                    }
-                )
-            if "schemas" in secret_filter and secret_filter["schemas"]:
-                _filter.append(
-                    {"k": "schema", "v": secret_filter["schemas"], "o": "in"}
-                )
-            if "exclude_secrets" in secret_filter and secret_filter["exclude_secrets"]:
-                _filter.append(
-                    {
-                        "k": "secret_id",
-                        "v": secret_filter["exclude_secrets"],
+                        "v": exclude_service_accounts,
                         "o": "not_in",
                     }
                 )
-            if (
-                "exclude_service_accounts" in secret_filter
-                and secret_filter["exclude_service_accounts"]
-            ):
-                _filter.append(
-                    {
-                        "k": "service_account_id",
-                        "v": secret_filter["exclude_service_accounts"],
-                        "o": "not_in",
-                    }
-                )
-            if "exclude_schemas" in secret_filter and secret_filter["exclude_schemas"]:
-                _filter.append(
-                    {
-                        "k": "exclude_schemas",
-                        "v": secret_filter["exclude_schemas"],
-                        "o": "not_in",
-                    }
-                )
+
+            if exclude_schemas := secret_filter.get("exclude_schemas"):
+                _filter.append({"k": "schema", "v": exclude_schemas, "o": "not_in"})
 
         return _filter
 
