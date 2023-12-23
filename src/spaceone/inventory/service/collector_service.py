@@ -230,8 +230,8 @@ class CollectorService(BaseService):
         endpoint, updated_version = plugin_manager.get_endpoint(
             plugin_info["plugin_id"],
             plugin_info.get("version"),
-            domain_id,
             plugin_info.get("upgrade_mode", "AUTO"),
+            domain_id,
         )
 
         collector_vo = self._update_collector_plugin(
@@ -276,12 +276,12 @@ class CollectorService(BaseService):
         endpoint, updated_version = plugin_manager.get_endpoint(
             plugin_info["plugin_id"],
             plugin_info.get("version"),
-            domain_id,
             plugin_info.get("upgrade_mode", "AUTO"),
+            domain_id,
         )
 
         secret_ids = self._get_secret_ids_from_filter(
-            collector_vo.secret_filter,
+            collector_vo.secret_filter.to_dict(),
             collector_vo.provider,
             collector_vo.domain_id,
             params.get("secret_id"),
@@ -723,7 +723,7 @@ class CollectorService(BaseService):
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)
 
         query = {"filter": self._make_secret_filter(secret_filter, provider, secret_id)}
-        response = secret_manager.list_secrets(query, domain_id)
+        response = secret_manager.list_secrets(query)
 
         return [
             secret_info.get("secret_id") for secret_info in response.get("results", [])
