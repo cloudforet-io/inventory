@@ -33,19 +33,19 @@ class CloudServiceTypeService(BaseService):
         """
         Args:
             params (dict): {
-                    'name': 'str',              # required
-                    'group': 'str',             # required
-                    'provider': 'str',          # required
-                    'service_code': 'str',
-                    'is_primary': 'bool',
-                    'is_major': 'bool',
-                    'resource_type': 'str',
-                    'metadata': 'dict',
-                    'labels': 'list,
-                    'tags': 'dict',
-                    'workspace_id': 'str',      # injected from auth (required)
-                    'domain_id': 'str'          # injected from auth (required)
-                }
+                'name': 'str',              # required
+                'group': 'str',             # required
+                'provider': 'str',          # required
+                'service_code': 'str',
+                'is_primary': 'bool',
+                'is_major': 'bool',
+                'resource_type': 'str',
+                'metadata': 'dict',
+                'labels': 'list,
+                'tags': 'dict',
+                'workspace_id': 'str',      # injected from auth (required)
+                'domain_id': 'str'          # injected from auth (required)
+            }
 
         Returns:
             cloud_service_type_vo (object)
@@ -87,17 +87,17 @@ class CloudServiceTypeService(BaseService):
         """
         Args:
             params (dict): {
-                    'cloud_service_type_id': 'str',     # required
-                    'service_code': 'str',
-                    'is_primary': 'bool',
-                    'is_major': 'bool',
-                    'resource_type': 'str',
-                    'metadata': 'dict',
-                    'labels': 'list',
-                    'tags': 'dict',
-                    'workspace_id': 'str',              # injected from auth (required)
-                    'domain_id': 'str'                  # injected from auth (required)
-                }
+                'cloud_service_type_id': 'str',     # required
+                'service_code': 'str',
+                'is_primary': 'bool',
+                'is_major': 'bool',
+                'resource_type': 'str',
+                'metadata': 'dict',
+                'labels': 'list',
+                'tags': 'dict',
+                'workspace_id': 'str',              # injected from auth (required)
+                'domain_id': 'str'                  # injected from auth (required)
+            }
 
         Returns:
             cloud_service_type_vo (object)
@@ -157,10 +157,10 @@ class CloudServiceTypeService(BaseService):
         """
         Args:
             params (dict): {
-                    'cloud_service_type_id': 'str',     # required
-                    'workspace_id': 'str',              # injected from auth
-                    'domain_id': 'str',                 # injected from auth (required)
-                }
+                'cloud_service_type_id': 'str',     # required
+                'workspace_id': 'str',              # injected from auth
+                'domain_id': 'str',                 # injected from auth (required)
+            }
 
         Returns:
             cloud_service_type_vo (object)
@@ -198,19 +198,19 @@ class CloudServiceTypeService(BaseService):
         """
         Args:
             params (dict): {
-                    'query': 'dict (spaceone.api.core.v1.Query)',
-                    'cloud_service_type_id': 'str',
-                    'name': 'str',
-                    'group': 'str',
-                    'provider': 'str',
-                    'cloud_service_type_key': 'str',
-                    'service_code': 'str',
-                    'is_primary': 'str',
-                    'is_major': 'str',
-                    'resource_type': 'str',
-                    'workspace_id': 'str',              # injected from auth
-                    'domain_id': 'str',                 # injected from auth (required)
-                }
+                'query': 'dict (spaceone.api.core.v1.Query)',
+                'cloud_service_type_id': 'str',
+                'name': 'str',
+                'group': 'str',
+                'provider': 'str',
+                'cloud_service_type_key': 'str',
+                'service_code': 'str',
+                'is_primary': 'str',
+                'is_major': 'str',
+                'resource_type': 'str',
+                'workspace_id': 'str',              # injected from auth
+                'domain_id': 'str',                 # injected from auth (required)
+            }
 
         Returns:
             results (list)

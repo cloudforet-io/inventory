@@ -14,23 +14,32 @@ class SecretManager(BaseManager):
             "SpaceConnector", service="secret"
         )
 
+    def get_secret(self, secret_id: str) -> dict:
+        return self.secret_connector.dispatch("Secret.get", {"secret_id": secret_id})
+
+    def list_secrets(self, query: dict) -> dict:
+        return self.secret_connector.dispatch("Secret.list", {"query": query})
+
     def get_secret_data(self, secret_id: str, domain_id: str = None) -> dict:
         return self.secret_connector.dispatch(
             "Secret.get_data",
             {"secret_id": secret_id, "domain_id": domain_id},
-            token=config.get_global("TOKEN"),
         )
 
-    def get_secret(
-        self, secret_id: str, token: str = None, x_domain_id: str = None
-    ) -> dict:
+    def get_secret_by_system_token(self, secret_id: str, domain_id: str) -> dict:
+        system_token = config.get_global("TOKEN")
         return self.secret_connector.dispatch(
-            "Secret.get", {"secret_id": secret_id}, token=token, x_domain_id=x_domain_id
+            "Secret.get",
+            {"secret_id": secret_id},
+            token=system_token,
+            x_domain_id=domain_id,
         )
 
-    def list_secrets(
-        self, query: dict, token: str = None, x_domain_id: str = None
-    ) -> dict:
+    def list_secrets_by_system_token(self, query: dict, domain_id: str) -> dict:
+        system_token = config.get_global("TOKEN")
         return self.secret_connector.dispatch(
-            "Secret.list", {"query": query}, token=token, x_domain_id=x_domain_id
+            "Secret.list",
+            {"query": query},
+            token=system_token,
+            x_domain_id=domain_id,
         )

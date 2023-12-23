@@ -59,23 +59,23 @@ class CloudServiceService(BaseService):
         """
         Args:
             params (dict): {
-                    'cloud_service_type': 'str',        # required
-                    'cloud_service_group': 'str',       # required
-                    'provider': 'str',                  # required
-                    'name': 'str',
-                    'account': 'str',
-                    'instance_type': 'str',
-                    'instance_size': 'float',
-                    'ip_addresses': 'list',
-                    'data': 'dict',                     # required
-                    'metadata': 'dict',
-                    'reference': 'dict',
-                    'tags': 'list or dict',
-                    'region_code': 'str',
-                    'project_id': 'str',                # required
-                    'workspace_id': 'str',              # injected from auth (required)
-                    'domain_id': 'str'                  # injected from auth (required)
-                }
+                'cloud_service_type': 'str',        # required
+                'cloud_service_group': 'str',       # required
+                'provider': 'str',                  # required
+                'name': 'str',
+                'account': 'str',
+                'instance_type': 'str',
+                'instance_size': 'float',
+                'ip_addresses': 'list',
+                'data': 'dict',                     # required
+                'metadata': 'dict',
+                'reference': 'dict',
+                'tags': 'list or dict',
+                'region_code': 'str',
+                'project_id': 'str',                # required
+                'workspace_id': 'str',              # injected from auth (required)
+                'domain_id': 'str'                  # injected from auth (required)
+            }
 
         Returns:
             cloud_service_vo (object)
@@ -157,22 +157,22 @@ class CloudServiceService(BaseService):
         """
         Args:
             params (dict): {
-                    'cloud_service_id': 'str',      # required
-                    'name': 'str',
-                    'account': 'str',
-                    'instance_type': 'str',
-                    'instance_size': 'float',
-                    'ip_addresses': 'list',
-                    'data': 'dict',
-                    'metadata': 'dict',
-                    'reference': 'dict',
-                    'tags': 'list or dict',
-                    'region_code': 'str',
-                    'project_id': 'str',
-                    'workspace_id': 'str',              # injected from auth (required)
-                    'domain_id': 'str',                 # injected from auth (required)
-                    'user_projects': 'list'             # injected from auth
-                }
+                'cloud_service_id': 'str',      # required
+                'name': 'str',
+                'account': 'str',
+                'instance_type': 'str',
+                'instance_size': 'float',
+                'ip_addresses': 'list',
+                'data': 'dict',
+                'metadata': 'dict',
+                'reference': 'dict',
+                'tags': 'list or dict',
+                'region_code': 'str',
+                'project_id': 'str',
+                'workspace_id': 'str',              # injected from auth (required)
+                'domain_id': 'str',                 # injected from auth (required)
+                'user_projects': 'list'             # injected from auth
+            }
 
         Returns:
             cloud_service_vo (object)

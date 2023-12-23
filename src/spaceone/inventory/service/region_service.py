@@ -120,10 +120,10 @@ class RegionService(BaseService):
         """
         Args:
             params (dict): {
-                    'region_id': 'str',     # required
-                    'workspace_id': 'str',  # injected from auth
-                    'domain_id': 'str',     # injected from auth (required)
-                }
+                'region_id': 'str',     # required
+                'workspace_id': 'str',  # injected from auth
+                'domain_id': 'str',     # injected from auth (required)
+            }
 
         Returns:
             region_vo (object)
@@ -155,15 +155,15 @@ class RegionService(BaseService):
         """
         Args:
             params (dict): {
-                    'query': 'dict (spaceone.api.core.v1.Query)',
-                    'region_id': 'str',
-                    'name': 'str',
-                    'region_key': 'str',
-                    'region_code': 'str',
-                    'provider': 'str',
-                    'workspace_id': 'str',      # injected from auth
-                    'domain_id': 'str',         # injected from auth (required)
-                }
+                'query': 'dict (spaceone.api.core.v1.Query)',
+                'region_id': 'str',
+                'name': 'str',
+                'region_key': 'str',
+                'region_code': 'str',
+                'provider': 'str',
+                'workspace_id': 'str',      # injected from auth
+                'domain_id': 'str',         # injected from auth (required)
+            }
 
         Returns:
             results (list)

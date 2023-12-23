@@ -1,6 +1,7 @@
 from spaceone.core.service import *
 from spaceone.inventory.model.job_model import Job
 from spaceone.inventory.manager.job_manager import JobManager
+from spaceone.inventory.manager.job_task_manager import JobTaskManager
 
 
 @authentication_handler
@@ -8,116 +9,151 @@ from spaceone.inventory.manager.job_manager import JobManager
 @mutation_handler
 @event_handler
 class JobService(BaseService):
+    resource = "Job"
 
     def __init__(self, metadata):
         super().__init__(metadata)
-        self.job_mgr: JobManager = self.locator.get_manager('JobManager')
+        self.job_mgr: JobManager = self.locator.get_manager("JobManager")
 
-    @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['job_id', 'domain_id'])
+    @transaction(
+        permission="inventory:Job.write",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
+    )
+    @check_required(["job_id", "domain_id"])
     def delete(self, params):
         """
         Args:
             params (dict): {
-                'job_id': 'str',
-                'domain_id': 'str'
+                'job_id': 'str',        # required
+                'workspace_id': 'str',  # injected from auth
+                'domain_id': 'str'      # injected from auth (required)
             }
 
         Returns:
             None
         """
-        job_id = params['job_id']
-        domain_id = params['domain_id']
+        job_id = params["job_id"]
+        domain_id = params["domain_id"]
+        workspace_id = params.get("workspace_id")
 
-        job_vo: Job = self.job_mgr.get_job(job_id, domain_id)
+        job_vo: Job = self.job_mgr.get_job(job_id, domain_id, workspace_id)
+
+        job_task_mgr: JobTaskManager = self.locator.get_manager("JobTaskManager")
+
+        job_task_vos = job_task_mgr.filter_job_tasks(job_id=job_id, domain_id=domain_id)
+        job_task_vos.delete()
+
         self.job_mgr.delete_job_by_vo(job_vo)
 
-    @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['job_id', 'domain_id'])
+    @transaction(
+        permission="inventory:Job.read",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
+    )
+    @change_value_by_rule("APPEND", "workspace_id", "*")
+    @check_required(["job_id", "domain_id"])
     def get(self, params):
         """
         Args:
             params (dict): {
-                'job_id': 'str',
-                'domain_id': 'str',
-                'only': 'list'
+                'job_id': 'str',        # required
+                'workspace_id': 'str',  # injected from auth
+                'domain_id': 'str',     # injected from auth (required)
             }
 
         Returns:
             job_vo (object)
         """
 
-        return self.job_mgr.get_job(params['job_id'], params['domain_id'], params.get('only'))
+        return self.job_mgr.get_job(
+            params["job_id"], params["domain_id"], params.get("workspace_id")
+        )
 
-    @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['domain_id'])
-    @change_only_key({'collector_info': 'collector'}, key_path='query.only')
-    @append_query_filter(['job_id', 'status', 'collector_id', 'secret_id', 'domain_id', 'user_projects'])
-    @append_keyword_filter(['job_id'])
+    @transaction(
+        permission="inventory:Job.read",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
+    )
+    @change_value_by_rule("APPEND", "workspace_id", "*")
+    @check_required(["domain_id"])
+    @append_query_filter(
+        [
+            "job_id",
+            "status",
+            "collector_id",
+            "secret_id",
+            "plugin_id",
+            "workspace_id",
+            "domain_id",
+        ]
+    )
+    @append_keyword_filter(["job_id"])
+    @set_query_page_limit(1000)
     def list(self, params):
         """
         Args:
             params (dict): {
+                'query': 'dict (spaceone.api.core.v1.Query)',
                 'job_id': 'str',
                 'status': 'str',
                 'collector_id': 'dict',
-                'project_id': 'str',
                 'secret_id': 'str',
-                'domain_id  ': 'str',
-                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
-                'user_projects': 'list', // from meta
+                'plugin_id': 'str',
+                'workspace_id': 'str',      # injected from auth
+                'domain_id  ': 'str',       # injected from auth (required)
             }
 
         Returns:
             results (list)
             total_count (int)
         """
-        query = params.get('query', {})
 
-        # Temporary code for DB migration
-        if 'only' in query:
-            query['only'] += ['collector_id']
-
+        query = params.get("query", {})
         return self.job_mgr.list_jobs(query)
 
-    @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['query', 'query.fields', 'domain_id'])
-    @append_query_filter(['domain_id', 'user_projects'])
-    @append_keyword_filter(['job_id'])
+    @transaction(
+        permission="inventory:Job.read",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
+    )
+    @change_value_by_rule("APPEND", "workspace_id", "*")
+    @check_required(["query", "query.fields", "domain_id"])
+    @append_query_filter(["workspace_id", "domain_id"])
+    @append_keyword_filter(["job_id"])
     @set_query_page_limit(1000)
     def analyze(self, params):
         """
         Args:
             params (dict): {
-                'domain_id': 'str',
-                'query': 'dict (spaceone.api.core.v1.AnalyzeQuery)',
-                'user_projects': 'list', // from meta
+                'query': 'dict (spaceone.api.core.v1.AnalyzeQuery)',    # required
+                'workspace_id': 'str',      # injected from auth
+                'domain_id': 'str',         # injected from auth (required)
             }
 
         Returns:
-            values (list) : 'list of statistics data'
+            values (list) : 'list of analyze data'
         """
 
-        query = params.get('query', {})
-
+        query = params.get("query", {})
         return self.job_mgr.analyze_jobs(query)
 
-    @transaction(append_meta={'authorization.scope': 'PROJECT'})
-    @check_required(['query', 'domain_id'])
-    @append_query_filter(['domain_id', 'user_projects'])
-    @append_keyword_filter(['job_id'])
+    @transaction(
+        permission="inventory:Job.read",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
+    )
+    @check_required(["query", "domain_id"])
+    @append_query_filter(["workspace_id", "domain_id"])
+    @append_keyword_filter(["job_id"])
+    @set_query_page_limit(1000)
     def stat(self, params):
         """
         Args:
             params (dict): {
-                'domain_id': 'str',
-                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',
-                'user_projects': 'list', // from meta
+                'query': 'dict (spaceone.api.core.v1.StatisticsQuery)',     # required
+                'workspace_id': 'str',      # injected from auth
+                'domain_id': 'str',         # injected from auth (required)
             }
 
         Returns:
             values (list) : 'list of statistics data'
         """
 
-        query = params.get('query', {})
+        query = params.get("query", {})
         return self.job_mgr.stat_jobs(query)
