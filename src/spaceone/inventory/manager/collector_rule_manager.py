@@ -276,6 +276,7 @@ class CollectorRuleManager(BaseManager):
         managed_query = self._make_collector_rule_query(
             collector_id, "MANAGED", domain_id
         )
+
         managed_collector_rule_vos, total_count = self.list_collector_rules(
             managed_query
         )
@@ -301,5 +302,5 @@ class CollectorRuleManager(BaseManager):
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
                 {"k": "rule_type", "v": rule_type, "o": "eq"},
             ],
-            "sort": {"key": "order"},
+            "sort": [{"key": "order"}],
         }

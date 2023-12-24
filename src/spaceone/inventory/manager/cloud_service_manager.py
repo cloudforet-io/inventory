@@ -445,34 +445,19 @@ class CloudServiceManager(BaseManager, ResourceManager):
         return query
 
     def _change_sort_tags(self, query: dict) -> dict:
-        if "sort" in query:
-            if "keys" in query["sort"]:
-                change_filter = []
-                sort_keys = query["sort"].get("keys", [])
-                for condition in sort_keys:
-                    sort_key = condition.get("key", "")
-                    desc = condition.get("desc", False)
-
-                    if sort_key.startswith("tags."):
-                        hashed_key = self._get_hashed_key(sort_key)
-                        change_filter.append({"key": hashed_key, "desc": desc})
-                    else:
-                        change_filter.append({"key": sort_key, "desc": desc})
-
-                query["sort"]["keys"] = change_filter
-
-            elif "key" in query["sort"]:
-                change_filter = {}
-                sort_key = query["sort"]["key"]
-                desc = query["sort"].get("desc", False)
+        if sort_conditions := query.get("sort"):
+            change_filter = []
+            for condition in sort_conditions:
+                sort_key = condition.get("key", "")
+                desc = condition.get("desc", False)
 
                 if sort_key.startswith("tags."):
                     hashed_key = self._get_hashed_key(sort_key)
-                    change_filter.update({"key": hashed_key, "desc": desc})
+                    change_filter.append({"key": hashed_key, "desc": desc})
                 else:
-                    change_filter.update({"key": sort_key, "desc": desc})
+                    change_filter.append({"key": sort_key, "desc": desc})
 
-                query["sort"] = change_filter
+            query["sort"] = change_filter
 
         return query
 
@@ -564,10 +549,5 @@ class CloudServiceManager(BaseManager, ResourceManager):
                     raise ERROR_INVALID_PARAMETER_TYPE(
                         key="options[].search_query.fields", type="str or dict"
                     )
-
-            # Code for Query Compatibility
-            sort = query.get("sort", [])
-            if len(sort) > 0:
-                query["sort"] = {"keys": sort}
 
         return query
