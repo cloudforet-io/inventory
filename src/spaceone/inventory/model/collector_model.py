@@ -37,7 +37,7 @@ class Scheduled(EmbeddedDocument):
     state = StringField(
         max_length=20, default="DISABLED", choices=("ENABLED", "DISABLED")
     )
-    hours = ListField(default=None, null=True)
+    hours = ListField(default=[])
 
     def to_dict(self):
         return dict(self.to_mongo())
