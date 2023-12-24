@@ -166,7 +166,7 @@ class CollectingManager(BaseManager):
                 )
 
             _LOGGER.debug(
-                f"[collecting_resources] job task summary ({job_task_id}) =>\n {collecting_count_info}"
+                f"[collecting_resources] job task summary ({job_task_id}) => {collecting_count_info}"
             )
             self._update_job_task(
                 job_task_id,
@@ -333,7 +333,8 @@ class CollectingManager(BaseManager):
                 error_message = str(e)
 
             _LOGGER.error(
-                f"[_upsert_resource] match resource error ({job_task_id}): {error_message}"
+                f"[_upsert_resource] match resource error ({job_task_id}): {error_message}",
+                exc_info=True,
             )
             self.job_task_mgr.add_error(
                 job_task_id,
@@ -373,7 +374,8 @@ class CollectingManager(BaseManager):
             error_message = str(e)
 
             _LOGGER.debug(
-                f"[check_resource_state] unknown error ({job_task_id}): {error_message}"
+                f"[_upsert_resource] unknown error ({job_task_id}): {error_message}",
+                exc_info=True,
             )
             response = ERROR
 
