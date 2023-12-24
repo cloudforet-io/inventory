@@ -11,10 +11,10 @@ class Job(MongoModel):
         default="IN_PROGRESS",
         choices=("CANCELED", "IN_PROGRESS", "FAILURE", "SUCCESS"),
     )
-    total_tasks = IntField(min_value=0, max_value=65000, default=0)
-    remained_tasks = IntField(max_value=65000, default=0)
-    success_tasks = IntField(min_value=0, max_value=65000, default=0)
-    failure_tasks = IntField(min_value=0, max_value=65000, default=0)
+    total_tasks = IntField(min_value=0, default=0)
+    remained_tasks = IntField(default=0)
+    success_tasks = IntField(min_value=0, default=0)
+    failure_tasks = IntField(min_value=0, default=0)
     collector_id = StringField(max_length=40)
     secret_id = StringField(max_length=40, null=True, default=None)
     plugin_id = StringField(max_length=40)
