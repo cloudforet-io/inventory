@@ -1,9 +1,8 @@
 import logging
-import json
-import time
-from spaceone.core import config, cache, model
-from spaceone.core import queue
+from typing import Generator, Tuple
 from spaceone.core.manager import BaseManager
+from spaceone.core.service import BaseService
+from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.plugin_manager import PluginManager
@@ -54,9 +53,10 @@ class CollectingManager(BaseManager):
         secret_data = params["secret_data"]
         plugin_info = params["plugin_info"]
 
+        # add workspace_id to params from secret_info
         params["workspace_id"] = secret_info["workspace_id"]
 
-        _LOGGER.debug(f"[collecting_resources] Job Task ID: {job_task_id}")
+        _LOGGER.debug(f"[collecting_resources] start job task: {job_task_id}")
 
         if self.job_mgr.check_cancel(job_id, domain_id):
             self.job_task_mgr.add_error(
@@ -78,7 +78,9 @@ class CollectingManager(BaseManager):
                 job_task_id, "IN_PROGRESS", domain_id, secret_info=secret_info
             )
         except Exception as e:
-            _LOGGER.error(f"[collecting_resources] fail to update job_task: {e}")
+            _LOGGER.error(
+                f"[collecting_resources] db update error ({job_task_id}): {e}"
+            )
 
         try:
             # EXECUTE PLUGIN COLLECTION
@@ -89,7 +91,7 @@ class CollectingManager(BaseManager):
                 plugin_info.get("version"),
             )
 
-            results = collector_plugin_mgr.collect(
+            resources = collector_plugin_mgr.collect(
                 endpoint,
                 plugin_info["options"],
                 secret_data.get("data", {}),
@@ -105,7 +107,7 @@ class CollectingManager(BaseManager):
                 error_message = str(e)
 
             _LOGGER.error(
-                f"[collecting_resources] plugin collecting error ({job_id}:{job_task_id}): {error_message}",
+                f"[collecting_resources] plugin collecting error ({job_task_id}): {error_message}",
                 exc_info=True,
             )
             self.job_task_mgr.add_error(
@@ -119,14 +121,14 @@ class CollectingManager(BaseManager):
                 plugin_info=plugin_info, filters=collect_filter
             )
 
-        JOB_TASK_STATE = "SUCCESS"
+        job_task_state = "SUCCESS"
         collecting_count_info = {}
 
         try:
-            collecting_count_info = self._check_collecting_results(results, params)
+            collecting_count_info = self._upsert_collecting_resources(resources, params)
 
             if collecting_count_info["failure_count"] > 0:
-                JOB_TASK_STATE = "FAILURE"
+                job_task_state = "FAILURE"
 
         except Exception as e:
             if isinstance(e, ERROR_BASE):
@@ -135,19 +137,17 @@ class CollectingManager(BaseManager):
                 error_message = str(e)
 
             _LOGGER.error(
-                f"[collecting_resources] check results error ({job_id}:{job_task_id}): {error_message}",
+                f"[collecting_resources] upsert resources error ({job_task_id}): {error_message}",
                 exc_info=True,
             )
             self.job_task_mgr.add_error(
                 job_task_id, domain_id, "ERROR_COLLECTOR_COLLECTING", error_message
             )
             self.job_task_mgr.make_failure(job_task_id, domain_id)
-            JOB_TASK_STATE = "FAILURE"
+            job_task_state = "FAILURE"
 
         finally:
-            cleanup_mode = self._check_garbage_collection_mode(plugin_info)
-
-            if cleanup_mode and JOB_TASK_STATE == "SUCCESS":
+            if job_task_state == "SUCCESS":
                 (
                     disconnected_count,
                     deleted_count,
@@ -161,28 +161,25 @@ class CollectingManager(BaseManager):
                     }
                 )
                 _LOGGER.debug(
-                    f"[collecting_resources] {job_task_id} | disconnected: {disconnected_count}, deleted: {deleted_count}"
-                )
-            else:
-                _LOGGER.debug(
-                    f"[collecting_resources] skip garbage_collection, {cleanup_mode}, {JOB_TASK_STATE}"
+                    f"[collecting_resources] success job task ({job_task_id}) "
+                    f"(disconnected = {disconnected_count}, deleted = {deleted_count})"
                 )
 
             _LOGGER.debug(
-                f"[collecting_resources] {job_task_id} | collecting_count_info: {collecting_count_info}"
+                f"[collecting_resources] job task summary ({job_task_id}) =>\n {collecting_count_info}"
             )
             self._update_job_task(
                 job_task_id,
-                JOB_TASK_STATE,
+                job_task_state,
                 domain_id,
                 secret_info=secret_info,
                 collecting_count_info=collecting_count_info,
             )
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
 
-            if JOB_TASK_STATE == "SUCCESS":
+            if job_task_state == "SUCCESS":
                 self.job_mgr.increase_success_tasks(job_id, domain_id)
-            elif JOB_TASK_STATE == "FAILURE":
+            elif job_task_state == "FAILURE":
                 self.job_mgr.increase_failure_tasks(job_id, domain_id)
 
         return True
@@ -199,19 +196,23 @@ class CollectingManager(BaseManager):
             _LOGGER.error(f"[_update_collection_state] failed: {e}")
             return 0, 0
 
-    def _check_collecting_results(self, results, params):
+    def _upsert_collecting_resources(
+        self, results: Generator[dict, None, None], params: dict
+    ):
         """
         Args:
-            params(dict): {
+            params (Generator): {
                 'collector_id': 'str',
                 'job_id': 'str',
                 'job_task_id': 'str',
+                'workspace_id': 'str',
                 'domain_id': 'str',
                 'plugin_info': 'dict',
                 'task_options': 'dict',
                 'secret_info': 'dict'
             }
         """
+
         created_count = 0
         updated_count = 0
         failure_count = 0
@@ -222,19 +223,22 @@ class CollectingManager(BaseManager):
         for res in results:
             total_count += 1
             try:
-                res_state = self.check_resource_state(res, params)
+                upsert_result = self._upsert_resource(res, params)
 
-                if res_state == NOT_COUNT:
+                if upsert_result == NOT_COUNT:
+                    # skip count for cloud service type and region
                     pass
-                elif res_state == CREATED:
+                elif upsert_result == CREATED:
                     created_count += 1
-                elif res_state == UPDATED:
+                elif upsert_result == UPDATED:
                     updated_count += 1
                 else:
                     failure_count += 1
 
             except Exception as e:
-                _LOGGER.error(f"[_process_results] failed single result {e}")
+                _LOGGER.error(
+                    f"[_upsert_collecting_resources] upsert resource error: {e}"
+                )
                 failure_count += 1
 
         return {
@@ -244,75 +248,75 @@ class CollectingManager(BaseManager):
             "failure_count": failure_count,
         }
 
-    def check_resource_state(self, resource, params):
+    def _upsert_resource(self, resource_data: dict, params: dict) -> int:
         """
         Args:
-            resource (dict): resource information from plugin
+            resource_data (dict): resource information from plugin
             params(dict): {
                 'collector_id': 'str',
                 'job_id': 'str',
                 'job_task_id': 'str',
+                'workspace_id': 'str',
                 'domain_id': 'str',
                 'plugin_info': 'dict',
                 'task_options': 'dict',
                 'secret_info': 'dict'
             }
         Returns:
-            0: NOT_COUNT (for example, cloud_service_type)
+            0: NOT_COUNT (for cloud service type and region)
             1: CREATED
             2: UPDATED
             3: ERROR
         """
+
         job_task_id = params["job_task_id"]
         domain_id = params["domain_id"]
-        resource_type = resource.get("resource_type")
-        state = resource.get("state", "None")
-        data = resource.get("resource", {})
+        workspace_id = params["workspace_id"]
+        resource_type = resource_data.get("resource_type")
+        resource_state = resource_data.get("state")
+        match_rules = resource_data.get("match_rules")
+        request_data = resource_data.get("resource", {})
+        request_data["domain_id"] = domain_id
+        request_data["workspace_id"] = workspace_id
 
-        if update_mode := resource.get("options", {}).get(
-            "update_mode"
-        ):  # MERGE | REPLACE
-            self.transaction.set_meta("update_mode", update_mode)
+        service, manager = self._get_resource_map(resource_type)
 
-        resource_service, resource_manager = self._get_resource_map(resource_type)
-        data["domain_id"] = domain_id
         response = ERROR
 
-        if resource_type == "inventory.ErrorResource" and state == "FAILURE":
-            error_message = resource.get("message", "Unknown Error in Plugin")
+        if resource_state == "FAILURE":
+            error_message = resource_data.get("message", "Unknown error.")
             _LOGGER.error(
-                f"[check_resource_state] plugin response error ({job_task_id}): {error_message}"
+                f"[_upsert_resource] plugin response error ({job_task_id}): {error_message}"
             )
 
             self.job_task_mgr.add_error(
-                job_task_id, domain_id, "ERROR_PLUGIN", error_message, data
+                job_task_id, domain_id, "ERROR_PLUGIN", error_message, request_data
             )
 
             return ERROR
 
-        match_rules = resource.get("match_rules")
-
         if not match_rules:
-            _msg = "Match rule is not defined."
+            error_message = "Match rule is not defined."
             _LOGGER.error(
-                f"[check_resource_state] match rule error ({job_task_id}): {_msg}"
+                f"[_upsert_resource] match rule error ({job_task_id}): {error_message}"
             )
             self.job_task_mgr.add_error(
                 job_task_id,
                 domain_id,
                 "ERROR_MATCH_RULE",
-                f"{_msg}: {resource}",
+                error_message,
                 {"resource_type": resource_type},
             )
             return ERROR
 
         try:
-            res_info, total_count = self._query_with_match_rules(
-                data, match_rules, domain_id, resource_manager
+            match_resource, total_count = self._query_with_match_rules(
+                request_data, match_rules, domain_id, manager
             )
+
         except ERROR_TOO_MANY_MATCH as e:
             _LOGGER.error(
-                f"[check_resource_state] match resource error ({job_task_id}): {e}"
+                f"[_upsert_resource] match resource error ({job_task_id}): {e}"
             )
             self.job_task_mgr.add_error(
                 job_task_id,
@@ -329,7 +333,7 @@ class CollectingManager(BaseManager):
                 error_message = str(e)
 
             _LOGGER.error(
-                f"[check_resource_state] match resource error ({job_task_id}): {error_message}"
+                f"[_upsert_resource] match resource error ({job_task_id}): {error_message}"
             )
             self.job_task_mgr.add_error(
                 job_task_id,
@@ -341,32 +345,35 @@ class CollectingManager(BaseManager):
             return ERROR
 
         try:
-            # CREATE
-            if total_count == 0 and update_mode is None:
-                resource_service.create_resource(data)
+            if total_count == 0:
+                # Create resource
+                service.create_resource(request_data)
                 response = CREATED
-            # UPDATE
             elif total_count == 1:
-                data.update(res_info[0])
-                resource_service.update_resource(data)
+                # Update resource
+                request_data.update(match_resource[0])
+                service.update_resource(request_data)
                 response = UPDATED
-            elif total_count > 1:
-                _LOGGER.error(f"[_process_single_result] will not reach here!")
+            else:
                 response = ERROR
+
         except ERROR_BASE as e:
             _LOGGER.error(
-                f"[check_resource_state] resource upsert error({job_task_id}): {e.message}"
+                f"[_upsert_resource] resource upsert error ({job_task_id}): {e.message}"
             )
-            additional = self._set_error_addition_info(resource_type, total_count, data)
+            additional = self._set_error_addition_info(
+                resource_type, total_count, request_data
+            )
             self.job_task_mgr.add_error(
                 job_task_id, domain_id, e.error_code, e.message, additional
             )
             response = ERROR
+
         except Exception as e:
             error_message = str(e)
 
             _LOGGER.debug(
-                f"[check_resource_state] unknown error({job_task_id}): {error_message}"
+                f"[check_resource_state] unknown error ({job_task_id}): {error_message}"
             )
             response = ERROR
 
@@ -374,6 +381,7 @@ class CollectingManager(BaseManager):
             if response in [CREATED, UPDATED]:
                 if resource_type in ["inventory.CloudServiceType", "inventory.Region"]:
                     response = NOT_COUNT
+
             return response
 
     def _set_transaction_meta(self, params):
@@ -399,13 +407,13 @@ class CollectingManager(BaseManager):
                 "secret.service_account_id", secret_info["service_account_id"]
             )
 
-    def _get_resource_map(self, resource_type):
+    def _get_resource_map(self, resource_type: str):
         if resource_type not in RESOURCE_MAP:
             raise ERROR_UNSUPPORTED_RESOURCE_TYPE(resource_type=resource_type)
 
-        svc = self.locator.get_service(RESOURCE_MAP[resource_type][0])
-        mgr = self.locator.get_manager(RESOURCE_MAP[resource_type][1])
-        return svc, mgr
+        service = self.locator.get_service(RESOURCE_MAP[resource_type][0])
+        manager = self.locator.get_manager(RESOURCE_MAP[resource_type][1])
+        return service, manager
 
     def _update_job_task(
         self,
@@ -439,107 +447,46 @@ class CollectingManager(BaseManager):
             )
 
     @staticmethod
-    def _set_error_addition_info(resource_type, total_count, data):
+    def _set_error_addition_info(
+        resource_type: str, total_count: int, resource_data: dict
+    ) -> dict:
         additional = {"resource_type": resource_type}
 
         if resource_type == "inventory.CloudService":
             additional.update(
                 {
-                    "cloud_service_group": data.get("cloud_service_group"),
-                    "cloud_service_type": data.get("cloud_service_type"),
-                    "provider": data.get("provider"),
+                    "cloud_service_group": resource_data.get("cloud_service_group"),
+                    "cloud_service_type": resource_data.get("cloud_service_type"),
+                    "provider": resource_data.get("provider"),
                 }
             )
 
         if total_count == 1:
             if resource_type == "inventory.CloudService":
-                additional["resource_id"] = data.get("cloud_service_id")
+                additional["resource_id"] = resource_data.get("cloud_service_id")
             elif resource_type == "inventory.CloudServiceType":
-                additional["resource_id"] = data.get("cloud_service_type_id")
+                additional["resource_id"] = resource_data.get("cloud_service_type_id")
             elif resource_type == "inventory.Region":
-                additional["resource_id"] = data.get("region_id")
+                additional["resource_id"] = resource_data.get("region_id")
 
         return additional
 
     @staticmethod
-    def _collector_filter_from_cache(collect_filter, collector_id, secret_id):
-        key = f"collector-filter:{collector_id}:{secret_id}"
-
-        if value := cache.get(key):
-            _LOGGER.debug(f"[collecting_resources] cache -> {key}: {value}")
-            collect_filter.update(value)
-
-        return collect_filter
-
-    def watchdog_job_task_stat(self, param):
-        _LOGGER.debug(
-            f'[watchdog_job_task_stat] WatchDog Start: {param["job_task_id"]}'
-        )
-
-        domain_id = param["domain_id"]
-        job_id = param["job_id"]
-        job_task_id = param["job_task_id"]
-
-        time.sleep(WATCHDOG_WAITING_TIME)
-
-        stat_result = {
-            "total_count": param["total_count"],
-            "created_count": 0,
-            "updated_count": 0,
-            "failure_count": 0,
-        }
-
-        try:
-            key_created = f"job_task_stat:{domain_id}:{job_id}:{job_task_id}:CREATED"
-            stat_result["created_count"] = cache.get(key_created)
-
-            key_updated = f"job_task_stat:{domain_id}:{job_id}:{job_task_id}:UPDATED"
-            stat_result["updated_count"] = cache.get(key_updated)
-
-            key_failure = f"job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE"
-            stat_result["failure_count"] = cache.get(key_failure)
-        except Exception as e:
-            _LOGGER.error(f"[watchdog_job_task_stat] Get Count from Cache: {e}")
-            pass
-
-        try:
-            if stat_result["failure_count"] > 0:
-                JOB_TASK_STATE = "FAILURE"
-            else:
-                JOB_TASK_STATE = "SUCCESS"
-            self._update_job_task(
-                job_task_id,
-                JOB_TASK_STATE,
-                domain_id,
-                collecting_count_info=stat_result,
-            )
-        except Exception as e:
-            pass
-
-        finally:
-            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-
-    @staticmethod
-    def _check_garbage_collection_mode(plugin_info):
-        return (
-            True
-            if "garbage_collection"
-            in plugin_info.get("metadata", {}).get("supported_features", [])
-            else False
-        )
-
-    @staticmethod
-    def _query_with_match_rules(resource, match_rules, domain_id, resource_manager):
-        """match resource based on match_rules
+    def _query_with_match_rules(
+        resource_data: dict,
+        match_rules: dict,
+        domain_id: str,
+        resource_manager: ResourceManager,
+    ):
+        """match resource based on match rules
 
         Args:
-            resource: ResourceInfo(Json) from collector plugin
-            match_rules:
-                ex) {1:['data.vm.vm_id'], 2:['zone_id', 'data.ip_addresses']}
+            resource_data (dict): resource data from plugin
+            match_rules (list): e.g. {1:['reference.resource_id'], 2:['name']}
 
         Return:
-            match_resource : resource_id for resource update (ex. {'server_id': 'server-xxxxxx'})
-            total_count : total count of matched resources
+            match_resource (dict) : resource_id for update (e.g. {'cloud_service_id': 'cloud-svc-abcde12345'})
+            total_count (int) : total count of matched resources
         """
         match_resource = None
         total_count = 0
@@ -547,92 +494,19 @@ class CollectingManager(BaseManager):
         match_rules = rule_matcher.dict_key_int_parser(match_rules)
 
         for order in sorted(match_rules.keys()):
-            query = rule_matcher.make_query(order, match_rules, resource, domain_id)
+            query = rule_matcher.make_query(
+                order, match_rules, resource_data, domain_id
+            )
             match_resource, total_count = resource_manager.find_resources(query)
 
             if total_count > 1:
-                data = resource["data"] if "data" in resource else resource
-                raise ERROR_TOO_MANY_MATCH(
-                    match_key=match_rules[order], resources=match_resource, more=data
-                )
+                if data := resource_data.get("data"):
+                    raise ERROR_TOO_MANY_MATCH(
+                        match_key=match_rules[order],
+                        resources=match_resource,
+                        more=data,
+                    )
             elif total_count == 1 and match_resource:
                 return match_resource, total_count
 
         return match_resource, total_count
-
-    """
-    Deprecated
-    """
-
-    def _create_db_update_task_watchdog(
-        self, total_count, job_id, job_task_id, domain_id
-    ):
-        try:
-            # PUSH QUEUE
-            param = {
-                "job_id": job_id,
-                "job_task_id": job_task_id,
-                "domain_id": domain_id,
-                "total_count": total_count,
-            }
-            task = {
-                "method": "watchdog_job_task_stat",
-                "res": {},
-                "param": param,
-                "meta": self.transaction.meta,
-            }
-            json_task = json.dumps(task)
-            queue.put(self.db_queue, json_task)
-            return True
-        except Exception as e:
-            _LOGGER.error(f"[_create_db_update_task_watchdog] {e}")
-            return False
-
-    """
-    Deprecated
-    """
-
-    def _create_db_update_task(self, res, param):
-        try:
-            _LOGGER.debug(f"[_create_db_update_task] Push Update Task Queue")
-            task = {
-                "method": "check_resource_state",
-                "res": res,
-                "param": param,
-                "meta": self.transaction.meta,
-            }
-            json_task = json.dumps(task)
-            queue.put(self.db_queue, json_task)
-            return True
-        except Exception as e:
-            _LOGGER.error(f"[_create_db_update_task] {e}")
-            return False
-
-    """
-    Deprecated
-    """
-
-    @staticmethod
-    def _update_job_task_stat_to_cache(job_id, job_task_id, kind, domain_id):
-        if kind in [CREATED, UPDATED]:
-            key = f"job_task_stat:{domain_id}:{job_id}:{job_task_id}:{kind}"
-        else:
-            key = f"job_task_stat:{domain_id}:{job_id}:{job_task_id}:FAILURE"
-
-        cache.increment(key)
-
-    """
-    Deprecated
-    """
-
-    @staticmethod
-    def _create_job_task_stat_cache(job_id, job_task_id, domain_id):
-        try:
-            for state in ["CREATED", "UPDATED", "FAILURE"]:
-                cache.set(
-                    f"job_task_stat:{domain_id}:{job_id}:{job_task_id}:{state}",
-                    0,
-                    expire=JOB_TASK_STAT_EXPIRE_TIME,
-                )
-        except Exception as e:
-            _LOGGER.error(f"[_create_job_task_stat_cache] {e}")

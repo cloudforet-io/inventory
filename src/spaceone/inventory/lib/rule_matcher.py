@@ -1,16 +1,16 @@
 def add_domain_id(query, domain_id: str):
-    q = {'k': 'domain_id', 'v': domain_id, 'o': 'eq'}
+    q = {"k": "domain_id", "v": domain_id, "o": "eq"}
     query.append(q)
     return query
 
 
 def add_k_v_eq(query, k, v):
-    q = {'k': k, 'v': v, 'o': 'eq'}
+    q = {"k": k, "v": v, "o": "eq"}
     query.append(q)
     return query
 
 
-def find_data(dic: dict, key: str) -> str:
+def find_data(dic: dict, key: str):
     """
     find hierarchy data
     :param dic:
@@ -28,7 +28,7 @@ def find_data(dic: dict, key: str) -> str:
     if not isinstance(dic, dict) or not isinstance(key, str):
         return None
 
-    key_parsed = key.split('.', 1)
+    key_parsed = key.split(".", 1)
     if len(key_parsed) > 1:
         return find_data(dic.get(key_parsed[0], None), key_parsed[1])
     else:
@@ -44,7 +44,7 @@ def dict_key_int_parser(dic: dict):
     return dic
 
 
-def make_query(key, rules, resource, domain_id):
+def make_query(key: str, rules: dict, resource: dict, domain_id: str) -> dict:
     query = []
     query = add_domain_id(query, domain_id)
     for rule in rules[key]:
@@ -52,5 +52,5 @@ def make_query(key, rules, resource, domain_id):
         if v:
             query = add_k_v_eq(query, rule, v)
 
-    query = {'filter': query}
+    query = {"filter": query}
     return query
