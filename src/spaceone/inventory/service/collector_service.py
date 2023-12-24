@@ -96,13 +96,6 @@ class CollectorService(BaseService):
             else:
                 del params["secret_filter"]
 
-        if "schedule" in params:
-            if params["schedule"].get("state") == "ENABLED":
-                if params["schedule"].get("hours") is None:
-                    raise ERROR_REQUIRED_PARAMETER(key="schedule.hours")
-            else:
-                del params["schedule"]
-
         collector_vo = self.collector_mgr.create_collector(params)
 
         endpoint, updated_version = plugin_manager.get_endpoint(
@@ -177,15 +170,6 @@ class CollectorService(BaseService):
                 )
             else:
                 params["secret_filter"] = {
-                    "state": "DISABLED",
-                }
-
-        if "schedule" in params:
-            if params["schedule"].get("state") == "ENABLED":
-                if params["schedule"].get("hours") is None:
-                    raise ERROR_REQUIRED_PARAMETER(key="schedule.hours")
-            else:
-                params["schedule"] = {
                     "state": "DISABLED",
                 }
 
@@ -501,6 +485,7 @@ class CollectorService(BaseService):
 
         # JOB: IN-PROGRESS
         params["plugin_id"] = plugin_id
+        params["total_tasks"] = len(tasks)
         params["remained_tasks"] = len(tasks)
         job_vo = job_mgr.create_job(collector_vo, params)
 
