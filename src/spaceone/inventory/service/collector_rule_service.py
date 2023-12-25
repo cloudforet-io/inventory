@@ -12,14 +12,13 @@ _LOGGER = logging.getLogger(__name__)
 
 _SUPPORTED_CONDITION_KEYS = [
     "provider",
+    "cloud_service_group",
+    "cloud_service_type",
     "region_code",
-    "product",
     "account",
-    "usage_type",
-    "resource_group",
-    "resource",
+    "reference.resource_id",
+    "data.<key>",
     "tags.<key>",
-    "additional_info.<key>",
 ]
 _SUPPORTED_CONDITION_OPERATORS = ["eq", "contain", "not", "not_contain"]
 
@@ -353,7 +352,7 @@ class CollectorRuleService(BaseService):
             project_id = actions["change_project"]
 
             identity_mgr: IdentityManager = self.locator.get_manager("IdentityManager")
-            identity_mgr.get_project(project_id, domain_id)
+            identity_mgr.get_project(project_id)
 
         if "match_project" in actions:
             if "source" not in actions["match_project"]:
@@ -413,8 +412,7 @@ class CollectorRuleService(BaseService):
 
             if key not in _SUPPORTED_CONDITION_KEYS:
                 if not (
-                    fnmatch.fnmatch(key, "additional_info.*")
-                    or fnmatch.fnmatch(key, "tags.*")
+                    fnmatch.fnmatch(key, "tags.*") or fnmatch.fnmatch(key, "data.*")
                 ):
                     raise ERROR_INVALID_PARAMETER(
                         key="conditions.key",
