@@ -162,6 +162,7 @@ class JobTaskManager(BaseManager):
             secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
+        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: SUCCESS")
 
     def make_failure(
         self,
@@ -181,6 +182,7 @@ class JobTaskManager(BaseManager):
             secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
+        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: FAILURE")
 
     def make_canceled(
         self,
@@ -200,6 +202,7 @@ class JobTaskManager(BaseManager):
             secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
+        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: CANCLED")
 
     @staticmethod
     def delete_job_task_by_vo(job_task_vo: JobTask) -> None:
