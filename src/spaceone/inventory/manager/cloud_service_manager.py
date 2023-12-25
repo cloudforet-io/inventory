@@ -366,16 +366,16 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
         vos, total_count = self.list_cloud_services(query)
 
-        resource_ids = []
+        cloud_service_ids = []
         for vo in vos:
-            resource_ids.append(vo.cloud_service_id)
+            cloud_service_ids.append(vo.cloud_service_id)
 
         vos.update({"state": "DELETED", "deleted_at": datetime.utcnow()})
 
         state_mgr: CollectionStateManager = self.locator.get_manager(
             "CollectionStateManager"
         )
-        state_mgr.delete_collection_state_by_resource_ids(resource_ids)
+        state_mgr.delete_collection_state_by_cloud_service_ids(cloud_service_ids)
 
         return total_count
 

@@ -40,11 +40,19 @@ class IdentityManager(BaseManager):
     ) -> dict:
         return self.list_projects(query)
 
-    def list_domains(self, query: dict) -> dict:
-        return self.identity_conn.dispatch("Domain.list", {"query": query})
-
     def list_service_accounts(self, query: dict) -> dict:
         return self.identity_conn.dispatch("ServiceAccount.list", {"query": query})
 
+    @cache.cacheable(
+        key="inventory:service-account:query:{domain_id}:{query_hash}", expire=3600
+    )
+    def list_service_accounts_with_cache(
+        self, query: dict, query_hash: str, domain_id: str
+    ) -> dict:
+        return self.list_projects(query)
+
     def list_schemas(self, query: dict) -> dict:
         return self.identity_conn.dispatch("Schema.list", {"query": query})
+
+    def list_domains(self, query: dict) -> dict:
+        return self.identity_conn.dispatch("Domain.list", {"query": query})

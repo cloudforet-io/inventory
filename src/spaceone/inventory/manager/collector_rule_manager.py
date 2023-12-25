@@ -132,6 +132,9 @@ class CollectorRuleManager(BaseManager):
 
                     if project_info:
                         cloud_service_data["project_id"] = project_info["project_id"]
+                        cloud_service_data["workspace_id"] = project_info[
+                            "workspace_id"
+                        ]
 
             elif action == "match_service_account":
                 source = value["source"]
@@ -145,30 +148,37 @@ class CollectorRuleManager(BaseManager):
                         cloud_service_data["service_account_id"] = service_account_info[
                             "service_account_id"
                         ]
-                        cloud_service_data["project_id"] = service_account_info.get(
-                            "project_info", {}
-                        ).get("project_id")
+                        cloud_service_data["project_id"] = service_account_info[
+                            "project_id"
+                        ]
+                        cloud_service_data["workspace_id"] = service_account_info[
+                            "workspace_id"
+                        ]
 
         return cloud_service_data
 
-    def _get_service_account(self, target_key: str, target_value: any, domain_id: str):
+    def _get_service_account(
+        self, target_key: str, target_value: any, domain_id: str
+    ) -> dict:
         if (
-            f"service-account:{domain_id}:{target_key}:{target_value}"
+            f"inventory:service-account:{domain_id}:{target_key}:{target_value}"
             in self._service_account_info
         ):
             return self._service_account_info[
-                f"service-account:{domain_id}:{target_key}:{target_value}"
+                f"inventory:service-account:{domain_id}:{target_key}:{target_value}"
             ]
 
         query = {
             "filter": [
                 {"k": target_key, "v": target_value, "o": "eq"},
-                {"k": "service_account_type", "v": "GENERAL", "o": "eq"},
             ],
-            "only": ["service_account_id", "project_info"],
+            "only": ["service_account_id", "project_id", "workspace_id"],
         }
 
-        response = self.identity_mgr.list_service_accounts(query)
+        query_hash = utils.dict_to_hash(query)
+        response = self.identity_mgr.list_service_accounts_with_cache(
+            query, query_hash, domain_id
+        )
         results = response.get("results", [])
         total_count = response.get("total_count", 0)
 
@@ -177,22 +187,22 @@ class CollectorRuleManager(BaseManager):
             service_account_info = results[0]
 
         self._service_account_info[
-            f"service-account:{domain_id}:{target_key}:{target_value}"
+            f"inventory:service-account:{domain_id}:{target_key}:{target_value}"
         ] = service_account_info
         return service_account_info
 
-    def _get_project(self, target_key, target_value, domain_id):
-        if f"project:{domain_id}:{target_key}:{target_value}" in self._project_info:
-            _LOGGER.debug(
-                f"[_get_project] Hit the cache in self._project_info : {target_value}"
-            )
+    def _get_project(self, target_key: str, target_value: str, domain_id: str) -> dict:
+        if (
+            f"identity:project:{domain_id}:{target_key}:{target_value}"
+            in self._project_info
+        ):
             return self._project_info[
-                f"project:{domain_id}:{target_key}:{target_value}"
+                f"identity:project:{domain_id}:{target_key}:{target_value}"
             ]
 
         query = {
             "filter": [{"k": target_key, "v": target_value, "o": "eq"}],
-            "only": ["project_id"],
+            "only": ["project_id", "workspace_id"],
         }
 
         query_hash = utils.dict_to_hash(query)
@@ -207,7 +217,7 @@ class CollectorRuleManager(BaseManager):
             project_info = results[0]
 
         self._project_info[
-            f"project:{domain_id}:{target_key}:{target_value}"
+            f"identity:project:{domain_id}:{target_key}:{target_value}"
         ] = project_info
         return project_info
 

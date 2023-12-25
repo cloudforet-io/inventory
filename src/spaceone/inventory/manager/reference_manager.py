@@ -56,7 +56,7 @@ class ReferenceManager(BaseManager):
 
         query = {"only": ["service_account_id", "name"]}
 
-        response = identity_mgr.list_service_accounts(query, domain_id)
+        response = identity_mgr.list_service_accounts(query)
         for sa_info in response.get("results", []):
             sa_id = sa_info["service_account_id"]
             sa_name = sa_info["name"]

@@ -6,7 +6,7 @@ from typing import List, Union, Tuple
 
 from spaceone.core.service import *
 from spaceone.core import utils
-from spaceone.inventory.model.cloud_service_model import CloudService, CollectionInfo
+from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
 from spaceone.inventory.manager.region_manager import RegionManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
@@ -143,9 +143,7 @@ class CloudServiceService(BaseService):
         state_mgr: CollectionStateManager = self.locator.get_manager(
             "CollectionStateManager"
         )
-        state_mgr.create_collection_state(
-            cloud_svc_vo.cloud_service_id, "inventory.CloudService", domain_id
-        )
+        state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, domain_id)
 
         return cloud_svc_vo
 
@@ -269,9 +267,7 @@ class CloudServiceService(BaseService):
         if state_vo:
             state_mgr.reset_collection_state(state_vo)
         else:
-            state_mgr.create_collection_state(
-                cloud_service_id, "inventory.CloudService", domain_id
-            )
+            state_mgr.create_collection_state(cloud_service_id, domain_id)
 
         if "project_id" in params:
             note_mgr: NoteManager = self.locator.get_manager("NoteManager")
@@ -280,7 +276,9 @@ class CloudServiceService(BaseService):
             note_vos = note_mgr.filter_notes(
                 cloud_service_id=cloud_service_id, domain_id=domain_id
             )
-            note_vos.update({"project_id": params["project_id"]})
+            note_vos.update(
+                {"project_id": params["project_id"], "workspace_id": workspace_id}
+            )
 
         return cloud_svc_vo
 
@@ -325,14 +323,16 @@ class CloudServiceService(BaseService):
         state_mgr: CollectionStateManager = self.locator.get_manager(
             "CollectionStateManager"
         )
-        state_mgr.delete_collection_state_by_resource_id(cloud_service_id, domain_id)
+        state_mgr.delete_collection_state_by_cloud_service_id(
+            cloud_service_id, domain_id
+        )
 
     @transaction(
         permission="inventory:CloudService.read",
         role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
     )
     @check_required(["cloud_service_id", "domain_id"])
-    def get(self, params):
+    def get(self, params: dict) -> CloudService:
         """
         Args:
             params (dict): {
@@ -379,7 +379,7 @@ class CloudServiceService(BaseService):
     )
     @append_keyword_filter(_KEYWORD_FILTER)
     @set_query_page_limit(1000)
-    def list(self, params):
+    def list(self, params: dict):
         """
         Args:
             params (dict): {
@@ -414,7 +414,7 @@ class CloudServiceService(BaseService):
         role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
     )
     @check_required(["options", "domain_id"])
-    def export(self, params):
+    def export(self, params: dict) -> dict:
         """
         Args:
             params (dict): {
@@ -459,7 +459,7 @@ class CloudServiceService(BaseService):
     @append_query_filter(["workspace_id", "domain_id", "user_projects"])
     @append_keyword_filter(_KEYWORD_FILTER)
     @set_query_page_limit(1000)
-    def analyze(self, params):
+    def analyze(self, params: dict) -> dict:
         """
         Args:
             params (dict): {
@@ -484,7 +484,7 @@ class CloudServiceService(BaseService):
     @check_required(["query", "domain_id"])
     @append_query_filter(["workspace_id", "domain_id", "user_projects"])
     @append_keyword_filter(_KEYWORD_FILTER)
-    def stat(self, params):
+    def stat(self, params: dict) -> dict:
         """
         Args:
             params (dict): {
