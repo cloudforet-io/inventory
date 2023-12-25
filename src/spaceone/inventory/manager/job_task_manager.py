@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import Tuple
+from typing import Tuple, Union
 from jsonschema import validate
 from datetime import datetime
 from spaceone.core import config, queue
@@ -162,6 +162,7 @@ class JobTaskManager(BaseManager):
             secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
+        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: SUCCESS")
 
     def make_failure(
         self,
@@ -181,6 +182,7 @@ class JobTaskManager(BaseManager):
             secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
+        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: FAILURE")
 
     def make_canceled(
         self,
@@ -200,13 +202,14 @@ class JobTaskManager(BaseManager):
             secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
+        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: CANCLED")
 
     @staticmethod
     def delete_job_task_by_vo(job_task_vo: JobTask) -> None:
         job_task_vo.delete()
 
     @staticmethod
-    def get_queue_name(name: str = "collect_queue") -> str:
+    def get_queue_name(name: str = "collect_queue") -> Union[str, None]:
         try:
             return config.get_global(name)
         except Exception as e:
