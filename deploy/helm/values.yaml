@@ -91,7 +91,7 @@ application_worker:
         collector_worker:
             backend: spaceone.core.scheduler.worker.BaseWorker
             queue: collector_q
-            pool: 4
+            pool: 1
 
 application_rest: {}
 
