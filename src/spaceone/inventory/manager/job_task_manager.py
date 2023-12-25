@@ -1,6 +1,6 @@
 import logging
 import json
-from typing import Tuple
+from typing import Tuple, Union
 from jsonschema import validate
 from datetime import datetime
 from spaceone.core import config, queue
@@ -209,7 +209,7 @@ class JobTaskManager(BaseManager):
         job_task_vo.delete()
 
     @staticmethod
-    def get_queue_name(name: str = "collect_queue") -> str:
+    def get_queue_name(name: str = "collect_queue") -> Union[str, None]:
         try:
             return config.get_global(name)
         except Exception as e:

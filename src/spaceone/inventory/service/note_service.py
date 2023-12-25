@@ -161,6 +161,7 @@ class NoteService(BaseService):
             "created_by",
             "record_id",
             "cloud_service_id",
+            "project_id",
             "workspace_id",
             "domain_id",
             "user_projects",
@@ -177,6 +178,7 @@ class NoteService(BaseService):
                 'created_by': 'str',
                 'record_id': 'str',
                 'cloud_service_id': 'str',
+                'project_id': 'str',
                 'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
                 'user_projects': 'list',        # injected from auth
