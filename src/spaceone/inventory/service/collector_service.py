@@ -450,7 +450,7 @@ class CollectorService(BaseService):
         collector_data = collector_vo.to_dict()
 
         plugin_info = collector_data["plugin_info"]
-        secret_filter = collector_data.get("secret_filter", {})
+        secret_filter = collector_data.get("secret_filter", {}) or {}
         plugin_id = plugin_info["plugin_id"]
         version = plugin_info.get("version")
         upgrade_mode = plugin_info.get("upgrade_mode", "AUTO")
