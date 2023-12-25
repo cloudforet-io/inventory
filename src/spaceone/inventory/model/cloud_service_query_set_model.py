@@ -31,6 +31,8 @@ class CloudServiceQuerySet(MongoModel):
     cloud_service_type = StringField(max_length=255, default=None, null=True)
     ref_cloud_service_type = StringField(max_length=255, default=None, null=True)
     tags = DictField()
+    resource_group = StringField(max_length=40, choices=("DOMAIN", "WORKSPACE"))
+    workspace_id = StringField(max_length=40)
     domain_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
@@ -71,6 +73,7 @@ class CloudServiceQuerySet(MongoModel):
             "provider",
             "cloud_service_group",
             "cloud_service_type",
+            "workspace_id",
             "domain_id",
         ],
     }

@@ -16,7 +16,9 @@ JINJA_ENV = Environment(
 
 
 class EmailManager(ExportManager):
-    def export(self, export_options: dict, domain_id: str, **kwargs) -> None:
+    def export(
+        self, export_options: dict, domain_id: str, workspace_id: str = None, **kwargs
+    ) -> None:
         name = kwargs.get("name", "Cloud Service Report")
         target = kwargs.get("target", {})
         emails = target.get("emails", [])
@@ -26,7 +28,7 @@ class EmailManager(ExportManager):
             self._file_dir = temp_dir
             self._file_path = f"{self._file_dir}/{self._file_name}"
             self.make_file(export_options)
-            response = self.upload_file(domain_id)
+            response = self.upload_file(domain_id, workspace_id)
 
             download_url = response["download_url"]
             subject = "[SpaceONE] The Cloud Service Report File is ready to download"

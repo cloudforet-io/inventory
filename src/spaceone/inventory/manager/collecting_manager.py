@@ -311,7 +311,7 @@ class CollectingManager(BaseManager):
 
         try:
             match_resource, total_count = self._query_with_match_rules(
-                request_data, match_rules, domain_id, manager
+                request_data, match_rules, domain_id, workspace_id, manager
             )
 
         except ERROR_TOO_MANY_MATCH as e:
@@ -478,6 +478,7 @@ class CollectingManager(BaseManager):
         resource_data: dict,
         match_rules: dict,
         domain_id: str,
+        workspace_id: str,
         resource_manager: ResourceManager,
     ):
         """match resource based on match rules
@@ -497,7 +498,7 @@ class CollectingManager(BaseManager):
 
         for order in sorted(match_rules.keys()):
             query = rule_matcher.make_query(
-                order, match_rules, resource_data, domain_id
+                order, match_rules, resource_data, domain_id, workspace_id
             )
             match_resource, total_count = resource_manager.find_resources(query)
 

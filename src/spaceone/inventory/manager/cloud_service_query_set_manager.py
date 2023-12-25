@@ -1,10 +1,12 @@
 import copy
 import logging
+from typing import Tuple, Union
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from spaceone.core import cache, utils, queue
 from spaceone.core.manager import BaseManager
+from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.error.cloud_service_query_set import *
 from spaceone.inventory.model.cloud_service_query_set_model import CloudServiceQuerySet
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
@@ -21,6 +23,7 @@ _DEFAULT_GROUP_BY = [
     "region_code",
     "account",
     "project_id",
+    "workspace_id",
 ]
 
 
@@ -33,7 +36,7 @@ class CloudServiceQuerySetManager(BaseManager):
         self.cloud_svc_stats_mgr = None
 
     @staticmethod
-    def push_task(domain_id, system_token):
+    def push_task(domain_id: str, system_token: str) -> None:
         task = {
             "name": "run_query_sets_by_domain",
             "version": "v1",
@@ -43,13 +46,11 @@ class CloudServiceQuerySetManager(BaseManager):
                     "locator": "SERVICE",
                     "name": "CloudServiceQuerySetService",
                     "metadata": {
-                        "service": "inventory",
-                        "resource": "CloudServiceQuerySet",
-                        "verb": "run_query_sets_by_domain",
                         "token": system_token,
+                        "x_domain_id": domain_id,
                     },
                     "method": "run_query_sets_by_domain",
-                    "params": {"params": {"domain_id": domain_id}},
+                    "params": {"params": {}},
                 }
             ],
         }
@@ -58,12 +59,12 @@ class CloudServiceQuerySetManager(BaseManager):
 
         queue.put("collector_q", utils.dump_json(task))
 
-    def create_cloud_service_query_set(self, params):
-        def _rollback(cloud_svc_query_set_vo: CloudServiceQuerySet):
+    def create_cloud_service_query_set(self, params: dict) -> CloudServiceQuerySet:
+        def _rollback(vo: CloudServiceQuerySet):
             _LOGGER.info(
-                f"[ROLLBACK] Delete Cloud Service Query Set : {cloud_svc_query_set_vo.name} ({cloud_svc_query_set_vo.query_set_id})"
+                f"[ROLLBACK] Delete cloud service query set: {vo.name} ({vo.query_set_id})"
             )
-            cloud_svc_query_set_vo.delete()
+            vo.delete()
 
         params["query_hash"] = utils.dict_to_hash(params["query_options"])
 
@@ -77,13 +78,19 @@ class CloudServiceQuerySetManager(BaseManager):
         params["additional_info_keys"] = additional_info_keys
         params["data_keys"] = data_keys
 
+        domain_id = params["domain_id"]
+        workspace_id = params["workspace_id"]
         provider = params.get("provider")
         cloud_service_group = params.get("cloud_service_group")
         cloud_service_type = params.get("cloud_service_type")
 
         if provider and cloud_service_group and cloud_service_type:
             params["ref_cloud_service_type"] = self._make_cloud_service_type_key(
-                params["domain_id"], provider, cloud_service_group, cloud_service_type
+                domain_id,
+                workspace_id,
+                provider,
+                cloud_service_group,
+                cloud_service_type,
             )
 
         cloud_svc_query_set_vo: CloudServiceQuerySet = (
@@ -96,19 +103,11 @@ class CloudServiceQuerySetManager(BaseManager):
 
         return cloud_svc_query_set_vo
 
-    def update_cloud_service_query_set(self, params):
-        return self.update_cloud_service_query_set_by_vo(
-            params,
-            self.get_cloud_service_query_set(
-                params["query_set_id"], params["domain_id"]
-            ),
-        )
-
     def update_cloud_service_query_set_by_vo(
-        self, params, cloud_svc_query_set_vo: CloudServiceQuerySet
-    ):
+        self, params: dict, cloud_svc_query_set_vo: CloudServiceQuerySet
+    ) -> CloudServiceQuerySet:
         def _rollback(old_data):
-            _LOGGER.info(f'[ROLLBACK] Revert Data : {old_data.get("query_set_id")}')
+            _LOGGER.info(f'[ROLLBACK] Revert Data: {old_data.get("query_set_id")}')
             cloud_svc_query_set_vo.update(old_data)
 
         if "query_options" in params:
@@ -131,14 +130,9 @@ class CloudServiceQuerySetManager(BaseManager):
 
         return cloud_svc_query_set_vo.update(params)
 
-    def delete_cloud_service_query_set(self, query_set_id, domain_id):
-        self.delete_cloud_service_query_set_by_vo(
-            self.get_cloud_service_query_set(query_set_id, domain_id)
-        )
-
     def delete_cloud_service_query_set_by_vo(
         self, cloud_svc_query_set_vo: CloudServiceQuerySet
-    ):
+    ) -> None:
         cloud_svc_stats_mgr: CloudServiceStatsManager = self.locator.get_manager(
             "CloudServiceStatsManager"
         )
@@ -164,21 +158,36 @@ class CloudServiceQuerySetManager(BaseManager):
 
         cloud_svc_query_set_vo.delete()
 
-    def get_cloud_service_query_set(self, query_set_id, domain_id, only=None):
+    def get_cloud_service_query_set(
+        self,
+        query_set_id: str,
+        domain_id: str,
+        workspace_id: str = None,
+    ) -> CloudServiceQuerySet:
+        conditions = {
+            "query_set_id": query_set_id,
+            "domain_id": domain_id,
+        }
+
+        if workspace_id:
+            conditions["workspace_id"] = workspace_id
+
         return self.cloud_svc_query_set_model.get(
-            query_set_id=query_set_id, domain_id=domain_id, only=only
+            **conditions,
         )
 
-    def filter_cloud_service_query_sets(self, **conditions):
+    def filter_cloud_service_query_sets(self, **conditions) -> QuerySet:
         return self.cloud_svc_query_set_model.filter(**conditions)
 
-    def list_cloud_service_query_sets(self, query):
+    def list_cloud_service_query_sets(self, query: dict) -> Tuple[QuerySet, int]:
         return self.cloud_svc_query_set_model.query(**query)
 
-    def stat_cloud_service_query_sets(self, query):
+    def stat_cloud_service_query_sets(self, query: dict) -> dict:
         return self.cloud_svc_query_set_model.stat(**query)
 
-    def run_cloud_service_query_set(self, cloud_svc_query_set_vo: CloudServiceQuerySet):
+    def run_cloud_service_query_set(
+        self, cloud_svc_query_set_vo: CloudServiceQuerySet
+    ) -> None:
         if cloud_svc_query_set_vo.state == "DISABLED":
             raise ERROR_CLOUD_SERVICE_QUERY_SET_STATE(
                 state=cloud_svc_query_set_vo.state
@@ -221,7 +230,7 @@ class CloudServiceQuerySetManager(BaseManager):
 
     def test_cloud_service_query_set(
         self, cloud_svc_query_set_vo: CloudServiceQuerySet
-    ):
+    ) -> dict:
         if cloud_svc_query_set_vo.state == "DISABLED":
             raise ERROR_CLOUD_SERVICE_QUERY_SET_STATE(
                 state=cloud_svc_query_set_vo.state
@@ -237,7 +246,7 @@ class CloudServiceQuerySetManager(BaseManager):
         )
         return {"results": self._run_analyze_query(cloud_svc_query_set_vo)}
 
-    def _run_analyze_query(self, cloud_svc_query_set_vo: CloudServiceQuerySet):
+    def _run_analyze_query(self, cloud_svc_query_set_vo: CloudServiceQuerySet) -> list:
         cloud_svc_mgr: CloudServiceManager = self.locator.get_manager(
             "CloudServiceManager"
         )
@@ -247,10 +256,16 @@ class CloudServiceQuerySetManager(BaseManager):
         cloud_service_group = cloud_svc_query_set_vo.cloud_service_group
         cloud_service_type = cloud_svc_query_set_vo.cloud_service_type
         domain_id = cloud_svc_query_set_vo.domain_id
+        resource_group = cloud_svc_query_set_vo.resource_group
+
+        if resource_group == "WORKSPACE":
+            workspace_id = cloud_svc_query_set_vo.workspace_id
+        else:
+            workspace_id = None
 
         analyze_query["filter"] = analyze_query.get("filter", [])
         analyze_query["filter"] += self._make_query_filter(
-            domain_id, provider, cloud_service_group, cloud_service_type
+            domain_id, provider, cloud_service_group, cloud_service_type, workspace_id
         )
 
         analyze_query["group_by"] = (
@@ -269,7 +284,7 @@ class CloudServiceQuerySetManager(BaseManager):
 
     def _delete_invalid_cloud_service_stats(
         self, cloud_svc_query_set_vo: CloudServiceQuerySet
-    ):
+    ) -> None:
         domain_id = cloud_svc_query_set_vo.domain_id
         query_set_id = cloud_svc_query_set_vo.query_set_id
 
@@ -295,7 +310,7 @@ class CloudServiceQuerySetManager(BaseManager):
 
     def _delete_old_cloud_service_stats(
         self, cloud_svc_query_set_vo: CloudServiceQuerySet
-    ):
+    ) -> None:
         now = datetime.utcnow().date()
         query_set_id = cloud_svc_query_set_vo.query_set_id
         domain_id = cloud_svc_query_set_vo.domain_id
@@ -341,7 +356,9 @@ class CloudServiceQuerySetManager(BaseManager):
             )
             monthly_stats_vos.delete()
 
-    def _update_status(self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at):
+    def _update_status(
+        self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at: datetime
+    ) -> None:
         domain_id = cloud_svc_query_set_vo.domain_id
         query_set_id = cloud_svc_query_set_vo.query_set_id
         created_date = created_at.strftime("%Y-%m-%d")
@@ -364,8 +381,8 @@ class CloudServiceQuerySetManager(BaseManager):
         monthly_stats_vos.update({"status": "DONE"})
 
     def _delete_changed_cloud_service_stats(
-        self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at
-    ):
+        self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at: datetime
+    ) -> None:
         domain_id = cloud_svc_query_set_vo.domain_id
         query_set_id = cloud_svc_query_set_vo.query_set_id
         created_date = created_at.strftime("%Y-%m-%d")
@@ -383,7 +400,7 @@ class CloudServiceQuerySetManager(BaseManager):
         cloud_stats_vos.delete()
 
     def _delete_changed_monthly_cloud_service_stats(
-        self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at
+        self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at: datetime
     ):
         domain_id = cloud_svc_query_set_vo.domain_id
         query_set_id = cloud_svc_query_set_vo.query_set_id
@@ -402,7 +419,7 @@ class CloudServiceQuerySetManager(BaseManager):
         monthly_stats_vos.delete()
 
     def _rollback_query_results(
-        self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at
+        self, cloud_svc_query_set_vo: CloudServiceQuerySet, created_at: datetime
     ):
         _LOGGER.debug(
             f"[_rollback_query_results] Rollback Query Results: {cloud_svc_query_set_vo.query_set_id}"
@@ -427,28 +444,31 @@ class CloudServiceQuerySetManager(BaseManager):
         monthly_stats_vo.delete()
 
     def _save_query_results(
-        self, query_set_vo: CloudServiceQuerySet, results, created_at
-    ):
+        self, query_set_vo: CloudServiceQuerySet, results: list, created_at: datetime
+    ) -> None:
         for result in results:
             self._save_query_result(result, query_set_vo, created_at)
 
     def _save_query_result(
-        self, result, query_set_vo: CloudServiceQuerySet, created_at
-    ):
+        self, result: dict, query_set_vo: CloudServiceQuerySet, created_at: datetime
+    ) -> None:
         provider = result["provider"]
         cloud_service_group = result["cloud_service_group"]
         cloud_service_type = result["cloud_service_type"]
+        workspace_id = result["workspace_id"]
         region_code = result.get("region_code")
         query_set_id = query_set_vo.query_set_id
         domain_id = query_set_vo.domain_id
         ref_cloud_service_type = self._make_cloud_service_type_key(
-            domain_id, provider, cloud_service_group, cloud_service_type
+            domain_id, workspace_id, provider, cloud_service_group, cloud_service_type
         )
-        ref_region = self._make_region_key(domain_id, provider, region_code)
+        ref_region = self._make_region_key(
+            domain_id, workspace_id, provider, region_code
+        )
 
         data = {
             "query_set_id": query_set_id,
-            "values": {},
+            "data": {},
             "unit": {},
             "provider": provider,
             "cloud_service_group": cloud_service_group,
@@ -458,6 +478,7 @@ class CloudServiceQuerySetManager(BaseManager):
             "ref_region": ref_region,
             "account": result.get("account"),
             "project_id": result.get("project_id"),
+            "workspace_id": workspace_id,
             "domain_id": domain_id,
             "additional_info": {},
             "created_at": created_at,
@@ -467,7 +488,7 @@ class CloudServiceQuerySetManager(BaseManager):
         }
 
         for key in query_set_vo.data_keys:
-            data["values"][key] = result.get(key, 0)
+            data["data"][key] = result.get(key, 0)
 
             if key in query_set_vo.unit:
                 data["unit"][key] = query_set_vo.unit[key]
@@ -481,7 +502,7 @@ class CloudServiceQuerySetManager(BaseManager):
         self.cloud_svc_stats_mgr.create_monthly_cloud_service_stats(data, False)
 
     @staticmethod
-    def _remove_analyze_cache(domain_id, query_set_id):
+    def _remove_analyze_cache(domain_id: str, query_set_id: str) -> None:
         cache.delete_pattern(
             f"inventory:cloud-service-stats:*:{domain_id}:{query_set_id}:*"
         )
@@ -491,21 +512,31 @@ class CloudServiceQuerySetManager(BaseManager):
 
     @staticmethod
     def _make_cloud_service_type_key(
-        domain_id, provider, cloud_service_group, cloud_service_type
-    ):
-        return f"{domain_id}.{provider}.{cloud_service_group}.{cloud_service_type}"
+        domain_id: str,
+        workspace_id: str,
+        provider: str,
+        cloud_service_group: str,
+        cloud_service_type: str,
+    ) -> str:
+        return f"{domain_id}.{workspace_id}.{provider}.{cloud_service_group}.{cloud_service_type}"
 
     @staticmethod
-    def _make_region_key(domain_id, provider, region_code):
+    def _make_region_key(
+        domain_id: str, workspace_id: str, provider: str, region_code: str = None
+    ) -> Union[str, None]:
         if region_code:
-            return f"{domain_id}.{provider}.{region_code}"
+            return f"{domain_id}.{workspace_id}.{provider}.{region_code}"
         else:
             return None
 
     @staticmethod
     def _make_query_filter(
-        domain_id, provider=None, cloud_service_group=None, cloud_service_type=None
-    ):
+        domain_id: str,
+        provider: str = None,
+        cloud_service_group: str = None,
+        cloud_service_type: str = None,
+        workspace_id: str = None,
+    ) -> list:
         _filter = [{"k": "domain_id", "v": domain_id, "o": "eq"}]
 
         if provider:
@@ -521,11 +552,14 @@ class CloudServiceQuerySetManager(BaseManager):
                 {"k": "cloud_service_type", "v": cloud_service_type, "o": "eq"}
             )
 
+        if workspace_id:
+            _filter.append({"k": "workspace_id", "v": workspace_id, "o": "eq"})
+
         return _filter
 
     @staticmethod
-    def _get_keys_from_query(query):
-        data_keys = query.get("fields", {}).keys()
+    def _get_keys_from_query(query: dict) -> Tuple[list, list]:
+        data_keys = list(query.get("fields", {}).keys())
         additional_info_keys = []
         for key in query.get("group_by", []):
             if key not in _DEFAULT_GROUP_BY:

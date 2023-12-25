@@ -29,12 +29,14 @@ class ExportManager(BaseManager):
         self._file_path = None
         self._sheet_name_count = {}
 
-    def export(self, export_options: dict, domain_id: str, **kwargs) -> dict:
+    def export(
+        self, export_options: dict, domain_id: str, workspace_id: str = None, **kwargs
+    ) -> dict:
         with tempfile.TemporaryDirectory() as temp_dir:
             self._file_dir = temp_dir
             self._file_path = f"{self._file_dir}/{self._file_name}"
             self.make_file(export_options)
-            return self.upload_file(domain_id)
+            return self.upload_file(domain_id, workspace_id)
 
     def make_file(self, export_options: dict) -> None:
         self._check_results(export_options)
@@ -157,14 +159,20 @@ class ExportManager(BaseManager):
         else:
             self._write_excel_file(writer, df, sheet_name, title)
 
-    def upload_file(self, domain_id: str) -> dict:
+    def upload_file(self, domain_id: str, workspace_id: str = None) -> dict:
         file_mgr: FileManager = self.locator.get_manager(FileManager)
-        file_info = file_mgr.add_file(
-            {
-                "name": self._file_name,
-                "resource_group": "WORKSPACE",
-            }
-        )
+
+        params = {
+            "name": self._file_name,
+            "domain_id": domain_id,
+            "resource_group": "DOMAIN",
+        }
+
+        if workspace_id:
+            params["resource_group"] = "WORKSPACE"
+            params["workspace_id"] = workspace_id
+
+        file_info = file_mgr.add_file(params)
 
         file_mgr.upload_file(
             self._file_path, file_info["upload_url"], file_info["upload_options"]
