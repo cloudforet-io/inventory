@@ -18,7 +18,6 @@ from spaceone.inventory.manager.collection_state_manager import CollectionStateM
 from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
 from spaceone.inventory.manager.collector_rule_manager import CollectorRuleManager
-from spaceone.inventory.manager.config_manager import ConfigManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.manager.file_manager import FileManager
 from spaceone.inventory.manager.job_manager import JobManager

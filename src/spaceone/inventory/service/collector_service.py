@@ -568,14 +568,14 @@ class CollectorService(BaseService):
     def _check_secrets(
         secret_mgr: SecretManager, secret_ids: list, provider: str
     ) -> None:
-        _query = {
+        query = {
             "filter": [
                 {"k": "secret_id", "v": secret_ids, "o": "in"},
                 {"k": "provider", "v": provider, "o": "eq"},
             ],
             "count_only": True,
         }
-        response = secret_mgr.list_secrets(_query)
+        response = secret_mgr.list_secrets(query)
         total_count = response.get("total_count", 0)
 
         if total_count != len(secret_ids):
@@ -590,7 +590,7 @@ class CollectorService(BaseService):
         service_account_ids: list,
         provider: str,
     ) -> None:
-        _query = {
+        query = {
             "filter": [
                 {
                     "k": "service_account_id",
@@ -602,7 +602,7 @@ class CollectorService(BaseService):
             "count_only": True,
         }
 
-        response = identity_mgr.list_service_accounts(_query)
+        response = identity_mgr.list_service_accounts(query)
         total_count = response.get("total_count", 0)
 
         if total_count != len(service_account_ids):
@@ -617,7 +617,7 @@ class CollectorService(BaseService):
         schema_ids: list,
         provider: str,
     ) -> None:
-        _query = {
+        query = {
             "filter": [
                 {
                     "k": "schema_id",
@@ -629,7 +629,7 @@ class CollectorService(BaseService):
             "count_only": True,
         }
 
-        response = identity_mgr.list_schemas(_query)
+        response = identity_mgr.list_schemas(query)
         total_count = response.get("total_count", 0)
 
         if total_count != len(schema_ids):
