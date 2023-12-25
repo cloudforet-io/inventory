@@ -1,19 +1,7 @@
-def add_domain_id(query, domain_id: str):
-    q = {"k": "domain_id", "v": domain_id, "o": "eq"}
-    query.append(q)
-    return query
-
-
-def add_k_v_eq(query, k, v):
-    q = {"k": k, "v": v, "o": "eq"}
-    query.append(q)
-    return query
-
-
-def find_data(dic: dict, key: str):
+def find_data(data: any, key: str) -> any:
     """
     find hierarchy data
-    :param dic:
+    :param data:
     e.g.
     {
       'data': {
@@ -25,32 +13,39 @@ def find_data(dic: dict, key: str):
     :param key: e.g 'data.vm.vm_id'
     :return: a found value(e.g 'i-1234'), otherwise, None.
     """
-    if not isinstance(dic, dict) or not isinstance(key, str):
+    if not isinstance(data, dict) or not isinstance(key, str):
         return None
 
     key_parsed = key.split(".", 1)
     if len(key_parsed) > 1:
-        return find_data(dic.get(key_parsed[0], None), key_parsed[1])
+        return find_data(data.get(key_parsed[0]), key_parsed[1])
     else:
-        return dic.get(key_parsed[0], None)
+        return data.get(key_parsed[0], None)
 
 
-def dict_key_int_parser(dic: dict):
+def dict_key_int_parser(data: dict) -> dict:
     # change key to int type, if all keys are able to cast to int type. Otherwise, leave it as original type.
     try:
-        dic = {int(k): v for k, v in dic.items()}
+        data = {int(key): value for key, value in data.items()}
     except Exception as e:
         pass
-    return dic
+
+    return data
 
 
-def make_query(key: str, rules: dict, resource: dict, domain_id: str) -> dict:
-    query = []
-    query = add_domain_id(query, domain_id)
+def make_query(
+    key: str, rules: dict, resource: dict, domain_id: str, workspace_id: str
+) -> dict:
+    _filter = [
+        {"k": "domain_id", "v": domain_id, "o": "eq"},
+        {"k": "workspace_id", "v": workspace_id, "o": "eq"},
+    ]
+
     for rule in rules[key]:
-        v = find_data(resource, rule)
-        if v:
-            query = add_k_v_eq(query, rule, v)
+        value = find_data(resource, rule)
+        if value:
+            _filter.append({"k": rule, "v": value, "o": "eq"})
 
-    query = {"filter": query}
-    return query
+    return {
+        "filter": _filter,
+    }

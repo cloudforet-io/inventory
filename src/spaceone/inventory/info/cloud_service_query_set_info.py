@@ -26,6 +26,8 @@ def CloudServiceQuerySetInfo(
                 "data_keys": cloud_svc_query_set_vo.data_keys,
                 "unit": cloud_svc_query_set_vo.unit,
                 "tags": cloud_svc_query_set_vo.tags,
+                "resource_group": cloud_svc_query_set_vo.resource_group,
+                "workspace_id": cloud_svc_query_set_vo.workspace_id,
                 "domain_id": cloud_svc_query_set_vo.domain_id,
                 "created_at": utils.datetime_to_iso8601(
                     cloud_svc_query_set_vo.created_at

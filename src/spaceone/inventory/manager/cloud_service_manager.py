@@ -159,7 +159,11 @@ class CloudServiceManager(BaseManager, ResourceManager):
                     user_projects,
                 )
                 export_option["results"] = self._get_search_query_results(
-                    export_option["search_query"], timezone, domain_id, ref_mgr
+                    export_option["search_query"],
+                    timezone,
+                    domain_id,
+                    workspace_id,
+                    ref_mgr,
                 )
             else:
                 export_option["analyze_query"] = self._change_export_query(
@@ -241,6 +245,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
         query: dict,
         timezone: str,
         domain_id: str,
+        workspace_id: str,
         ref_mgr: ReferenceManager,
     ):
         cloud_service_vos, total_count = self.list_cloud_services(
@@ -279,12 +284,14 @@ class CloudServiceManager(BaseManager, ResourceManager):
                     if resource_type := reference.get("resource_type"):
                         if isinstance(value, list):
                             value = [
-                                ref_mgr.get_reference_name(resource_type, v, domain_id)
+                                ref_mgr.get_reference_name(
+                                    resource_type, v, domain_id, workspace_id
+                                )
                                 for v in value
                             ]
                         else:
                             value = ref_mgr.get_reference_name(
-                                resource_type, value, domain_id
+                                resource_type, value, domain_id, workspace_id
                             )
 
                 else:

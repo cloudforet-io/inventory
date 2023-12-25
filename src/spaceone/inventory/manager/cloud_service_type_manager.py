@@ -38,9 +38,9 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
         cloud_svc_type_vo: CloudServiceType = self.cloud_svc_type_model.create(params)
         self.transaction.add_rollback(_rollback, cloud_svc_type_vo)
 
-        # self._create_cloud_service_query_sets(
-        #     params.get("metadata", {}), cloud_svc_type_vo
-        # )
+        self._create_cloud_service_query_sets(
+            params.get("metadata", {}), cloud_svc_type_vo
+        )
 
         return cloud_svc_type_vo
 
@@ -55,14 +55,14 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
 
         self.transaction.add_rollback(_rollback, cloud_svc_type_vo.to_dict())
 
-        # self._update_cloud_service_query_sets(
-        #     params.get("metadata", {}), cloud_svc_type_vo
-        # )
+        self._update_cloud_service_query_sets(
+            params.get("metadata", {}), cloud_svc_type_vo
+        )
 
         return cloud_svc_type_vo.update(params)
 
     def delete_cloud_service_type_by_vo(self, cloud_svc_type_vo) -> None:
-        # self._delete_cloud_service_query_sets(cloud_svc_type_vo)
+        self._delete_cloud_service_query_sets(cloud_svc_type_vo)
         cloud_svc_type_vo.delete()
 
     def get_cloud_service_type(
@@ -128,8 +128,11 @@ class CloudServiceTypeManager(BaseManager, ResourceManager):
                 del query_set_info[name]
 
         for query_set_id in query_set_info.values():
-            self.cloud_svc_query_set_mgr.delete_cloud_service_query_set(
+            query_set_vo = self.cloud_svc_query_set_mgr.get_cloud_service_query_set(
                 query_set_id, cloud_service_type_vo.domain_id
+            )
+            self.cloud_svc_query_set_mgr.delete_cloud_service_query_set_by_vo(
+                query_set_vo
             )
 
     def _delete_cloud_service_query_sets(

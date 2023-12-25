@@ -98,6 +98,7 @@ class CloudServiceService(BaseService):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
 
         domain_id = params["domain_id"]
+        workspace_id = params["workspace_id"]
         secret_project_id = self.transaction.get_meta("secret.project_id")
         provider = params["provider"]
 
@@ -127,7 +128,9 @@ class CloudServiceService(BaseService):
         params["ref_cloud_service_type"] = self._make_cloud_service_type_key(params)
 
         if "region_code" in params:
-            params["ref_region"] = self._make_region_key(params, params["provider"])
+            params["ref_region"] = self._make_region_key(
+                domain_id, workspace_id, provider, params["region_code"]
+            )
 
         if "metadata" in params:
             params["metadata"] = self._convert_metadata(params["metadata"], provider)
@@ -216,7 +219,12 @@ class CloudServiceService(BaseService):
             params["project_id"] = secret_project_id
 
         if "region_code" in params:
-            params["ref_region"] = self._make_region_key(params, cloud_svc_vo.provider)
+            params["ref_region"] = self._make_region_key(
+                cloud_svc_vo.domain_id,
+                cloud_svc_vo.workspace_id,
+                cloud_svc_vo.provider,
+                params["region_code"],
+            )
 
         old_cloud_svc_data = dict(cloud_svc_vo.to_dict())
 
@@ -449,7 +457,7 @@ class CloudServiceService(BaseService):
             ExportManager, file_format=file_format, file_name=file_name
         )
 
-        return export_mgr.export(options, domain_id)
+        return export_mgr.export(options, domain_id, workspace_id)
 
     @transaction(
         permission="inventory:CloudService.read",
@@ -511,8 +519,10 @@ class CloudServiceService(BaseService):
         )
 
     @staticmethod
-    def _make_region_key(resource_data: dict, provider: str) -> str:
-        return f'{resource_data["domain_id"]}.{provider}.{resource_data["region_code"]}'
+    def _make_region_key(
+        domain_id: str, workspace_id: str, provider: str, region_code: str
+    ) -> str:
+        return f"{domain_id}.{workspace_id}.{provider}.{region_code}"
 
     @staticmethod
     def _convert_metadata(metadata: dict, provider: str) -> dict:

@@ -118,7 +118,11 @@ class CollectorRuleManager(BaseManager):
     ) -> dict:
         for action, value in actions.items():
             if action == "change_project":
-                cloud_service_data["project_id"] = value
+                project_info = self._get_project("project_id", value, domain_id)
+
+                if project_info:
+                    cloud_service_data["project_id"] = project_info["project_id"]
+                    cloud_service_data["workspace_id"] = project_info["workspace_id"]
 
             elif action == "match_project":
                 source = value["source"]

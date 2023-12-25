@@ -54,5 +54,5 @@ class IdentityManager(BaseManager):
     def list_schemas(self, query: dict) -> dict:
         return self.identity_conn.dispatch("Schema.list", {"query": query})
 
-    def list_domains(self, query: dict) -> dict:
-        return self.identity_conn.dispatch("Domain.list", {"query": query})
+    def list_domains_by_system_token(self, query: dict, token: str) -> dict:
+        return self.identity_conn.dispatch("Domain.list", {"query": query}, token=token)

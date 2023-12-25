@@ -58,12 +58,12 @@ class NoteService(BaseService):
             params.get("user_projects"),
         )
 
-        user_id = self.transaction.get_meta("authorization.user_id")
+        created_by = self.transaction.get_meta("authorization.user_id")
 
         params["cloud_service_id"] = cloud_svc_vo.cloud_service_id
         params["workspace_id"] = cloud_svc_vo.workspace_id
         params["project_id"] = cloud_svc_vo.project_id
-        params["created_by"] = user_id
+        params["created_by"] = created_by
 
         return self.note_mgr.create_note(params)
 
