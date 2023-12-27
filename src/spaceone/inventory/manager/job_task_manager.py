@@ -21,18 +21,10 @@ class JobTaskManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.job_task_model: JobTask = self.locator.get_model("JobTask")
 
-    def create_job_task(self, job_vo: Job, task_options: dict) -> JobTask:
+    def create_job_task(self, params: dict) -> JobTask:
         def _rollback(vo: JobTask):
             _LOGGER.info(f"[ROLLBACK] Delete job task: {vo.job_task_id}")
             vo.delete()
-
-        params = {
-            "job_id": job_vo.job_id,
-            "collector_id": job_vo.collector_id,
-            "workspace_id": job_vo.workspace_id,
-            "domain_id": job_vo.domain_id,
-            "options": task_options,
-        }
 
         job_task_vo: JobTask = self.job_task_model.create(params)
         self.transaction.add_rollback(_rollback, job_task_vo)
@@ -102,7 +94,6 @@ class JobTaskManager(BaseManager):
         domain_id: str,
         started_at: datetime = None,
         finished_at: datetime = None,
-        secret_info: dict = None,
         collecting_count_info: dict = None,
     ) -> JobTask:
         job_task_vo = self.get(job_task_id, domain_id)
@@ -113,9 +104,6 @@ class JobTaskManager(BaseManager):
 
         if finished_at:
             params["finished_at"] = finished_at
-
-        if secret_info:
-            params.update(secret_info)
 
         if collecting_count_info:
             params.update(collecting_count_info)
@@ -129,7 +117,6 @@ class JobTaskManager(BaseManager):
         self,
         job_task_id: str,
         domain_id: str,
-        secret_info: dict = None,
         collecting_count_info: dict = None,
     ) -> None:
         job_task_vo = self.get(job_task_id, domain_id)
@@ -140,7 +127,6 @@ class JobTaskManager(BaseManager):
             job_state_machine.get_state(),
             domain_id,
             started_at=datetime.utcnow(),
-            secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
 
@@ -148,7 +134,6 @@ class JobTaskManager(BaseManager):
         self,
         job_task_id: str,
         domain_id: str,
-        secret_info: dict = None,
         collecting_count_info: dict = None,
     ) -> None:
         job_task_vo = self.get(job_task_id, domain_id)
@@ -159,7 +144,6 @@ class JobTaskManager(BaseManager):
             job_state_machine.get_state(),
             domain_id,
             finished_at=datetime.utcnow(),
-            secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
         _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: SUCCESS")
@@ -168,7 +152,6 @@ class JobTaskManager(BaseManager):
         self,
         job_task_id: str,
         domain_id: str,
-        secret_info: dict = None,
         collecting_count_info: dict = None,
     ) -> None:
         job_task_vo = self.get(job_task_id, domain_id)
@@ -179,7 +162,6 @@ class JobTaskManager(BaseManager):
             job_state_machine.get_state(),
             domain_id,
             finished_at=datetime.utcnow(),
-            secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
         _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: FAILURE")
@@ -188,7 +170,6 @@ class JobTaskManager(BaseManager):
         self,
         job_task_id: str,
         domain_id: str,
-        secret_info: dict = None,
         collecting_count_info: dict = None,
     ) -> None:
         job_task_vo = self.get(job_task_id, domain_id)
@@ -199,7 +180,6 @@ class JobTaskManager(BaseManager):
             job_state_machine.get_state(),
             domain_id,
             finished_at=datetime.utcnow(),
-            secret_info=secret_info,
             collecting_count_info=collecting_count_info,
         )
         _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: CANCLED")

@@ -494,13 +494,26 @@ class CollectorService(BaseService):
 
         if len(tasks) > 0:
             for task in tasks:
-                task_options = task["task_options"]
+                secret_info = task["secret_info"]
+
+                create_params = {
+                    "job_id": job_vo.job_id,
+                    "collector_id": job_vo.collector_id,
+                    "secret_id": secret_info.get("secret_id"),
+                    "service_account_id": secret_info.get("service_account_id"),
+                    "project_id": secret_info.get("project_id"),
+                    "workspace_id": secret_info.get("workspace_id"),
+                    "domain_id": domain_id,
+                    "options": task["task_options"],
+                }
+
                 task.update({"collector_id": collector_id, "job_id": job_vo.job_id})
 
                 try:
                     # JOB: CREATE TASK JOB
-                    job_task_vo = job_task_mgr.create_job_task(job_vo, task_options)
+                    job_task_vo = job_task_mgr.create_job_task(create_params)
                     task.update({"job_task_id": job_task_vo.job_task_id})
+
                     job_task_mgr.push_job_task(task)
 
                 except Exception as e:
