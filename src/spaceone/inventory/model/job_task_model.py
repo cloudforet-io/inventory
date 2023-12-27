@@ -9,7 +9,7 @@ class Error(EmbeddedDocument):
 
 
 class JobTask(MongoModel):
-    job_task_id = StringField(max_length=40, generate_id="job_task", unique=True)
+    job_task_id = StringField(max_length=40, generate_id="job-task", unique=True)
     status = StringField(
         max_length=20,
         default="PENDING",
@@ -38,9 +38,6 @@ class JobTask(MongoModel):
         "updatable_fields": [
             "status",
             "provider",
-            "secret_id",
-            "service_account_id",
-            "project_id",
             "created_count",
             "updated_count",
             "deleted_count",

@@ -74,9 +74,7 @@ class CollectingManager(BaseManager):
 
         try:
             # JOB TASK: IN_PROGRESS
-            self._update_job_task(
-                job_task_id, "IN_PROGRESS", domain_id, secret_info=secret_info
-            )
+            self._update_job_task(job_task_id, "IN_PROGRESS", domain_id)
         except Exception as e:
             _LOGGER.error(
                 f"[collecting_resources] db update error ({job_task_id}): {e}"
@@ -172,7 +170,6 @@ class CollectingManager(BaseManager):
                 job_task_id,
                 job_task_state,
                 domain_id,
-                secret_info=secret_info,
                 collecting_count_info=collecting_count_info,
             )
             self.job_mgr.decrease_remained_tasks(job_id, domain_id)
@@ -419,33 +416,26 @@ class CollectingManager(BaseManager):
 
     def _update_job_task(
         self,
-        job_task_id,
-        state,
-        domain_id,
-        secret_info=None,
-        collecting_count_info=None,
-    ):
-        state_map = {
+        job_task_id: str,
+        status: str,
+        domain_id: str,
+        collecting_count_info: dict = None,
+    ) -> None:
+        status_map = {
             "IN_PROGRESS": self.job_task_mgr.make_inprogress,
             "SUCCESS": self.job_task_mgr.make_success,
             "FAILURE": self.job_task_mgr.make_failure,
             "CANCELED": self.job_task_mgr.make_canceled,
         }
 
-        if secret_info:
-            secret_info = {
-                "secret_id": secret_info["secret_id"],
-                "provider": secret_info.get("provider"),
-                "service_account_id": secret_info.get("service_account_id"),
-                "project_id": secret_info.get("project_id"),
-            }
-
-        if state in state_map:
-            state_map[state](job_task_id, domain_id, secret_info, collecting_count_info)
+        if status in status_map:
+            status_map[status](job_task_id, domain_id, collecting_count_info)
         else:
-            _LOGGER.error(f"[_update_job_task] undefined state: {state}")
+            _LOGGER.error(
+                f"[_update_job_task] job task status is not defined: {status}"
+            )
             self.job_task_mgr.make_failure(
-                job_task_id, domain_id, secret_info, collecting_count_info
+                job_task_id, domain_id, collecting_count_info
             )
 
     @staticmethod
