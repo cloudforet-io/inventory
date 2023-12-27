@@ -420,8 +420,9 @@ class CollectorService(BaseService):
 
     @transaction(
         permission="inventory:Collector.write",
-        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
     )
+    @change_value_by_rule("APPEND", "workspace_id", "*")
     @check_required(["collector_id", "domain_id"])
     def collect(self, params: dict) -> Job:
         """Collect data
@@ -430,7 +431,8 @@ class CollectorService(BaseService):
                 'collector_id': 'str',      # required
                 'secret_id': 'str',
                 'workspace_id': 'str',      # injected from auth
-                'domain_id': 'str'          # injected from auth (required)
+                'domain_id': 'str',         # injected from auth (required)
+                'user_projects': 'list',    # injected from auth
             }
 
         Returns:
@@ -444,6 +446,7 @@ class CollectorService(BaseService):
         collector_id = params["collector_id"]
         domain_id = params["domain_id"]
         workspace_id = params.get("workspace_id")
+
         collector_vo = self.collector_mgr.get_collector(
             collector_id, domain_id, workspace_id
         )
