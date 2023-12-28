@@ -9,7 +9,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class JobService(BaseService):
 
-    @transaction(scope='public')
+    @transaction
     @convert_model
     def get_tasks(self, params: JobGetTaskRequest) -> TasksResponse:
         """ Get job tasks
