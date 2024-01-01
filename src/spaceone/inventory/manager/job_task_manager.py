@@ -4,13 +4,11 @@ from typing import Tuple, Union
 from jsonschema import validate
 from datetime import datetime
 from spaceone.core import config, queue
-from spaceone.core.token import get_token
 from spaceone.core.manager import BaseManager
 from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.model.job_task_model import JobTask
-from spaceone.inventory.model.job_model import Job
 from spaceone.inventory.lib.job_task_state import JobTaskStateMachine
 
 _LOGGER = logging.getLogger(__name__)
@@ -196,12 +194,12 @@ class JobTaskManager(BaseManager):
             _LOGGER.warning(f"[_get_queue_name] name: {name} is not configured.")
             return None
 
-    @staticmethod
-    def create_task_pipeline(params: dict) -> dict:
+    def create_task_pipeline(self, params: dict) -> dict:
+        token = self.transaction.meta.get("token")
         task = {
             "locator": "MANAGER",
             "name": "CollectingManager",
-            "metadata": {"token": get_token(), "domain_id": params.get("domain_id")},
+            "metadata": {"token": token},
             "method": "collecting_resources",
             "params": {"params": params},
         }

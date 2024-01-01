@@ -27,9 +27,9 @@ JOB_TIMEOUT = 2  # 2 Hours
 JOB_TERMINATION_TIME = 2 * 30  # 2 Months
 RESOURCE_TERMINATION_TIME = 3 * 30  # 3 Months
 DEFAULT_DELETE_POLICIES = {
-    "inventory.CloudService": 48,  # 48 Hours
-    "inventory.CloudServiceType": 3 * 30 * 24,  # 3 Months
-    "inventory.Region": 48,  # 48 Hours
+    "inventory.CloudService": 48,  # 2 Days
+    "inventory.CloudServiceType": 72,  # 3 Days
+    "inventory.Region": 48,  # 2 Days
 }
 DEFAULT_DISCONNECTED_STATE_DELETE_POLICY = 3  # 3 Count
 DELETE_EXCLUDE_DOMAINS = []

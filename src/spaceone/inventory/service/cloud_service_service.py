@@ -121,7 +121,7 @@ class CloudServiceService(BaseService):
             )
 
         if "project_id" in params:
-            self.identity_mgr.get_project(params["project_id"])
+            self.identity_mgr.get_project(params["project_id"], domain_id)
         elif secret_project_id:
             params["project_id"] = secret_project_id
 
@@ -214,7 +214,7 @@ class CloudServiceService(BaseService):
         )
 
         if "project_id" in params:
-            self.identity_mgr.get_project(params["project_id"])
+            self.identity_mgr.get_project(params["project_id"], domain_id)
         elif secret_project_id and secret_project_id != cloud_svc_vo.project_id:
             params["project_id"] = secret_project_id
 

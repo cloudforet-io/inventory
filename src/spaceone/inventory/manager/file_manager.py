@@ -15,17 +15,30 @@ _CONNECTOR_MAP = {"AWS_S3": AWSS3UploadConnector}
 class FileManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.token_type = self.transaction.get_meta("authorization.token_type")
         self.file_mgr_conn: SpaceConnector = self.locator.get_connector(
             "SpaceConnector", service="file_manager"
         )
 
-    def add_file(self, params: dict):
-        return self.file_mgr_conn.dispatch("File.add", params)
+    def add_file(self, params: dict, domain_id: str) -> dict:
+        if self.token_type == "SYSTEM_TOKEN":
+            return self.file_mgr_conn.dispatch(
+                "File.add", params, x_domain_id=domain_id
+            )
+        else:
+            return self.file_mgr_conn.dispatch("File.add", params)
 
-    def get_download_url(self, file_id: str):
-        return self.file_mgr_conn.dispatch(
-            "File.get_download_url", {"file_id": file_id}
-        )
+    def get_download_url(self, file_id: str, domain_id: str) -> dict:
+        if self.token_type == "SYSTEM_TOKEN":
+            return self.file_mgr_conn.dispatch(
+                "File.get_download_url",
+                {"file_id": file_id},
+                x_domain_id=domain_id,
+            )
+        else:
+            return self.file_mgr_conn.dispatch(
+                "File.get_download_url", {"file_id": file_id}
+            )
 
     def upload_file(
         self, file_path: str, url: str, options: dict, storage_type: str = "AWS_S3"

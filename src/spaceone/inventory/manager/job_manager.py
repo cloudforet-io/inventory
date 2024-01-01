@@ -125,10 +125,8 @@ class JobManager(BaseManager):
 
         return job_vo
 
-    def update_job_timeout_by_hour(
-        self, hour: int, status: str, domain_id: str
-    ) -> None:
-        created_at = datetime.utcnow() - timedelta(hours=hour)
+    def update_job_timeout_by_hour(self, job_timeout: int, domain_id: str) -> None:
+        created_at = datetime.utcnow() - timedelta(hours=job_timeout)
         query = {
             "filter": [
                 {"k": "created_at", "v": created_at, "o": "lt"},
