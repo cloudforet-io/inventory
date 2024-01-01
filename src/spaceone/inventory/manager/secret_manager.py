@@ -1,6 +1,5 @@
 import logging
 
-from spaceone.core import config
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
 
@@ -28,6 +27,7 @@ class SecretManager(BaseManager):
             )
 
     def list_secrets(self, query: dict, domain_id: str) -> dict:
+        _LOGGER.debug(f"[list_secrets] token_type: {self.token_type}")
         if self.token_type == "SYSTEM_TOKEN":
             return self.secret_connector.dispatch(
                 "Secret.list",
