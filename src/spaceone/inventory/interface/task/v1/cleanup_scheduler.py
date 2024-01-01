@@ -29,7 +29,8 @@ class CleanupScheduler(HourlyScheduler):
 
     def create_task(self):
         return [
-            self._create_job_request(domain_info) for domain_info in self.list_domains()
+            self._create_job_request(domain_info["domain_id"])
+            for domain_info in self.list_domains()
         ]
 
     def list_domains(self):
@@ -44,7 +45,7 @@ class CleanupScheduler(HourlyScheduler):
             _LOGGER.error(e)
             return []
 
-    def _create_job_request(self, domain_info):
+    def _create_job_request(self, domain_id):
         update_job_state = {
             "locator": "SERVICE",
             "name": "CleanupService",
@@ -54,7 +55,7 @@ class CleanupScheduler(HourlyScheduler):
             "method": "update_job_state",
             "params": {
                 "params": {
-                    "domain_id": domain_info["domain_id"],
+                    "domain_id": domain_id,
                 }
             },
         }
@@ -68,7 +69,7 @@ class CleanupScheduler(HourlyScheduler):
             "method": "terminate_jobs",
             "params": {
                 "params": {
-                    "domain_id": domain_info["domain_id"],
+                    "domain_id": domain_id,
                 }
             },
         }
@@ -82,7 +83,7 @@ class CleanupScheduler(HourlyScheduler):
             "method": "delete_resources",
             "params": {
                 "params": {
-                    "domain_id": domain_info["domain_id"],
+                    "domain_id": domain_id,
                 }
             },
         }
@@ -96,7 +97,7 @@ class CleanupScheduler(HourlyScheduler):
             "method": "terminate_resources",
             "params": {
                 "params": {
-                    "domain_id": domain_info["domain_id"],
+                    "domain_id": domain_id,
                 }
             },
         }
@@ -113,5 +114,7 @@ class CleanupScheduler(HourlyScheduler):
             ],
         }
 
-        _LOGGER.debug(f"[_create_job_request] tasks: inventory_cleanup_schedule")
+        _LOGGER.debug(
+            f"[_create_job_request] tasks: inventory_cleanup_schedule: {domain_id}"
+        )
         return stp
