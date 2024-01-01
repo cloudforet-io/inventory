@@ -42,7 +42,6 @@ class CleanupManager(BaseManager):
         if resource_type in ["inventory.CloudServiceType", "inventory.Region"]:
             query["filter"].append({"k": "updated_by", "v": "manual", "o": "not"})
 
-        _LOGGER.debug(f"[delete_resources_by_policy] {resource_type}: {query}")
         if resource_type not in RESOURCE_MAP:
             _LOGGER.error(f"[delete_resources_by_policy] not found {resource_type}")
             return 0

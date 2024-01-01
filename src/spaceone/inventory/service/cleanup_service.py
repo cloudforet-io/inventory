@@ -13,6 +13,10 @@ from spaceone.inventory.manager.job_task_manager import JobTaskManager
 _LOGGER = logging.getLogger(__name__)
 
 
+@authentication_handler
+@authorization_handler
+@mutation_handler
+@event_handler
 class CleanupService(BaseService):
     resource = "Cleanup"
 
@@ -46,7 +50,6 @@ class CleanupService(BaseService):
         """
 
         domain_id = params["domain_id"]
-        _LOGGER.debug(f"[update_job_state] START: {domain_id}")
         job_mgr: JobManager = self.locator.get_manager(JobManager)
 
         job_timeout = config.get_global("JOB_TIMEOUT", 2)  # hours
@@ -111,7 +114,6 @@ class CleanupService(BaseService):
 
         if domain_id not in exclude_domains:
             policies = config.get_global("DEFAULT_DELETE_POLICIES", {})
-            _LOGGER.debug(f"[delete_resources] {policies}")
 
             cleanup_mgr: CleanupManager = self.locator.get_manager(CleanupManager)
             for resource_type, hour in policies.items():
@@ -119,13 +121,13 @@ class CleanupService(BaseService):
                     deleted_count = cleanup_mgr.delete_resources_by_policy(
                         resource_type, hour, domain_id
                     )
-                    _LOGGER.debug(
-                        f"[delete_resources] number of deleted count: {deleted_count}"
-                    )
+                    if deleted_count > 0:
+                        _LOGGER.debug(
+                            f"[delete_resources] {resource_type} deleted ({domain_id}): {deleted_count}"
+                        )
 
-                    # TODO: event notification
                 except Exception as e:
-                    _LOGGER.error(f"[delete_resources] {e}")
+                    _LOGGER.error(f"[delete_resources] error: {e}", exc_info=True)
         else:
             _LOGGER.debug(f"[delete_resources] skip domain: {domain_id}")
 
