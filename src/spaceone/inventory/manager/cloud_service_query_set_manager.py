@@ -35,8 +35,7 @@ class CloudServiceQuerySetManager(BaseManager):
         )
         self.cloud_svc_stats_mgr = None
 
-    @staticmethod
-    def push_task(domain_id: str, system_token: str) -> None:
+    def push_task(self, domain_id: str) -> None:
         task = {
             "name": "run_query_sets_by_domain",
             "version": "v1",
@@ -46,7 +45,7 @@ class CloudServiceQuerySetManager(BaseManager):
                     "locator": "SERVICE",
                     "name": "CloudServiceQuerySetService",
                     "metadata": {
-                        "token": system_token,
+                        "token": self.transaction.get_meta("token"),
                         "x_domain_id": domain_id,
                     },
                     "method": "run_query_sets_by_domain",

@@ -352,7 +352,7 @@ class CollectorRuleService(BaseService):
             project_id = actions["change_project"]
 
             identity_mgr: IdentityManager = self.locator.get_manager("IdentityManager")
-            identity_mgr.get_project(project_id)
+            identity_mgr.get_project(project_id, domain_id)
 
         if "match_project" in actions:
             if "source" not in actions["match_project"]:

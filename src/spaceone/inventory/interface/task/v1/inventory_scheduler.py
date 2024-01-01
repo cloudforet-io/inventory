@@ -1,87 +1,75 @@
-import datetime
 import logging
+from datetime import datetime
+from spaceone.core.error import ERROR_CONFIGURATION
 from spaceone.core.locator import Locator
 from spaceone.core.scheduler import HourlyScheduler
-from spaceone.inventory.lib.scheduler import init_count, update_token, get_domain_id_from_token
+from spaceone.core import config, utils
 from spaceone.inventory.service.collector_service import CollectorService
 
 
-__all__ = ['InventoryHourlyScheduler']
+__all__ = ["InventoryHourlyScheduler"]
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class InventoryHourlyScheduler(HourlyScheduler):
-    def __init__(self, queue, interval, minute=':00'):
+    def __init__(self, queue, interval, minute=":00"):
         super().__init__(queue, interval, minute)
-        self.count = init_count()
         self.locator = Locator()
-        self.TOKEN = update_token()
-        self.domain_id = get_domain_id_from_token(self.TOKEN)
+        self._init_config()
+
+    def _init_config(self):
+        self._token = config.get_global("TOKEN")
+        if self._token is None:
+            raise ERROR_CONFIGURATION(key="TOKEN")
+        self._hour = datetime.utcnow().hour
 
     def create_task(self):
-        return [self._create_job_request(collector_vo) for collector_vo in self.list_schedule_collectors()]
+        return [
+            self._create_job_request(collector_vo)
+            for collector_vo in self.list_schedule_collectors()
+        ]
 
     def list_schedule_collectors(self):
         try:
-            self.check_count()
-            collector_svc: CollectorService = self.locator.get_service(CollectorService)
-            collector_vos, total = collector_svc.scheduled_collectors({'schedule': {'hour': self.count['hour']}})
-            _LOGGER.debug(f'[push_token] scheduled collectors count: {total}')
+            collector_svc: CollectorService = self.locator.get_service(
+                CollectorService, {"token": self._token}
+            )
+            collector_vos, total_count = collector_svc.scheduled_collectors(
+                {"hour": self._hour}
+            )
+            _LOGGER.debug(
+                f"[list_schedule_collectors] scheduled collectors count: {total_count}"
+            )
             return collector_vos
         except Exception as e:
-            _LOGGER.error(e)
+            _LOGGER.error(e, exc_info=True)
             return []
-
-    def check_count(self):
-        current_time = datetime.datetime.utcnow()
-        hour = current_time.hour
-
-        if (self.count['hour'] + self.config) % 24 != hour:
-            if self.count['hour'] == hour:
-                _LOGGER.error('[check_count] duplicated call in the same time')
-            else:
-                _LOGGER.error('[check_count] missing time')
-
-        self.count.update({
-            'previous': current_time,
-            'index': self.count['index'] + 1,
-            'hour': hour,
-            'started_at': current_time
-        })
-
-    def _update_count_ended_at(self):
-        cur = datetime.datetime.utcnow()
-        self.count['ended_at'] = cur
 
     def _create_job_request(self, collector_vo):
         schedule_job = {
-            'locator': 'SERVICE',
-            'name': 'CollectorService',
-            'metadata': self._get_metadata(),
-            'method': 'collect',
-            'params': {
-                'params': {
-                    'collector_id': collector_vo.collector_id,
-                    'collect_mode': 'ALL',
-                    'filter': {},
-                    'domain_id': collector_vo.domain_id
+            "locator": "SERVICE",
+            "name": "CollectorService",
+            "metadata": {
+                "token": self._token,
+                "x_domain_id": collector_vo.domain_id,
+            },
+            "method": "collect",
+            "params": {
+                "params": {
+                    "collector_id": collector_vo.collector_id,
                 }
-            }
+            },
         }
 
-        return {
-            'name': 'inventory_collect_schedule',
-            'version': 'v1',
-            'executionEngine': 'BaseWorker',
-            'stages': [schedule_job]
-        }
+        print(
+            f"{utils.datetime_to_iso8601(datetime.now())} "
+            f"[INFO] [create_task] collect data: {collector_vo.collector_id}"
+        )
 
-    def _get_metadata(self):
         return {
-            'token': self.TOKEN,
-            'service': 'inventory',
-            'resource': 'Collector',
-            'verb': 'collect',
-            'domain_id': self.domain_id
+            "name": "inventory_collect_schedule",
+            "version": "v1",
+            "executionEngine": "BaseWorker",
+            "stages": [schedule_job],
         }

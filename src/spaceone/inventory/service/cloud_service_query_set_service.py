@@ -388,26 +388,23 @@ class CloudServiceQuerySetService(BaseService):
             None
         """
 
-        system_token = config.get_global("TOKEN")
-
-        for domain_info in self._get_all_domains_info(system_token):
+        for domain_info in self._get_all_domains_info():
             domain_id = domain_info["domain_id"]
             try:
-                self.cloud_svc_query_set_mgr.push_task(domain_id, system_token)
+                self.cloud_svc_query_set_mgr.push_task(domain_id)
             except Exception as e:
                 _LOGGER.error(
                     f"[run_query_sets_by_domain] query error({domain_id}): {e}",
                     exc_info=True,
                 )
 
-    def _get_all_domains_info(self, system_token: str) -> list:
+    def _get_all_domains_info(self) -> list:
         identity_mgr: IdentityManager = self.locator.get_manager("IdentityManager")
-        response = identity_mgr.list_domains_by_system_token(
+        response = identity_mgr.list_domains(
             {
                 "only": ["domain_id"],
                 "filter": [{"k": "state", "v": "ENABLED", "o": "eq"}],
-            },
-            system_token,
+            }
         )
 
         return response.get("results", [])

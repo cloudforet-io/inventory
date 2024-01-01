@@ -172,12 +172,12 @@ class ExportManager(BaseManager):
             params["resource_group"] = "WORKSPACE"
             params["workspace_id"] = workspace_id
 
-        file_info = file_mgr.add_file(params)
+        file_info = file_mgr.add_file(params, domain_id)
 
         file_mgr.upload_file(
             self._file_path, file_info["upload_url"], file_info["upload_options"]
         )
-        download_file_info = file_mgr.get_download_url(file_info["file_id"])
+        download_file_info = file_mgr.get_download_url(file_info["file_id"], domain_id)
 
         return {"download_url": download_file_info["download_url"]}
 

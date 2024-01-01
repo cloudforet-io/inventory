@@ -1,7 +1,6 @@
 import logging
 from typing import Generator, Tuple
 from spaceone.core.manager import BaseManager
-from spaceone.core.service import BaseService
 from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
@@ -182,8 +181,8 @@ class CollectingManager(BaseManager):
         return True
 
     def _update_disconnected_and_deleted_count(
-        self, collector_id, secret_id, job_task_id, domain_id
-    ):
+        self, collector_id: str, secret_id: str, job_task_id: str, domain_id: str
+    ) -> Tuple[int, int]:
         try:
             cleanup_mgr: CleanupManager = self.locator.get_manager(CleanupManager)
             return cleanup_mgr.update_disconnected_and_deleted_count(

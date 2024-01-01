@@ -91,7 +91,11 @@ class CollectorService(BaseService):
         if "secret_filter" in params:
             if params["secret_filter"].get("state") == "ENABLED":
                 self._validate_secret_filter(
-                    identity_mgr, secret_mgr, params["secret_filter"], plugin_provider
+                    identity_mgr,
+                    secret_mgr,
+                    params["secret_filter"],
+                    plugin_provider,
+                    domain_id,
                 )
             else:
                 del params["secret_filter"]
@@ -151,6 +155,8 @@ class CollectorService(BaseService):
             collector_vo (object)
         """
 
+        domain_id = params["domain_id"]
+
         collector_vo = self.collector_mgr.get_collector(
             params["collector_id"], params["domain_id"], params.get("workspace_id")
         )
@@ -167,6 +173,7 @@ class CollectorService(BaseService):
                     secret_mgr,
                     params["secret_filter"],
                     collector_vo.provider,
+                    domain_id,
                 )
             else:
                 params["secret_filter"] = {
@@ -272,6 +279,7 @@ class CollectorService(BaseService):
         secret_ids = self._get_secret_ids_from_filter(
             collector_vo.secret_filter.to_dict(),
             collector_vo.provider,
+            domain_id,
             params.get("secret_id"),
         )
 
@@ -548,11 +556,12 @@ class CollectorService(BaseService):
         secret_ids = self._get_secret_ids_from_filter(
             secret_filter,
             collector_provider,
+            domain_id,
             params.get("secret_id"),
         )
 
         for secret_id in secret_ids:
-            secret_info = secret_mgr.get_secret(secret_id)
+            secret_info = secret_mgr.get_secret(secret_id, domain_id)
             secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
 
             _task = {
@@ -582,7 +591,7 @@ class CollectorService(BaseService):
 
     @staticmethod
     def _check_secrets(
-        secret_mgr: SecretManager, secret_ids: list, provider: str
+        secret_mgr: SecretManager, secret_ids: list, provider: str, domain_id: str
     ) -> None:
         query = {
             "filter": [
@@ -591,7 +600,7 @@ class CollectorService(BaseService):
             ],
             "count_only": True,
         }
-        response = secret_mgr.list_secrets(query)
+        response = secret_mgr.list_secrets(query, domain_id)
         total_count = response.get("total_count", 0)
 
         if total_count != len(secret_ids):
@@ -605,6 +614,7 @@ class CollectorService(BaseService):
         identity_mgr: IdentityManager,
         service_account_ids: list,
         provider: str,
+        domain_id: str,
     ) -> None:
         query = {
             "filter": [
@@ -618,7 +628,7 @@ class CollectorService(BaseService):
             "count_only": True,
         }
 
-        response = identity_mgr.list_service_accounts(query)
+        response = identity_mgr.list_service_accounts(query, domain_id)
         total_count = response.get("total_count", 0)
 
         if total_count != len(service_account_ids):
@@ -632,6 +642,7 @@ class CollectorService(BaseService):
         identity_mgr: IdentityManager,
         schema_ids: list,
         provider: str,
+        domain_id: str,
     ) -> None:
         query = {
             "filter": [
@@ -645,7 +656,7 @@ class CollectorService(BaseService):
             "count_only": True,
         }
 
-        response = identity_mgr.list_schemas(query)
+        response = identity_mgr.list_schemas(query, domain_id)
         total_count = response.get("total_count", 0)
 
         if total_count != len(schema_ids):
@@ -660,29 +671,39 @@ class CollectorService(BaseService):
         secret_mgr: SecretManager,
         secret_filter: dict,
         provider: str,
+        domain_id: str,
     ) -> None:
         if "secrets" in secret_filter:
-            self._check_secrets(secret_mgr, secret_filter["secrets"], provider)
+            self._check_secrets(
+                secret_mgr, secret_filter["secrets"], provider, domain_id
+            )
 
         if "service_accounts" in secret_filter:
             self._check_service_accounts(
-                identity_mgr, secret_filter["service_accounts"], provider
+                identity_mgr, secret_filter["service_accounts"], provider, domain_id
             )
 
         if "schemas" in secret_filter:
-            self._check_schemas(identity_mgr, secret_filter["schemas"], provider)
+            self._check_schemas(
+                identity_mgr, secret_filter["schemas"], provider, domain_id
+            )
 
         if "exclude_secrets" in secret_filter:
-            self._check_secrets(secret_mgr, secret_filter["exclude_secrets"], provider)
+            self._check_secrets(
+                secret_mgr, secret_filter["exclude_secrets"], provider, domain_id
+            )
 
         if "exclude_service_accounts" in secret_filter:
             self._check_service_accounts(
-                identity_mgr, secret_filter["exclude_service_accounts"], provider
+                identity_mgr,
+                secret_filter["exclude_service_accounts"],
+                provider,
+                domain_id,
             )
 
         if "exclude_schemas" in secret_filter:
             self._check_schemas(
-                identity_mgr, secret_filter["exclude_schemas"], provider
+                identity_mgr, secret_filter["exclude_schemas"], provider, domain_id
             )
 
     def _update_collector_plugin(
@@ -725,26 +746,26 @@ class CollectorService(BaseService):
         self,
         secret_filter: dict,
         provider: str,
+        domain_id: str,
         secret_id: str = None,
     ) -> list:
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)
 
         query = {"filter": self._make_secret_filter(secret_filter, provider, secret_id)}
-        response = secret_manager.list_secrets(query)
+        response = secret_manager.list_secrets(query, domain_id)
 
         return [
             secret_info.get("secret_id") for secret_info in response.get("results", [])
         ]
 
-    @check_required(["schedule"])
+    @check_required(["hour"])
     def scheduled_collectors(self, params: dict) -> Tuple[QuerySet, int]:
         """Search all collectors in this schedule.
         This is global search out-of domain.
 
         Args:
             params(dict): {
-                'schedule': 'dict',     # required
-                'domain_id': 'str',
+                'hour': 'int',        # required
             }
 
         Returns:
@@ -753,18 +774,13 @@ class CollectorService(BaseService):
         """
 
         collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
-        filter_query = [{"k": "schedule.state", "v": "ENABLED", "o": "eq"}]
-
-        if "domain_id" in params:
-            filter_query.append({"k": "domain_id", "v": params["domain_id"], "o": "eq"})
-
-        schedule = params.get("schedule", {})
-        if "hour" in schedule:
-            filter_query.append(
-                {"k": "schedule.hours", "v": schedule["hour"], "o": "contain"}
-            )
-
-        return collector_mgr.list_collectors({"filter": filter_query})
+        query = {
+            "filter": [
+                {"k": "schedule.state", "v": "ENABLED", "o": "eq"},
+                {"k": "schedule.hours", "v": params["hour"], "o": "contain"},
+            ]
+        }
+        return collector_mgr.list_collectors(query)
 
     def _get_plugin_from_repository(self, plugin_id: str) -> dict:
         repo_mgr: RepositoryManager = self.locator.get_manager(RepositoryManager)
