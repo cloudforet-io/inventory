@@ -52,20 +52,15 @@ class InventoryHourlyScheduler(HourlyScheduler):
             "name": "CollectorService",
             "metadata": {
                 "token": self._token,
-                "x_domain_id": collector_vo.domain_id,
             },
             "method": "collect",
             "params": {
                 "params": {
                     "collector_id": collector_vo.collector_id,
+                    "domain_id": collector_vo.domain_id,
                 }
             },
         }
-
-        print(
-            f"{utils.datetime_to_iso8601(datetime.now())} "
-            f"[INFO] [create_task] collect data: {collector_vo.collector_id}"
-        )
 
         return {
             "name": "inventory_collect_schedule",

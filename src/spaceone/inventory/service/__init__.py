@@ -18,5 +18,4 @@ from spaceone.inventory.service.cloud_service_query_set_service import (
 from spaceone.inventory.service.cloud_service_stats_service import (
     CloudServiceStatsService,
 )
-
-# from spaceone.inventory.service.cleanup_service import CleanupService
+from spaceone.inventory.service.cleanup_service import CleanupService
