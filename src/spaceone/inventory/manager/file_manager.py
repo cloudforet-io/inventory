@@ -1,7 +1,7 @@
 import logging
-from spaceone.core import config
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
+from spaceone.core.auth.jwt.jwt_util import JWTUtil
 from spaceone.inventory.connector.file_upload_connector import (
     FileUploadConnector,
     AWSS3UploadConnector,
@@ -15,7 +15,8 @@ _CONNECTOR_MAP = {"AWS_S3": AWSS3UploadConnector}
 class FileManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.token_type = self.transaction.get_meta("authorization.token_type")
+        token = self.transaction.get_meta("token")
+        self.token_type = JWTUtil.get_value_from_token(token, "typ")
         self.file_mgr_conn: SpaceConnector = self.locator.get_connector(
             "SpaceConnector", service="file_manager"
         )

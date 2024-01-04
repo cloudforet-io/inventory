@@ -11,7 +11,7 @@ _LOGGER = logging.getLogger(__name__)
 class CollectorPluginManager(BaseManager):
     def init_plugin(self, endpoint: str, options: dict) -> dict:
         plugin_connector: SpaceConnector = self.locator.get_connector(
-            "SpaceConnector", endpoint=endpoint
+            "SpaceConnector", endpoint=endpoint, token="NO_TOKEN"
         )
         return plugin_connector.dispatch("Collector.init", {"options": options})
 
