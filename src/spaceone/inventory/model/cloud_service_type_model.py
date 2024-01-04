@@ -7,7 +7,9 @@ class CloudServiceType(MongoModel):
     cloud_service_type_id = StringField(
         max_length=40, generate_id="cloud-svc-type", unique=True
     )
-    name = StringField(max_length=255, unique_with=["provider", "group", "domain_id"])
+    name = StringField(
+        max_length=255, unique_with=["provider", "group", "workspace_id", "domain_id"]
+    )
     provider = StringField(max_length=255)
     group = StringField(max_length=255)
     cloud_service_type_key = StringField(max_length=255)

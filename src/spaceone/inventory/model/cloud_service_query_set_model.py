@@ -12,6 +12,7 @@ class CloudServiceQuerySet(MongoModel):
             "provider",
             "cloud_service_group",
             "cloud_service_type",
+            "workspace_id",
             "domain_id",
         ],
     )
