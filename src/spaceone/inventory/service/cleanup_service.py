@@ -91,10 +91,13 @@ class CleanupService(BaseService):
         job_vos.delete()
         job_task_vos.delete()
 
-        _LOGGER.info(f"[terminate_jobs] Terminate jobs: {str(job_total_count)}")
-        _LOGGER.info(
-            f"[terminate_jobs] Terminate job tasks: {str(job_task_total_count)}"
-        )
+        if job_total_count > 0:
+            _LOGGER.info(f"[terminate_jobs] Terminate jobs: {str(job_total_count)}")
+
+        if job_task_total_count > 0:
+            _LOGGER.info(
+                f"[terminate_jobs] Terminate job tasks: {str(job_task_total_count)}"
+            )
 
     @transaction
     @check_required(["domain_id"])
@@ -172,9 +175,11 @@ class CleanupService(BaseService):
         }
 
         cloud_svc_vos, total_count = cloud_svc_mgr.list_cloud_services(query)
-        _LOGGER.info(
-            f"[terminate_resources] Terminate cloud services: {str(total_count)}"
-        )
+
+        if total_count > 0:
+            _LOGGER.info(
+                f"[terminate_resources] Terminate cloud services: {str(total_count)}"
+            )
 
         for cloud_svc_vo in cloud_svc_vos:
             cloud_service_id = cloud_svc_vo.cloud_service_id
