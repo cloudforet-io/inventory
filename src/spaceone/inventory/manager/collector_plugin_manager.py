@@ -17,7 +17,7 @@ class CollectorPluginManager(BaseManager):
 
     def verify_plugin(self, endpoint: str, options: dict, secret_data: dict) -> None:
         plugin_connector: SpaceConnector = self.locator.get_connector(
-            "SpaceConnector", endpoint=endpoint
+            "SpaceConnector", endpoint=endpoint, token="NO_TOKEN"
         )
         params = {"options": options, "secret_data": secret_data}
         plugin_connector.dispatch("Collector.verify", params)
@@ -30,7 +30,7 @@ class CollectorPluginManager(BaseManager):
         task_options: dict = None,
     ) -> Generator[dict, None, None]:
         plugin_connector: SpaceConnector = self.locator.get_connector(
-            "SpaceConnector", endpoint=endpoint
+            "SpaceConnector", endpoint=endpoint, token="NO_TOKEN"
         )
 
         params = {"options": options, "secret_data": secret_data, "filter": {}}
@@ -42,7 +42,7 @@ class CollectorPluginManager(BaseManager):
 
     def get_tasks(self, endpoint: str, secret_data: dict, options: dict) -> dict:
         plugin_connector: SpaceConnector = self.locator.get_connector(
-            "SpaceConnector", endpoint=endpoint
+            "SpaceConnector", endpoint=endpoint, token="NO_TOKEN"
         )
 
         params = {"options": options, "secret_data": secret_data}
