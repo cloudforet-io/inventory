@@ -19,7 +19,7 @@ class Region(MongoModel):
     updated_at = DateTimeField(auto_now=True)
 
     meta = {
-        "updatable_fields": ["name", "region_key", "tags", "updated_by", "updated_at"],
+        "updatable_fields": ["name", "tags", "updated_by", "updated_at"],
         "minimal_fields": ["region_id", "name", "region_code", "provider"],
         "ordering": ["name"],
         "indexes": [
