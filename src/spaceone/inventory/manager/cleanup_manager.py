@@ -50,9 +50,11 @@ class CleanupManager(BaseManager):
 
         try:
             deleted_count = resource_manager.delete_resources(query)
-            _LOGGER.debug(
-                f"[delete_resources_by_policy] {deleted_count} in {domain_id}"
-            )
+            if deleted_count > 0:
+                _LOGGER.debug(
+                    f"[delete_resources_by_policy] {deleted_count} in {domain_id}"
+                )
+
             return deleted_count
 
         except Exception as e:

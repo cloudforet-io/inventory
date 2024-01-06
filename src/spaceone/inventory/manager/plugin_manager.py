@@ -22,6 +22,8 @@ class PluginManager(BaseManager):
         upgrade_mode: str = "AUTO",
         version: str = None,
     ) -> Tuple[str, str]:
+        system_token = self.transaction.get_meta("token")
+
         response = self.plugin_connector.dispatch(
             "Plugin.get_plugin_endpoint",
             {
@@ -30,6 +32,7 @@ class PluginManager(BaseManager):
                 "upgrade_mode": upgrade_mode,
                 "version": version,
             },
+            token=system_token,
         )
 
         return response.get("endpoint"), response.get("updated_version")

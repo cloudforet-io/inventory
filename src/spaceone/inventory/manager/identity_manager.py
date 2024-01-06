@@ -17,10 +17,12 @@ class IdentityManager(BaseManager):
         )
 
     def check_workspace(self, workspace_id: str, domain_id: str) -> None:
-        # For general user, use internal API
+        system_token = self.transaction.get_meta("token")
+
         return self.identity_conn.dispatch(
             "Workspace.check",
             {"workspace_id": workspace_id, "domain_id": domain_id},
+            token=system_token,
         )
 
     @cache.cacheable(key="inventory:project:{domain_id}:{project_id}", expire=3600)
