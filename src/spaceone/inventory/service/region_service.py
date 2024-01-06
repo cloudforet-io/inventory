@@ -48,8 +48,12 @@ class RegionService(BaseService):
             if isinstance(params["tags"], list):
                 params["tags"] = utils.tags_to_dict(params["tags"])
 
+        domain_id = params["domain_id"]
+        workspace_id = params["workspace_id"]
+
         params["updated_by"] = self.transaction.get_meta("collector_id") or "manual"
         params["region_key"] = f'{params["provider"]}.{params["region_code"]}'
+        params["ref_region"] = f'{domain_id}.{workspace_id}.{params["region_key"]}'
 
         return self.region_mgr.create_region(params)
 
