@@ -1,5 +1,5 @@
 import logging
-from spaceone.core import cache
+from spaceone.core import cache, config
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.core.auth.jwt.jwt_util import JWTUtil
@@ -17,7 +17,7 @@ class IdentityManager(BaseManager):
         )
 
     def check_workspace(self, workspace_id: str, domain_id: str) -> None:
-        system_token = self.transaction.get_meta("token")
+        system_token = config.get_global("TOKEN")
 
         return self.identity_conn.dispatch(
             "Workspace.check",
