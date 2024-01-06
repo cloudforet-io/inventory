@@ -1,5 +1,7 @@
 import logging
 from typing import Tuple
+
+from spaceone.core import config
 from spaceone.core.manager import BaseManager
 from spaceone.core.connector.space_connector import SpaceConnector
 
@@ -22,7 +24,7 @@ class PluginManager(BaseManager):
         upgrade_mode: str = "AUTO",
         version: str = None,
     ) -> Tuple[str, str]:
-        system_token = self.transaction.get_meta("token")
+        system_token = config.get_global("TOKEN")
 
         response = self.plugin_connector.dispatch(
             "Plugin.get_plugin_endpoint",
