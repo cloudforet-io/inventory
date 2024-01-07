@@ -22,24 +22,24 @@ class InventoryHourlyScheduler(HourlyScheduler):
         self._token = config.get_global("TOKEN")
         if self._token is None:
             raise ERROR_CONFIGURATION(key="TOKEN")
-        self._hour = datetime.utcnow().hour
 
     def create_task(self):
+        current_hour = datetime.utcnow().hour
         return [
             self._create_job_request(collector_vo)
-            for collector_vo in self.list_schedule_collectors()
+            for collector_vo in self.list_schedule_collectors(current_hour)
         ]
 
-    def list_schedule_collectors(self):
+    def list_schedule_collectors(self, current_hour: int):
         try:
             collector_svc: CollectorService = self.locator.get_service(
                 CollectorService, {"token": self._token}
             )
             collector_vos, total_count = collector_svc.scheduled_collectors(
-                {"hour": self._hour}
+                {"hour": current_hour}
             )
             _LOGGER.debug(
-                f"[list_schedule_collectors] scheduled collectors count: {total_count}"
+                f"[list_schedule_collectors] scheduled collectors count (UTC {current_hour}): {total_count}"
             )
             return collector_vos
         except Exception as e:
@@ -61,6 +61,10 @@ class InventoryHourlyScheduler(HourlyScheduler):
                 }
             },
         }
+
+        _LOGGER.debug(
+            f"[_create_job_request] tasks: inventory_collect_schedule: {collector_vo.collector_id}"
+        )
 
         return {
             "name": "inventory_collect_schedule",

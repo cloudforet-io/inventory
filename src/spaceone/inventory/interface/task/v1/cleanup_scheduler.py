@@ -25,20 +25,25 @@ class CleanupScheduler(HourlyScheduler):
         self._token = config.get_global("TOKEN")
         if self._token is None:
             raise ERROR_CONFIGURATION(key="TOKEN")
-        self._hour = datetime.utcnow().hour
 
     def create_task(self):
+        current_hour = datetime.utcnow().hour
         return [
             self._create_job_request(domain_info["domain_id"])
-            for domain_info in self.list_domains()
+            for domain_info in self.list_domains(current_hour)
         ]
 
-    def list_domains(self):
+    def list_domains(self, current_hour: int):
         try:
             cleanup_svc: CleanupService = self.locator.get_service(
                 CleanupService, {"token": self._token}
             )
             response = cleanup_svc.list_domains({})
+            total_count = response.get("total_count", 0)
+
+            _LOGGER.debug(
+                f"[list_domains] total domain count (UTC {current_hour}): {total_count}"
+            )
             return response.get("results", [])
 
         except Exception as e:

@@ -80,4 +80,6 @@ class IdentityManager(BaseManager):
 
     def list_domains(self, query: dict) -> dict:
         # For background job, use system token
-        return self.identity_conn.dispatch("Domain.list", {"query": query})
+        return self.identity_conn.dispatch(
+            "Domain.list", {"query": query, "state": "ENABLED"}
+        )
