@@ -26,9 +26,18 @@ class JobManager(BaseManager):
         Returns: job_vo
         """
 
+        request_workspace_id = params.get("workspace_id")
+        changed_request_workspace_id = None
+        if isinstance(request_workspace_id, list):
+            for workspace_id in request_workspace_id:
+                if workspace_id != "*":
+                    changed_request_workspace_id = workspace_id
+        else:
+            changed_request_workspace_id = request_workspace_id
+
         job_params = params.copy()
         job_params["request_secret_id"] = params.get("secret_id")
-        job_params["request_workspace_id"] = params.get("workspace_id")
+        job_params["request_workspace_id"] = changed_request_workspace_id
         job_params["collector"] = collector_vo
         job_params["collector_id"] = collector_vo.collector_id
         job_params["resource_group"] = collector_vo.resource_group
@@ -145,15 +154,27 @@ class JobManager(BaseManager):
         self,
         collector_id: str,
         domain_id: str,
-        reqeust_workspace_id: str = None,
+        request_workspace_id: str = None,
         request_secret_id: str = None,
     ) -> QuerySet:
+        changed_request_workspace_id = None
+        if isinstance(request_workspace_id, list):
+            for workspace_id in request_workspace_id:
+                if workspace_id != "*":
+                    changed_request_workspace_id = workspace_id
+        else:
+            changed_request_workspace_id = request_workspace_id
+
         query = {
             "filter": [
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
                 {"k": "collector_id", "v": collector_id, "o": "eq"},
                 {"k": "status", "v": "IN_PROGRESS", "o": "eq"},
-                {"k": "request_workspace_id", "v": reqeust_workspace_id, "o": "eq"},
+                {
+                    "k": "request_workspace_id",
+                    "v": changed_request_workspace_id,
+                    "o": "eq",
+                },
                 {"k": "request_secret_id", "v": request_secret_id, "o": "eq"},
             ]
         }
