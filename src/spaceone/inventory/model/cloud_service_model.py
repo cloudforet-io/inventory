@@ -91,18 +91,16 @@ class CloudService(MongoModel):
             "ref_region": {"model": Region, "foreign_key": "ref_region"},
         },
         "indexes": [
-            "reference.resource_id",
-            "state",
             {
-                "fields": ["domain_id", "workspace_id", "state", "cloud_service_id"],
+                "fields": ["domain_id", "workspace_id", "state"],
                 "name": "COMPOUND_INDEX_FOR_GC_1",
             },
             {
-                "fields": ["domain_id", "workspace_id", "state", "updated_at"],
+                "fields": ["domain_id", "state", "updated_at"],
                 "name": "COMPOUND_INDEX_FOR_GC_2",
             },
             {
-                "fields": ["domain_id", "workspace_id", "state", "-deleted_at"],
+                "fields": ["domain_id", "state", "-deleted_at"],
                 "name": "COMPOUND_INDEX_FOR_GC_3",
             },
             {
@@ -110,12 +108,12 @@ class CloudService(MongoModel):
                     "domain_id",
                     "workspace_id",
                     "state",
+                    "reference.resource_id",
                     "provider",
                     "cloud_service_group",
                     "cloud_service_type",
-                    "reference.resource_id",
-                    "account",
                     "cloud_service_id",
+                    "account",
                 ],
                 "name": "COMPOUND_INDEX_FOR_COLLECTOR",
             },
@@ -163,28 +161,10 @@ class CloudService(MongoModel):
                 ],
                 "name": "COMPOUND_INDEX_FOR_SEARCH_4",
             },
-            {
-                "fields": [
-                    "domain_id",
-                    "workspace_id",
-                    "state",
-                    "provider",
-                    "cloud_service_group",
-                    "cloud_service_type",
-                    "project_id",
-                    "instance_type",
-                ],
-                "name": "COMPOUND_INDEX_FOR_SEARCH_5",
-            },
-            {
-                "fields": [
-                    "domain_id",
-                    "workspace_id",
-                    "cloud_service_id",
-                    "project_id",
-                ],
-                "name": "COMPOUND_INDEX_FOR_GET",
-            },
+            "reference.resource_id",
+            "state",
+            "workspace_id",
+            "domain_id",
         ],
     }
 

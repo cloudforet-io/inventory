@@ -79,7 +79,6 @@ class JobService(BaseService):
             "job_id",
             "status",
             "collector_id",
-            "secret_id",
             "plugin_id",
             "workspace_id",
             "domain_id",
@@ -95,7 +94,6 @@ class JobService(BaseService):
                 'job_id': 'str',
                 'status': 'str',
                 'collector_id': 'dict',
-                'secret_id': 'str',
                 'plugin_id': 'str',
                 'workspace_id': 'str',      # injected from auth
                 'domain_id  ': 'str',       # injected from auth (required)

@@ -50,5 +50,5 @@ class CloudServiceReport(MongoModel):
             "last_sent_at",
         ],
         "ordering": ["name"],
-        "indexes": ["name", "workspace_id", "domain_id"],
+        "indexes": ["resource_group", "workspace_id", "domain_id"],
     }

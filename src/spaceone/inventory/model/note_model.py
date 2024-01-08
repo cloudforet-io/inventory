@@ -26,16 +26,22 @@ class Note(MongoModel):
         "change_query_keys": {"user_projects": "project_id"},
         "ordering": ["-created_at"],
         "indexes": [
-            "record_id",
-            "cloud_service_id",
-            "created_by",
             {
                 "fields": ["domain_id", "workspace_id", "project_id"],
-                "name": "COMPOUND_INDEX_FOR_SEARCH",
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1",
+            },
+            {
+                "fields": ["domain_id", "cloud_service_id"],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_2",
             },
             {
                 "fields": ["domain_id", "note_id"],
                 "name": "COMPOUND_INDEX_FOR_GET",
             },
+            "record_id",
+            "cloud_service_id",
+            "project_id",
+            "workspace_id",
+            "domain_id",
         ],
     }

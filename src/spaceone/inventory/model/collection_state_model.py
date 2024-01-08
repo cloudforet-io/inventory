@@ -14,7 +14,6 @@ class CollectionState(MongoModel):
     meta = {
         "updatable_fields": ["job_task_id", "disconnected_count", "updated_at"],
         "indexes": [
-            "cloud_service_id",
             {
                 "fields": [
                     "domain_id",
@@ -42,5 +41,6 @@ class CollectionState(MongoModel):
                 ],
                 "name": "COMPOUND_INDEX_FOR_DELETE_3",
             },
+            "cloud_service_id",
         ],
     }

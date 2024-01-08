@@ -16,7 +16,8 @@ class Job(MongoModel):
     success_tasks = IntField(min_value=0, default=0)
     failure_tasks = IntField(min_value=0, default=0)
     collector_id = StringField(max_length=40)
-    secret_id = StringField(max_length=40, null=True, default=None)
+    request_secret_id = StringField(max_length=40, null=True, default=None)
+    request_workspace_id = StringField(max_length=40, null=True, default=None)
     plugin_id = StringField(max_length=40)
     resource_group = StringField(max_length=40, choices=("DOMAIN", "WORKSPACE"))
     workspace_id = StringField(max_length=40)
@@ -47,11 +48,21 @@ class Job(MongoModel):
         "reference_query_keys": {"collector": Collector},
         "ordering": ["-created_at"],
         "indexes": [
+            {
+                "fields": ["domain_id", "collector_id", "status"],
+                "name": "COMPOUND_INDEX_FOR_GC_1",
+            },
+            {
+                "fields": ["domain_id", "-created_at", "status"],
+                "name": "COMPOUND_INDEX_FOR_GC_2",
+            },
+            {
+                "fields": ["domain_id", "workspace_id"],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1",
+            },
             "status",
             "collector_id",
-            "plugin_id",
+            "workspace_id",
             "domain_id",
-            "created_at",
-            "finished_at",
         ],
     }

@@ -27,6 +27,8 @@ class JobManager(BaseManager):
         """
 
         job_params = params.copy()
+        job_params["request_secret_id"] = params.get("secret_id")
+        job_params["request_workspace_id"] = params.get("workspace_id")
         job_params["collector"] = collector_vo
         job_params["collector_id"] = collector_vo.collector_id
         job_params["resource_group"] = collector_vo.resource_group
@@ -129,8 +131,8 @@ class JobManager(BaseManager):
         created_at = datetime.utcnow() - timedelta(hours=job_timeout)
         query = {
             "filter": [
-                {"k": "created_at", "v": created_at, "o": "lt"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
+                {"k": "created_at", "v": created_at, "o": "lt"},
                 {"k": "status", "v": "IN_PROGRESS", "o": "eq"},
             ]
         }
@@ -140,17 +142,19 @@ class JobManager(BaseManager):
             self.make_failure_by_vo(job_vo)
 
     def get_duplicate_jobs(
-        self, collector_id: str, domain_id: str, secret_id: str = None
+        self,
+        collector_id: str,
+        domain_id: str,
+        reqeust_workspace_id: str = None,
+        request_secret_id: str = None,
     ) -> QuerySet:
-        # created_at = datetime.utcnow() - timedelta(minutes=10)
-
         query = {
             "filter": [
-                {"k": "collector_id", "v": collector_id, "o": "eq"},
-                {"k": "secret_id", "v": secret_id, "o": "eq"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
+                {"k": "collector_id", "v": collector_id, "o": "eq"},
                 {"k": "status", "v": "IN_PROGRESS", "o": "eq"},
-                # {"k": "created_at", "v": created_at, "o": "gte"},
+                {"k": "request_workspace_id", "v": reqeust_workspace_id, "o": "eq"},
+                {"k": "request_secret_id", "v": request_secret_id, "o": "eq"},
             ]
         }
 

@@ -53,6 +53,10 @@ class CloudServiceType(MongoModel):
         "ordering": ["provider", "group", "name"],
         "indexes": [
             {
+                "fields": ["domain_id", "-updated_at", "updated_by"],
+                "name": "COMPOUND_INDEX_FOR_GC_1",
+            },
+            {
                 "fields": ["domain_id", "workspace_id", "cloud_service_type_id"],
                 "name": "COMPOUND_INDEX_FOR_SEARCH_1",
             },
@@ -79,5 +83,8 @@ class CloudServiceType(MongoModel):
                 "fields": ["labels", "is_primary", "ref_cloud_service_type"],
                 "name": "COMPOUND_INDEX_FOR_REF_2",
             },
+            "ref_cloud_service_type",
+            "workspace_id",
+            "domain_id",
         ],
     }

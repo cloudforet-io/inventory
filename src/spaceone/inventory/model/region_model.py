@@ -24,11 +24,15 @@ class Region(MongoModel):
         "ordering": ["name"],
         "indexes": [
             {
+                "fields": ["domain_id", "-updated_at", "updated_by"],
+                "name": "COMPOUND_INDEX_FOR_GC_1",
+            },
+            {
                 "fields": ["domain_id", "workspace_id", "region_id"],
                 "name": "COMPOUND_INDEX_FOR_SEARCH_1",
             },
             {
-                "fields": ["domain_id", "workspace_id", "region_code", "provider"],
+                "fields": ["domain_id", "workspace_id", "provider", "region_code"],
                 "name": "COMPOUND_INDEX_FOR_SEARCH_2",
             },
             {
@@ -40,5 +44,8 @@ class Region(MongoModel):
                 "fields": ["region_code", "provider", "ref_region"],
                 "name": "COMPOUND_INDEX_FOR_REF_2",
             },
+            "ref_region",
+            "workspace_id",
+            "domain_id",
         ],
     }
