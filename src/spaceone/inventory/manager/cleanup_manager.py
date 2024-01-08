@@ -34,8 +34,8 @@ class CleanupManager(BaseManager):
         updated_at = datetime.utcnow() - timedelta(hours=hour)
         query = {
             "filter": [
-                {"k": "updated_at", "v": updated_at, "o": "lt"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
+                {"k": "updated_at", "v": updated_at, "o": "lt"},
             ]
         }
 

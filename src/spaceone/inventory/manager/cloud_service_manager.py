@@ -101,6 +101,9 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
         return self.cloud_svc_model.get(**conditions)
 
+    def filter_cloud_services(self, **conditions) -> QuerySet:
+        return self.cloud_svc_model.filter(**conditions)
+
     def list_cloud_services(
         self,
         query: dict,
@@ -112,8 +115,9 @@ class CloudServiceManager(BaseManager, ResourceManager):
             query = self._change_only_tags(query)
             query = self._change_sort_tags(query)
 
-        # Append Query for DELETED filter (Temporary Logic)
-        query = self._append_state_query(query)
+            # Append Query for DELETED filter (Temporary Logic)
+            query = self._append_state_query(query)
+
         return self.cloud_svc_model.query(**query, target=target)
 
     def analyze_cloud_services(
@@ -357,6 +361,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
     def find_resources(self, query: dict) -> Tuple[List[dict], int]:
         query["only"] = ["cloud_service_id"]
+        query["filter"].append({"k": "state", "v": "DELETED", "o": "not"})
 
         resources = []
         cloud_svc_vos, total_count = self.list_cloud_services(
@@ -370,6 +375,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
     def delete_resources(self, query: dict) -> int:
         query["only"] = self.resource_keys
+        query["filter"].append({"k": "state", "v": "DELETED", "o": "not"})
 
         vos, total_count = self.list_cloud_services(query)
 

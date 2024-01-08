@@ -67,13 +67,23 @@ class CloudServiceQuerySet(MongoModel):
             }
         },
         "indexes": [
-            "name",
+            {
+                "fields": [
+                    "domain_id",
+                    "workspace_id",
+                    "provider",
+                    "cloud_service_group",
+                    "cloud_service_type",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1",
+            },
             "state",
             "query_hash",
             "query_type",
             "provider",
             "cloud_service_group",
             "cloud_service_type",
+            "resource_group",
             "workspace_id",
             "domain_id",
         ],

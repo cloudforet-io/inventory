@@ -488,7 +488,7 @@ class CollectorService(BaseService):
         )
 
         duplicated_job_vos = job_mgr.get_duplicate_jobs(
-            collector_id, domain_id, params.get("secret_id")
+            collector_id, domain_id, workspace_id, params.get("secret_id")
         )
 
         for job_vo in duplicated_job_vos:

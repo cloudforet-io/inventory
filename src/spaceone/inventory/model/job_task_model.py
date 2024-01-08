@@ -63,15 +63,27 @@ class JobTask(MongoModel):
         "change_query_keys": {"user_projects": "project_id"},
         "ordering": ["-created_at"],
         "indexes": [
+            {
+                "fields": ["domain_id", "collector_id", "status"],
+                "name": "COMPOUND_INDEX_FOR_GC_1",
+            },
+            {
+                "fields": ["domain_id", "job_id"],
+                "name": "COMPOUND_INDEX_FOR_GC_2",
+            },
+            {
+                "fields": ["domain_id", "-created_at", "status"],
+                "name": "COMPOUND_INDEX_FOR_GC_3",
+            },
+            {
+                "fields": ["domain_id", "workspace_id", "project_id"],
+                "name": "COMPOUND_INDEX_FOR_SEARCH_1",
+            },
             "status",
-            "provider",
             "job_id",
-            "secret_id",
             "collector_id",
-            "service_account_id",
             "project_id",
+            "workspace_id",
             "domain_id",
-            "created_at",
-            "finished_at",
         ],
     }

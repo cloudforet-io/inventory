@@ -48,5 +48,8 @@ class Record(MongoModel):
                 "name": "COMPOUND_INDEX_FOR_SEARCH",
             },
             {"fields": ["domain_id", "record_id"], "name": "COMPOUND_INDEX_FOR_GET"},
+            "collector_id",
+            "job_id",
+            "domain_id",
         ],
     }
