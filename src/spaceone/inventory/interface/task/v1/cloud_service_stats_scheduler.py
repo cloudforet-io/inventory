@@ -53,6 +53,6 @@ class CloudServiceStatsScheduler(HourlyScheduler):
             )
             print(
                 f"{utils.datetime_to_iso8601(datetime.now())} [INFO] "
-                f"[create_task] data_source_sync_time: {self._stats_schedule_hour} hour (UTC)"
+                f"[create_task] query_set_sync_time: {self._stats_schedule_hour} hour (UTC)"
             )
             return []
