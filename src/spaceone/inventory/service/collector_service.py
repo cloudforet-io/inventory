@@ -225,9 +225,9 @@ class CollectorService(BaseService):
 
         endpoint, updated_version = plugin_manager.get_endpoint(
             plugin_info["plugin_id"],
-            plugin_info.get("version"),
-            plugin_info.get("upgrade_mode", "AUTO"),
             domain_id,
+            plugin_info.get("upgrade_mode", "AUTO"),
+            plugin_info.get("version")
         )
 
         collector_vo = self._update_collector_plugin(
