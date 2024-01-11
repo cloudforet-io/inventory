@@ -46,10 +46,13 @@ class CloudServiceQuerySetManager(BaseManager):
                     "name": "CloudServiceQuerySetService",
                     "metadata": {
                         "token": self.transaction.get_meta("token"),
-                        "x_domain_id": domain_id,
                     },
                     "method": "run_query_sets_by_domain",
-                    "params": {"params": {}},
+                    "params": {
+                        "params": {
+                            "domain_id": domain_id,
+                        }
+                    },
                 }
             ],
         }
