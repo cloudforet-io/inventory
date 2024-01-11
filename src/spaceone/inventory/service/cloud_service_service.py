@@ -380,6 +380,7 @@ class CloudServiceService(BaseService):
             "provider",
             "region_code",
             "project_id",
+            "project_group_id",
             "workspace_id",
             "domain_id",
             "user_projects",
@@ -403,6 +404,7 @@ class CloudServiceService(BaseService):
                     'provider': 'str',
                     'region_code': 'str',
                     'project_id': 'str',
+                    'project_group_id': 'str',
                     'workspace_id': 'str',          # injected from auth
                     'domain_id': 'str',             # injected from auth (required)
                     'user_projects': 'list',        # injected from auth
@@ -413,6 +415,7 @@ class CloudServiceService(BaseService):
             total_count (int)
         """
 
+        domain_id = params["domain_id"]
         query = params.get("query", {})
 
         return self.cloud_svc_mgr.list_cloud_services(query, change_filter=True)

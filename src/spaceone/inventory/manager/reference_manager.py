@@ -47,7 +47,7 @@ class ReferenceManager(BaseManager):
 
         query = {"only": ["project_id", "name"]}
 
-        response = identity_mgr.list_projects(query, domain_id)
+        response = identity_mgr.list_projects({"query": query}, domain_id)
         for project_info in response.get("results", []):
             project_id = project_info["project_id"]
             project_name = project_info["name"]
