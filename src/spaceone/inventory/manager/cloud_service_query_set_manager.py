@@ -536,7 +536,10 @@ class CloudServiceQuerySetManager(BaseManager):
         cloud_service_type: str = None,
         workspace_id: str = None,
     ) -> list:
-        _filter = [{"k": "domain_id", "v": domain_id, "o": "eq"}]
+        _filter = [
+            {"k": "domain_id", "v": domain_id, "o": "eq"},
+            {"k": "state", "v": "ACTIVE", "o": "eq"},
+        ]
 
         if provider:
             _filter.append({"k": "provider", "v": provider, "o": "eq"})

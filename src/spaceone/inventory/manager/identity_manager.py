@@ -38,15 +38,27 @@ class IdentityManager(BaseManager):
                 "Project.get", {"project_id": project_id}
             )
 
-    def list_projects(self, query: dict, domain_id: str) -> dict:
+    def list_projects(self, params: dict, domain_id: str) -> dict:
         if self.token_type == "SYSTEM_TOKEN":
             return self.identity_conn.dispatch(
                 "Project.list",
-                {"query": query},
+                params,
                 x_domain_id=domain_id,
             )
         else:
-            return self.identity_conn.dispatch("Project.list", {"query": query})
+            return self.identity_conn.dispatch("Project.list", params)
+
+    @cache.cacheable(key="inventory:projects-in-pg:{project_group_id}", expire=300)
+    def get_projects_in_project_group(self, project_group_id: str):
+        params = {
+            "query": {
+                "only": ["project_id"],
+            },
+            "project_group_id": project_group_id,
+            "include_children": True,
+        }
+
+        return self.identity_conn.dispatch("Project.list", params)
 
     @cache.cacheable(
         key="inventory:project:query:{domain_id}:{query_hash}", expire=3600
@@ -54,7 +66,7 @@ class IdentityManager(BaseManager):
     def list_projects_with_cache(
         self, query: dict, query_hash: str, domain_id: str
     ) -> dict:
-        return self.list_projects(query, domain_id)
+        return self.list_projects({"query": query}, domain_id)
 
     def list_service_accounts(self, query: dict, domain_id: str) -> dict:
         if self.token_type == "SYSTEM_TOKEN":

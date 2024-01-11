@@ -2,17 +2,18 @@ import logging
 import copy
 import math
 import pytz
-from typing import Tuple, Union, List
+from typing import Tuple, List
 from datetime import datetime
 
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.core.manager import BaseManager
 from spaceone.core import utils
-from spaceone.core.error import *
 from spaceone.inventory.model.cloud_service_model import CloudService
 from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.reference_manager import ReferenceManager
+from spaceone.inventory.manager.identity_manager import IdentityManager
+from spaceone.inventory.error import *
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -114,6 +115,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
             query = self._change_filter_tags(query)
             query = self._change_only_tags(query)
             query = self._change_sort_tags(query)
+            query = self._change_filter_project_group_id(query)
 
             # Append Query for DELETED filter (Temporary Logic)
             query = self._append_state_query(query)
@@ -127,18 +129,22 @@ class CloudServiceManager(BaseManager, ResourceManager):
     ):
         if change_filter:
             query = self._change_filter_tags(query)
+            query = self._change_filter_project_group_id(query)
 
-        # Append Query for DELETED filter (Temporary Logic)
-        query = self._append_state_query(query)
+            # Append Query for DELETED filter (Temporary Logic)
+            query = self._append_state_query(query)
+
         return self.cloud_svc_model.analyze(**query)
 
     def stat_cloud_services(self, query: dict, change_filter: bool = False):
         if change_filter:
             query = self._change_filter_tags(query)
             query = self._change_distinct_tags(query)
+            query = self._change_filter_project_group_id(query)
 
-        # Append Query for DELETED filter (Temporary Logic)
-        query = self._append_state_query(query)
+            # Append Query for DELETED filter (Temporary Logic)
+            query = self._append_state_query(query)
+
         return self.cloud_svc_model.stat(**query)
 
     def get_export_query_results(
@@ -412,6 +418,39 @@ class CloudServiceManager(BaseManager, ResourceManager):
             query["filter"] = query.get("filter", [])
             query["filter"].append(state_default_filter)
 
+        return query
+
+    def _change_filter_project_group_id(self, query: dict) -> dict:
+        change_filter = []
+        self.identity_mgr = None
+
+        for condition in query.get("filter", []):
+            key = condition.get("k", condition.get("key"))
+            value = condition.get("v", condition.get("value"))
+            operator = condition.get("o", condition.get("operator"))
+
+            if key == "project_group_id":
+                if operator != "eq":
+                    raise ERROR_NOT_SUPPORT_OPERATOR(
+                        key="project_group_id", supported_operator="eq"
+                    )
+
+                if self.identity_mgr is None:
+                    self.identity_mgr: IdentityManager = self.locator.get_manager(
+                        "IdentityManager"
+                    )
+
+                projects_info = self.identity_mgr.get_projects_in_project_group(value)
+                project_ids = [
+                    project_info["project_id"]
+                    for project_info in projects_info.get("results", [])
+                ]
+                change_filter.append({"k": "project_id", "v": project_ids, "o": "in"})
+
+            else:
+                change_filter.append(condition)
+
+        query["filter"] = change_filter
         return query
 
     def _change_filter_tags(self, query: dict) -> dict:
