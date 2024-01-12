@@ -48,6 +48,12 @@ class IdentityManager(BaseManager):
         else:
             return self.identity_conn.dispatch("Project.list", params)
 
+    def list_project_groups(
+        self,
+        params: dict,
+    ) -> dict:
+        return self.identity_conn.dispatch("ProjectGroup.list", params)
+
     @cache.cacheable(key="inventory:projects-in-pg:{project_group_id}", expire=300)
     def get_projects_in_project_group(self, project_group_id: str):
         params = {

@@ -430,21 +430,39 @@ class CloudServiceManager(BaseManager, ResourceManager):
             operator = condition.get("o", condition.get("operator"))
 
             if key == "project_group_id":
-                if operator != "eq":
-                    raise ERROR_NOT_SUPPORT_OPERATOR(
-                        key="project_group_id", supported_operator="eq"
-                    )
-
                 if self.identity_mgr is None:
                     self.identity_mgr: IdentityManager = self.locator.get_manager(
                         "IdentityManager"
                     )
 
-                projects_info = self.identity_mgr.get_projects_in_project_group(value)
-                project_ids = [
-                    project_info["project_id"]
-                    for project_info in projects_info.get("results", [])
+                project_groups_info = self.identity_mgr.list_project_groups(
+                    {
+                        "query": {
+                            "only": ["project_group_id"],
+                            "filter": [{"k": key, "v": value, "o": operator}],
+                        }
+                    }
+                )
+
+                project_group_ids = [
+                    project_group_info["project_group_id"]
+                    for project_group_info in project_groups_info.get("results", [])
                 ]
+
+                project_ids = []
+
+                for project_group_id in project_group_ids:
+                    projects_info = self.identity_mgr.get_projects_in_project_group(
+                        project_group_id
+                    )
+                    project_ids.extend(
+                        [
+                            project_info["project_id"]
+                            for project_info in projects_info.get("results", [])
+                        ]
+                    )
+
+                project_ids = list(set(project_ids))
                 change_filter.append({"k": "project_id", "v": project_ids, "o": "in"})
 
             else:
