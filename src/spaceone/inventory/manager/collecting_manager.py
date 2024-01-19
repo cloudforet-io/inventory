@@ -32,9 +32,14 @@ class CollectingManager(BaseManager):
                 'plugin_info': 'dict',
                 'task_options': 'dict',
                 'secret_info': 'dict',
-                'secret_data': 'dict'
+                'secret_data': 'dict',
+                'token': 'str'
             }
         """
+
+        # set token to transaction meta
+        token = params["token"]
+        self.transaction.set_meta("token", token)
 
         plugin_manager: PluginManager = self.locator.get_manager(PluginManager)
         collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(
