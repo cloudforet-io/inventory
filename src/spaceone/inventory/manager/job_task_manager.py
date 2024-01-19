@@ -196,10 +196,11 @@ class JobTaskManager(BaseManager):
 
     def create_task_pipeline(self, params: dict) -> dict:
         token = self.transaction.meta.get("token")
+        params["token"] = token
+
         task = {
             "locator": "MANAGER",
             "name": "CollectingManager",
-            "metadata": {"token": token},
             "method": "collecting_resources",
             "params": {"params": params},
         }
