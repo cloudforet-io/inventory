@@ -10,8 +10,6 @@ _LOGGER = logging.getLogger(__name__)
 class IdentityManager(BaseManager):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        token = self.transaction.get_meta("token")
-        self.token_type = JWTUtil.get_value_from_token(token, "typ")
         self.identity_conn: SpaceConnector = self.locator.get_connector(
             "SpaceConnector", service="identity"
         )
@@ -27,7 +25,10 @@ class IdentityManager(BaseManager):
 
     @cache.cacheable(key="inventory:project:{domain_id}:{project_id}", expire=3600)
     def get_project(self, project_id, domain_id) -> dict:
-        if self.token_type == "SYSTEM_TOKEN":
+        token = self.transaction.get_meta("token")
+        token_type = JWTUtil.get_value_from_token(token, "typ")
+
+        if token_type == "SYSTEM_TOKEN":
             return self.identity_conn.dispatch(
                 "Project.get",
                 {"project_id": project_id},
@@ -39,7 +40,10 @@ class IdentityManager(BaseManager):
             )
 
     def list_projects(self, params: dict, domain_id: str) -> dict:
-        if self.token_type == "SYSTEM_TOKEN":
+        token = self.transaction.get_meta("token")
+        token_type = JWTUtil.get_value_from_token(token, "typ")
+
+        if token_type == "SYSTEM_TOKEN":
             return self.identity_conn.dispatch(
                 "Project.list",
                 params,
@@ -51,8 +55,18 @@ class IdentityManager(BaseManager):
     def list_project_groups(
         self,
         params: dict,
+        domain_id: str,
     ) -> dict:
-        return self.identity_conn.dispatch("ProjectGroup.list", params)
+        token = self.transaction.get_meta("token")
+        token_type = JWTUtil.get_value_from_token(token, "typ")
+        if token_type == "SYSTEM_TOKEN":
+            return self.identity_conn.dispatch(
+                "ProjectGroup.list",
+                params,
+                x_domain_id=domain_id,
+            )
+        else:
+            return self.identity_conn.dispatch("ProjectGroup.list", params)
 
     @cache.cacheable(key="inventory:projects-in-pg:{project_group_id}", expire=300)
     def get_projects_in_project_group(self, project_group_id: str):
@@ -75,7 +89,10 @@ class IdentityManager(BaseManager):
         return self.list_projects({"query": query}, domain_id)
 
     def list_service_accounts(self, query: dict, domain_id: str) -> dict:
-        if self.token_type == "SYSTEM_TOKEN":
+        token = self.transaction.get_meta("token")
+        token_type = JWTUtil.get_value_from_token(token, "typ")
+
+        if token_type == "SYSTEM_TOKEN":
             return self.identity_conn.dispatch(
                 "ServiceAccount.list",
                 {"query": query},

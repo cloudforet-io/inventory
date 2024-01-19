@@ -281,7 +281,9 @@ class CloudServiceQuerySetManager(BaseManager):
         _LOGGER.debug(
             f"[run_cloud_service_query_set] Run Analyze Query: {analyze_query}"
         )
-        response = cloud_svc_mgr.analyze_cloud_services(analyze_query)
+        response = cloud_svc_mgr.analyze_cloud_services(
+            analyze_query, change_filter=True, domain_id=domain_id
+        )
         return response.get("results", [])
 
     def _delete_invalid_cloud_service_stats(

@@ -110,12 +110,13 @@ class CloudServiceManager(BaseManager, ResourceManager):
         query: dict,
         target: str = None,
         change_filter: bool = False,
+        domain_id: str = None,
     ) -> Tuple[QuerySet, int]:
         if change_filter:
             query = self._change_filter_tags(query)
             query = self._change_only_tags(query)
             query = self._change_sort_tags(query)
-            query = self._change_filter_project_group_id(query)
+            query = self._change_filter_project_group_id(query, domain_id)
 
             # Append Query for DELETED filter (Temporary Logic)
             query = self._append_state_query(query)
@@ -126,21 +127,24 @@ class CloudServiceManager(BaseManager, ResourceManager):
         self,
         query: dict,
         change_filter: bool = False,
+        domain_id: str = None,
     ):
         if change_filter:
             query = self._change_filter_tags(query)
-            query = self._change_filter_project_group_id(query)
+            query = self._change_filter_project_group_id(query, domain_id)
 
             # Append Query for DELETED filter (Temporary Logic)
             query = self._append_state_query(query)
 
         return self.cloud_svc_model.analyze(**query)
 
-    def stat_cloud_services(self, query: dict, change_filter: bool = False):
+    def stat_cloud_services(
+        self, query: dict, change_filter: bool = False, domain_id: str = None
+    ):
         if change_filter:
             query = self._change_filter_tags(query)
             query = self._change_distinct_tags(query)
-            query = self._change_filter_project_group_id(query)
+            query = self._change_filter_project_group_id(query, domain_id)
 
             # Append Query for DELETED filter (Temporary Logic)
             query = self._append_state_query(query)
@@ -184,7 +188,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
                     user_projects,
                 )
                 export_option["results"] = self._get_analyze_query_results(
-                    export_option["analyze_query"]
+                    export_option["analyze_query"], domain_id
                 )
 
         return options
@@ -259,7 +263,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
         ref_mgr: ReferenceManager,
     ):
         cloud_service_vos, total_count = self.list_cloud_services(
-            query, change_filter=True
+            query, change_filter=True, domain_id=domain_id
         )
         results = []
 
@@ -336,8 +340,10 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
         return results
 
-    def _get_analyze_query_results(self, query: dict):
-        response = self.analyze_cloud_services(query, change_filter=True)
+    def _get_analyze_query_results(self, query: dict, domain_id: str) -> List[dict]:
+        response = self.analyze_cloud_services(
+            query, change_filter=True, domain_id=domain_id
+        )
         return response.get("results", [])
 
     @staticmethod
@@ -420,7 +426,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
 
         return query
 
-    def _change_filter_project_group_id(self, query: dict) -> dict:
+    def _change_filter_project_group_id(self, query: dict, domain_id: str) -> dict:
         change_filter = []
         self.identity_mgr = None
 
@@ -441,7 +447,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
                             "only": ["project_group_id"],
                             "filter": [{"k": key, "v": value, "o": operator}],
                         }
-                    }
+                    },
+                    domain_id,
                 )
 
                 project_group_ids = [
