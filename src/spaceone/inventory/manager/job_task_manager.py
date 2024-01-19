@@ -180,7 +180,7 @@ class JobTaskManager(BaseManager):
             finished_at=datetime.utcnow(),
             collecting_count_info=collecting_count_info,
         )
-        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: CANCLED")
+        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: CANCELED")
 
     @staticmethod
     def delete_job_task_by_vo(job_task_vo: JobTask) -> None:
@@ -201,6 +201,7 @@ class JobTaskManager(BaseManager):
         task = {
             "locator": "MANAGER",
             "name": "CollectingManager",
+            "metadata": {},
             "method": "collecting_resources",
             "params": {"params": params},
         }
