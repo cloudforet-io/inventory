@@ -201,7 +201,9 @@ class JobTaskManager(BaseManager):
         task = {
             "locator": "MANAGER",
             "name": "CollectingManager",
-            "metadata": {},
+            "metadata": {
+                "token": token,
+            },
             "method": "collecting_resources",
             "params": {"params": params},
         }
