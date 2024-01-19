@@ -418,7 +418,9 @@ class CloudServiceService(BaseService):
         domain_id = params["domain_id"]
         query = params.get("query", {})
 
-        return self.cloud_svc_mgr.list_cloud_services(query, change_filter=True)
+        return self.cloud_svc_mgr.list_cloud_services(
+            query, change_filter=True, domain_id=domain_id
+        )
 
     @transaction(
         permission="inventory:CloudService.read",
@@ -486,7 +488,9 @@ class CloudServiceService(BaseService):
         """
 
         query = params.get("query", {})
-        return self.cloud_svc_mgr.analyze_cloud_services(query, change_filter=True)
+        return self.cloud_svc_mgr.analyze_cloud_services(
+            query, change_filter=True, domain_id=params["domain_id"]
+        )
 
     @transaction(
         permission="inventory:CloudService.read",
@@ -512,7 +516,9 @@ class CloudServiceService(BaseService):
 
         query = params.get("query", {})
 
-        return self.cloud_svc_mgr.stat_cloud_services(query, change_filter=True)
+        return self.cloud_svc_mgr.stat_cloud_services(
+            query, change_filter=True, domain_id=params["domain_id"]
+        )
 
     @staticmethod
     def _make_cloud_service_type_key(resource_data: dict) -> str:
