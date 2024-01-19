@@ -43,11 +43,6 @@ class IdentityManager(BaseManager):
         token = self.transaction.get_meta("token")
         token_type = JWTUtil.get_value_from_token(token, "typ")
 
-        print("================")
-        print(token)
-        print(token_type)
-        print("================")
-
         if token_type == "SYSTEM_TOKEN":
             return self.identity_conn.dispatch(
                 "Project.list",
