@@ -7,7 +7,7 @@ class MetadataGenerator:
         self.metadata = metadata
 
     def generate_metadata(self) -> dict:
-        search_meta, table_meta, tabs_meta = self._separate_metadata()
+        query_sets_meta, search_meta, table_meta, tabs_meta = self._separate_metadata()
 
         metadata = {
             "view": {
@@ -17,11 +17,15 @@ class MetadataGenerator:
             }
         }
 
+        if query_sets_meta:
+            metadata["query_sets"] = query_sets_meta
+
         return metadata
 
     def _separate_metadata(self):
         old_metadata_keys = list(self.metadata.keys())
 
+        query_sets_meta = self.metadata.get("query_sets", {})
         search_meta = self.metadata.get("search", {})
         table_meta = self.metadata.get("table", {})
 
@@ -32,7 +36,7 @@ class MetadataGenerator:
                 tabs_meta[index] = self.metadata[key]
 
         tabs_meta = sorted(tabs_meta.items())
-        return search_meta, table_meta, tabs_meta
+        return query_sets_meta, search_meta, table_meta, tabs_meta
 
     def _generate_search(self, search_meta: dict) -> list:
         return self._generate_fields(search_meta["fields"])
