@@ -169,8 +169,13 @@ class ExportManager(BaseManager):
         }
 
         if workspace_id:
-            params["resource_group"] = "WORKSPACE"
+            role_type = self.transaction.get_meta("role_type")
             params["workspace_id"] = workspace_id
+
+            if role_type == "WORKSPACE_OWNER":
+                params["resource_group"] = "WORKSPACE"
+            else:
+                params["resource_group"] = "PROJECT"
 
         file_info = file_mgr.add_file(params, domain_id)
 
