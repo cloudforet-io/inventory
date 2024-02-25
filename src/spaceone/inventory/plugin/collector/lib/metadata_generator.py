@@ -113,6 +113,12 @@ class MetadataGenerator:
                 dynamic_view["options"]["layouts"][0]["options"][
                     "fields"
                 ] = self._generate_fields(tab_meta["fields"])
+
+                if "root_path" in tab_meta:
+                    dynamic_view["options"]["layouts"][0]["options"][
+                        "root_path"
+                    ] = tab_meta["root_path"]
+
                 new_tabs_metadata.append(dynamic_view)
         return {"layouts": new_tabs_metadata}
 
@@ -180,11 +186,17 @@ class MetadataGenerator:
         if "label" not in field:
             field["type"] = "text"
 
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
+
         return TextField(**field).dict(exclude_none=True)
 
     def _generate_dict_field(self, field: dict) -> dict:
         if "key" not in field:
             field = self._add_key_name_fields(field)
+
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
 
         return DictField(**field).dict(exclude_none=True)
 
@@ -198,6 +210,9 @@ class MetadataGenerator:
         if "source_unit" in field:
             field = self._add_options_field(field, "source_unit")
 
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
+
         return SizeField(**field).dict(exclude_none=True)
 
     def _generate_progress_field(self, field: dict) -> dict:
@@ -206,6 +221,9 @@ class MetadataGenerator:
 
         if "unit" in field:
             field = self._add_options_field(field, "unit")
+
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
 
         return ProgressField(**field).dict(exclude_none=True)
 
@@ -222,6 +240,9 @@ class MetadataGenerator:
 
         if "display_format" in field:
             field = self._add_options_field(field, "display_format")
+
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
 
         if not is_enum:
             return DatetimeField(**field).dict(exclude_none=True)
@@ -252,6 +273,9 @@ class MetadataGenerator:
                 change_field_name="color",
             )
 
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
+
         if not is_enum:
             return StateField(**field).dict(exclude_none=True)
         else:
@@ -274,6 +298,9 @@ class MetadataGenerator:
         if "background_color" in field:
             field = self._add_options_field(field, "background_color")
 
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
+
         if not is_enum:
             return BadgeField(**field).dict(exclude_none=True)
         else:
@@ -293,6 +320,9 @@ class MetadataGenerator:
         if "image_url" in field:
             field = self._add_options_field(field, "image_url")
 
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
+
         if not is_enum:
             return ImageField(**field).dict(exclude_none=True)
         else:
@@ -301,6 +331,9 @@ class MetadataGenerator:
     def _generate_enum_field(self, field: dict) -> dict:
         if "key" not in field:
             field = self._add_key_name_fields(field)
+
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
 
         if "enums" in field:
             enable_enum_options = [
@@ -352,8 +385,11 @@ class MetadataGenerator:
                     enums[main_key] = self._generate_datetime_field(
                         field=enum, is_enum=True
                     )
+            if "options" in field:
+                field["options"].update(enums)
+            else:
+                field["options"] = enums
 
-            field["options"] = enums
             del field["enums"]
 
         return EnumField(**field).dict(exclude_none=True)
