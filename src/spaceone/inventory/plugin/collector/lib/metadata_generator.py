@@ -102,22 +102,15 @@ class MetadataGenerator:
             # generate single dynamic view
             elif "fields" in tab_meta:
                 dynamic_view = self._generate_default_dynamic_view(
-                    name=tab_meta["name"], view_type="list"
+                    name=tab_meta["name"], view_type=tab_meta["type"]
                 )
-                dynamic_view["options"]["layouts"] = []
-                dynamic_view["options"]["layouts"].append(
-                    self._generate_default_dynamic_view(
-                        name="", view_type=tab_meta["type"]
-                    )
+
+                dynamic_view["options"]["fields"] = self._generate_fields(
+                    tab_meta["fields"]
                 )
-                dynamic_view["options"]["layouts"][0]["options"][
-                    "fields"
-                ] = self._generate_fields(tab_meta["fields"])
 
                 if "root_path" in tab_meta:
-                    dynamic_view["options"]["layouts"][0]["options"][
-                        "root_path"
-                    ] = tab_meta["root_path"]
+                    dynamic_view["options"]["root_path"] = tab_meta["root_path"]
 
                 new_tabs_metadata.append(dynamic_view)
         return {"layouts": new_tabs_metadata}
