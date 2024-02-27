@@ -8,11 +8,12 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class JobService(BaseService):
+    resource = "Job"
 
     @transaction
     @convert_model
     def get_tasks(self, params: JobGetTaskRequest) -> TasksResponse:
-        """ Get job tasks
+        """Get job tasks
 
         Args:
             params (JobGetTaskRequest): {
@@ -28,6 +29,6 @@ class JobService(BaseService):
 
         """
 
-        func = self.get_plugin_method('get_tasks')
+        func = self.get_plugin_method("get_tasks")
         response = func(params.dict())
         return TasksResponse(**response)
