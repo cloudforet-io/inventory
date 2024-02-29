@@ -416,7 +416,8 @@ class MetadataGenerator:
 
         if "popup_type" in field:
             field["options"]["layout"]["options"] = {
-                "layout": {"type": field["popup_type"]}
+                "type": "popup",
+                "layout": {"type": field["popup_type"]},
             }
             del field["popup_type"]
 
