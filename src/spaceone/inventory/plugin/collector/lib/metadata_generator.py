@@ -369,7 +369,7 @@ class MetadataGenerator:
                     )
 
                 elif enum["type"] == "state":
-                    enum["text_color"] = enum[main_key]
+                    enum["icon_color"] = enum[main_key]
                     del enum[main_key]
                     enums[main_key] = self._generate_state_field(
                         field=enum, is_enum=True
@@ -401,10 +401,6 @@ class MetadataGenerator:
         if "key" not in field:
             field = self._add_key_name_fields(field)
 
-        if "popup_key" in field:
-            field["options"] = {"sub_key": field["popup_key"]}
-            del field["popup_key"]
-
         if "popup_name" in field:
             field = self._add_options_field(
                 field=field,
@@ -425,6 +421,20 @@ class MetadataGenerator:
                 "fields": self._generate_fields(field["popup_fields"])
             }
             del field["popup_fields"]
+
+            inner_popup_items = field["options"]["layout"]["options"]["layout"]
+
+            if "popup_key" in field and inner_popup_items["type"] in [
+                "simple-table",
+                "table",
+                "search-query-table",
+            ]:
+                inner_popup_items["options"]["root_path"] = field["popup_key"]
+                del field["popup_key"]
+
+            else:
+                field["options"] = {"sub_key": field["popup_key"]}
+                del field["popup_key"]
 
         return MoreField(**field).dict(exclude_none=True)
 
