@@ -369,7 +369,7 @@ class MetadataGenerator:
                     )
 
                 elif enum["type"] == "state":
-                    enum["text_color"] = enum[main_key]
+                    enum["icon_color"] = enum[main_key]
                     del enum[main_key]
                     enums[main_key] = self._generate_state_field(
                         field=enum, is_enum=True
