@@ -227,7 +227,7 @@ class CollectorService(BaseService):
             plugin_info["plugin_id"],
             domain_id,
             plugin_info.get("upgrade_mode", "AUTO"),
-            plugin_info.get("version")
+            plugin_info.get("version"),
         )
 
         collector_vo = self._update_collector_plugin(
@@ -561,7 +561,7 @@ class CollectorService(BaseService):
         )
 
         for secret_id in secret_ids:
-            secret_info = secret_mgr.get_secret(secret_id, domain_id)
+            secret_info = secret_mgr.get_secret(secret_id)
             secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
 
             _task = {
@@ -573,7 +573,9 @@ class CollectorService(BaseService):
 
             try:
                 response = collector_plugin_mgr.get_tasks(
-                    endpoint, secret_data, plugin_info.get("options", {})
+                    endpoint,
+                    secret_data.get("data", {}),
+                    plugin_info.get("options", {}),
                 )
                 _LOGGER.debug(f"[get_tasks] response: {response}")
 
