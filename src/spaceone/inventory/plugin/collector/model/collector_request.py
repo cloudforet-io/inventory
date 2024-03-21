@@ -1,7 +1,7 @@
 from typing import Union
 from pydantic import BaseModel
 
-__all__ = ['CollectorInitRequest', 'CollectorVerifyRequest', 'CollectorCollectRequest']
+__all__ = ["CollectorInitRequest", "CollectorVerifyRequest", "CollectorCollectRequest"]
 
 
 class CollectorInitRequest(BaseModel):
@@ -19,3 +19,4 @@ class CollectorCollectRequest(BaseModel):
     options: dict
     secret_data: dict
     domain_id: Union[str, None] = None
+    task_options: dict
