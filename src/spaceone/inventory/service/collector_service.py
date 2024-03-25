@@ -561,7 +561,7 @@ class CollectorService(BaseService):
         )
 
         for secret_id in secret_ids:
-            secret_info = secret_mgr.get_secret(secret_id)
+            secret_info = secret_mgr.get_secret(secret_id, domain_id)
             secret_data = secret_mgr.get_secret_data(secret_id, domain_id)
 
             _task = {
