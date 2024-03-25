@@ -71,6 +71,7 @@ class CollectorService(BaseService):
                 'options': 'dict',      # Required
                 'secret_data': 'dict',  # Required
                 'schema': 'str',
+                'task_options': 'dict',
                 'domain_id': 'str'
             }
 

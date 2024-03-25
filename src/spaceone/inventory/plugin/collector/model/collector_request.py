@@ -19,4 +19,4 @@ class CollectorCollectRequest(BaseModel):
     options: dict
     secret_data: dict
     domain_id: Union[str, None] = None
-    task_options: dict
+    task_options: Union[dict, None] = None
