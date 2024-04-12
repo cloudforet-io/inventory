@@ -18,28 +18,32 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='spaceone-inventory',
-    version=os.environ.get('PACKAGE_VERSION'),
-    description='SpaceONE inventory service',
-    long_description='',
-    url='https://www.spaceone.dev/',
-    author='MEGAZONE SpaceONE Team',
-    author_email='admin@spaceone.dev',
-    license='Apache License 2.0',
+    name="spaceone-inventory",
+    version=os.environ.get("PACKAGE_VERSION"),
+    description="SpaceONE inventory service",
+    long_description="",
+    url="https://www.spaceone.dev/",
+    author="MEGAZONE SpaceONE Team",
+    author_email="admin@spaceone.dev",
+    license="Apache License 2.0",
     packages=find_packages(),
     install_requires=[
-        'spaceone-core',
-        'spaceone-api',
-        'langcodes',
-        'ipaddress',
-        'fakeredis',
-        'pandas',
-        'jinja2',
-        'openpyxl',
-        'pytz'
+        "spaceone-core",
+        "spaceone-api",
+        "langcodes",
+        "ipaddress",
+        "fakeredis",
+        "pandas",
+        "jinja2",
+        "openpyxl",
+        "pytz",
     ],
     package_data={
-        'spaceone': ['inventory/template/*.html']
+        "spaceone": [
+            "inventory/template/*.html",
+            "inventory/managed_resource/namespace/*.yaml",
+            "inventory/managed_resource/metric/*.yaml",
+        ]
     },
     zip_safe=False,
 )

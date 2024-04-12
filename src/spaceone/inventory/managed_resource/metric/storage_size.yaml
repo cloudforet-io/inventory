@@ -1,0 +1,26 @@
+---
+metric_id: metric-managed-storage-size
+name: Storage Size
+metric_type: GAUGE
+resource_type: inventory.CloudService
+query_options:
+  group_by:
+    - region_code
+    - cloud_service_type
+    - cloud_service_group
+    - provider
+    - account
+  fields:
+    value:
+      key: instance_size
+      operator: sum
+  filter:
+    - key: ref_cloud_service_type.labels
+      value: Storage
+      operator: eq
+    - key: ref_cloud_service_type.is_primary
+      value: True
+      operator: eq
+unit: Count
+namespace_id: ns-managed-asset-summary
+version: '1.0'

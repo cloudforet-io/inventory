@@ -1,0 +1,5 @@
+---
+namespace_id: ns-managed-job-history
+name: Job/History
+category: COMMON
+version: '1.0'

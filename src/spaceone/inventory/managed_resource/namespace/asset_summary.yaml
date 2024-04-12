@@ -1,0 +1,5 @@
+---
+namespace_id: ns-managed-asset-summary
+name: Asset/Summary
+category: COMMON
+version: '1.0'
