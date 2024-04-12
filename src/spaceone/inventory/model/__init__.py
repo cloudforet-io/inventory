@@ -16,3 +16,10 @@ from spaceone.inventory.model.reference_resource_model import ReferenceResource
 from spaceone.inventory.model.record_model import Record
 from spaceone.inventory.model.note_model import Note
 from spaceone.inventory.model.collector_rule_model import CollectorRule
+from spaceone.inventory.model.namespace.database import Namespace
+from spaceone.inventory.model.metric.database import Metric
+from spaceone.inventory.model.metric_data.database import (
+    MetricData,
+    MonthlyMetricData,
+    MetricDataQueryHistory,
+)
