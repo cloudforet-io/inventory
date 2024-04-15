@@ -2,28 +2,34 @@ from typing import List, Union
 from enum import Enum
 from pydantic import BaseModel
 from spaceone.inventory.plugin.collector.model.cloud_service import CloudService
-from spaceone.inventory.plugin.collector.model.cloud_service_type import CloudServiceType
+from spaceone.inventory.plugin.collector.model.cloud_service_type import (
+    CloudServiceType,
+)
 from spaceone.inventory.plugin.collector.model.region import Region
 
-__all__ = ['PluginResponse', 'ResourceResponse']
+__all__ = ["PluginResponse", "ResourceResponse"]
 
 
 class State(str, Enum):
-    success = 'SUCCESS'
-    failure = 'FAILURE'
+    success = "SUCCESS"
+    failure = "FAILURE"
 
 
 class ResourceType(str, Enum):
-    cloud_service = 'inventory.CloudService'
-    cloud_service_type = 'inventory.CloudServiceType'
-    region = 'inventory.Region'
-    error = 'inventory.ErrorResource'
+    cloud_service = "inventory.CloudService"
+    cloud_service_type = "inventory.CloudServiceType"
+    region = "inventory.Region"
+    error = "inventory.ErrorResource"
 
 
 class PluginMetadata(BaseModel):
-    supported_resource_type: List[str] = ['inventory.CloudService', 'inventory.CloudServiceType', 'inventory.Region']
-    supported_schedules: List[str] = ['hours']
-    supported_features: List[str] = ['garbage_collection']
+    supported_resource_type: List[str] = [
+        "inventory.CloudService",
+        "inventory.CloudServiceType",
+        "inventory.Region",
+    ]
+    supported_schedules: List[str] = ["hours"]
+    supported_features: List[str] = ["garbage_collection"]
     filter_format: List[str] = []
     options_schema: dict = {}
 
@@ -37,9 +43,10 @@ class ResourceResponse(BaseModel):
     resource_type: ResourceType
     cloud_service_type: CloudServiceType = None
     cloud_service: CloudService = None
+    error_data: dict = {}
     region: Region = None
     match_keys: List[List[str]] = []
-    error_message: str = ''
+    error_message: str = ""
 
     class Config:
         use_enum_values = True
