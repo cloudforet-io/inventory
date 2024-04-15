@@ -1,6 +1,7 @@
 import logging
 from typing import Tuple
 from datetime import datetime, timedelta
+from spaceone.core import cache
 from spaceone.core.manager import BaseManager
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.error import *
@@ -96,6 +97,7 @@ class JobManager(BaseManager):
             if job_vo.mark_error:
                 self.make_failure_by_vo(job_vo)
             else:
+                self._delete_metric_cache(job_vo)
                 self.make_success_by_vo(job_vo)
 
         if job_vo.remained_tasks < 0:
@@ -106,35 +108,9 @@ class JobManager(BaseManager):
 
         return job_vo
 
-    def add_error(
-        self,
-        job_id: str,
-        domain_id: str,
-        error_code: str,
-        error_message: str,
-        additional: dict = None,
-    ) -> Job:
-        """
-        Args:
-            job_id: str
-            domain_id: str
-            error_code: str
-            error_message: str
-            additional: dict
-
-        Returns:
-            job_vo: Job
-        """
-
-        if additional:
-            error_message += f" ({additional})"
-
-        _LOGGER.error(f"[add_error] Job Error({job_id}): {error_code} {error_message}")
-
-        job_vo = self.get_job(job_id, domain_id)
-        self.mark_error_by_vo(job_vo)
-
-        return job_vo
+    @staticmethod
+    def _delete_metric_cache(job_vo: Job) -> None:
+        cache.delete_pattern(f"inventory:managed-metric:{job_vo.domain_id}:*:load")
 
     def update_job_timeout_by_hour(self, job_timeout: int, domain_id: str) -> None:
         created_at = datetime.utcnow() - timedelta(hours=job_timeout)

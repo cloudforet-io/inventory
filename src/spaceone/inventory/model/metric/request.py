@@ -52,6 +52,7 @@ class MetricRunRequest(BaseModel):
 
 class MetricTestRequest(BaseModel):
     metric_id: str
+    query_options: Union[dict, None] = None
     workspace_id: str
     domain_id: str
 

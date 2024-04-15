@@ -173,6 +173,7 @@ class MetricService(BaseService):
         Args:
             params (dict): {
                 'metric_id': 'str',             # required
+                'query_options': 'dict',
                 'workspace_id': 'str',          # injected from auth (required)
                 'domain_id': 'str',             # injected from auth (required)
             }
@@ -190,8 +191,13 @@ class MetricService(BaseService):
             params.workspace_id,
         )
 
+        if params.query_options:
+            query_options = params.query_options
+        else:
+            query_options = metric_vo.query_options
+
         results = self.metric_mgr.analyze_resource(
-            metric_vo.query_options,
+            query_options,
             metric_vo.resource_type,
             params.domain_id,
             params.workspace_id,
