@@ -86,6 +86,22 @@ class MetricManager(BaseManager):
     def stat_metrics(self, query: dict) -> dict:
         return self.metric_model.stat(**query)
 
+    def check_and_run_metric_query(
+        self, metric_id: str, domain_id: str, workspace_id: str = None
+    ):
+        metric_vo = self.get_metric(metric_id, domain_id, workspace_id)
+        resource_type = metric_vo.resource_type
+
+        is_managed_metric_load: bool = cache.get(
+            f"inventory:managed-metric:{domain_id}:{metric_id}:load"
+        )
+        # is_provider_metric_load: bool = cache.get(
+        #     f"inventory:plugin-metric:{domain_id}:{resource_type}:{metric_id}:load"
+        # )
+
+        if not is_managed_metric_load:
+            self.run_metric_query(metric_vo, workspace_id)
+
     def run_metric_query(self, metric_vo: Metric, workspace_id: str = None) -> None:
         query_options = metric_vo.query_options
         resource_type = metric_vo.resource_type
@@ -119,6 +135,13 @@ class MetricManager(BaseManager):
         self._delete_old_metric_data(metric_vo)
         self._remove_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
 
+        if metric_vo.is_managed:
+            cache.set(
+                f"inventory:managed-metric:{domain_id}:{metric_vo.metric_id}:load",
+                True,
+                expire=3600 * 24,
+            )
+
     def analyze_resource(
         self, query: dict, resource_type: str, domain_id: str, workspace_id: str = None
     ) -> list:
@@ -130,11 +153,12 @@ class MetricManager(BaseManager):
     @staticmethod
     def _analyze_cloud_service(query: dict, domain_id: str, workspace_id: str) -> list:
         analyze_query = copy.deepcopy(query)
-        analyze_query["group_by"] += [
+        analyze_query["group_by"] = analyze_query.get("group_by", []) + [
             "project_id",
             "workspace_id",
             "domain_id",
         ]
+
         analyze_query["group_by"] = list(set(analyze_query["group_by"]))
 
         if workspace_id:

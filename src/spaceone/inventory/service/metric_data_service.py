@@ -7,6 +7,7 @@ from spaceone.core.error import *
 
 from spaceone.inventory.model.metric_data.request import *
 from spaceone.inventory.model.metric_data.response import *
+from spaceone.inventory.manager.metric_manager import MetricManager
 from spaceone.inventory.manager.metric_data_manager import MetricDataManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -21,6 +22,7 @@ class MetricDataService(BaseService):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.metric_mgr = MetricManager()
         self.metric_data_mgr = MetricDataManager()
 
     @transaction(
@@ -57,7 +59,14 @@ class MetricDataService(BaseService):
             MetricDataResponse:
         """
 
+        metric_id = params.metric_id
+        domain_id = params.domain_id
         query = params.query or {}
+
+        self.metric_mgr.check_and_run_metric_query(
+            metric_id, domain_id, params.workspace_id
+        )
+
         metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(query)
 
         metric_datas_info = [
@@ -95,6 +104,10 @@ class MetricDataService(BaseService):
         metric_id = params.metric_id
         query = params.query or {}
 
+        self.metric_mgr.check_and_run_metric_query(
+            metric_id, domain_id, params.workspace_id
+        )
+
         return self.metric_data_mgr.analyze_metric_data_by_granularity(
             query, domain_id, metric_id
         )
@@ -125,6 +138,7 @@ class MetricDataService(BaseService):
         """
 
         query = params.query or {}
+
         return self.metric_data_mgr.stat_metric_data(query)
 
     @staticmethod
