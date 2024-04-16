@@ -1,7 +1,5 @@
 import logging
 import json
-import sys
-import traceback
 
 from spaceone.core.error import *
 from spaceone.inventory.plugin.collector.error.response import ERROR_INVALID_PARAMETER
@@ -141,12 +139,9 @@ def make_error_response(
         error_message = json.dumps(error)
     else:
         error_message = str(error)
-    ex_type, ex_value, ex_traceback = sys.exc_info()
-    trace_back = traceback.extract_tb(ex_traceback)
-    error_message = f"{error_message} {str(trace_back[0])}"
 
     _LOGGER.error(
-        f"[error_response] {cloud_service_group} / {cloud_service_type} : {error_message}",
+        f"[error_response] {cloud_service_group} / {cloud_service_type}",
         exc_info=True,
     )
     return {
