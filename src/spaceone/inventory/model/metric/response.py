@@ -13,6 +13,7 @@ class MetricResponse(BaseModel):
     metric_type: Union[MetricType, None] = None
     resource_type: Union[str, None] = None
     query_options: Union[dict, None] = None
+    date_field: Union[str, None] = None
     unit: Union[str, None] = None
     tags: Union[dict, None] = None
     label_keys: Union[List[str], None] = None

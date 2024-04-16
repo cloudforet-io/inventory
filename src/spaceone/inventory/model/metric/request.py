@@ -21,6 +21,7 @@ class MetricCreateRequest(BaseModel):
     data_type: MetricType
     resource_type: str
     query_options: dict
+    date_field: Union[str, None] = None
     unit: Union[str, None] = None
     tags: Union[dict, None] = {}
     namespace_id: str
@@ -32,6 +33,7 @@ class MetricUpdateRequest(BaseModel):
     metric_id: str
     name: Union[str, None] = None
     query_options: Union[dict, None] = None
+    date_field: Union[str, None] = None
     unit: Union[str, None] = None
     tags: Union[dict, None] = None
     workspace_id: str

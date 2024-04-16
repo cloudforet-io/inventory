@@ -37,6 +37,9 @@ DELETE_EXCLUDE_DOMAINS = []
 # Cloud Service Stats Schedule Settings
 STATS_SCHEDULE_HOUR = 15  # Hour (UTC)
 
+# Metric Settings
+METRIC_SCHEDULE_HOUR = 0  # Hour (UTC)
+
 # Handler Settings
 HANDLERS = {
     # "authentication": [{

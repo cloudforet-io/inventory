@@ -49,15 +49,10 @@ class MetricService(BaseService):
             MetricResponse:
         """
 
-        query_options = params.query_options
-        resource_type = params.resource_type
-        domain_id = params.domain_id
-        workspace_id = params.workspace_id
-
-        self.metric_mgr.analyze_resource(
-            query_options, resource_type, domain_id, workspace_id
-        )
         metric_vo = self.metric_mgr.create_metric(params.dict())
+
+        self.metric_mgr.analyze_resource(metric_vo, params.workspace_id)
+
         return MetricResponse(**metric_vo.to_dict())
 
     @transaction(
@@ -93,10 +88,8 @@ class MetricService(BaseService):
             raise ERROR_PERMISSION_DENIED()
 
         if params.query_options:
-            query_options = params.query_options
-            resource_type = metric_vo.resource_type
             self.metric_mgr.analyze_resource(
-                query_options, resource_type, params.domain_id, params.workspace_id
+                metric_vo, params.workspace_id, params.query_options
             )
 
         metric_vo = self.metric_mgr.update_metric_by_vo(
@@ -191,16 +184,8 @@ class MetricService(BaseService):
             params.workspace_id,
         )
 
-        if params.query_options:
-            query_options = params.query_options
-        else:
-            query_options = metric_vo.query_options
-
         results = self.metric_mgr.analyze_resource(
-            query_options,
-            metric_vo.resource_type,
-            params.domain_id,
-            params.workspace_id,
+            metric_vo, params.workspace_id, params.query_options
         )
 
         return {"results": results, "more": False}
