@@ -8,6 +8,7 @@ class Metric(MongoModel):
     metric_type = StringField(max_length=40, choices=["COUNTER", "GAUGE"])
     resource_type = StringField()
     query_options = DictField(required=True, default=None)
+    date_field = StringField(default=None)
     unit = StringField(default=None)
     tags = DictField(default=None)
     label_keys = ListField(StringField())
@@ -23,6 +24,7 @@ class Metric(MongoModel):
         "updatable_fields": [
             "name",
             "query_options",
+            "date_field",
             "unit",
             "tags",
         ],

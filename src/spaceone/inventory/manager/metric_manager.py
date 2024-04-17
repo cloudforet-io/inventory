@@ -4,6 +4,7 @@ from typing import Tuple
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
+from spaceone.core import config
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.core.manager import BaseManager
 from spaceone.core import utils, cache
@@ -102,16 +103,19 @@ class MetricManager(BaseManager):
         if not is_managed_metric_load:
             self.run_metric_query(metric_vo, workspace_id)
 
-    def run_metric_query(self, metric_vo: Metric, workspace_id: str = None) -> None:
-        query_options = metric_vo.query_options
-        resource_type = metric_vo.resource_type
+    def run_metric_query(
+        self, metric_vo: Metric, workspace_id: str = None, is_yesterday: bool = False
+    ) -> None:
         domain_id = metric_vo.domain_id
 
         results = self.analyze_resource(
-            query_options, resource_type, domain_id, workspace_id
+            metric_vo, workspace_id, is_yesterday=is_yesterday
         )
 
         created_at = datetime.utcnow()
+
+        if is_yesterday:
+            created_at = created_at - relativedelta(days=1)
 
         try:
             for result in results:
@@ -143,38 +147,74 @@ class MetricManager(BaseManager):
             )
 
     def analyze_resource(
-        self, query: dict, resource_type: str, domain_id: str, workspace_id: str = None
+        self,
+        metric_vo: Metric,
+        workspace_id: str = None,
+        query_options: dict = None,
+        is_yesterday: bool = False,
     ) -> list:
-        if resource_type == "inventory.CloudService":
+        resource_type = metric_vo.resource_type
+        domain_id = metric_vo.domain_id
+        query = query_options or metric_vo.query_options
+        query = copy.deepcopy(query)
+        metric_type = metric_vo.metric_type
+        date_field = metric_vo.date_field
+
+        if metric_type == "COUNTER":
+            query = self._append_datetime_filter(query, date_field=date_field)
+
+        if metric_vo.resource_type == "inventory.CloudService":
             return self._analyze_cloud_service(query, domain_id, workspace_id)
         else:
             raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
 
     @staticmethod
+    def _append_datetime_filter(
+        query: dict,
+        date_field: str = "created_at",
+        is_yesterday: bool = False,
+    ) -> dict:
+        scheduler_hour = config.get_global("METRIC_SCHEDULE_HOUR", 0)
+        end = datetime.utcnow().replace(
+            hour=scheduler_hour, minute=0, second=0, microsecond=0
+        )
+
+        if is_yesterday:
+            end = end - relativedelta(days=1)
+
+        start = end - relativedelta(days=1)
+
+        query["filter"] = query.get("filter", [])
+        query["filter"].extend(
+            [
+                {"k": date_field, "v": start, "o": "gte"},
+                {"k": date_field, "v": end, "o": "lt"},
+            ]
+        )
+        return query
+
+    @staticmethod
     def _analyze_cloud_service(query: dict, domain_id: str, workspace_id: str) -> list:
-        analyze_query = copy.deepcopy(query)
-        analyze_query["group_by"] = analyze_query.get("group_by", []) + [
+        query["group_by"] = query.get("group_by", []) + [
             "project_id",
             "workspace_id",
             "domain_id",
         ]
 
-        analyze_query["group_by"] = list(set(analyze_query["group_by"]))
+        query["group_by"] = list(set(query["group_by"]))
 
         if workspace_id:
-            analyze_query["filter"] = analyze_query.get("filter", [])
-            analyze_query["filter"].append(
-                {"k": "workspace_id", "v": workspace_id, "o": "eq"}
-            )
+            query["filter"] = query.get("filter", [])
+            query["filter"].append({"k": "workspace_id", "v": workspace_id, "o": "eq"})
 
-        if "select" in analyze_query:
+        if "select" in query:
             for group_by_key in ["project_id", "workspace_id", "domain_id"]:
-                analyze_query["select"][group_by_key] = group_by_key
+                query["select"][group_by_key] = group_by_key
 
-        _LOGGER.debug(f"[_analyze_cloud_service] Analyze Query: {analyze_query}")
+        _LOGGER.debug(f"[_analyze_cloud_service] Analyze Query: {query}")
         cloud_svc_mgr = CloudServiceManager()
         response = cloud_svc_mgr.analyze_cloud_services(
-            analyze_query, change_filter=True, domain_id=domain_id
+            query, change_filter=True, domain_id=domain_id
         )
         return response.get("results", [])
 

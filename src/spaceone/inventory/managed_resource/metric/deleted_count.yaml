@@ -17,15 +17,10 @@ query_options:
     - key: ref_cloud_service_type.is_primary
       value: True
       operator: eq
-    - key: deleted_at
-      value: now/d - 1d
-      operator: timediff_gte
-    - key: deleted_at
-      value: now/d
-      operator: timediff_lt
     - key: state
       value: DELETED
       operator: eq
+date_field: deleted_at
 unit: Count
 namespace_id: ns-managed-asset-summary
 version: '1.0'
