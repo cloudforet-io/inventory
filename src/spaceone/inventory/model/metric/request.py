@@ -18,7 +18,7 @@ MetricType = Literal["COUNTER", "GAUGE"]
 class MetricCreateRequest(BaseModel):
     metric_id: Union[str, None] = None
     name: str
-    data_type: MetricType
+    metric_type: MetricType
     resource_type: str
     query_options: dict
     date_field: Union[str, None] = None

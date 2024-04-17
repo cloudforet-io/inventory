@@ -21,6 +21,6 @@ query_options:
     - key: ref_cloud_service_type.is_primary
       value: True
       operator: eq
-unit: Count
+unit: Bytes
 namespace_id: ns-managed-asset-summary
 version: '1.0'
