@@ -11,6 +11,7 @@ from spaceone.core import utils, cache
 from spaceone.inventory.error.metric import (
     ERROR_NOT_SUPPORT_RESOURCE_TYPE,
     ERROR_METRIC_QUERY_RUN_FAILED,
+    ERROR_WRONG_QUERY_OPTIONS,
 )
 from spaceone.inventory.model.metric.database import Metric
 from spaceone.inventory.manager.managed_resource_manager import ManagedResourceManager
@@ -31,7 +32,10 @@ class MetricManager(BaseManager):
             _LOGGER.info(f"[create_metric._rollback] " f"Delete metric: {vo.metric_id}")
             vo.delete()
 
-        if "metric_id" not in params:
+        if params["metric_type"] == "COUNTER":
+            params["date_field"] = params.get("date_field") or "created_at"
+
+        if params.get("metric_id") is None:
             params["metric_id"] = utils.generate_id("metric")
 
         params["workspaces"] = [params["workspace_id"]]
@@ -163,10 +167,19 @@ class MetricManager(BaseManager):
         if metric_type == "COUNTER":
             query = self._append_datetime_filter(query, date_field=date_field)
 
-        if metric_vo.resource_type == "inventory.CloudService":
-            return self._analyze_cloud_service(query, domain_id, workspace_id)
-        else:
-            raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
+        try:
+            if metric_vo.resource_type == "inventory.CloudService":
+                return self._analyze_cloud_service(query, domain_id, workspace_id)
+            else:
+                raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
+        except Exception as e:
+            _LOGGER.error(
+                f"[analyze_resource] Failed to analyze query: {e}",
+                exc_info=True,
+            )
+            raise ERROR_WRONG_QUERY_OPTIONS(
+                query_options=utils.dump_json(metric_vo.query_options)
+            )
 
     @staticmethod
     def _append_datetime_filter(
