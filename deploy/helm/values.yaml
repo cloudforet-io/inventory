@@ -76,6 +76,11 @@ application_scheduler:
             queue: collector_q
             interval: 1
             minute: ':30'
+        metric_scheduler:
+            backend: spaceone.inventory.interface.task.v1.metric_scheduler.MetricScheduler
+            queue: collector_q
+            interval: 1
+            minute: ':30'
 
 # Overwrite worker config
 #application_worker: {}
