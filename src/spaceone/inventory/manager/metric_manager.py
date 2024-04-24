@@ -4,7 +4,7 @@ from typing import Tuple
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
-from spaceone.core import config
+from spaceone.core import config, queue
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.core.manager import BaseManager
 from spaceone.core import utils, cache
@@ -26,6 +26,36 @@ class MetricManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.metric_model = Metric
         self.metric_data_mgr = MetricDataManager()
+
+    def push_task(self, metric_vo: Metric) -> None:
+        metric_id = metric_vo.metric_id
+        domain_id = metric_vo.domain_id
+
+        task = {
+            "name": "run_metric_query",
+            "version": "v1",
+            "executionEngine": "BaseWorker",
+            "stages": [
+                {
+                    "locator": "SERVICE",
+                    "name": "MetricService",
+                    "metadata": {
+                        "token": self.transaction.get_meta("token"),
+                    },
+                    "method": "run_metric_query",
+                    "params": {
+                        "params": {
+                            "metric_id": metric_id,
+                            "domain_id": domain_id,
+                        }
+                    },
+                }
+            ],
+        }
+
+        _LOGGER.debug(f"[push_task] run query sets by domain: {domain_id}")
+
+        queue.put("collector_q", utils.dump_json(task))
 
     def create_metric(self, params: dict) -> Metric:
         def _rollback(vo: Metric):
@@ -85,7 +115,7 @@ class MetricManager(BaseManager):
         return self.metric_model.filter(**conditions)
 
     def list_metrics(self, query: dict, domain_id: str) -> Tuple[QuerySet, int]:
-        self._create_managed_metric(domain_id)
+        self.create_managed_metric(domain_id)
         return self.metric_model.query(**query)
 
     def stat_metrics(self, query: dict) -> dict:
@@ -232,7 +262,7 @@ class MetricManager(BaseManager):
         return response.get("results", [])
 
     @cache.cacheable(key="inventory:managed-metric:{domain_id}:sync", expire=300)
-    def _create_managed_metric(self, domain_id: str) -> bool:
+    def create_managed_metric(self, domain_id: str) -> bool:
         managed_resource_mgr = ManagedResourceManager()
 
         metric_vos = self.filter_metrics(domain_id=domain_id, is_managed=True)
@@ -251,13 +281,13 @@ class MetricManager(BaseManager):
             if metric_version := installed_metric_version_map.get(managed_metric_id):
                 if metric_version != managed_metric_info["version"]:
                     _LOGGER.debug(
-                        f"[_create_managed_metric] update managed metric: {managed_metric_id}"
+                        f"[create_managed_metric] update managed metric: {managed_metric_id}"
                     )
                     metric_vo = self.get_metric(managed_metric_id, domain_id)
                     self.update_metric_by_vo(managed_metric_info, metric_vo)
             else:
                 _LOGGER.debug(
-                    f"[_create_managed_metric] create new managed metric: {managed_metric_id}"
+                    f"[create_managed_metric] create new managed metric: {managed_metric_id}"
                 )
                 self.create_metric(managed_metric_info)
 

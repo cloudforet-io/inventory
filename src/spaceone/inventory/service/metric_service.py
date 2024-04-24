@@ -7,7 +7,9 @@ from spaceone.core.error import *
 
 from spaceone.inventory.model.metric.request import *
 from spaceone.inventory.model.metric.response import *
+from spaceone.inventory.model.metric.database import Metric
 from spaceone.inventory.manager.metric_manager import MetricManager
+from spaceone.inventory.manager.identity_manager import IdentityManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -285,3 +287,58 @@ class MetricService(BaseService):
 
         query = params.query or {}
         return self.metric_mgr.stat_metrics(query)
+
+    @transaction()
+    def run_metric_query(self, params: dict) -> None:
+        """Run metric query
+
+        Args:
+            params (dict): {
+                'metric_id': 'str',
+                'domain_id': 'str',
+            }
+
+        Returns:
+            None
+        """
+
+        metric_id = params["metric_id"]
+        domain_id = params["domain_id"]
+
+        metric_vo = self.metric_mgr.get_metric(metric_id, domain_id)
+
+        self.metric_mgr.run_metric_query(metric_vo, is_yesterday=True)
+
+    @transaction()
+    def run_all_metric_queries(self, params: dict) -> None:
+        """Run all metric queries
+
+        Args:
+            params (dict): {}
+
+        Returns:
+            None
+        """
+
+        for domain_info in self._get_all_domains_info():
+            domain_id = domain_info["domain_id"]
+            try:
+                self.run_metric_query_by_domain(domain_id)
+            except Exception as e:
+                _LOGGER.error(
+                    f"[run_all_metric_queries] query error ({domain_id}): {e}",
+                    exc_info=True,
+                )
+
+    def run_metric_query_by_domain(self, domain_id: str) -> None:
+        self.metric_mgr.create_managed_metric(domain_id)
+        metric_vos = self.metric_mgr.filter_metrics(domain_id=domain_id)
+
+        for metric_vo in metric_vos:
+            self.metric_mgr.push_task(metric_vo)
+
+    @staticmethod
+    def _get_all_domains_info() -> list:
+        identity_mgr = IdentityManager()
+        response = identity_mgr.list_domains({"only": ["domain_id"]})
+        return response.get("results", [])
