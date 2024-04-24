@@ -18,6 +18,7 @@ class NamespaceCreateRequest(BaseModel):
     name: str
     category: Category
     provider: Union[str, None] = None
+    icon: Union[str, None] = None
     tags: Union[dict, None] = {}
     workspace_id: str
     domain_id: str
@@ -26,6 +27,7 @@ class NamespaceCreateRequest(BaseModel):
 class NamespaceUpdateRequest(BaseModel):
     namespace_id: str
     name: Union[str, None] = None
+    icon: Union[str, None] = None
     tags: Union[dict, None] = None
     workspace_id: str
     domain_id: str

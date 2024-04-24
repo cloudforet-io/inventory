@@ -37,6 +37,7 @@ class NamespaceService(BaseService):
                 'name': 'str',                  # required
                 'category': 'str',              # required
                 'provider': 'str',
+                'icon': 'str',
                 'tags': 'dict',
                 'workspace_id': 'str',          # injected from auth (required)
                 'domain_id': 'str',             # injected from auth (required)
@@ -61,6 +62,7 @@ class NamespaceService(BaseService):
             params (dict): {
                 'namespace_id': 'str',          # required
                 'name': 'str',
+                'icon': 'str',
                 'tags': 'dict',
                 'workspace_id': 'str',          # injected from auth (required)
                 'domain_id': 'str',             # injected from auth (required)

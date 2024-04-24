@@ -11,6 +11,7 @@ class NamespaceResponse(BaseModel):
     name: Union[str, None] = None
     category: Union[str, None] = None
     provider: Union[str, None] = None
+    icon: Union[str, None] = None
     tags: Union[dict, None] = None
     is_managed: Union[bool, None] = None
     domain_id: Union[str, None] = None

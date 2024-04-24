@@ -48,6 +48,7 @@ class MetricDeleteRequest(BaseModel):
 
 class MetricRunRequest(BaseModel):
     metric_id: str
+    is_yesterday: Union[bool, None] = None
     workspace_id: str
     domain_id: str
 
