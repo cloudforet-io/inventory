@@ -1,0 +1,5 @@
+---
+namespace_id: ns-managed-asset-change-history
+name: Asset/ChangeHistory
+category: COMMON
+version: '1.0'
