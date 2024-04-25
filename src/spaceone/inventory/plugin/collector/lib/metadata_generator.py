@@ -192,6 +192,21 @@ class MetadataGenerator:
         if "is_optional" in field:
             field = self._add_options_field(field, "is_optional")
 
+        if "default" in field:
+            field["default"] = str(field["default"])
+            field = self._add_options_field(field, "default")
+
+        if "field_description" in field:
+            field = self._add_options_field(field, "field_description")
+
+        if "reference_key" in field:
+            field["reference"] = {
+                "reference_key": field["reference_key"],
+                "resource_type": "inventory.CloudService",
+            }
+            del field["reference_key"]
+            field = self._add_options_field(field, "reference")
+
         return TextField(**field).dict(exclude_none=True)
 
     def _generate_dict_field(self, field: dict) -> dict:
