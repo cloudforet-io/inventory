@@ -123,7 +123,7 @@ class NamespaceService(BaseService):
     )
     @convert_model
     def get(self, params: NamespaceGetRequest) -> Union[NamespaceResponse, dict]:
-        """Get record namespace
+        """Get namespace
 
         Args:
             params (dict): {

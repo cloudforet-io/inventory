@@ -198,7 +198,7 @@ class MetricService(BaseService):
     )
     @convert_model
     def get(self, params: MetricGetRequest) -> Union[MetricResponse, dict]:
-        """Get record metric
+        """Get metric
 
         Args:
             params (dict): {
