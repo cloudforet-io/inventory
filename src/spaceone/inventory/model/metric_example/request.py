@@ -52,12 +52,12 @@ class MetricExampleSearchQueryRequest(BaseModel):
     metric_id: Union[str, None] = None
     namespace_id: Union[str, None] = None
     user_id: str
-    workspace_id: Union[list, None] = None
+    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class MetricExampleStatQueryRequest(BaseModel):
     query: dict
     user_id: str
-    workspace_id: Union[list, None] = None
+    workspace_id: Union[str, None] = None
     domain_id: str
