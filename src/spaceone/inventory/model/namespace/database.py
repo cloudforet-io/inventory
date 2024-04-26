@@ -7,6 +7,7 @@ class Namespace(MongoModel):
     name = StringField(max_length=40)
     category = StringField(max_length=40)
     provider = StringField(max_length=40)
+    icon = StringField(default=None, null=True)
     tags = DictField(default=None)
     is_managed = BooleanField(default=False)
     version = StringField(max_length=40, default=None, null=True)
@@ -18,6 +19,7 @@ class Namespace(MongoModel):
     meta = {
         "updatable_fields": [
             "name",
+            "icon",
             "tags",
         ],
         "minimal_fields": [

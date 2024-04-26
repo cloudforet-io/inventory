@@ -5,10 +5,10 @@ metric_type: COUNTER
 resource_type: inventory.CloudService
 query_options:
   group_by:
-    - region_code
+    - provider
     - cloud_service_type
     - cloud_service_group
-    - provider
+    - region_code
     - account
   fields:
     value:
@@ -19,5 +19,5 @@ query_options:
       operator: eq
 date_field: created_at
 unit: Count
-namespace_id: ns-managed-asset-summary
+namespace_id: ns-managed-asset-change-history
 version: '1.0'

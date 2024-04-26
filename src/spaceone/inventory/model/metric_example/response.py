@@ -3,17 +3,18 @@ from typing import Union, List
 from pydantic import BaseModel
 from spaceone.core import utils
 
-__all__ = ["NamespaceResponse", "NamespacesResponse"]
+__all__ = ["MetricExampleResponse", "MetricExamplesResponse"]
 
 
-class NamespaceResponse(BaseModel):
-    namespace_id: Union[str, None] = None
+class MetricExampleResponse(BaseModel):
+    example_id: Union[str, None] = None
     name: Union[str, None] = None
-    category: Union[str, None] = None
-    provider: Union[str, None] = None
-    icon: Union[str, None] = None
+    options: Union[dict, None] = None
     tags: Union[dict, None] = None
-    is_managed: Union[bool, None] = None
+    metric_id: Union[str, None] = None
+    namespace_id: Union[str, None] = None
+    user_id: Union[str, None] = None
+    workspace_id: Union[str, None] = None
     domain_id: Union[str, None] = None
     created_at: Union[datetime, None] = None
     updated_at: Union[datetime, None] = None
@@ -25,6 +26,6 @@ class NamespaceResponse(BaseModel):
         return data
 
 
-class NamespacesResponse(BaseModel):
-    results: List[NamespaceResponse] = []
+class MetricExamplesResponse(BaseModel):
+    results: List[MetricExampleResponse] = []
     total_count: int

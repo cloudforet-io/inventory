@@ -13,6 +13,7 @@ from .cloud_service_query_set import CloudServiceQuerySet
 from .cloud_service_stats import CloudServiceStats
 from .namespace import Namespace
 from .metric import Metric
+from .metric_example import MetricExample
 from .metric_data import MetricData
 
 _all_ = ["app"]
@@ -32,4 +33,5 @@ app.add_service(CloudServiceQuerySet)
 app.add_service(CloudServiceStats)
 app.add_service(Namespace)
 app.add_service(Metric)
+app.add_service(MetricExample)
 app.add_service(MetricData)
