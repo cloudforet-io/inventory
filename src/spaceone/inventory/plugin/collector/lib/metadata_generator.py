@@ -185,6 +185,12 @@ class MetadataGenerator:
                 gen_fields.append(self._generate_more_field(field))
         return gen_fields
 
+    def _generate_data_type_field(self, field: dict) -> dict:
+        if "key" not in field:
+            field = self._add_key_name_fields(field)
+
+        return DataTypeField(**field).dict(exclude_none=True)
+
     def _generate_text_field(self, field: dict) -> dict:
         if "key" not in field:
             field = self._add_key_name_fields(field)
@@ -412,12 +418,16 @@ class MetadataGenerator:
                     enums[main_key] = self._generate_datetime_field(
                         field=enum, is_enum=True
                     )
-            if "options" in field:
-                field["options"].update(enums)
-            else:
-                field["options"] = enums
 
-                del field["enums"]
+            if is_search:
+                field["enums"] = enums
+            else:
+                if "options" in field:
+                    field["options"].update(enums)
+                else:
+                    field["options"] = enums
+
+                    del field["enums"]
 
         if is_search:
             return SearchEnumField(**field).dict(exclude_none=True)
