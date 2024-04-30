@@ -16,6 +16,8 @@ __all__ = [
     "EnumStateField",
     "EnumDatetimeField",
     "EnumImageField",
+    "DataTypeField",
+    "SearchEnumField",
 ]
 
 BACKGROUND_COLORS = (
@@ -169,6 +171,13 @@ class MoreOptions(BaseModel):
     layout: MoreOptionsLayout = None
 
 
+class DataTypeField(BaseModel):
+    name: str
+    key: str
+    data_type: str
+    options: Union[dict, None] = None
+
+
 class TextField(BaseModel):
     name: str
     key: str
@@ -230,6 +239,14 @@ class EnumField(BaseModel):
     key: str
     type: str = "enum"
     options: dict
+
+
+class SearchEnumField(BaseModel):
+    name: str
+    key: str
+    type: str = "enum"
+    enums: dict
+    options: dict = None
 
 
 class MoreField(BaseModel):
