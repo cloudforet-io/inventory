@@ -148,7 +148,7 @@ class MetricManager(BaseManager):
 
         created_at = datetime.utcnow()
 
-        if is_yesterday:
+        if is_yesterday and metric_vo.metric_type == "COUNTER":
             created_at = created_at - relativedelta(days=1)
 
         try:
@@ -195,11 +195,18 @@ class MetricManager(BaseManager):
         date_field = metric_vo.date_field
 
         if metric_type == "COUNTER":
-            query = self._append_datetime_filter(query, date_field=date_field)
+            query = self._append_datetime_filter(
+                query, date_field=date_field, is_yesterday=is_yesterday
+            )
 
         try:
             if metric_vo.resource_type == "inventory.CloudService":
                 return self._analyze_cloud_service(query, domain_id, workspace_id)
+            elif metric_vo.resource_type.startswith("inventory.CloudService:"):
+                cloud_service_type_key = metric_vo.resource_type.split(":")[-1]
+                return self._analyze_cloud_service(
+                    query, domain_id, workspace_id, cloud_service_type_key
+                )
             else:
                 raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
         except Exception as e:
@@ -237,21 +244,53 @@ class MetricManager(BaseManager):
         return query
 
     @staticmethod
-    def _analyze_cloud_service(query: dict, domain_id: str, workspace_id: str) -> list:
-        query["group_by"] = query.get("group_by", []) + [
+    def _analyze_cloud_service(
+        query: dict,
+        domain_id: str,
+        workspace_id: str,
+        cloud_service_type_key: str = None,
+    ) -> list:
+        changed_group_by = [
             "project_id",
             "workspace_id",
-            "domain_id",
         ]
+        for group_option in query.get("group_by", []):
+            if isinstance(group_option, dict):
+                key = group_option.get("key")
+            else:
+                key = group_option
 
-        query["group_by"] = list(set(query["group_by"]))
+            if key not in ["project_id", "workspace_id"]:
+                changed_group_by.append(group_option)
+
+        query["group_by"] = changed_group_by
+        query["filter"] = query.get("filter", [])
+        query["filter"].append({"k": "domain_id", "v": domain_id, "o": "eq"})
 
         if workspace_id:
-            query["filter"] = query.get("filter", [])
             query["filter"].append({"k": "workspace_id", "v": workspace_id, "o": "eq"})
 
+        if cloud_service_type_key:
+            try:
+                (
+                    provider,
+                    cloud_service_group,
+                    cloud_service_type,
+                ) = cloud_service_type_key.split(".")
+                query["filter"].append({"k": f"provider", "v": provider, "o": "eq"})
+                query["filter"].append(
+                    {"k": f"cloud_service_group", "v": cloud_service_group, "o": "eq"}
+                )
+                query["filter"].append(
+                    {"k": f"cloud_service_type", "v": cloud_service_type, "o": "eq"}
+                )
+            except Exception as e:
+                raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(
+                    resource_type=f"inventory.CloudService:{cloud_service_type_key}"
+                )
+
         if "select" in query:
-            for group_by_key in ["project_id", "workspace_id", "domain_id"]:
+            for group_by_key in ["project_id", "workspace_id"]:
                 query["select"][group_by_key] = group_by_key
 
         _LOGGER.debug(f"[_analyze_cloud_service] Analyze Query: {query}")
@@ -525,8 +564,37 @@ class MetricManager(BaseManager):
 
     @staticmethod
     def _get_label_keys(query_options: dict) -> list:
-        label_keys = []
-        for key in query_options.get("group_by", []):
-            if key not in ["project_id", "workspace_id", "domain_id"]:
-                label_keys.append(key.rsplit(".", 1)[-1])
+        query_options = copy.deepcopy(query_options)
+        label_keys = [
+            {
+                "key": "workspace_id",
+                "name": "Workspace",
+                "reference": {
+                    "resource_type": "identity.Workspace",
+                    "reference_key": "workspace_id",
+                },
+            },
+            {
+                "key": "project_id",
+                "name": "Project",
+                "reference": {
+                    "resource_type": "identity.Project",
+                    "reference_key": "project_id",
+                },
+            },
+        ]
+        for group_option in query_options.get("group_by", []):
+            if isinstance(group_option, dict):
+                key = group_option.get("key")
+                name = group_option.get("name")
+                label_key = group_option
+            else:
+                key = group_option
+                name = key.rsplit(".", 1)[-1]
+                label_key = {"key": key, "name": name}
+
+            if key not in ["project_id", "workspace_id"]:
+                label_key["key"] = f"labels.{name}"
+            label_keys.append(label_key)
+
         return label_keys

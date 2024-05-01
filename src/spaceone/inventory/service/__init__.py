@@ -19,3 +19,7 @@ from spaceone.inventory.service.cloud_service_stats_service import (
     CloudServiceStatsService,
 )
 from spaceone.inventory.service.cleanup_service import CleanupService
+from spaceone.inventory.service.namespace_service import NamespaceService
+from spaceone.inventory.service.metric_service import MetricService
+from spaceone.inventory.service.metric_example_service import MetricExampleService
+from spaceone.inventory.service.metric_data_service import MetricDataService

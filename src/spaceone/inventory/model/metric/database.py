@@ -11,7 +11,7 @@ class Metric(MongoModel):
     date_field = StringField(default=None)
     unit = StringField(default=None)
     tags = DictField(default=None)
-    label_keys = ListField(StringField())
+    label_keys = ListField(DictField())
     is_managed = BooleanField(default=False)
     version = StringField(max_length=40, default=None, null=True)
     namespace_id = StringField(max_length=40)
