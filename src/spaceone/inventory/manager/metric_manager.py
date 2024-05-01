@@ -194,6 +194,9 @@ class MetricManager(BaseManager):
         metric_type = metric_vo.metric_type
         date_field = metric_vo.date_field
 
+        if "*" not in metric_vo.workspaces:
+            query = self._append_workspace_filter(query, metric_vo.workspaces)
+
         if metric_type == "COUNTER":
             query = self._append_datetime_filter(
                 query, date_field=date_field, is_yesterday=is_yesterday
@@ -217,6 +220,12 @@ class MetricManager(BaseManager):
             raise ERROR_WRONG_QUERY_OPTIONS(
                 query_options=utils.dump_json(metric_vo.query_options)
             )
+
+    @staticmethod
+    def _append_workspace_filter(query: dict, workspaces: list) -> dict:
+        query["filter"] = query.get("filter", [])
+        query["filter"].append({"k": "workspace_id", "v": workspaces, "o": "in"})
+        return query
 
     @staticmethod
     def _append_datetime_filter(
