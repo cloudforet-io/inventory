@@ -148,7 +148,7 @@ class MetricManager(BaseManager):
 
         created_at = datetime.utcnow()
 
-        if is_yesterday:
+        if is_yesterday and metric_vo.metric_type == "COUNTER":
             created_at = created_at - relativedelta(days=1)
 
         try:
@@ -195,7 +195,9 @@ class MetricManager(BaseManager):
         date_field = metric_vo.date_field
 
         if metric_type == "COUNTER":
-            query = self._append_datetime_filter(query, date_field=date_field)
+            query = self._append_datetime_filter(
+                query, date_field=date_field, is_yesterday=is_yesterday
+            )
 
         try:
             if metric_vo.resource_type == "inventory.CloudService":
@@ -584,16 +586,15 @@ class MetricManager(BaseManager):
         for group_option in query_options.get("group_by", []):
             if isinstance(group_option, dict):
                 key = group_option.get("key")
+                name = group_option.get("name")
                 label_key = group_option
             else:
                 key = group_option
-                label_key = {
-                    "key": key,
-                    "name": key.rsplit(".", 1)[-1],
-                }
+                name = key.rsplit(".", 1)[-1]
+                label_key = {"key": key, "name": name}
 
             if key not in ["project_id", "workspace_id"]:
-                label_key["key"] = f"labels.{key}"
+                label_key["key"] = f"labels.{name}"
             label_keys.append(label_key)
 
         return label_keys
