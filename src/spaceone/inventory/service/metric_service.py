@@ -341,4 +341,7 @@ class MetricService(BaseService):
     def _get_all_domains_info() -> list:
         identity_mgr = IdentityManager()
         response = identity_mgr.list_domains({"only": ["domain_id"]})
-        return response.get("results", [])
+        domains_info = response.get("results", [])
+
+        _LOGGER.debug(f"[_get_all_domains_info] target domains: {len(domains_info)}")
+        return domains_info

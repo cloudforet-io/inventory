@@ -251,7 +251,6 @@ class MetricManager(BaseManager):
         changed_group_by = [
             "project_id",
             "workspace_id",
-            "domain_id",
         ]
         for group_option in query.get("group_by", []):
             if isinstance(group_option, dict):
@@ -259,13 +258,14 @@ class MetricManager(BaseManager):
             else:
                 key = group_option
 
-            if key not in ["project_id", "workspace_id", "domain_id"]:
+            if key not in ["project_id", "workspace_id"]:
                 changed_group_by.append(group_option)
 
         query["group_by"] = changed_group_by
+        query["filter"] = query.get("filter", [])
+        query["filter"].append({"k": "domain_id", "v": domain_id, "o": "eq"})
 
         if workspace_id:
-            query["filter"] = query.get("filter", [])
             query["filter"].append({"k": "workspace_id", "v": workspace_id, "o": "eq"})
 
         if cloud_service_type_key:
@@ -275,7 +275,6 @@ class MetricManager(BaseManager):
                     cloud_service_group,
                     cloud_service_type,
                 ) = cloud_service_type_key.split(".")
-                query["filter"] = query.get("filter", [])
                 query["filter"].append({"k": f"provider", "v": provider, "o": "eq"})
                 query["filter"].append(
                     {"k": f"cloud_service_group", "v": cloud_service_group, "o": "eq"}
@@ -289,7 +288,7 @@ class MetricManager(BaseManager):
                 )
 
         if "select" in query:
-            for group_by_key in ["project_id", "workspace_id", "domain_id"]:
+            for group_by_key in ["project_id", "workspace_id"]:
                 query["select"][group_by_key] = group_by_key
 
         _LOGGER.debug(f"[_analyze_cloud_service] Analyze Query: {query}")
@@ -299,7 +298,7 @@ class MetricManager(BaseManager):
         )
         return response.get("results", [])
 
-    # @cache.cacheable(key="inventory:managed-metric:{domain_id}:sync", expire=300)
+    @cache.cacheable(key="inventory:managed-metric:{domain_id}:sync", expire=300)
     def create_managed_metric(self, domain_id: str) -> bool:
         managed_resource_mgr = ManagedResourceManager()
 
@@ -593,7 +592,7 @@ class MetricManager(BaseManager):
                     "name": key.rsplit(".", 1)[-1],
                 }
 
-            if key not in ["project_id", "workspace_id", "domain_id"]:
+            if key not in ["project_id", "workspace_id"]:
                 label_key["key"] = f"labels.{key}"
             label_keys.append(label_key)
 
