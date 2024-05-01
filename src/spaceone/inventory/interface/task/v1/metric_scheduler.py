@@ -10,7 +10,7 @@ from spaceone.core.scheduler import HourlyScheduler
 _LOGGER = logging.getLogger(__name__)
 
 
-class MetricStatsScheduler(HourlyScheduler):
+class MetricScheduler(HourlyScheduler):
     def __init__(self, queue, interval, minute=":00"):
         super().__init__(queue, interval, minute)
         self.locator = Locator()
