@@ -420,7 +420,6 @@ class MetadataGenerator:
                     )
 
             if is_search:
-                del field["type"]
                 field["enums"] = enums
             else:
                 if "options" in field:
@@ -488,10 +487,10 @@ class MetadataGenerator:
 
     @staticmethod
     def _add_options_field(
-        field: dict,
-        field_name: str,
-        nested_field_name=None,
-        change_field_name=None,
+            field: dict,
+            field_name: str,
+            nested_field_name=None,
+            change_field_name=None,
     ) -> dict:
         if not nested_field_name:
             if "options" in field:
