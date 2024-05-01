@@ -78,7 +78,6 @@ class CollectorService(BaseService):
         Returns:
             Generator[ResourceResponse, None, None]
         """
-
         func = self.get_plugin_method("collect")
         response_iterator = func(params.dict())
         for response in response_iterator:
