@@ -238,13 +238,21 @@ class MetricManager(BaseManager):
 
     @staticmethod
     def _analyze_cloud_service(query: dict, domain_id: str, workspace_id: str) -> list:
-        query["group_by"] = query.get("group_by", []) + [
+        changed_group_by = [
             "project_id",
             "workspace_id",
             "domain_id",
         ]
+        for group_option in query.get("group_by", []):
+            if isinstance(group_option, dict):
+                key = group_option.get("key")
+            else:
+                key = group_option
 
-        query["group_by"] = list(set(query["group_by"]))
+            if key not in ["project_id", "workspace_id", "domain_id"]:
+                changed_group_by.append(group_option)
+
+        query["group_by"] = changed_group_by
 
         if workspace_id:
             query["filter"] = query.get("filter", [])
@@ -261,7 +269,7 @@ class MetricManager(BaseManager):
         )
         return response.get("results", [])
 
-    @cache.cacheable(key="inventory:managed-metric:{domain_id}:sync", expire=300)
+    # @cache.cacheable(key="inventory:managed-metric:{domain_id}:sync", expire=300)
     def create_managed_metric(self, domain_id: str) -> bool:
         managed_resource_mgr = ManagedResourceManager()
 
@@ -525,8 +533,38 @@ class MetricManager(BaseManager):
 
     @staticmethod
     def _get_label_keys(query_options: dict) -> list:
-        label_keys = []
-        for key in query_options.get("group_by", []):
+        query_options = copy.deepcopy(query_options)
+        label_keys = [
+            {
+                "key": "workspace_id",
+                "name": "Workspace",
+                "reference": {
+                    "resource_type": "identity.Workspace",
+                    "reference_key": "workspace_id",
+                },
+            },
+            {
+                "key": "project_id",
+                "name": "Project",
+                "reference": {
+                    "resource_type": "identity.Project",
+                    "reference_key": "project_id",
+                },
+            },
+        ]
+        for group_option in query_options.get("group_by", []):
+            if isinstance(group_option, dict):
+                key = group_option.get("key")
+                label_key = group_option
+            else:
+                key = group_option
+                label_key = {
+                    "key": key,
+                    "name": key.rsplit(".", 1)[-1],
+                }
+
             if key not in ["project_id", "workspace_id", "domain_id"]:
-                label_keys.append(key.rsplit(".", 1)[-1])
+                label_key["key"] = f"labels.{key}"
+            label_keys.append(label_key)
+
         return label_keys

@@ -5,11 +5,19 @@ metric_type: GAUGE
 resource_type: inventory.CloudService
 query_options:
   group_by:
-    - provider
-    - cloud_service_type
-    - cloud_service_group
-    - region_code
-    - account
+    - key: provider
+      name: Provider
+    - key: cloud_service_group
+      name: Group
+    - key: cloud_service_type
+      name: Type
+    - key: region_code
+      name: Region
+      reference:
+        resource_type: inventory.Region
+        reference_key: region_code
+    - key: account
+      name: Account
   fields:
     value:
       key: instance_size
