@@ -244,7 +244,6 @@ class EnumField(BaseModel):
 class SearchEnumField(BaseModel):
     name: str
     key: str
-    type: str = "enum"
     enums: dict
     options: dict = None
 

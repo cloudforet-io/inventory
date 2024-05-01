@@ -420,6 +420,7 @@ class MetadataGenerator:
                     )
 
             if is_search:
+                del field["type"]
                 field["enums"] = enums
             else:
                 if "options" in field:
