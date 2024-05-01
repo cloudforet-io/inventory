@@ -200,6 +200,11 @@ class MetricManager(BaseManager):
         try:
             if metric_vo.resource_type == "inventory.CloudService":
                 return self._analyze_cloud_service(query, domain_id, workspace_id)
+            elif metric_vo.resource_type.startswith("inventory.CloudService:"):
+                cloud_service_type_key = metric_vo.resource_type.split(":")[-1]
+                return self._analyze_cloud_service(
+                    query, domain_id, workspace_id, cloud_service_type_key
+                )
             else:
                 raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
         except Exception as e:
@@ -237,7 +242,12 @@ class MetricManager(BaseManager):
         return query
 
     @staticmethod
-    def _analyze_cloud_service(query: dict, domain_id: str, workspace_id: str) -> list:
+    def _analyze_cloud_service(
+        query: dict,
+        domain_id: str,
+        workspace_id: str,
+        cloud_service_type_key: str = None,
+    ) -> list:
         changed_group_by = [
             "project_id",
             "workspace_id",
@@ -257,6 +267,26 @@ class MetricManager(BaseManager):
         if workspace_id:
             query["filter"] = query.get("filter", [])
             query["filter"].append({"k": "workspace_id", "v": workspace_id, "o": "eq"})
+
+        if cloud_service_type_key:
+            try:
+                (
+                    provider,
+                    cloud_service_group,
+                    cloud_service_type,
+                ) = cloud_service_type_key.split(".")
+                query["filter"] = query.get("filter", [])
+                query["filter"].append({"k": f"provider", "v": provider, "o": "eq"})
+                query["filter"].append(
+                    {"k": f"cloud_service_group", "v": cloud_service_group, "o": "eq"}
+                )
+                query["filter"].append(
+                    {"k": f"cloud_service_type", "v": cloud_service_type, "o": "eq"}
+                )
+            except Exception as e:
+                raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(
+                    resource_type=f"inventory.CloudService:{cloud_service_type_key}"
+                )
 
         if "select" in query:
             for group_by_key in ["project_id", "workspace_id", "domain_id"]:
