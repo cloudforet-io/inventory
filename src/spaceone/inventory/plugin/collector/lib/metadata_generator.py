@@ -391,7 +391,7 @@ class MetadataGenerator:
                     del enum["type"]
                     enums[main_key] = enum
 
-                if enum["type"] == "badge":
+                elif enum["type"] == "badge":
                     enum["outline_color"] = enum[main_key]
                     del enum[main_key]
                     enums[main_key] = self._generate_badge_field(
