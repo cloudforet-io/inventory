@@ -586,6 +586,7 @@ class MetricManager(BaseManager):
             {
                 "key": "workspace_id",
                 "name": "Workspace",
+                "search_key": "workspace_id",
                 "reference": {
                     "resource_type": "identity.Workspace",
                     "reference_key": "workspace_id",
@@ -594,6 +595,7 @@ class MetricManager(BaseManager):
             {
                 "key": "project_id",
                 "name": "Project",
+                "search_key": "project_id",
                 "reference": {
                     "resource_type": "identity.Project",
                     "reference_key": "project_id",
