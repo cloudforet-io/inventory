@@ -501,8 +501,11 @@ class CollectorService(BaseService):
         job_vo = job_mgr.create_job(collector_vo, params)
 
         if len(tasks) > 0:
+            job_task_info = {}
+
             for task in tasks:
                 secret_info = task["secret_info"]
+                secret_id = secret_info.get("secret_id")
 
                 create_params = {
                     "job_id": job_vo.job_id,
@@ -519,8 +522,14 @@ class CollectorService(BaseService):
 
                 try:
                     # JOB: CREATE TASK JOB
-                    job_task_vo = job_task_mgr.create_job_task(create_params)
-                    task.update({"job_task_id": job_task_vo.job_task_id})
+                    if secret_id in job_task_info:
+                        job_task_id = job_task_info[secret_id]
+                    else:
+                        job_task_vo = job_task_mgr.create_job_task(create_params)
+                        job_task_id = job_task_vo.job_task_id
+                        job_task_info[secret_id] = job_task_id
+
+                    task.update({"job_task_id": job_task_id})
 
                     job_task_mgr.push_job_task(task)
 
