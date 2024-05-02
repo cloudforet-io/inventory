@@ -49,7 +49,7 @@ class MetadataGenerator:
         return query_sets_meta, search_meta, table_meta, tabs_meta, widget_meta
 
     def _generate_search(self, search_meta: dict) -> list:
-        return self._generate_fields(search_meta["fields"], is_search=True)
+        return self._generate_fields(search_meta["fields"])
 
     def _generate_table(self, table_meta: dict) -> dict:
         table_metadata = self._generate_default_dynamic_view(
@@ -145,7 +145,7 @@ class MetadataGenerator:
 
         return Sort(**sort_option).dict()
 
-    def _generate_fields(self, fields: list, is_search=False) -> list:
+    def _generate_fields(self, fields: list) -> list:
         gen_fields = []
         for field in fields:
             if "data_type" in field:
@@ -179,7 +179,7 @@ class MetadataGenerator:
                 gen_fields.append(self._generate_image_field(field))
 
             elif field["type"] == "enum":
-                gen_fields.append(self._generate_enum_field(field, is_search))
+                gen_fields.append(self._generate_enum_field(field))
 
             elif field["type"] == "more":
                 gen_fields.append(self._generate_more_field(field))
@@ -215,6 +215,17 @@ class MetadataGenerator:
             }
             del field["reference_key"]
             field = self._add_options_field(field, "reference")
+
+        if "labels" in field:
+            enums = {}
+            for label in field["labels"]:
+                main_key = [key for key in label.keys()][0]
+                label["label"] = label[main_key]
+                del label[main_key]
+                enums[main_key] = label
+                print("HIHIHIHIHI")
+            field["enums"] = enums
+            del field["labels"]
 
         return TextField(**field).dict(exclude_none=True)
 
@@ -355,7 +366,7 @@ class MetadataGenerator:
         else:
             return EnumImageField(**field).dict(exclude_none=True)
 
-    def _generate_enum_field(self, field: dict, is_search=False) -> dict:
+    def _generate_enum_field(self, field: dict) -> dict:
         if "key" not in field:
             field = self._add_key_name_fields(field)
 
@@ -385,13 +396,7 @@ class MetadataGenerator:
                     key for key in enum.keys() if key not in enable_enum_options
                 ][0]
 
-                if enum["type"] == "label":
-                    enum["label"] = enum[main_key]
-                    del enum[main_key]
-                    del enum["type"]
-                    enums[main_key] = enum
-
-                elif enum["type"] == "badge":
+                if enum["type"] == "badge":
                     enum["outline_color"] = enum[main_key]
                     del enum[main_key]
                     enums[main_key] = self._generate_badge_field(
@@ -419,18 +424,12 @@ class MetadataGenerator:
                         field=enum, is_enum=True
                     )
 
-            if is_search:
-                field["enums"] = enums
+            if "options" in field:
+                field["options"].update(enums)
             else:
-                if "options" in field:
-                    field["options"].update(enums)
-                else:
-                    field["options"] = enums
+                field["options"] = enums
 
-                    del field["enums"]
-
-        if is_search:
-            return SearchEnumField(**field).dict(exclude_none=True)
+                del field["enums"]
 
         return EnumField(**field).dict(exclude_none=True)
 
@@ -487,10 +486,10 @@ class MetadataGenerator:
 
     @staticmethod
     def _add_options_field(
-            field: dict,
-            field_name: str,
-            nested_field_name=None,
-            change_field_name=None,
+        field: dict,
+        field_name: str,
+        nested_field_name=None,
+        change_field_name=None,
     ) -> dict:
         if not nested_field_name:
             if "options" in field:
