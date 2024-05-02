@@ -221,12 +221,16 @@ class CollectingManager(BaseManager):
         failure_count = 0
         total_count = 0
 
+        job_task_id = params["job_task_id"]
+        domain_id = params["domain_id"]
+
         self._set_transaction_meta(params)
 
         for res in results:
             total_count += 1
+            resource_type = res.get("resource_type")
+
             try:
-                resource_type = res.get("resource_type")
                 if resource_type in ["inventory.Namespace", "inventory.Metric"]:
                     self._upsert_metric_and_namespace(res, params)
                 else:
@@ -244,7 +248,15 @@ class CollectingManager(BaseManager):
 
             except Exception as e:
                 _LOGGER.error(
-                    f"[_upsert_collecting_resources] upsert resource error: {e}"
+                    f"[_upsert_collecting_resources] upsert resource error: {e}",
+                    exc_info=True,
+                )
+                self.job_task_mgr.add_error(
+                    job_task_id,
+                    domain_id,
+                    "ERROR_UNKNOWN",
+                    f"failed to upsert {resource_type}: {e}",
+                    {"resource_type": resource_type},
                 )
                 failure_count += 1
 
@@ -282,79 +294,61 @@ class CollectingManager(BaseManager):
         request_data["domain_id"] = domain_id
         request_data["plugin_id"] = plugin_id
 
-        try:
-            if resource_type == "inventory.Namespace":
-                namespace_mgr: NamespaceManager = self.locator.get_manager(
-                    "NamespaceManager"
-                )
-
-                namespace_id = request_data.get("namespace_id")
-                version = request_data.get("version")
-
-                namespace_vos = namespace_mgr.filter_namespaces(
-                    namespace_id=namespace_id, domain_id=domain_id
-                )
-                if namespace_vos.count() == 0:
-                    resource_data["workspaces"] = [workspace_id]
-                    namespace_mgr.create_namespace(request_data)
-                else:
-                    namespace_vo = namespace_vos[0]
-                    workspaces = namespace_vo.workspaces
-                    is_changed = False
-
-                    if workspace_id not in workspaces:
-                        workspaces.append(workspace_id)
-                        resource_data["workspaces"] = workspaces
-                        is_changed = True
-                    else:
-                        resource_data["workspaces"] = workspaces
-
-                    if namespace_vo.version != version or is_changed:
-                        namespace_vo.update(request_data)
-            else:
-                metric_mgr: MetricManager = self.locator.get_manager("MetricManager")
-
-                metric_id = request_data.get("metric_id")
-                version = request_data.get("version")
-
-                metric_vos = metric_mgr.filter_metrics(
-                    metric_id=metric_id, domain_id=domain_id
-                )
-
-                if metric_vos.count() == 0:
-                    resource_data["workspaces"] = [workspace_id]
-                    metric_mgr.create_metric(request_data)
-                else:
-                    metric_vo = metric_vos[0]
-                    workspaces = metric_vo.workspaces
-                    is_changed = False
-
-                    if workspace_id not in workspaces:
-                        workspaces.append(workspace_id)
-                        resource_data["workspaces"] = workspaces
-                        is_changed = True
-                    else:
-                        resource_data["workspaces"] = workspaces
-
-                    if metric_vo.version != version or is_changed:
-                        metric_vo.update(request_data)
-
-        except Exception as e:
-            if isinstance(e, ERROR_BASE):
-                error_message = e.message
-            else:
-                error_message = str(e)
-
-            _LOGGER.error(
-                f"[_upsert_metric_and_namespace] upsert error: {error_message}"
+        if resource_type == "inventory.Namespace":
+            namespace_mgr: NamespaceManager = self.locator.get_manager(
+                "NamespaceManager"
             )
-            self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
-                "ERROR_UNKNOWN",
-                f"failed to upsert resource: {error_message}",
-                {"resource_type": resource_type},
+
+            namespace_id = request_data.get("namespace_id")
+            version = request_data.get("version")
+
+            namespace_vos = namespace_mgr.filter_namespaces(
+                namespace_id=namespace_id, domain_id=domain_id
             )
+            if namespace_vos.count() == 0:
+                resource_data["workspaces"] = [workspace_id]
+                namespace_mgr.create_namespace(request_data)
+            else:
+                namespace_vo = namespace_vos[0]
+                workspaces = namespace_vo.workspaces
+                is_changed = False
+
+                if workspace_id not in workspaces:
+                    workspaces.append(workspace_id)
+                    resource_data["workspaces"] = workspaces
+                    is_changed = True
+                else:
+                    resource_data["workspaces"] = workspaces
+
+                if namespace_vo.version != version or is_changed:
+                    namespace_vo.update(request_data)
+        else:
+            metric_mgr: MetricManager = self.locator.get_manager("MetricManager")
+
+            metric_id = request_data.get("metric_id")
+            version = request_data.get("version")
+
+            metric_vos = metric_mgr.filter_metrics(
+                metric_id=metric_id, domain_id=domain_id
+            )
+
+            if metric_vos.count() == 0:
+                resource_data["workspaces"] = [workspace_id]
+                metric_mgr.create_metric(request_data)
+            else:
+                metric_vo = metric_vos[0]
+                workspaces = metric_vo.workspaces
+                is_changed = False
+
+                if workspace_id not in workspaces:
+                    workspaces.append(workspace_id)
+                    resource_data["workspaces"] = workspaces
+                    is_changed = True
+                else:
+                    resource_data["workspaces"] = workspaces
+
+                if metric_vo.version != version or is_changed:
+                    metric_vo.update(request_data)
 
     def _upsert_resource(self, resource_data: dict, params: dict) -> int:
         """
