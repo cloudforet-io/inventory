@@ -148,10 +148,8 @@ class MetadataGenerator:
     def _generate_fields(self, fields: list) -> list:
         gen_fields = []
         for field in fields:
-            if "data_type" in field:
-                gen_fields.append(self._generate_data_type_field(field))
 
-            elif "type" not in field:
+            if "type" not in field:
                 gen_fields.append(self._generate_text_field(field))
 
             elif field["type"] == "text":
@@ -185,12 +183,6 @@ class MetadataGenerator:
                 gen_fields.append(self._generate_more_field(field))
         return gen_fields
 
-    def _generate_data_type_field(self, field: dict) -> dict:
-        if "key" not in field:
-            field = self._add_key_name_fields(field)
-
-        return DataTypeField(**field).dict(exclude_none=True)
-
     def _generate_text_field(self, field: dict) -> dict:
         if "key" not in field:
             field = self._add_key_name_fields(field)
@@ -214,7 +206,6 @@ class MetadataGenerator:
                 "resource_type": "inventory.CloudService",
             }
             del field["reference_key"]
-            field = self._add_options_field(field, "reference")
 
         if "labels" in field:
             enums = {}
@@ -223,7 +214,6 @@ class MetadataGenerator:
                 label["label"] = label[main_key]
                 del label[main_key]
                 enums[main_key] = label
-                print("HIHIHIHIHI")
             field["enums"] = enums
             del field["labels"]
 
