@@ -285,7 +285,6 @@ class CollectingManager(BaseManager):
             None
         """
 
-        job_task_id = params["job_task_id"]
         domain_id = params["domain_id"]
         workspace_id = params["workspace_id"]
         plugin_id = params["plugin_info"].get("plugin_id")
@@ -306,7 +305,7 @@ class CollectingManager(BaseManager):
                 namespace_id=namespace_id, domain_id=domain_id
             )
             if namespace_vos.count() == 0:
-                resource_data["workspaces"] = [workspace_id]
+                request_data["workspace_id"] = workspace_id
                 namespace_mgr.create_namespace(request_data)
             else:
                 namespace_vo = namespace_vos[0]
@@ -315,13 +314,13 @@ class CollectingManager(BaseManager):
 
                 if workspace_id not in workspaces:
                     workspaces.append(workspace_id)
-                    resource_data["workspaces"] = workspaces
+                    request_data["workspaces"] = workspaces
                     is_changed = True
                 else:
-                    resource_data["workspaces"] = workspaces
+                    request_data["workspaces"] = workspaces
 
                 if namespace_vo.version != version or is_changed:
-                    namespace_vo.update(request_data)
+                    namespace_mgr.update_namespace_by_vo(request_data, namespace_vo)
         else:
             metric_mgr: MetricManager = self.locator.get_manager("MetricManager")
 
@@ -333,7 +332,7 @@ class CollectingManager(BaseManager):
             )
 
             if metric_vos.count() == 0:
-                resource_data["workspaces"] = [workspace_id]
+                request_data["workspace_id"] = workspace_id
                 metric_mgr.create_metric(request_data)
             else:
                 metric_vo = metric_vos[0]
@@ -342,13 +341,13 @@ class CollectingManager(BaseManager):
 
                 if workspace_id not in workspaces:
                     workspaces.append(workspace_id)
-                    resource_data["workspaces"] = workspaces
+                    request_data["workspaces"] = workspaces
                     is_changed = True
                 else:
-                    resource_data["workspaces"] = workspaces
+                    request_data["workspaces"] = workspaces
 
                 if metric_vo.version != version or is_changed:
-                    metric_vo.update(request_data)
+                    metric_mgr.update_metric_by_vo(request_data, metric_vo)
 
     def _upsert_resource(self, resource_data: dict, params: dict) -> int:
         """
