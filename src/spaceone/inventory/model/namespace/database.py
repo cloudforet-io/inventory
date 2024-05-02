@@ -11,6 +11,7 @@ class Namespace(MongoModel):
     tags = DictField(default=None)
     is_managed = BooleanField(default=False)
     version = StringField(max_length=40, default=None, null=True)
+    plugin_id = StringField(max_length=40, default=None, null=True)
     domain_id = StringField(max_length=40)
     workspaces = ListField(StringField(max_length=40))
     created_at = DateTimeField(auto_now_add=True)
@@ -21,6 +22,9 @@ class Namespace(MongoModel):
             "name",
             "icon",
             "tags",
+            "version",
+            "workspaces",
+            "updated_at",
         ],
         "minimal_fields": [
             "namespace_id",

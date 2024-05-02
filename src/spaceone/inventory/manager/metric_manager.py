@@ -125,16 +125,18 @@ class MetricManager(BaseManager):
         self, metric_id: str, domain_id: str, workspace_id: str = None
     ):
         metric_vo = self.get_metric(metric_id, domain_id, workspace_id)
-        resource_type = metric_vo.resource_type
+        plugin_id = metric_vo.plugin_id
 
-        is_managed_metric_load: bool = cache.get(
-            f"inventory:managed-metric:{domain_id}:{metric_id}:load"
-        )
-        # is_provider_metric_load: bool = cache.get(
-        #     f"inventory:plugin-metric:{domain_id}:{resource_type}:{metric_id}:load"
-        # )
+        if metric_vo.is_managed:
+            is_load: bool = cache.get(
+                f"inventory:managed-metric:{domain_id}:{metric_id}:load"
+            )
+        else:
+            is_load: bool = cache.get(
+                f"inventory:plugin-metric:{domain_id}:{plugin_id}:{metric_id}:load"
+            )
 
-        if not is_managed_metric_load:
+        if not is_load:
             self.run_metric_query(metric_vo, workspace_id)
 
     def run_metric_query(
@@ -174,11 +176,17 @@ class MetricManager(BaseManager):
         self._remove_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
 
         if metric_vo.is_managed:
-            cache.set(
-                f"inventory:managed-metric:{domain_id}:{metric_vo.metric_id}:load",
-                True,
-                expire=3600 * 24,
+            cache_key = (
+                f"inventory:managed-metric:{domain_id}:{metric_vo.metric_id}:load"
             )
+        else:
+            cache_key = f"inventory:plugin-metric:{domain_id}:{metric_vo.plugin_id}:{metric_vo.metric_id}:load"
+
+        cache.set(
+            cache_key,
+            True,
+            expire=3600 * 24,
+        )
 
     def analyze_resource(
         self,

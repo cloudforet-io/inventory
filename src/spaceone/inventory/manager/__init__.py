@@ -30,3 +30,7 @@ from spaceone.inventory.manager.repository_manager import RepositoryManager
 from spaceone.inventory.manager.secret_manager import SecretManager
 from spaceone.inventory.manager.export_manager.email_manager import EmailManager
 from spaceone.inventory.manager.reference_manager import ReferenceManager
+from spaceone.inventory.manager.namespace_manager import NamespaceManager
+from spaceone.inventory.manager.metric_manager import MetricManager
+from spaceone.inventory.manager.metric_data_manager import MetricDataManager
+from spaceone.inventory.manager.metric_example_manager import MetricExampleManager
