@@ -7,28 +7,25 @@ query_options:
   group_by:
     - key: provider
       name: Provider
+      search_key: provider
       reference:
         resource_type: identity.Provider
         reference_key: provider
-        search_key: provider
     - key: cloud_service_group
       name: Group
-      reference:
-        search_key: cloud_service_group
+      search_key: cloud_service_group
     - key: cloud_service_type
       name: Type
-      reference:
-        search_key: cloud_service_type
+      search_key: cloud_service_type
     - key: region_code
       name: Region
+      search_key: region_code
       reference:
         resource_type: inventory.Region
         reference_key: region_code
-        search_key: region_code
     - key: account
       name: Account
-      reference:
-        search_key: account
+      search_key: account
   fields:
     value:
       operator: count
