@@ -100,6 +100,8 @@ def make_response(
     cloud_service_type=None,
     cloud_service=None,
     region=None,
+    metric=None,
+    namespace=None,
     resource_type: str = "inventory.CloudService",
 ) -> dict:
     response = {
@@ -118,6 +120,12 @@ def make_response(
 
     elif resource_type == "inventory.Region" and region is not None:
         response["region"] = region
+        return response
+    elif resource_type == "inventory.Metric" and metric is not None:
+        response["metric"] = metric
+        return response
+    elif resource_type == "inventory.Namespace" and namespace is not None:
+        response["namespace"] = namespace
         return response
     else:
         # TODO: Check this logic

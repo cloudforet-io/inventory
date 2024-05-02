@@ -10,6 +10,8 @@ VALID_RESOURCE_TYPES = {
     "cloud_service": "inventory.CloudService",
     "error_data": "inventory.ErrorResource",
     "region": "inventory.Region",
+    "namespace": "inventory.Namespace",
+    "metric": "inventory.Metric",
 }
 
 
@@ -50,6 +52,14 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
             if "region" in response:
                 region = response.pop("region")
                 response["resource"] = region
+
+            if "namespace" in response:
+                namespace = response.pop("namespace")
+                response["resource"] = namespace
+
+            if "metric" in response:
+                metric = response.pop("metric")
+                response["resource"] = metric
 
             if response["state"] == "FAILURE":
                 response["resource_type"] = "inventory.ErrorResource"
