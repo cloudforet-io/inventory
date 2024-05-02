@@ -1,6 +1,9 @@
 from typing import List, Union
 from enum import Enum
 from pydantic import BaseModel
+
+from spaceone.inventory.plugin.collector.model.namespace import Namespace
+from spaceone.inventory.plugin.collector.model.metric import Metric
 from spaceone.inventory.plugin.collector.model.cloud_service import CloudService
 from spaceone.inventory.plugin.collector.model.cloud_service_type import (
     CloudServiceType,
@@ -18,6 +21,8 @@ class State(str, Enum):
 class ResourceType(str, Enum):
     cloud_service = "inventory.CloudService"
     cloud_service_type = "inventory.CloudServiceType"
+    namespace = "inventory.Namespace"
+    metric = "inventory.Metric"
     region = "inventory.Region"
     error = "inventory.ErrorResource"
 
@@ -45,6 +50,8 @@ class ResourceResponse(BaseModel):
     cloud_service: CloudService = None
     error_data: dict = {}
     region: Region = None
+    namespace: Namespace = None
+    metric: Metric = None
     match_keys: List[List[str]] = []
     error_message: str = ""
 
