@@ -14,3 +14,4 @@ class Metric(BaseModel):
     unit: Union[str, None] = None
     tags: Union[dict, None] = {}
     namespace_id: str
+    version: str
