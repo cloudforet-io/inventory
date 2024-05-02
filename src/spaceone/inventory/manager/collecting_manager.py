@@ -292,6 +292,7 @@ class CollectingManager(BaseManager):
         request_data = resource_data.get("resource", {})
         request_data["domain_id"] = domain_id
         request_data["plugin_id"] = plugin_id
+        request_data["is_managed"] = True
 
         if resource_type == "inventory.Namespace":
             namespace_mgr: NamespaceManager = self.locator.get_manager(
