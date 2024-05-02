@@ -7,6 +7,8 @@ from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.plugin_manager import PluginManager
 from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
+from spaceone.inventory.manager.namespace_manager import NamespaceManager
+from spaceone.inventory.manager.metric_manager import MetricManager
 from spaceone.inventory.error import *
 from spaceone.inventory.lib import rule_matcher
 from spaceone.inventory.conf.collector_conf import *
@@ -224,17 +226,21 @@ class CollectingManager(BaseManager):
         for res in results:
             total_count += 1
             try:
-                upsert_result = self._upsert_resource(res, params)
-
-                if upsert_result == NOT_COUNT:
-                    # skip count for cloud service type and region
-                    pass
-                elif upsert_result == CREATED:
-                    created_count += 1
-                elif upsert_result == UPDATED:
-                    updated_count += 1
+                resource_type = res.get("resource_type")
+                if resource_type in ["inventory.Namespace", "inventory.Metric"]:
+                    self._upsert_metric_and_namespace(res, params)
                 else:
-                    failure_count += 1
+                    upsert_result = self._upsert_resource(res, params)
+
+                    if upsert_result == NOT_COUNT:
+                        # skip count for cloud service type and region
+                        pass
+                    elif upsert_result == CREATED:
+                        created_count += 1
+                    elif upsert_result == UPDATED:
+                        updated_count += 1
+                    else:
+                        failure_count += 1
 
             except Exception as e:
                 _LOGGER.error(
@@ -248,6 +254,107 @@ class CollectingManager(BaseManager):
             "updated_count": updated_count,
             "failure_count": failure_count,
         }
+
+    def _upsert_metric_and_namespace(self, resource_data: dict, params: dict) -> None:
+        """
+        Args:
+            resource_data (dict): resource information from plugin
+            params(dict): {
+                'collector_id': 'str',
+                'job_id': 'str',
+                'job_task_id': 'str',
+                'workspace_id': 'str',
+                'domain_id': 'str',
+                'plugin_info': 'dict',
+                'task_options': 'dict',
+                'secret_info': 'dict'
+            }
+        Returns:
+            None
+        """
+
+        job_task_id = params["job_task_id"]
+        domain_id = params["domain_id"]
+        workspace_id = params["workspace_id"]
+        plugin_id = params["plugin_info"].get("plugin_id")
+        resource_type = resource_data.get("resource_type")
+        request_data = resource_data.get("resource", {})
+        request_data["domain_id"] = domain_id
+        request_data["plugin_id"] = plugin_id
+
+        try:
+            if resource_type == "inventory.Namespace":
+                namespace_mgr: NamespaceManager = self.locator.get_manager(
+                    "NamespaceManager"
+                )
+
+                namespace_id = request_data.get("namespace_id")
+                version = request_data.get("version")
+
+                namespace_vos = namespace_mgr.filter_namespaces(
+                    namespace_id=namespace_id, domain_id=domain_id
+                )
+                if namespace_vos.count() == 0:
+                    resource_data["workspaces"] = [workspace_id]
+                    namespace_mgr.create_namespace(request_data)
+                else:
+                    namespace_vo = namespace_vos[0]
+                    workspaces = namespace_vo.workspaces
+                    is_changed = False
+
+                    if workspace_id not in workspaces:
+                        workspaces.append(workspace_id)
+                        resource_data["workspaces"] = workspaces
+                        is_changed = True
+                    else:
+                        resource_data["workspaces"] = workspaces
+
+                    if namespace_vo.version != version or is_changed:
+                        namespace_vo.update(request_data)
+            else:
+                metric_mgr: MetricManager = self.locator.get_manager("MetricManager")
+
+                metric_id = request_data.get("metric_id")
+                version = request_data.get("version")
+
+                metric_vos = metric_mgr.filter_metrics(
+                    metric_id=metric_id, domain_id=domain_id
+                )
+
+                if metric_vos.count() == 0:
+                    resource_data["workspaces"] = [workspace_id]
+                    metric_mgr.create_metric(request_data)
+                else:
+                    metric_vo = metric_vos[0]
+                    workspaces = metric_vo.workspaces
+                    is_changed = False
+
+                    if workspace_id not in workspaces:
+                        workspaces.append(workspace_id)
+                        resource_data["workspaces"] = workspaces
+                        is_changed = True
+                    else:
+                        resource_data["workspaces"] = workspaces
+
+                    if metric_vo.version != version or is_changed:
+                        metric_vo.update(request_data)
+
+        except Exception as e:
+            if isinstance(e, ERROR_BASE):
+                error_message = e.message
+            else:
+                error_message = str(e)
+
+            _LOGGER.error(
+                f"[_upsert_metric_and_namespace] upsert error: {error_message}"
+            )
+            self.job_task_mgr.add_error(
+                job_task_id,
+                domain_id,
+                "ERROR_UNKNOWN",
+                f"failed to upsert resource: {error_message}",
+                {"resource_type": resource_type},
+            )
 
     def _upsert_resource(self, resource_data: dict, params: dict) -> int:
         """

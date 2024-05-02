@@ -111,6 +111,9 @@ class JobManager(BaseManager):
     @staticmethod
     def _delete_metric_cache(job_vo: Job) -> None:
         cache.delete_pattern(f"inventory:managed-metric:{job_vo.domain_id}:*:load")
+        cache.delete_pattern(
+            f"inventory:plugin-metric:{job_vo.domain_id}:{job_vo.plugin_id}:*:load"
+        )
 
     def update_job_timeout_by_hour(self, job_timeout: int, domain_id: str) -> None:
         created_at = datetime.utcnow() - timedelta(hours=job_timeout)

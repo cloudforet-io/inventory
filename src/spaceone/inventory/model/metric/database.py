@@ -14,6 +14,7 @@ class Metric(MongoModel):
     label_keys = ListField(DictField())
     is_managed = BooleanField(default=False)
     version = StringField(max_length=40, default=None, null=True)
+    plugin_id = StringField(max_length=40, default=None, null=True)
     namespace_id = StringField(max_length=40)
     domain_id = StringField(max_length=40)
     workspaces = ListField(StringField(max_length=40))
