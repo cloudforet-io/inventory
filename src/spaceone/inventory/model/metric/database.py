@@ -11,7 +11,7 @@ class Metric(MongoModel):
     date_field = StringField(default=None)
     unit = StringField(default=None)
     tags = DictField(default=None)
-    label_keys = ListField(DictField())
+    labels_info = ListField(DictField())
     is_managed = BooleanField(default=False)
     version = StringField(max_length=40, default=None, null=True)
     plugin_id = StringField(max_length=40, default=None, null=True)
@@ -28,6 +28,7 @@ class Metric(MongoModel):
             "date_field",
             "unit",
             "tags",
+            "labels_info",
         ],
         "minimal_fields": [
             "metric_id",

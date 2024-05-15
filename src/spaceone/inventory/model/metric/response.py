@@ -16,7 +16,7 @@ class MetricResponse(BaseModel):
     date_field: Union[str, None] = None
     unit: Union[str, None] = None
     tags: Union[dict, None] = None
-    label_keys: Union[List[dict], None] = None
+    labels_info: Union[List[dict], None] = None
     is_managed: Union[bool, None] = None
     namespace_id: Union[str, None] = None
     domain_id: Union[str, None] = None
