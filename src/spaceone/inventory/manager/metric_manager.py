@@ -89,11 +89,21 @@ class MetricManager(BaseManager):
 
         self.transaction.add_rollback(_rollback, metric_vo.to_dict())
 
-        return metric_vo.update(params)
+        metric_vo = metric_vo.update(params)
 
-    @staticmethod
-    def delete_metric_by_vo(metric_vo: Metric) -> None:
+        if "query_options" in params:
+            self.metric_data_mgr.delete_metric_data_by_metric_id(
+                metric_vo.metric_id, metric_vo.domain_id
+            )
+
+        return metric_vo
+
+    def delete_metric_by_vo(self, metric_vo: Metric) -> None:
+        metric_id = metric_vo.metric_id
+        domain_id = metric_vo.domain_id
         metric_vo.delete()
+
+        self.metric_data_mgr.delete_metric_data_by_metric_id(metric_id, domain_id)
 
     def get_metric(
         self,
