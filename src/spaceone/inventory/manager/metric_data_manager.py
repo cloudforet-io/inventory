@@ -36,6 +36,22 @@ class MetricDataManager(BaseManager):
         )
         return monthly_metric_data_vo
 
+    def delete_metric_data_by_metric_id(self, metric_id: str, domain_id: str):
+        _LOGGER.debug(
+            f"[delete_metric_data_by_metric_id] Delete all metric data: {metric_id}"
+        )
+        metric_data_vos = self.metric_data_model.filter(
+            metric_id=metric_id, domain_id=domain_id
+        )
+        metric_data_vos.delete()
+
+        monthly_metric_data_vos = self.monthly_metric_data.filter(
+            metric_id=metric_id, domain_id=domain_id
+        )
+        monthly_metric_data_vos.delete()
+
+        cache.delete_pattern(f"inventory:metric-data:*:{domain_id}:{metric_id}:*")
+
     def filter_metric_data(self, **conditions) -> QuerySet:
         return self.metric_data_model.filter(**conditions)
 
@@ -153,7 +169,7 @@ class MetricDataManager(BaseManager):
         return response
 
     @cache.cacheable(
-        key="inventory:metric-data:{domain_id}:{metric_id}:{query_hash}",
+        key="inventory:metric-query-history:{domain_id}:{metric_id}:{query_hash}",
         expire=600,
     )
     def create_metric_data_query_history(

@@ -69,7 +69,7 @@ class MetricManager(BaseManager):
             params["metric_id"] = utils.generate_id("metric")
 
         params["workspaces"] = [params["workspace_id"]]
-        params["label_keys"] = self._get_label_keys(params["query_options"])
+        params["labels_info"] = self._get_labels_info(params["query_options"])
 
         metric_vo: Metric = self.metric_model.create(params)
         self.transaction.add_rollback(_rollback, metric_vo)
@@ -85,15 +85,25 @@ class MetricManager(BaseManager):
             metric_vo.update(old_data)
 
         if "query_options" in params:
-            params["label_keys"] = self._get_label_keys(params["query_options"])
+            params["labels_info"] = self._get_labels_info(params["query_options"])
 
         self.transaction.add_rollback(_rollback, metric_vo.to_dict())
 
-        return metric_vo.update(params)
+        metric_vo = metric_vo.update(params)
 
-    @staticmethod
-    def delete_metric_by_vo(metric_vo: Metric) -> None:
+        if "query_options" in params:
+            self.metric_data_mgr.delete_metric_data_by_metric_id(
+                metric_vo.metric_id, metric_vo.domain_id
+            )
+
+        return metric_vo
+
+    def delete_metric_by_vo(self, metric_vo: Metric) -> None:
+        metric_id = metric_vo.metric_id
+        domain_id = metric_vo.domain_id
         metric_vo.delete()
+
+        self.metric_data_mgr.delete_metric_data_by_metric_id(metric_id, domain_id)
 
     def get_metric(
         self,
@@ -384,7 +394,7 @@ class MetricManager(BaseManager):
         created_year = created_at.strftime("%Y")
         group_by = ["project_id", "workspace_id"]
 
-        for key in metric_vo.label_keys:
+        for key in metric_vo.labels_info:
             group_by.append(f"labels.{key}")
 
         query = {
@@ -580,13 +590,12 @@ class MetricManager(BaseManager):
         cache.delete_pattern(f"inventory:metric-data:{domain_id}:{metric_id}:*")
 
     @staticmethod
-    def _get_label_keys(query_options: dict) -> list:
+    def _get_labels_info(query_options: dict) -> list:
         query_options = copy.deepcopy(query_options)
-        label_keys = [
+        labels_info = [
             {
                 "key": "workspace_id",
                 "name": "Workspace",
-                "search_key": "workspace_id",
                 "reference": {
                     "resource_type": "identity.Workspace",
                     "reference_key": "workspace_id",
@@ -595,7 +604,6 @@ class MetricManager(BaseManager):
             {
                 "key": "project_id",
                 "name": "Project",
-                "search_key": "project_id",
                 "reference": {
                     "resource_type": "identity.Project",
                     "reference_key": "project_id",
@@ -606,14 +614,18 @@ class MetricManager(BaseManager):
             if isinstance(group_option, dict):
                 key = group_option.get("key")
                 name = group_option.get("name")
-                label_key = group_option
+                label_info = group_option
             else:
                 key = group_option
                 name = key.rsplit(".", 1)[-1]
-                label_key = {"key": key, "name": name}
+                label_info = {"key": key, "name": name}
 
             if key not in ["project_id", "workspace_id"]:
-                label_key["key"] = f"labels.{name}"
-            label_keys.append(label_key)
+                label_info["key"] = f"labels.{name}"
 
-        return label_keys
+            if "search_key" not in label_info:
+                label_info["search_key"] = key
+
+            labels_info.append(label_info)
+
+        return labels_info
