@@ -416,10 +416,15 @@ class CloudServiceService(BaseService):
         """
 
         domain_id = params["domain_id"]
+        workspace_id = params.get("workspace_id")
         query = params.get("query", {})
+        reference_filter = {"domain_id": domain_id, "workspace_id": workspace_id}
 
         return self.cloud_svc_mgr.list_cloud_services(
-            query, change_filter=True, domain_id=domain_id
+            query,
+            change_filter=True,
+            domain_id=domain_id,
+            reference_filter=reference_filter,
         )
 
     @transaction(
@@ -487,9 +492,16 @@ class CloudServiceService(BaseService):
 
         """
 
+        domain_id = params["domain_id"]
+        workspace_id = params.get("workspace_id")
         query = params.get("query", {})
+        reference_filter = {"domain_id": domain_id, "workspace_id": workspace_id}
+
         return self.cloud_svc_mgr.analyze_cloud_services(
-            query, change_filter=True, domain_id=params["domain_id"]
+            query,
+            change_filter=True,
+            domain_id=params["domain_id"],
+            reference_filter=reference_filter,
         )
 
     @transaction(
@@ -514,10 +526,16 @@ class CloudServiceService(BaseService):
 
         """
 
+        domain_id = params["domain_id"]
+        workspace_id = params.get("workspace_id")
         query = params.get("query", {})
+        reference_filter = {"domain_id": domain_id, "workspace_id": workspace_id}
 
         return self.cloud_svc_mgr.stat_cloud_services(
-            query, change_filter=True, domain_id=params["domain_id"]
+            query,
+            change_filter=True,
+            domain_id=params["domain_id"],
+            reference_filter=reference_filter,
         )
 
     @staticmethod
