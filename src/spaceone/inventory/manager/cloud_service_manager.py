@@ -111,6 +111,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
         target: str = None,
         change_filter: bool = False,
         domain_id: str = None,
+        reference_filter: dict = None,
     ) -> Tuple[QuerySet, int]:
         if change_filter:
             query = self._change_filter_tags(query)
@@ -121,13 +122,16 @@ class CloudServiceManager(BaseManager, ResourceManager):
             # Append Query for DELETED filter (Temporary Logic)
             query = self._append_state_query(query)
 
-        return self.cloud_svc_model.query(**query, target=target)
+        return self.cloud_svc_model.query(
+            **query, target=target, reference_filter=reference_filter
+        )
 
     def analyze_cloud_services(
         self,
         query: dict,
         change_filter: bool = False,
         domain_id: str = None,
+        reference_filter: dict = None,
     ):
         if change_filter:
             query = self._change_filter_tags(query)
@@ -136,10 +140,14 @@ class CloudServiceManager(BaseManager, ResourceManager):
             # Append Query for DELETED filter (Temporary Logic)
             query = self._append_state_query(query)
 
-        return self.cloud_svc_model.analyze(**query)
+        return self.cloud_svc_model.analyze(**query, reference_filter=reference_filter)
 
     def stat_cloud_services(
-        self, query: dict, change_filter: bool = False, domain_id: str = None
+        self,
+        query: dict,
+        change_filter: bool = False,
+        domain_id: str = None,
+        reference_filter: dict = None,
     ):
         if change_filter:
             query = self._change_filter_tags(query)
@@ -149,7 +157,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
             # Append Query for DELETED filter (Temporary Logic)
             query = self._append_state_query(query)
 
-        return self.cloud_svc_model.stat(**query)
+        return self.cloud_svc_model.stat(**query, reference_filter=reference_filter)
 
     def get_export_query_results(
         self,
