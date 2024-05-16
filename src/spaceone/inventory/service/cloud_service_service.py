@@ -534,7 +534,7 @@ class CloudServiceService(BaseService):
         return self.cloud_svc_mgr.stat_cloud_services(
             query,
             change_filter=True,
-            domain_id=params["domaizn_id"],
+            domain_id=params["domain_id"],
             reference_filter=reference_filter,
         )
 
