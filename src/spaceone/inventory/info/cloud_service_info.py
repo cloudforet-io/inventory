@@ -7,20 +7,15 @@ from spaceone.inventory.model.cloud_service_model import CloudService
 __all__ = ["CloudServiceInfo", "CloudServicesInfo"]
 
 
-def CollectionInfo(vos: list):
-    if vos:
-        collections = []
-        for vo in vos:
-            info = {
-                "provider": vo.provider,
-                "service_account_id": vo.service_account_id,
-                "secret_id": vo.secret_id,
-                "collector_id": vo.collector_id,
-                "last_collected_at": utils.datetime_to_iso8601(vo.last_collected_at),
-            }
-            collection = cloud_service_pb2.CollectionInfo(**info)
-            collections.append(collection)
-        return collections
+def CollectionInfo(vo):
+    if vo:
+        info = {
+            "service_account_id": vo.service_account_id,
+            "secret_id": vo.secret_id,
+            "collector_id": vo.collector_id,
+            "last_collected_at": utils.datetime_to_iso8601(vo.last_collected_at),
+        }
+        return cloud_service_pb2.CollectionInfo(**info)
     else:
         return None
 
@@ -54,9 +49,7 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False, include_metadata
                     _change_tags_without_hash(cloud_svc_vo.tags)
                 ),
                 "tag_keys": change_struct_type(cloud_svc_vo.tag_keys),
-                "collection_info": cloud_service_pb2.CollectionInfo(
-                    **cloud_svc_vo.collection_info.to_dict()
-                ),
+                "collection_info": CollectionInfo(cloud_svc_vo.collection_info),
                 "workspace_id": cloud_svc_vo.workspace_id,
                 "domain_id": cloud_svc_vo.domain_id,
                 "created_at": utils.datetime_to_iso8601(cloud_svc_vo.created_at),
