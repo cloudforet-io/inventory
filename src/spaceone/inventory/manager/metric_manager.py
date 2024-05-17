@@ -277,17 +277,17 @@ class MetricManager(BaseManager):
         workspace_id: str,
         cloud_service_type_key: str = None,
     ) -> list:
-        changed_group_by = [
-            "project_id",
-            "workspace_id",
-        ]
+        default_group_by = ["service_account_id", "project_id", "workspace_id"]
+        changed_group_by = []
+        changed_group_by += copy.deepcopy(default_group_by)
+
         for group_option in query.get("group_by", []):
             if isinstance(group_option, dict):
                 key = group_option.get("key")
             else:
                 key = group_option
 
-            if key not in ["project_id", "workspace_id"]:
+            if key not in default_group_by:
                 changed_group_by.append(group_option)
 
         query["group_by"] = changed_group_by
@@ -317,7 +317,7 @@ class MetricManager(BaseManager):
                 )
 
         if "select" in query:
-            for group_by_key in ["project_id", "workspace_id"]:
+            for group_by_key in default_group_by:
                 query["select"][group_by_key] = group_by_key
 
         _LOGGER.debug(f"[_analyze_cloud_service] Analyze Query: {query}")
@@ -609,6 +609,14 @@ class MetricManager(BaseManager):
                     "reference_key": "project_id",
                 },
             },
+            {
+                "key": "service_account_id",
+                "name": "Service Account",
+                "reference": {
+                    "resource_type": "identity.ServiceAccount",
+                    "reference_key": "service_account_id",
+                },
+            },
         ]
         for group_option in query_options.get("group_by", []):
             if isinstance(group_option, dict):
@@ -620,7 +628,7 @@ class MetricManager(BaseManager):
                 name = key.rsplit(".", 1)[-1]
                 label_info = {"key": key, "name": name}
 
-            if key not in ["project_id", "workspace_id"]:
+            if key not in ["service_account_id", "project_id", "workspace_id"]:
                 label_info["key"] = f"labels.{name}"
 
             if "search_key" not in label_info:
