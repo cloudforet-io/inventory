@@ -610,7 +610,7 @@ class MetricManager(BaseManager):
                 },
             },
             {
-                "key": "service_account_id",
+                "key": "collection_info.service_account_id",
                 "name": "Service Account",
                 "reference": {
                     "resource_type": "identity.ServiceAccount",

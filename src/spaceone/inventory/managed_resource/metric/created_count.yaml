@@ -27,7 +27,7 @@ query_options:
     - key: reference.resource_id
       name: Resource ID
     - key: name
-      name: Name
+      name: Resource Name
   fields:
     value:
       operator: count
