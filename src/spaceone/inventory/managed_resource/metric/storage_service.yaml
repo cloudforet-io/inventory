@@ -7,28 +7,23 @@ query_options:
   group_by:
     - key: provider
       name: Provider
-      search_key: provider
       reference:
         resource_type: identity.Provider
         reference_key: provider
       default: true
     - key: cloud_service_group
       name: Cloud Service Group
-      search_key: cloud_service_group
       default: true
     - key: cloud_service_type
       name: Cloud Service Type
-      search_key: cloud_service_type
       default: true
     - key: region_code
       name: Region
-      search_key: region_code
       reference:
         resource_type: inventory.Region
         reference_key: region_code
     - key: account
       name: Cloud Account ID
-      search_key: account
   fields:
     value:
       key: instance_size
