@@ -70,6 +70,9 @@ class CollectorService(BaseService):
         else:
             params["workspace_id"] = "*"
 
+        if schedule := params.get("schedule"):
+            self._check_schedule(schedule)
+
         plugin_manager = self.locator.get_manager(PluginManager)
         collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(
             CollectorPluginManager
@@ -156,6 +159,9 @@ class CollectorService(BaseService):
         """
 
         domain_id = params["domain_id"]
+
+        if schedule := params.get("schedule"):
+            self._check_schedule(schedule)
 
         collector_vo = self.collector_mgr.get_collector(
             params["collector_id"], params["domain_id"], params.get("workspace_id")
@@ -878,3 +884,12 @@ class CollectorService(BaseService):
         else:
             # Single provider
             return provider if provider else plugin_info.get("provider")
+
+    @staticmethod
+    def _check_schedule(schedule: dict) -> None:
+        if schedule.get("state") == "ENABLED":
+            if hours := schedule.get("hours"):
+                if len(hours) > 2:
+                    raise ERROR_INVALID_PARAMETER(
+                        key="schedule.hours", reason="Maximum 2 hours can be set."
+                    )
