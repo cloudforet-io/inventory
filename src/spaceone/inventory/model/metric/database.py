@@ -3,7 +3,7 @@ from spaceone.core.model.mongo_model import MongoModel
 
 
 class Metric(MongoModel):
-    metric_id = StringField(max_length=40, unique_with="domain_id")
+    metric_id = StringField(max_length=80, unique_with="domain_id")
     name = StringField(max_length=40)
     metric_type = StringField(max_length=40, choices=["COUNTER", "GAUGE"])
     resource_type = StringField()
