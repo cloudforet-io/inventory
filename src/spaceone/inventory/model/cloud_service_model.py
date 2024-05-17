@@ -9,7 +9,6 @@ from spaceone.inventory.error import *
 
 
 class CollectionInfo(EmbeddedDocument):
-    provider = StringField(max_length=40)
     service_account_id = StringField(max_length=40)
     secret_id = StringField(max_length=40)
     collector_id = StringField(max_length=40)
@@ -35,7 +34,7 @@ class CloudService(MongoModel):
     ref_cloud_service_type = StringField(max_length=255)
     data = DictField()
     metadata = DictField()
-    reference = EmbeddedDocumentField(ReferenceResource, default=ReferenceResource)
+    reference = EmbeddedDocumentField(ReferenceResource, default={})
     tags = DictField()
     tag_keys = DictField()
     region_code = StringField(max_length=255, default=None, null=True)
@@ -43,7 +42,7 @@ class CloudService(MongoModel):
     project_id = StringField(max_length=40)
     workspace_id = StringField(max_length=40)
     domain_id = StringField(max_length=40)
-    collection_info = ListField(EmbeddedDocumentField(CollectionInfo), default=[])
+    collection_info = EmbeddedDocumentField(CollectionInfo, default=CollectionInfo)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
     deleted_at = DateTimeField(default=None, null=True)

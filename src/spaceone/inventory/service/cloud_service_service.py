@@ -135,7 +135,7 @@ class CloudServiceService(BaseService):
         if "metadata" in params:
             params["metadata"] = self._convert_metadata(params["metadata"], provider)
 
-        params["collection_info"] = self._get_collection_info(provider)
+        params["collection_info"] = self._get_collection_info()
 
         cloud_svc_vo = self.cloud_svc_mgr.create_cloud_service(params)
 
@@ -253,10 +253,7 @@ class CloudServiceService(BaseService):
             else:
                 del params["metadata"]
 
-        old_collection_info = old_cloud_svc_data.get("collection_info", [])
-        params["collection_info"] = self._get_collection_info(
-            provider, old_collection_info
-        )
+        params["collection_info"] = self._get_collection_info()
 
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
 
@@ -555,34 +552,17 @@ class CloudServiceService(BaseService):
     def _convert_metadata(metadata: dict, provider: str) -> dict:
         return {provider: copy.deepcopy(metadata)}
 
-    def _get_collection_info(
-        self, provider: str, collections: List[dict] = None
-    ) -> List[dict]:
-        collections = collections or []
-
+    def _get_collection_info(self) -> dict:
         collector_id = self.transaction.get_meta("collector_id")
         secret_id = self.transaction.get_meta("secret.secret_id")
         service_account_id = self.transaction.get_meta("secret.service_account_id")
 
-        new_collection = {
-            "provider": provider,
+        return {
             "collector_id": collector_id,
             "secret_id": secret_id,
             "service_account_id": service_account_id,
             "last_collected_at": datetime.utcnow(),
         }
-
-        merged_collections = []
-        if collections:
-            for collection in collections:
-                if collection["provider"] == provider:
-                    merged_collections.append(new_collection)
-                else:
-                    merged_collections.append(collection)
-        else:
-            merged_collections.append(new_collection)
-
-        return merged_collections
 
     @staticmethod
     def _convert_tags_to_dict(tags: Union[list, dict]) -> dict:
