@@ -277,7 +277,11 @@ class MetricManager(BaseManager):
         workspace_id: str,
         cloud_service_type_key: str = None,
     ) -> list:
-        default_group_by = ["service_account_id", "project_id", "workspace_id"]
+        default_group_by = [
+            "collection_info.service_account_id",
+            "project_id",
+            "workspace_id",
+        ]
         changed_group_by = []
         changed_group_by += copy.deepcopy(default_group_by)
 
@@ -317,7 +321,7 @@ class MetricManager(BaseManager):
                 )
 
         if "select" in query:
-            for group_by_key in default_group_by:
+            for group_by_key in ["service_account_id", "project_id", "workspace_id"]:
                 query["select"][group_by_key] = group_by_key
 
         _LOGGER.debug(f"[_analyze_cloud_service] Analyze Query: {query}")
@@ -610,8 +614,9 @@ class MetricManager(BaseManager):
                 },
             },
             {
-                "key": "collection_info.service_account_id",
+                "key": "labels.service_account_id",
                 "name": "Service Account",
+                "search_key": "collection_info.service_account_id",
                 "reference": {
                     "resource_type": "identity.ServiceAccount",
                     "reference_key": "service_account_id",
