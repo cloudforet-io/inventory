@@ -1,6 +1,6 @@
 ---
-metric_id: metric-managed-database-service
-name: Database Service
+metric_id: metric-managed-database-count
+name: Database Count
 metric_type: GAUGE
 resource_type: inventory.CloudService
 query_options:
