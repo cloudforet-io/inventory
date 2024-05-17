@@ -54,7 +54,9 @@ def CloudServiceInfo(cloud_svc_vo: CloudService, minimal=False, include_metadata
                     _change_tags_without_hash(cloud_svc_vo.tags)
                 ),
                 "tag_keys": change_struct_type(cloud_svc_vo.tag_keys),
-                "collection_info": CollectionInfo(cloud_svc_vo.collection_info),
+                "collection_info": cloud_service_pb2.CollectionInfo(
+                    **cloud_svc_vo.collection_info.to_dict()
+                ),
                 "workspace_id": cloud_svc_vo.workspace_id,
                 "domain_id": cloud_svc_vo.domain_id,
                 "created_at": utils.datetime_to_iso8601(cloud_svc_vo.created_at),
