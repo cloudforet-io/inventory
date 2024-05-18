@@ -138,6 +138,13 @@ class MetricManager(BaseManager):
         metric_vo = self.get_metric(metric_id, domain_id, workspace_id)
         plugin_id = metric_vo.plugin_id
 
+        if metric_vo.status == "IN_PROGRESS":
+            _LOGGER.debug(
+                f"[check_and_run_metric_query] Metric is already in progress: {metric_id}"
+            )
+            self._check_metric_status(metric_vo)
+            return
+
         if metric_vo.is_managed:
             is_load: bool = cache.get(
                 f"inventory:managed-metric:{domain_id}:{metric_id}:load"
@@ -149,23 +156,17 @@ class MetricManager(BaseManager):
 
         if not is_load:
             _LOGGER.debug(f"[check_and_run_metric_query] run metric query: {metric_id}")
+            self.run_metric_query(metric_vo)
 
+    def _check_metric_status(self, metric_vo: Metric) -> None:
+        for i in range(120):
+            metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
             if metric_vo.status == "DONE":
-                self.run_metric_query(metric_vo)
-            else:
-                for i in range(120):
-                    if metric_vo.status == "DONE":
-                        break
+                break
 
-                    time.sleep(1)
+            time.sleep(3)
 
     def run_metric_query(self, metric_vo: Metric, is_yesterday: bool = False) -> None:
-        if metric_vo.status == "IN_PROGRESS":
-            _LOGGER.debug(
-                f"[run_metric_query] Metric is already in progress: {metric_vo.metric_id}"
-            )
-            return
-
         self.update_metric_by_vo({"status": "IN_PROGRESS"}, metric_vo)
 
         domain_id = metric_vo.domain_id
