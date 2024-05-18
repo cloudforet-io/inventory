@@ -7,7 +7,6 @@ from spaceone.core.error import *
 
 from spaceone.inventory.model.metric.request import *
 from spaceone.inventory.model.metric.response import *
-from spaceone.inventory.model.metric.database import Metric
 from spaceone.inventory.manager.metric_manager import MetricManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 

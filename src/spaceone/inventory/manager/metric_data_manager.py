@@ -1,5 +1,4 @@
 import logging
-import copy
 from typing import Tuple
 from datetime import datetime, date
 from dateutil.relativedelta import relativedelta
@@ -10,7 +9,6 @@ from spaceone.core import utils, cache
 from spaceone.inventory.model.metric_data.database import (
     MetricData,
     MonthlyMetricData,
-    MetricDataQueryHistory,
 )
 from spaceone.inventory.error.metric import (
     ERROR_INVALID_DATE_RANGE,
@@ -148,10 +146,7 @@ class MetricDataManager(BaseManager):
     ) -> dict:
         self._check_date_range(query)
         granularity = query["granularity"]
-
-        # Save query history to speed up data loading
         query_hash = utils.dict_to_hash(query)
-        self.create_metric_data_query_history(query, query_hash, domain_id, metric_id)
 
         if granularity == "DAILY":
             response = self.analyze_metric_data_with_cache(
@@ -167,35 +162,6 @@ class MetricDataManager(BaseManager):
             )
 
         return response
-
-    @cache.cacheable(
-        key="inventory:metric-query-history:{domain_id}:{metric_id}:{query_hash}",
-        expire=600,
-    )
-    def create_metric_data_query_history(
-        self, query: dict, query_hash: str, domain_id: str, metric_id: str
-    ):
-        def _rollback(vo: MetricDataQueryHistory):
-            _LOGGER.info(
-                f"[create_metric_data_query_history._rollback] Delete query history: {query_hash}"
-            )
-            vo.delete()
-
-        history_model = MetricDataQueryHistory()
-        history_vos = history_model.filter(query_hash=query_hash, domain_id=domain_id)
-        if history_vos.count() == 0:
-            history_vo = history_model.create(
-                {
-                    "query_hash": query_hash,
-                    "query_options": copy.deepcopy(query),
-                    "metric_id": metric_id,
-                    "domain_id": domain_id,
-                }
-            )
-
-            self.transaction.add_rollback(_rollback, history_vo)
-        else:
-            history_vos[0].update({})
 
     def _check_date_range(self, query: dict) -> None:
         start_str = query.get("start")

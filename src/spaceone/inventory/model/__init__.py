@@ -22,5 +22,4 @@ from spaceone.inventory.model.metric_example.database import MetricExample
 from spaceone.inventory.model.metric_data.database import (
     MetricData,
     MonthlyMetricData,
-    MetricDataQueryHistory,
 )

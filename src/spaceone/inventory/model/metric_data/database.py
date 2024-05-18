@@ -116,21 +116,3 @@ class MonthlyMetricData(MongoModel):
             },
         ],
     }
-
-
-class MetricDataQueryHistory(MongoModel):
-    query_hash = StringField(max_length=255)
-    query_options = DictField(default={})
-    metric_id = StringField(max_length=40)
-    domain_id = StringField(max_length=40)
-    updated_at = DateTimeField(auto_now=True)
-
-    meta = {
-        "updatable_fields": ["updated_at"],
-        "indexes": [
-            {
-                "fields": ["domain_id", "metric_id", "query_hash"],
-                "name": "COMPOUND_INDEX_FOR_SEARCH",
-            },
-        ],
-    }

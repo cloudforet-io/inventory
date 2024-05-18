@@ -5,6 +5,7 @@ from spaceone.core.model.mongo_model import MongoModel
 class Metric(MongoModel):
     metric_id = StringField(max_length=80, unique_with="domain_id")
     name = StringField(max_length=40)
+    status = StringField(max_length=20, choices=["IN_PROGRESS", "DONE"], default="DONE")
     metric_type = StringField(max_length=40, choices=["COUNTER", "GAUGE"])
     resource_type = StringField()
     query_options = DictField(required=True, default=None)
@@ -24,6 +25,7 @@ class Metric(MongoModel):
     meta = {
         "updatable_fields": [
             "name",
+            "status",
             "query_options",
             "date_field",
             "unit",
