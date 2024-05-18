@@ -147,16 +147,13 @@ class MetricManager(BaseManager):
             )
 
         if not is_load:
-            self.run_metric_query(metric_vo, workspace_id)
+            _LOGGER.debug(f"[check_and_run_metric_query] run metric query: {metric_id}")
+            self.run_metric_query(metric_vo)
 
-    def run_metric_query(
-        self, metric_vo: Metric, workspace_id: str = None, is_yesterday: bool = False
-    ) -> None:
+    def run_metric_query(self, metric_vo: Metric, is_yesterday: bool = False) -> None:
         domain_id = metric_vo.domain_id
 
-        results = self.analyze_resource(
-            metric_vo, workspace_id, is_yesterday=is_yesterday
-        )
+        results = self.analyze_resource(metric_vo, is_yesterday=is_yesterday)
 
         created_at = datetime.utcnow()
 
@@ -184,19 +181,7 @@ class MetricManager(BaseManager):
         self._delete_invalid_metric_data(metric_vo)
         self._delete_old_metric_data(metric_vo)
         self._remove_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
-
-        if metric_vo.is_managed:
-            cache_key = (
-                f"inventory:managed-metric:{domain_id}:{metric_vo.metric_id}:load"
-            )
-        else:
-            cache_key = f"inventory:plugin-metric:{domain_id}:{metric_vo.plugin_id}:{metric_vo.metric_id}:load"
-
-        cache.set(
-            cache_key,
-            True,
-            expire=3600 * 24,
-        )
+        self._set_metric_load_cache(domain_id, metric_vo)
 
     def analyze_resource(
         self,
@@ -591,7 +576,24 @@ class MetricManager(BaseManager):
     @staticmethod
     def _remove_analyze_cache(domain_id: str, metric_id: str) -> None:
         cache.delete_pattern(f"inventory:metric-data:*:{domain_id}:{metric_id}:*")
-        cache.delete_pattern(f"inventory:metric-data:{domain_id}:{metric_id}:*")
+        cache.delete_pattern(
+            f"inventory:metric-query-history:{domain_id}:{metric_id}:*"
+        )
+
+    @staticmethod
+    def _set_metric_load_cache(domain_id: str, metric_vo: Metric) -> None:
+        if metric_vo.is_managed:
+            cache_key = (
+                f"inventory:managed-metric:{domain_id}:{metric_vo.metric_id}:load"
+            )
+        else:
+            cache_key = f"inventory:plugin-metric:{domain_id}:{metric_vo.plugin_id}:{metric_vo.metric_id}:load"
+
+        cache.set(
+            cache_key,
+            True,
+            expire=3600 * 24,
+        )
 
     @staticmethod
     def _get_labels_info(query_options: dict) -> list:
