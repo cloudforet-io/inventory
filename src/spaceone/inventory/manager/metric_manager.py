@@ -147,16 +147,12 @@ class MetricManager(BaseManager):
             )
 
         if not is_load:
-            self.run_metric_query(metric_vo, workspace_id)
+            self.run_metric_query(metric_vo)
 
-    def run_metric_query(
-        self, metric_vo: Metric, workspace_id: str = None, is_yesterday: bool = False
-    ) -> None:
+    def run_metric_query(self, metric_vo: Metric, is_yesterday: bool = False) -> None:
         domain_id = metric_vo.domain_id
 
-        results = self.analyze_resource(
-            metric_vo, workspace_id, is_yesterday=is_yesterday
-        )
+        results = self.analyze_resource(metric_vo, is_yesterday=is_yesterday)
 
         created_at = datetime.utcnow()
 

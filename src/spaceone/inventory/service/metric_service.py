@@ -155,7 +155,7 @@ class MetricService(BaseService):
             params.workspace_id,
         )
 
-        self.metric_mgr.run_metric_query(metric_vo, params.workspace_id)
+        self.metric_mgr.run_metric_query(metric_vo)
 
     @transaction(
         permission="inventory:Metric.write",
