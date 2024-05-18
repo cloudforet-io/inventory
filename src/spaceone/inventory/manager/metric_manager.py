@@ -1,6 +1,7 @@
 import logging
 import copy
 import time
+import random
 from typing import Tuple
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
@@ -138,13 +139,6 @@ class MetricManager(BaseManager):
         metric_vo = self.get_metric(metric_id, domain_id, workspace_id)
         plugin_id = metric_vo.plugin_id
 
-        if metric_vo.status == "IN_PROGRESS":
-            _LOGGER.debug(
-                f"[check_and_run_metric_query] Metric is already in progress: {metric_id}"
-            )
-            self._check_metric_status(metric_vo)
-            return
-
         if metric_vo.is_managed:
             is_load: bool = cache.get(
                 f"inventory:managed-metric:{domain_id}:{metric_id}:load"
@@ -155,13 +149,32 @@ class MetricManager(BaseManager):
             )
 
         if not is_load:
-            _LOGGER.debug(f"[check_and_run_metric_query] run metric query: {metric_id}")
-            self.run_metric_query(metric_vo)
+            self._wait_random_time()
+            metric_vo = self.get_metric(metric_id, domain_id, workspace_id)
+
+            if metric_vo.status == "IN_PROGRESS":
+                _LOGGER.debug(
+                    f"[check_and_run_metric_query] metric is already in progress: {metric_id}"
+                )
+                self._check_metric_status(metric_vo)
+            else:
+                _LOGGER.debug(
+                    f"[check_and_run_metric_query] run metric query: {metric_id}"
+                )
+                self.run_metric_query(metric_vo)
+
+    @staticmethod
+    def _wait_random_time():
+        random_time = round(random.uniform(0, 3), 2)
+        _LOGGER.debug(f"[_wait_random_time] sleep time: {random_time}")
+
+        time.sleep(random_time)
 
     def _check_metric_status(self, metric_vo: Metric) -> None:
-        for i in range(120):
+        for i in range(180):
             metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
             if metric_vo.status == "DONE":
+                self.update_metric_by_vo({"status": "DONE"}, metric_vo)
                 break
 
             time.sleep(3)
