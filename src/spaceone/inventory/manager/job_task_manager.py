@@ -116,9 +116,6 @@ class JobTaskManager(BaseManager):
                 "IN_PROGRESS",
                 started_at=datetime.utcnow(),
             )
-            _LOGGER.debug(
-                f"[make_inprogress] job_task_id: {job_task_vo.job_task_id}, status: IN_PROGRESS"
-            )
 
     def make_success_by_vo(
         self,
@@ -127,12 +124,9 @@ class JobTaskManager(BaseManager):
     ) -> None:
         self._update_job_status_by_vo(
             job_task_vo,
-            "IN_PROGRESS",
+            "SUCCESS",
             finished_at=datetime.utcnow(),
             collecting_count_info=collecting_count_info,
-        )
-        _LOGGER.debug(
-            f"[make_success] job_task_id: {job_task_vo.job_task_id}, status: SUCCESS"
         )
         self.decrease_remained_sub_tasks(job_task_vo)
 
@@ -146,9 +140,6 @@ class JobTaskManager(BaseManager):
             "FAILURE",
             finished_at=datetime.utcnow(),
             collecting_count_info=collecting_count_info,
-        )
-        _LOGGER.debug(
-            f"[make_failure] job_task_id: {job_task_vo.job_task_id}, status: FAILURE"
         )
         self.decrease_remained_sub_tasks(job_task_vo)
 

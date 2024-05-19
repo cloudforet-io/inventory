@@ -172,7 +172,9 @@ class CollectingManager(BaseManager):
             )
 
             if job_task_status == "SUCCESS":
-                self.job_task_mgr.make_success_by_vo(job_task_vo, collecting_count_info)
+                self.job_task_mgr.decrease_remained_sub_tasks(
+                    job_task_vo, collecting_count_info
+                )
             else:
                 self.job_task_mgr.make_failure_by_vo(job_task_vo, collecting_count_info)
 
