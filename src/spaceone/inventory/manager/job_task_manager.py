@@ -1,3 +1,4 @@
+import copy
 import logging
 import json
 from typing import Tuple, Union
@@ -9,7 +10,6 @@ from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.model.job_task_model import JobTask
-from spaceone.inventory.lib.job_task_state import JobTaskStateMachine
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -58,43 +58,36 @@ class JobTaskManager(BaseManager):
         return self.job_task_model.stat(**query)
 
     def push_job_task(self, params: dict) -> None:
-        task = self.create_task_pipeline(params)
+        task = self.create_task_pipeline(copy.deepcopy(params))
         validate(task, schema=SPACEONE_TASK_SCHEMA)
         json_task = json.dumps(task)
         queue.put(self.get_queue_name(name="collect_queue"), json_task)
 
+    @staticmethod
     def add_error(
-        self,
-        job_task_id: str,
-        domain_id: str,
+        job_task_vo: JobTask,
         error_code: str,
         error_message: str,
         additional: dict = None,
-    ) -> JobTask:
+    ) -> None:
         error_info = {"error_code": error_code, "message": str(error_message).strip()}
 
         if additional:
             error_info["additional"] = additional
 
-        job_task_vo = self.get(job_task_id, domain_id)
         job_task_vo.append("errors", error_info)
-        _LOGGER.error(f"[add_error] {job_task_id}: {error_info}", exc_info=True)
+        _LOGGER.error(
+            f"[add_error] {job_task_vo.job_task_id}: {error_info}", exc_info=True
+        )
 
-        job_mgr: JobManager = self.locator.get_manager(JobManager)
-        job_mgr.mark_error(job_task_vo.job_id, domain_id)
-
-        return job_task_vo
-
-    def _update_job_status(
-        self,
-        job_task_id: str,
+    @staticmethod
+    def _update_job_status_by_vo(
+        job_task_vo: JobTask,
         status: str,
-        domain_id: str,
         started_at: datetime = None,
         finished_at: datetime = None,
         collecting_count_info: dict = None,
-    ) -> JobTask:
-        job_task_vo = self.get(job_task_id, domain_id)
+    ) -> None:
         params = {"status": status}
 
         if started_at:
@@ -103,84 +96,78 @@ class JobTaskManager(BaseManager):
         if finished_at:
             params["finished_at"] = finished_at
 
-        if collecting_count_info:
-            params.update(collecting_count_info)
-
         _LOGGER.debug(
-            f"[update_job_status] job_task_id: {job_task_id}, status: {status}"
+            f"[update_job_status] job_task_id: {job_task_vo.job_task_id}, status: {status}"
         )
-        return job_task_vo.update(params)
+        job_task_vo = job_task_vo.update(params)
 
-    def make_inprogress(
+        if collecting_count_info:
+            for key, value in collecting_count_info.items():
+                if isinstance(value, int):
+                    job_task_vo.increment(key, value)
+
+    def make_inprogress_by_vo(
         self,
-        job_task_id: str,
-        domain_id: str,
+        job_task_vo: JobTask,
+    ) -> None:
+        if job_task_vo.status == "PENDING":
+            self._update_job_status_by_vo(
+                job_task_vo,
+                "IN_PROGRESS",
+                started_at=datetime.utcnow(),
+            )
+            _LOGGER.debug(
+                f"[make_inprogress] job_task_id: {job_task_vo.job_task_id}, status: IN_PROGRESS"
+            )
+
+    def make_success_by_vo(
+        self,
+        job_task_vo: JobTask,
         collecting_count_info: dict = None,
     ) -> None:
-        job_task_vo = self.get(job_task_id, domain_id)
-        job_state_machine = JobTaskStateMachine(job_task_vo)
-        job_state_machine.inprogress()
-        self._update_job_status(
-            job_task_id,
-            job_state_machine.get_state(),
-            domain_id,
-            started_at=datetime.utcnow(),
-            collecting_count_info=collecting_count_info,
-        )
-
-    def make_success(
-        self,
-        job_task_id: str,
-        domain_id: str,
-        collecting_count_info: dict = None,
-    ) -> None:
-        job_task_vo = self.get(job_task_id, domain_id)
-        job_state_machine = JobTaskStateMachine(job_task_vo)
-        job_state_machine.success()
-        self._update_job_status(
-            job_task_id,
-            job_state_machine.get_state(),
-            domain_id,
+        self._update_job_status_by_vo(
+            job_task_vo,
+            "IN_PROGRESS",
             finished_at=datetime.utcnow(),
             collecting_count_info=collecting_count_info,
         )
-        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: SUCCESS")
+        _LOGGER.debug(
+            f"[make_success] job_task_id: {job_task_vo.job_task_id}, status: SUCCESS"
+        )
+        self.decrease_remained_sub_tasks(job_task_vo)
 
-    def make_failure(
+    def make_failure_by_vo(
         self,
-        job_task_id: str,
-        domain_id: str,
+        job_task_vo: JobTask,
         collecting_count_info: dict = None,
     ) -> None:
-        job_task_vo = self.get(job_task_id, domain_id)
-        job_state_machine = JobTaskStateMachine(job_task_vo)
-        job_state_machine.failure()
-        self._update_job_status(
-            job_task_id,
-            job_state_machine.get_state(),
-            domain_id,
+        self._update_job_status_by_vo(
+            job_task_vo,
+            "FAILURE",
             finished_at=datetime.utcnow(),
             collecting_count_info=collecting_count_info,
         )
-        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: FAILURE")
-
-    def make_canceled(
-        self,
-        job_task_id: str,
-        domain_id: str,
-        collecting_count_info: dict = None,
-    ) -> None:
-        job_task_vo = self.get(job_task_id, domain_id)
-        job_state_machine = JobTaskStateMachine(job_task_vo)
-        job_state_machine.canceled()
-        self._update_job_status(
-            job_task_id,
-            job_state_machine.get_state(),
-            domain_id,
-            finished_at=datetime.utcnow(),
-            collecting_count_info=collecting_count_info,
+        _LOGGER.debug(
+            f"[make_failure] job_task_id: {job_task_vo.job_task_id}, status: FAILURE"
         )
-        _LOGGER.debug(f"[make_success] job_task_id: {job_task_id}, status: CANCELED")
+        self.decrease_remained_sub_tasks(job_task_vo)
+
+    def decrease_remained_sub_tasks(
+        self, job_task_vo: JobTask, collecting_count_info: dict = None
+    ) -> JobTask:
+        job_task_vo: JobTask = job_task_vo.decrement("remained_sub_tasks")
+        if job_task_vo.remained_sub_tasks == 0:
+            job_mgr: JobManager = self.locator.get_manager(JobManager)
+            if job_task_vo.status == "IN_PROGRESS":
+                self.make_success_by_vo(job_task_vo, collecting_count_info)
+                job_mgr.increase_success_tasks(
+                    job_task_vo.job_id, job_task_vo.domain_id
+                )
+            else:
+                job_mgr.increase_failure_tasks(
+                    job_task_vo.job_id, job_task_vo.domain_id
+                )
+        return job_task_vo
 
     @staticmethod
     def delete_job_task_by_vo(job_task_vo: JobTask) -> None:

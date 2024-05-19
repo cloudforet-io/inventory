@@ -16,6 +16,8 @@ class JobTask(MongoModel):
         choices=("PENDING", "CANCELED", "IN_PROGRESS", "SUCCESS", "FAILURE"),
     )
     provider = StringField(max_length=40, default=None, null=True)
+    total_sub_tasks = IntField(default=0)
+    remained_sub_tasks = IntField(default=0)
     created_count = IntField(default=0)
     updated_count = IntField(default=0)
     deleted_count = IntField(default=0)
@@ -38,6 +40,7 @@ class JobTask(MongoModel):
         "updatable_fields": [
             "status",
             "provider",
+            "remained_sub_tasks",
             "created_count",
             "updated_count",
             "deleted_count",

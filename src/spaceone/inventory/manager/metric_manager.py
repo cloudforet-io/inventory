@@ -165,19 +165,20 @@ class MetricManager(BaseManager):
 
     @staticmethod
     def _wait_random_time():
-        random_time = round(random.uniform(0, 3), 2)
+        random_time = round(random.uniform(0, 5), 2)
         _LOGGER.debug(f"[_wait_random_time] sleep time: {random_time}")
 
         time.sleep(random_time)
 
     def _check_metric_status(self, metric_vo: Metric) -> None:
-        for i in range(180):
+        for i in range(300):
             metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
             if metric_vo.status == "DONE":
-                self.update_metric_by_vo({"status": "DONE"}, metric_vo)
                 break
 
             time.sleep(3)
+
+        self.update_metric_by_vo({"status": "DONE"}, metric_vo)
 
     def run_metric_query(self, metric_vo: Metric, is_yesterday: bool = False) -> None:
         self.update_metric_by_vo({"status": "IN_PROGRESS"}, metric_vo)

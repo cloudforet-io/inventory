@@ -5,7 +5,6 @@ from spaceone.core import cache
 from spaceone.core.manager import BaseManager
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.error import *
-from spaceone.inventory.lib.job_state import JobStateMachine
 from spaceone.inventory.model.collector_model import Collector
 from spaceone.inventory.model.job_model import Job
 
@@ -78,42 +77,29 @@ class JobManager(BaseManager):
     def stat_jobs(self, query: dict) -> dict:
         return self.job_model.stat(**query)
 
-    def increase_success_tasks(self, job_id: str, domain_id: str) -> Job:
+    def increase_success_tasks(self, job_id: str, domain_id: str) -> None:
         job_vo: Job = self.get_job(job_id, domain_id)
-        return self.increase_success_tasks_by_vo(job_vo)
+        job_vo.increment("success_tasks")
+        self.decrease_remained_tasks_by_vo(job_vo)
 
-    def increase_failure_tasks(self, job_id, domain_id):
+    def increase_failure_tasks(self, job_id: str, domain_id: str) -> None:
         job_vo: Job = self.get_job(job_id, domain_id)
-        return self.increase_failure_tasks_by_vo(job_vo)
+        job_vo.increment("failure_tasks")
+        self.decrease_remained_tasks_by_vo(job_vo)
 
-    def decrease_remained_tasks(self, job_id, domain_id):
-        job_vo: Job = self.get_job(job_id, domain_id)
-        return self.decrease_remained_tasks_by_vo(job_vo)
-
-    def decrease_remained_tasks_by_vo(self, job_vo: Job) -> Job:
+    def decrease_remained_tasks_by_vo(self, job_vo: Job) -> None:
         job_vo = job_vo.decrement("remained_tasks")
 
         if job_vo.remained_tasks == 0 and job_vo.status != "CANCELED":
-            if job_vo.mark_error:
-                self.make_failure_by_vo(job_vo)
-            else:
-                self._delete_metric_cache(job_vo)
+            if job_vo.status == "IN_PROGRESS":
                 self.make_success_by_vo(job_vo)
 
-        if job_vo.remained_tasks < 0:
-            _LOGGER.debug(
-                f"[decrease_remained_tasks] {job_vo.job_id}, {job_vo.remained_tasks}"
-            )
-            raise ERROR_JOB_UPDATE(param="remained_tasks")
-
-        return job_vo
+            self._delete_metric_cache(job_vo.plugin_id, job_vo.domain_id)
 
     @staticmethod
-    def _delete_metric_cache(job_vo: Job) -> None:
-        cache.delete_pattern(f"inventory:managed-metric:{job_vo.domain_id}:*:load")
-        cache.delete_pattern(
-            f"inventory:plugin-metric:{job_vo.domain_id}:{job_vo.plugin_id}:*:load"
-        )
+    def _delete_metric_cache(plugin_id: str, domain_id: str) -> None:
+        cache.delete_pattern(f"inventory:managed-metric:{domain_id}:*:load")
+        cache.delete_pattern(f"inventory:plugin-metric:{domain_id}:{plugin_id}:*:load")
 
     def update_job_timeout_by_hour(self, job_timeout: int, domain_id: str) -> None:
         created_at = datetime.utcnow() - timedelta(hours=job_timeout)
@@ -162,26 +148,18 @@ class JobManager(BaseManager):
         return job_vos
 
     def make_success_by_vo(self, job_vo: Job) -> None:
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.success()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
+        self._update_job_status_by_vo(job_vo, "SUCCESS")
 
     def make_failure_by_vo(self, job_vo: Job) -> None:
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.failure()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
+        self._update_job_status_by_vo(job_vo, "FAILURE")
 
     def make_canceled_by_vo(self, job_vo: Job) -> None:
         _LOGGER.debug(f"[make_canceled_by_vo] cancel job: {job_vo.job_id}")
-        job_state_machine = JobStateMachine(job_vo)
-        job_state_machine.canceled()
-        self._update_job_status_by_vo(job_vo, job_state_machine.get_status())
+        self._update_job_status_by_vo(job_vo, "CANCELED")
 
     def check_cancel(self, job_id: str, domain_id: str) -> bool:
-        job_vo = self.get_job(job_id, domain_id)
-        job_state_machine = JobStateMachine(job_vo)
-        job_status = job_state_machine.get_status()
-        return job_status == "CANCELED"
+        job_vo: Job = self.get_job(job_id, domain_id)
+        return job_vo.status == "CANCELED"
 
     def mark_error(self, job_id: str, domain_id: str) -> None:
         job_vo = self.get_job(job_id, domain_id)
@@ -198,11 +176,3 @@ class JobManager(BaseManager):
 
         _LOGGER.debug(f"[update_job_status] job_id: {job_vo.job_id}, status: {status}")
         return job_vo.update(params)
-
-    @staticmethod
-    def increase_success_tasks_by_vo(job_vo: Job) -> Job:
-        return job_vo.increment("success_tasks")
-
-    @staticmethod
-    def increase_failure_tasks_by_vo(job_vo: Job) -> Job:
-        return job_vo.increment("failure_tasks")

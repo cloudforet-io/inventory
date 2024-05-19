@@ -1,5 +1,6 @@
 import logging
 from typing import Generator, Tuple
+from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.manager.job_manager import JobManager
@@ -9,6 +10,7 @@ from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
 from spaceone.inventory.manager.namespace_manager import NamespaceManager
 from spaceone.inventory.manager.metric_manager import MetricManager
+from spaceone.inventory.model.job_task_model import JobTask
 from spaceone.inventory.error import *
 from spaceone.inventory.lib import rule_matcher
 from spaceone.inventory.conf.collector_conf import *
@@ -33,6 +35,7 @@ class CollectingManager(BaseManager):
                 'domain_id': 'str',
                 'plugin_info': 'dict',
                 'task_options': 'dict',
+                'is_sub_task': 'bool',
                 'secret_info': 'dict',
                 'secret_data': 'dict',
                 'token': 'str'
@@ -53,41 +56,37 @@ class CollectingManager(BaseManager):
         job_task_id = params["job_task_id"]
         domain_id = params["domain_id"]
         task_options = params["task_options"]
-
+        is_sub_task = params.get("is_sub_task", False)
         secret_info = params["secret_info"]
         secret_id = secret_info["secret_id"]
         secret_data = params["secret_data"]
         plugin_info = params["plugin_info"]
+        job_task_vo = self.job_task_mgr.get(job_task_id, domain_id)
 
         # add workspace_id to params from secret_info
         params["workspace_id"] = secret_info["workspace_id"]
 
-        _LOGGER.debug(f"[collecting_resources] start job task: {job_task_id}")
+        if is_sub_task:
+            _LOGGER.debug(
+                f"[collecting_resources] start sub task: {job_task_id} "
+                f"(task_options => {utils.dump_json(task_options)})"
+            )
+        else:
+            _LOGGER.debug(f"[collecting_resources] start job task: {job_task_id}")
 
         if self.job_mgr.check_cancel(job_id, domain_id):
             self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
+                job_task_vo,
                 "ERROR_COLLECT_CANCELED",
                 "The job has been canceled.",
             )
-            self.job_task_mgr.make_failure(job_task_id, domain_id)
-            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            self.job_mgr.increase_failure_tasks(job_id, domain_id)
+            self.job_task_mgr.make_failure_by_vo(job_task_vo)
             raise ERROR_COLLECT_CANCELED(job_id=job_id)
 
-        collect_filter = {}
+        self.job_task_mgr.make_inprogress_by_vo(job_task_vo)
 
         try:
-            # JOB TASK: IN_PROGRESS
-            self._update_job_task(job_task_id, "IN_PROGRESS", domain_id)
-        except Exception as e:
-            _LOGGER.error(
-                f"[collecting_resources] db update error ({job_task_id}): {e}"
-            )
-
-        try:
-            # EXECUTE PLUGIN COLLECTION
+            # get plugin endpoint from plugin manager
             endpoint, updated_version = plugin_manager.get_endpoint(
                 plugin_info["plugin_id"],
                 domain_id,
@@ -95,6 +94,7 @@ class CollectingManager(BaseManager):
                 plugin_info.get("version"),
             )
 
+            # collect data from plugin
             resources = collector_plugin_mgr.collect(
                 endpoint,
                 plugin_info["options"],
@@ -115,24 +115,22 @@ class CollectingManager(BaseManager):
                 exc_info=True,
             )
             self.job_task_mgr.add_error(
-                job_task_id, domain_id, "ERROR_COLLECTOR_COLLECTING", error_message
+                job_task_vo, "ERROR_COLLECTOR_PLUGIN", error_message
             )
 
-            self.job_task_mgr.make_failure(job_task_id, domain_id)
-            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
-            self.job_mgr.increase_failure_tasks(job_id, domain_id)
-            raise ERROR_COLLECTOR_COLLECTING(
-                plugin_info=plugin_info, filters=collect_filter
-            )
+            self.job_task_mgr.make_failure_by_vo(job_task_vo)
+            raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info)
 
-        job_task_state = "SUCCESS"
+        job_task_status = "SUCCESS"
         collecting_count_info = {}
 
         try:
-            collecting_count_info = self._upsert_collecting_resources(resources, params)
+            collecting_count_info = self._upsert_collecting_resources(
+                resources, params, job_task_vo
+            )
 
             if collecting_count_info["failure_count"] > 0:
-                job_task_state = "FAILURE"
+                job_task_status = "FAILURE"
 
         except Exception as e:
             if isinstance(e, ERROR_BASE):
@@ -145,13 +143,13 @@ class CollectingManager(BaseManager):
                 exc_info=True,
             )
             self.job_task_mgr.add_error(
-                job_task_id, domain_id, "ERROR_COLLECTOR_COLLECTING", error_message
+                job_task_id, domain_id, "ERROR_COLLECTOR_UPSERT", error_message
             )
-            self.job_task_mgr.make_failure(job_task_id, domain_id)
-            job_task_state = "FAILURE"
+            self.job_task_mgr.make_failure_by_vo(job_task_vo)
+            job_task_status = "FAILURE"
 
         finally:
-            if job_task_state == "SUCCESS":
+            if job_task_status == "SUCCESS":
                 (
                     disconnected_count,
                     deleted_count,
@@ -172,18 +170,11 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(
                 f"[collecting_resources] job task summary ({job_task_id}) => {collecting_count_info}"
             )
-            self._update_job_task(
-                job_task_id,
-                job_task_state,
-                domain_id,
-                collecting_count_info=collecting_count_info,
-            )
-            self.job_mgr.decrease_remained_tasks(job_id, domain_id)
 
-            if job_task_state == "SUCCESS":
-                self.job_mgr.increase_success_tasks(job_id, domain_id)
-            elif job_task_state == "FAILURE":
-                self.job_mgr.increase_failure_tasks(job_id, domain_id)
+            if job_task_status == "SUCCESS":
+                self.job_task_mgr.make_success_by_vo(job_task_vo, collecting_count_info)
+            else:
+                self.job_task_mgr.make_failure_by_vo(job_task_vo, collecting_count_info)
 
         return True
 
@@ -200,7 +191,7 @@ class CollectingManager(BaseManager):
             return 0, 0
 
     def _upsert_collecting_resources(
-        self, results: Generator[dict, None, None], params: dict
+        self, resources: Generator[dict, None, None], params: dict, job_task_vo: JobTask
     ):
         """
         Args:
@@ -212,7 +203,7 @@ class CollectingManager(BaseManager):
                 'domain_id': 'str',
                 'plugin_info': 'dict',
                 'task_options': 'dict',
-                'secret_info': 'dict'
+                'secret_info': 'dict',
             }
         """
 
@@ -221,23 +212,23 @@ class CollectingManager(BaseManager):
         failure_count = 0
         total_count = 0
 
-        job_task_id = params["job_task_id"]
-        domain_id = params["domain_id"]
-
         self._set_transaction_meta(params)
 
-        for res in results:
+        for resource_data in resources:
             total_count += 1
-            resource_type = res.get("resource_type")
+            resource_type = resource_data.get("resource_type")
 
             try:
                 if resource_type in ["inventory.Namespace", "inventory.Metric"]:
-                    self._upsert_metric_and_namespace(res, params)
+                    self._upsert_metric_and_namespace(resource_data, params)
                 else:
-                    upsert_result = self._upsert_resource(res, params)
+                    upsert_result = self._upsert_resource(
+                        resource_data, params, job_task_vo
+                    )
 
                     if upsert_result == NOT_COUNT:
                         # skip count for cloud service type and region
+                        total_count -= 1
                         pass
                     elif upsert_result == CREATED:
                         created_count += 1
@@ -252,8 +243,7 @@ class CollectingManager(BaseManager):
                     exc_info=True,
                 )
                 self.job_task_mgr.add_error(
-                    job_task_id,
-                    domain_id,
+                    job_task_vo,
                     "ERROR_UNKNOWN",
                     f"failed to upsert {resource_type}: {e}",
                     {"resource_type": resource_type},
@@ -350,7 +340,9 @@ class CollectingManager(BaseManager):
                 if metric_vo.version != version or is_changed:
                     metric_mgr.update_metric_by_vo(request_data, metric_vo)
 
-    def _upsert_resource(self, resource_data: dict, params: dict) -> int:
+    def _upsert_resource(
+        self, resource_data: dict, params: dict, job_task_vo: JobTask
+    ) -> int:
         """
         Args:
             resource_data (dict): resource information from plugin
@@ -392,7 +384,7 @@ class CollectingManager(BaseManager):
             )
 
             self.job_task_mgr.add_error(
-                job_task_id, domain_id, "ERROR_PLUGIN", error_message, request_data
+                job_task_vo, "ERROR_PLUGIN", error_message, request_data
             )
 
             return ERROR
@@ -403,8 +395,7 @@ class CollectingManager(BaseManager):
                 f"[_upsert_resource] match rule error ({job_task_id}): {error_message}"
             )
             self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
+                job_task_vo,
                 "ERROR_MATCH_RULE",
                 error_message,
                 {"resource_type": resource_type},
@@ -421,8 +412,7 @@ class CollectingManager(BaseManager):
                 f"[_upsert_resource] match resource error ({job_task_id}): {e}"
             )
             self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
+                job_task_vo,
                 e.error_code,
                 e.message,
                 {"resource_type": resource_type},
@@ -439,10 +429,9 @@ class CollectingManager(BaseManager):
                 exc_info=True,
             )
             self.job_task_mgr.add_error(
-                job_task_id,
-                domain_id,
+                job_task_vo,
                 "ERROR_UNKNOWN",
-                f"failed to match resource: {error_message}",
+                f"Failed to match resource: {error_message}",
                 {"resource_type": resource_type},
             )
             return ERROR
@@ -468,7 +457,7 @@ class CollectingManager(BaseManager):
                 resource_type, total_count, request_data
             )
             self.job_task_mgr.add_error(
-                job_task_id, domain_id, e.error_code, e.message, additional
+                job_task_vo, e.error_code, e.message, additional
             )
             response = ERROR
 
@@ -478,6 +467,12 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(
                 f"[_upsert_resource] unknown error ({job_task_id}): {error_message}",
                 exc_info=True,
+            )
+            self.job_task_mgr.add_error(
+                job_task_vo,
+                "ERROR_UNKNOWN",
+                error_message,
+                {"resource_type": resource_type},
             )
             response = ERROR
 
@@ -518,30 +513,6 @@ class CollectingManager(BaseManager):
         service = self.locator.get_service(RESOURCE_MAP[resource_type][0])
         manager = self.locator.get_manager(RESOURCE_MAP[resource_type][1])
         return service, manager
-
-    def _update_job_task(
-        self,
-        job_task_id: str,
-        status: str,
-        domain_id: str,
-        collecting_count_info: dict = None,
-    ) -> None:
-        status_map = {
-            "IN_PROGRESS": self.job_task_mgr.make_inprogress,
-            "SUCCESS": self.job_task_mgr.make_success,
-            "FAILURE": self.job_task_mgr.make_failure,
-            "CANCELED": self.job_task_mgr.make_canceled,
-        }
-
-        if status in status_map:
-            status_map[status](job_task_id, domain_id, collecting_count_info)
-        else:
-            _LOGGER.error(
-                f"[_update_job_task] job task status is not defined: {status}"
-            )
-            self.job_task_mgr.make_failure(
-                job_task_id, domain_id, collecting_count_info
-            )
 
     @staticmethod
     def _set_error_addition_info(
@@ -586,6 +557,7 @@ class CollectingManager(BaseManager):
             match_resource (dict) : resource_id for update (e.g. {'cloud_service_id': 'cloud-svc-abcde12345'})
             total_count (int) : total count of matched resources
         """
+
         match_resource = None
         total_count = 0
 
