@@ -537,7 +537,7 @@ class CollectorService(BaseService):
                     job_task_vo = job_task_mgr.create_job_task(create_params)
                     task.update({"job_task_id": job_task_vo.job_task_id})
 
-                    if sub_task_count > 0:
+                    if len(sub_tasks) > 0:
                         for sub_task in sub_tasks:
                             task.update({"task_options": sub_task, "is_sub_task": True})
                             _LOGGER.debug(
