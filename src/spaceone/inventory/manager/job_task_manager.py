@@ -97,7 +97,8 @@ class JobTaskManager(BaseManager):
             params["finished_at"] = finished_at
 
         _LOGGER.debug(
-            f"[update_job_status] job_task_id: {job_task_vo.job_task_id}, status: {status}"
+            f"[update_job_status] collector_id: {job_task_vo.collector_id}, "
+            f"job_task_id: {job_task_vo.job_task_id}, status: {status}"
         )
         job_task_vo = job_task_vo.update(params)
 
