@@ -162,10 +162,6 @@ class CollectingManager(BaseManager):
                         "deleted_count": deleted_count,
                     }
                 )
-                _LOGGER.debug(
-                    f"[collecting_resources] success job task ({job_task_id}) "
-                    f"(disconnected = {disconnected_count}, deleted = {deleted_count})"
-                )
 
             _LOGGER.debug(
                 f"[collecting_resources] job task summary ({job_task_id}) => {collecting_count_info}"
