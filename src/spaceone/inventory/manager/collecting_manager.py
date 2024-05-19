@@ -55,7 +55,7 @@ class CollectingManager(BaseManager):
         job_id = params["job_id"]
         job_task_id = params["job_task_id"]
         domain_id = params["domain_id"]
-        task_options = params.get("task_options", {})
+        task_options = params.get("task_options")
         is_sub_task = params.get("is_sub_task", False)
         secret_info = params["secret_info"]
         secret_id = secret_info["secret_id"]
