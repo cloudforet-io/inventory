@@ -1,8 +1,8 @@
 import logging
-import copy
 from typing import Tuple
 from spaceone.core.service import *
 from spaceone.core.model.mongo_model import QuerySet
+from spaceone.core import utils
 from spaceone.inventory.error import *
 from spaceone.inventory.manager.collection_state_manager import CollectionStateManager
 from spaceone.inventory.manager.collector_manager import CollectorManager
@@ -528,7 +528,6 @@ class CollectorService(BaseService):
                     "project_id": secret_info.get("project_id"),
                     "workspace_id": secret_info.get("workspace_id"),
                     "domain_id": domain_id,
-                    "options": task["task_options"],
                 }
 
                 task.update({"collector_id": collector_id, "job_id": job_vo.job_id})
@@ -541,8 +540,14 @@ class CollectorService(BaseService):
                     if sub_task_count > 0:
                         for sub_task in sub_tasks:
                             task.update({"task_options": sub_task, "is_sub_task": True})
+                            _LOGGER.debug(
+                                f"[collect] push sub task ({job_task_vo.job_task_id}) => {utils.dump_json(sub_task)}"
+                            )
                             job_task_mgr.push_job_task(task)
                     else:
+                        _LOGGER.debug(
+                            f"[collect] push job task ({job_task_vo.job_task_id})"
+                        )
                         job_task_mgr.push_job_task(task)
 
                 except Exception as e:
