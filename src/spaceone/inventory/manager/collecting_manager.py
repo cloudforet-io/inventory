@@ -149,20 +149,6 @@ class CollectingManager(BaseManager):
             job_task_status = "FAILURE"
 
         finally:
-            if job_task_status == "SUCCESS":
-                (
-                    disconnected_count,
-                    deleted_count,
-                ) = self._update_disconnected_and_deleted_count(
-                    collector_id, secret_id, job_task_id, domain_id
-                )
-                collecting_count_info.update(
-                    {
-                        "disconnected_count": disconnected_count,
-                        "deleted_count": deleted_count,
-                    }
-                )
-
             _LOGGER.debug(
                 f"[collecting_resources] job task summary ({job_task_id}) => {collecting_count_info}"
             )
@@ -175,18 +161,6 @@ class CollectingManager(BaseManager):
                 self.job_task_mgr.make_failure_by_vo(job_task_vo, collecting_count_info)
 
         return True
-
-    def _update_disconnected_and_deleted_count(
-        self, collector_id: str, secret_id: str, job_task_id: str, domain_id: str
-    ) -> Tuple[int, int]:
-        try:
-            cleanup_mgr: CleanupManager = self.locator.get_manager(CleanupManager)
-            return cleanup_mgr.update_disconnected_and_deleted_count(
-                collector_id, secret_id, job_task_id, domain_id
-            )
-        except Exception as e:
-            _LOGGER.error(f"[_update_collection_state] failed: {e}")
-            return 0, 0
 
     def _upsert_collecting_resources(
         self, resources: Generator[dict, None, None], params: dict, job_task_vo: JobTask

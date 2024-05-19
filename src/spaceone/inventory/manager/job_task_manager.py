@@ -9,6 +9,7 @@ from spaceone.core.manager import BaseManager
 from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.manager.job_manager import JobManager
+from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.model.job_task_model import JobTask
 
 _LOGGER = logging.getLogger(__name__)
@@ -151,6 +152,15 @@ class JobTaskManager(BaseManager):
         if job_task_vo.remained_sub_tasks == 0:
             job_mgr: JobManager = self.locator.get_manager(JobManager)
             if job_task_vo.status == "IN_PROGRESS":
+                deleted_resources_info = self._update_disconnected_and_deleted_count(
+                    job_task_vo
+                )
+                collecting_count_info.update(deleted_resources_info)
+
+                _LOGGER.debug(
+                    f"[decrease_remained_sub_tasks] delete resources({job_task_vo}) => {deleted_resources_info}"
+                )
+
                 self.make_success_by_vo(job_task_vo, collecting_count_info)
                 job_mgr.increase_success_tasks(
                     job_task_vo.job_id, job_task_vo.domain_id
@@ -160,6 +170,22 @@ class JobTaskManager(BaseManager):
                     job_task_vo.job_id, job_task_vo.domain_id
                 )
         return job_task_vo
+
+    def _update_disconnected_and_deleted_count(self, job_task_vo: JobTask) -> dict:
+        try:
+            cleanup_mgr: CleanupManager = self.locator.get_manager(CleanupManager)
+            return cleanup_mgr.update_disconnected_and_deleted_count(
+                job_task_vo.collector_id,
+                job_task_vo.secret_id,
+                job_task_vo.job_task_id,
+                job_task_vo.domain_id,
+            )
+        except Exception as e:
+            _LOGGER.error(f"[_update_collection_state] failed: {e}")
+            return {
+                "disconnected_count": 0,
+                "deleted_count": 0,
+            }
 
     @staticmethod
     def delete_job_task_by_vo(job_task_vo: JobTask) -> None:
