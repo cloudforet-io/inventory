@@ -500,7 +500,7 @@ class CollectorService(BaseService):
         for job_vo in duplicated_job_vos:
             job_mgr.make_canceled_by_vo(job_vo)
 
-        # JOB: IN-PROGRESS
+        # create job
         params["plugin_id"] = plugin_id
         params["total_tasks"] = len(tasks)
         params["remained_tasks"] = len(tasks)
@@ -509,8 +509,17 @@ class CollectorService(BaseService):
         if len(tasks) > 0:
             for task in tasks:
                 secret_info = task["secret_info"]
+                sub_tasks = task.get("sub_tasks", [])
+                if len(sub_tasks) == 0:
+                    sub_task_count = 1
+                else:
+                    sub_task_count = len(sub_tasks)
+
+                del task["sub_tasks"]
 
                 create_params = {
+                    "total_sub_tasks": sub_task_count,
+                    "remained_sub_tasks": sub_task_count,
                     "job_id": job_vo.job_id,
                     "collector_id": job_vo.collector_id,
                     "secret_id": secret_info.get("secret_id"),
@@ -524,20 +533,25 @@ class CollectorService(BaseService):
                 task.update({"collector_id": collector_id, "job_id": job_vo.job_id})
 
                 try:
-                    # JOB: CREATE TASK JOB
+                    # create job task
                     job_task_vo = job_task_mgr.create_job_task(create_params)
                     task.update({"job_task_id": job_task_vo.job_task_id})
 
-                    job_task_mgr.push_job_task(task)
+                    if sub_task_count > 0:
+                        for sub_task in sub_tasks:
+                            task.update({"task_options": sub_task, "is_sub_task": True})
+                            job_task_mgr.push_job_task(task)
+                    else:
+                        job_task_mgr.push_job_task(task)
 
                 except Exception as e:
                     _LOGGER.error(
                         f"[collect] Error to create job task ({job_vo.job_id}): {e}",
                         exc_info=True,
                     )
-                    job_mgr.mark_error_by_vo(job_vo)
+                    job_mgr.make_failure_by_vo(job_vo)
         else:
-            # JOB: SUCCESS (No tasks)
+            # close job if no tasks
             job_mgr.make_success_by_vo(job_vo)
             return job_vo
 
@@ -582,17 +596,13 @@ class CollectorService(BaseService):
                     secret_data.get("data", {}),
                     plugin_info.get("options", {}),
                 )
-                _LOGGER.debug(f"[get_tasks] response: {response}")
-
-                for task_options in response.get("tasks", []):
-                    _task_dict = copy.deepcopy(_task)
-                    _task_dict.update(task_options)
-                    tasks.append(_task_dict)
+                _LOGGER.debug(f"[get_tasks] sub tasks: {response}")
+                _task["sub_tasks"] = response.get("tasks", [])
 
             except Exception as e:
-                # _LOGGER.debug(f'[get_tasks] Error to get tasks from plugin. set task from secret')
-                _task.update({"task_options": None})
-                tasks.append(_task)
+                pass
+
+            tasks.append(_task)
 
         return tasks
 

@@ -1,5 +1,4 @@
 from typing import Tuple
-from spaceone.core import utils
 from spaceone.core.error import *
 
 
