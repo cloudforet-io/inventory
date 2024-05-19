@@ -17,7 +17,7 @@ class CleanupManager(BaseManager):
 
     def update_disconnected_and_deleted_count(
         self, collector_id: str, secret_id: str, job_task_id: str, domain_id: str
-    ) -> Tuple[int, int]:
+    ) -> dict:
         state_mgr: CollectionStateManager = self.locator.get_manager(
             CollectionStateManager
         )
@@ -28,7 +28,10 @@ class CleanupManager(BaseManager):
             state_mgr, collector_id, domain_id
         )
 
-        return (disconnected_count - deleted_count), deleted_count
+        return {
+            "disconnected_count": disconnected_count - deleted_count,
+            "deleted_count": deleted_count,
+        }
 
     def delete_resources_by_policy(self, resource_type, hour, domain_id):
         updated_at = datetime.utcnow() - timedelta(hours=hour)
