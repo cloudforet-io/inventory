@@ -105,7 +105,7 @@ class JobTaskManager(BaseManager):
 
         if collecting_count_info:
             for key, value in collecting_count_info.items():
-                if isinstance(value, int):
+                if isinstance(value, int) and value > 0:
                     job_task_vo.increment(key, value)
 
     def make_inprogress_by_vo(
