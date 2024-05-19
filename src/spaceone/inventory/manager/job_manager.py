@@ -161,13 +161,6 @@ class JobManager(BaseManager):
         job_vo: Job = self.get_job(job_id, domain_id)
         return job_vo.status == "CANCELED"
 
-    def mark_error(self, job_id: str, domain_id: str) -> None:
-        job_vo = self.get_job(job_id, domain_id)
-        self.mark_error_by_vo(job_vo)
-
-    def mark_error_by_vo(self, job_vo: Job) -> None:
-        self.update_job_by_vo({"mark_error": 1}, job_vo)
-
     @staticmethod
     def _update_job_status_by_vo(job_vo: Job, status: str) -> Job:
         params = {"status": status}

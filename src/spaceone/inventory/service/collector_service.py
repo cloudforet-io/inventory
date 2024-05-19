@@ -515,7 +515,8 @@ class CollectorService(BaseService):
                 else:
                     sub_task_count = len(sub_tasks)
 
-                del task["sub_tasks"]
+                if "sub_tasks" in task:
+                    del task["sub_tasks"]
 
                 create_params = {
                     "total_sub_tasks": sub_task_count,
