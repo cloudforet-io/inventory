@@ -145,7 +145,6 @@ class CollectingManager(BaseManager):
             self.job_task_mgr.add_error(
                 job_task_vo, "ERROR_COLLECTOR_PLUGIN", error_message
             )
-            self.job_task_mgr.make_failure_by_vo(job_task_vo)
             job_task_status = "FAILURE"
 
         finally:
