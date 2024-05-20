@@ -105,7 +105,7 @@ class JobTaskManager(BaseManager):
 
         if collecting_count_info:
             for key, value in collecting_count_info.items():
-                if isinstance(value, int):
+                if isinstance(value, int) and value > 0:
                     job_task_vo.increment(key, value)
 
     def make_inprogress_by_vo(
@@ -158,7 +158,8 @@ class JobTaskManager(BaseManager):
                 collecting_count_info.update(deleted_resources_info)
 
                 _LOGGER.debug(
-                    f"[decrease_remained_sub_tasks] delete resources({job_task_vo}) => {deleted_resources_info}"
+                    f"[decrease_remained_sub_tasks] delete resources({job_task_vo.job_task_id}) "
+                    f"=> {deleted_resources_info}"
                 )
 
                 self.make_success_by_vo(job_task_vo, collecting_count_info)

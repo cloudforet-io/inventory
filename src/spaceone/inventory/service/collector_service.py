@@ -487,6 +487,7 @@ class CollectorService(BaseService):
         tasks = self._get_tasks(
             params,
             endpoint,
+            collector_id,
             collector_vo.provider,
             plugin_info,
             secret_filter,
@@ -539,9 +540,12 @@ class CollectorService(BaseService):
 
                     if len(sub_tasks) > 0:
                         for sub_task in sub_tasks:
-                            task.update({"task_options": sub_task, "is_sub_task": True})
+                            task_options = sub_task.get("task_options", {})
+                            task.update(
+                                {"task_options": task_options, "is_sub_task": True}
+                            )
                             _LOGGER.debug(
-                                f"[collect] push sub task ({job_task_vo.job_task_id}) => {utils.dump_json(sub_task)}"
+                                f"[collect] push sub task ({job_task_vo.job_task_id}) => {utils.dump_json(task_options)}"
                             )
                             job_task_mgr.push_job_task(task)
                     else:
@@ -568,6 +572,7 @@ class CollectorService(BaseService):
         self,
         params: dict,
         endpoint: str,
+        collector_id: str,
         collector_provider: str,
         plugin_info: dict,
         secret_filter: dict,
@@ -602,7 +607,7 @@ class CollectorService(BaseService):
                     secret_data.get("data", {}),
                     plugin_info.get("options", {}),
                 )
-                _LOGGER.debug(f"[get_tasks] sub tasks: {response}")
+                _LOGGER.debug(f"[get_tasks] sub tasks({collector_id}): {response}")
                 _task["sub_tasks"] = response.get("tasks", [])
 
             except Exception as e:
