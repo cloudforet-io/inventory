@@ -184,7 +184,6 @@ class CollectingManager(BaseManager):
         self._set_transaction_meta(params)
 
         for resource_data in resources:
-            total_count += 1
             resource_type = resource_data.get("resource_type")
 
             try:
@@ -197,14 +196,16 @@ class CollectingManager(BaseManager):
 
                     if upsert_result == NOT_COUNT:
                         # skip count for cloud service type and region
-                        total_count -= 1
                         pass
                     elif upsert_result == CREATED:
                         created_count += 1
+                        total_count += 1
                     elif upsert_result == UPDATED:
                         updated_count += 1
+                        total_count += 1
                     else:
                         failure_count += 1
+                        total_count += 1
 
             except Exception as e:
                 _LOGGER.error(
