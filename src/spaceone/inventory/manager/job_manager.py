@@ -90,10 +90,13 @@ class JobManager(BaseManager):
     def decrease_remained_tasks_by_vo(self, job_vo: Job) -> None:
         job_vo = job_vo.decrement("remained_tasks")
 
-        if job_vo.remained_tasks == 0 and job_vo.status != "CANCELED":
-            if job_vo.status == "IN_PROGRESS":
+        if job_vo.remained_tasks == 0 and job_vo.status == "IN_PROGRESS":
+            if job_vo.failure_tasks > 0:
+                self.make_failure_by_vo(job_vo)
+            else:
                 self.make_success_by_vo(job_vo)
 
+        if job_vo.success_tasks > 0:
             self._delete_metric_cache(job_vo.plugin_id, job_vo.domain_id)
 
     @staticmethod
