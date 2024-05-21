@@ -146,7 +146,8 @@ class CollectingManager(BaseManager):
 
         finally:
             _LOGGER.debug(
-                f"[collecting_resources] job task summary ({job_task_id}) => {collecting_count_info}"
+                f"[collecting_resources] job task summary ({job_task_id}: {job_task_status}) "
+                f"=> {collecting_count_info}"
             )
 
             if job_task_status == "SUCCESS":
