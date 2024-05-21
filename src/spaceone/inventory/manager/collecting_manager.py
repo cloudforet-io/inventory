@@ -1,12 +1,11 @@
 import logging
-from typing import Generator, Tuple
+from typing import Generator
 from spaceone.core import utils
 from spaceone.core.manager import BaseManager
 from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
 from spaceone.inventory.manager.plugin_manager import PluginManager
-from spaceone.inventory.manager.cleanup_manager import CleanupManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
 from spaceone.inventory.manager.namespace_manager import NamespaceManager
 from spaceone.inventory.manager.metric_manager import MetricManager
@@ -51,14 +50,12 @@ class CollectingManager(BaseManager):
             CollectorPluginManager
         )
 
-        collector_id = params["collector_id"]
         job_id = params["job_id"]
         job_task_id = params["job_task_id"]
         domain_id = params["domain_id"]
         task_options = params.get("task_options")
         is_sub_task = params.get("is_sub_task", False)
         secret_info = params["secret_info"]
-        secret_id = secret_info["secret_id"]
         secret_data = params["secret_data"]
         plugin_info = params["plugin_info"]
         job_task_vo = self.job_task_mgr.get(job_task_id, domain_id)
@@ -145,7 +142,6 @@ class CollectingManager(BaseManager):
             self.job_task_mgr.add_error(
                 job_task_vo, "ERROR_COLLECTOR_PLUGIN", error_message
             )
-            self.job_task_mgr.make_failure_by_vo(job_task_vo)
             job_task_status = "FAILURE"
 
         finally:

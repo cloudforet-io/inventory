@@ -4,7 +4,7 @@ import json
 from typing import Tuple, Union
 from jsonschema import validate
 from datetime import datetime
-from spaceone.core import config, queue
+from spaceone.core import config, queue, utils
 from spaceone.core.manager import BaseManager
 from spaceone.core.scheduler.task_schema import SPACEONE_TASK_SCHEMA
 from spaceone.core.model.mongo_model import QuerySet
@@ -104,6 +104,9 @@ class JobTaskManager(BaseManager):
         job_task_vo = job_task_vo.update(params)
 
         if collecting_count_info:
+            _LOGGER.debug(
+                f"[update_job_status] update collecting count => {utils.dump_json(collecting_count_info)}"
+            )
             for key, value in collecting_count_info.items():
                 if isinstance(value, int) and value > 0:
                     job_task_vo.increment(key, value)
