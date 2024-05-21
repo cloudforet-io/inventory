@@ -87,7 +87,6 @@ class JobTaskManager(BaseManager):
         status: str,
         started_at: datetime = None,
         finished_at: datetime = None,
-        collecting_count_info: dict = None,
     ) -> None:
         params = {"status": status}
 
@@ -101,15 +100,6 @@ class JobTaskManager(BaseManager):
             f"[update_job_status] collector_id: {job_task_vo.collector_id}, "
             f"job_task_id: {job_task_vo.job_task_id}, status: {status}"
         )
-        job_task_vo = job_task_vo.update(params)
-
-        if collecting_count_info:
-            _LOGGER.debug(
-                f"[update_job_status] update collecting count => {utils.dump_json(collecting_count_info)}"
-            )
-            for key, value in collecting_count_info.items():
-                if isinstance(value, int) and value > 0:
-                    job_task_vo.increment(key, value)
 
     def make_inprogress_by_vo(
         self,
@@ -125,15 +115,12 @@ class JobTaskManager(BaseManager):
     def make_success_by_vo(
         self,
         job_task_vo: JobTask,
-        collecting_count_info: dict = None,
     ) -> None:
         self._update_job_status_by_vo(
             job_task_vo,
             "SUCCESS",
             finished_at=datetime.utcnow(),
-            collecting_count_info=collecting_count_info,
         )
-        self.decrease_remained_sub_tasks(job_task_vo)
 
     def make_failure_by_vo(
         self,
@@ -144,9 +131,11 @@ class JobTaskManager(BaseManager):
             job_task_vo,
             "FAILURE",
             finished_at=datetime.utcnow(),
-            collecting_count_info=collecting_count_info,
         )
         self.decrease_remained_sub_tasks(job_task_vo)
+
+        if collecting_count_info:
+            self._update_collecting_count_info(job_task_vo, collecting_count_info)
 
     def decrease_remained_sub_tasks(
         self, job_task_vo: JobTask, collecting_count_info: dict = None
@@ -165,7 +154,7 @@ class JobTaskManager(BaseManager):
                     f"=> {deleted_resources_info}"
                 )
 
-                self.make_success_by_vo(job_task_vo, collecting_count_info)
+                self.make_success_by_vo(job_task_vo)
                 job_mgr.increase_success_tasks(
                     job_task_vo.job_id, job_task_vo.domain_id
                 )
@@ -173,7 +162,22 @@ class JobTaskManager(BaseManager):
                 job_mgr.increase_failure_tasks(
                     job_task_vo.job_id, job_task_vo.domain_id
                 )
+
+        if collecting_count_info:
+            self._update_collecting_count_info(job_task_vo, collecting_count_info)
+
         return job_task_vo
+
+    @staticmethod
+    def _update_collecting_count_info(
+        job_task_vo: JobTask, collecting_count_info: dict
+    ) -> None:
+        _LOGGER.debug(
+            f"[_update_collecting_count_info] update collecting count => {utils.dump_json(collecting_count_info)}"
+        )
+        for key, value in collecting_count_info.items():
+            if isinstance(value, int) and value > 0:
+                job_task_vo.increment(key, value)
 
     def _update_disconnected_and_deleted_count(self, job_task_vo: JobTask) -> dict:
         try:
