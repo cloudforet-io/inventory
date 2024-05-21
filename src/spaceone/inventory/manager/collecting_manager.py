@@ -185,10 +185,12 @@ class CollectingManager(BaseManager):
 
         for resource_data in resources:
             resource_type = resource_data.get("resource_type")
+            total_count += 1
 
             try:
                 if resource_type in ["inventory.Namespace", "inventory.Metric"]:
                     self._upsert_metric_and_namespace(resource_data, params)
+                    total_count -= 1
                 else:
                     upsert_result = self._upsert_resource(
                         resource_data, params, job_task_vo
@@ -196,16 +198,14 @@ class CollectingManager(BaseManager):
 
                     if upsert_result == NOT_COUNT:
                         # skip count for cloud service type and region
+                        total_count -= 1
                         pass
                     elif upsert_result == CREATED:
                         created_count += 1
-                        total_count += 1
                     elif upsert_result == UPDATED:
                         updated_count += 1
-                        total_count += 1
                     else:
                         failure_count += 1
-                        total_count += 1
 
             except Exception as e:
                 _LOGGER.error(
