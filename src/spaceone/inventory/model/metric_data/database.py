@@ -65,7 +65,7 @@ class MetricData(MongoModel):
 
 
 class MonthlyMetricData(MongoModel):
-    metric_id = StringField(max_length=40)
+    metric_id = StringField(max_length=80)
     status = StringField(
         max_length=20, default="IN_PROGRESS", choices=["IN_PROGRESS", "DONE"]
     )
