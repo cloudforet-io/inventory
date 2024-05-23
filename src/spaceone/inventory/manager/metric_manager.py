@@ -391,6 +391,7 @@ class MetricManager(BaseManager):
             "unit": metric_vo.unit,
             "labels": {},
             "namespace_id": metric_vo.namespace_id,
+            "service_account_id": result.get("service_account_id"),
             "project_id": result.get("project_id"),
             "workspace_id": result["workspace_id"],
             "domain_id": metric_vo.domain_id,
