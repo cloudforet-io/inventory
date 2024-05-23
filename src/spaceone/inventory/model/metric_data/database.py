@@ -11,6 +11,7 @@ class MetricData(MongoModel):
     unit = StringField(default=None)
     labels = DictField(default=None)
     namespace_id = StringField(max_length=40)
+    service_account_id = StringField(max_length=40)
     project_id = StringField(max_length=40)
     workspace_id = StringField(max_length=40)
     domain_id = StringField(max_length=40)
@@ -24,6 +25,7 @@ class MetricData(MongoModel):
             "metric_id",
             "value",
             "unit",
+            "service_account_id",
             "project_id",
             "workspace_id",
             "created_date",
@@ -40,6 +42,7 @@ class MetricData(MongoModel):
                     "status",
                     "-created_date",
                     "project_id",
+                    "service_account_id",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SEARCH_1",
             },
@@ -73,6 +76,7 @@ class MonthlyMetricData(MongoModel):
     unit = StringField(default=None)
     labels = DictField(default=None)
     namespace_id = StringField(max_length=40)
+    service_account_id = StringField(max_length=40)
     project_id = StringField(max_length=40)
     workspace_id = StringField(max_length=40)
     domain_id = StringField(max_length=40)
@@ -94,6 +98,7 @@ class MonthlyMetricData(MongoModel):
                     "status",
                     "-created_month",
                     "project_id",
+                    "service_account_id",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SEARCH_1",
             },
