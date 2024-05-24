@@ -611,9 +611,7 @@ class MetricManager(BaseManager):
     @staticmethod
     def _remove_analyze_cache(domain_id: str, metric_id: str) -> None:
         cache.delete_pattern(f"inventory:metric-data:*:{domain_id}:{metric_id}:*")
-        cache.delete_pattern(
-            f"inventory:metric-query-history:{domain_id}:{metric_id}:*"
-        )
+        cache.delete_pattern(f"inventory:metric-query-history:{domain_id}:{metric_id}")
 
     @staticmethod
     def _set_metric_load_cache(domain_id: str, metric_vo: Metric) -> None:

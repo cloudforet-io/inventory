@@ -9,6 +9,7 @@ from spaceone.core import utils, cache
 from spaceone.inventory.model.metric_data.database import (
     MetricData,
     MonthlyMetricData,
+    MetricQueryHistory,
 )
 from spaceone.inventory.error.metric import (
     ERROR_INVALID_DATE_RANGE,
@@ -49,6 +50,7 @@ class MetricDataManager(BaseManager):
         monthly_metric_data_vos.delete()
 
         cache.delete_pattern(f"inventory:metric-data:*:{domain_id}:{metric_id}:*")
+        cache.delete_pattern(f"inventory:metric-query-history:{domain_id}:{metric_id}")
 
     def filter_metric_data(self, **conditions) -> QuerySet:
         return self.metric_data_model.filter(**conditions)
@@ -148,6 +150,9 @@ class MetricDataManager(BaseManager):
         granularity = query["granularity"]
         query_hash = utils.dict_to_hash(query)
 
+        # Save query history to speed up the analysis
+        self._update_metric_query_history(domain_id, metric_id)
+
         if granularity == "DAILY":
             response = self.analyze_metric_data_with_cache(
                 query, query_hash, domain_id, metric_id
@@ -162,6 +167,31 @@ class MetricDataManager(BaseManager):
             )
 
         return response
+
+    @cache.cacheable(
+        key="inventory:metric-query-history:{domain_id}:{metric_id}",
+        expire=600,
+    )
+    def _update_metric_query_history(self, domain_id: str, metric_id: str):
+        def _rollback(vo: MetricQueryHistory):
+            _LOGGER.info(
+                f"[update_metric_query_history._rollback] delete metric query history: {metric_id}"
+            )
+            vo.delete()
+
+        history_model = MetricQueryHistory()
+        history_vos = history_model.filter(domain_id=domain_id, metric_id=metric_id)
+        if history_vos.count() == 0:
+            history_vo = history_model.create(
+                {
+                    "metric_id": metric_id,
+                    "domain_id": domain_id,
+                }
+            )
+
+            self.transaction.add_rollback(_rollback, history_vo)
+        else:
+            history_vos[0].update({})
 
     def _check_date_range(self, query: dict) -> None:
         start_str = query.get("start")

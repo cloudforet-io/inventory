@@ -7,6 +7,7 @@ from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.error import *
 from spaceone.inventory.model.collector_model import Collector
 from spaceone.inventory.model.job_model import Job
+from spaceone.inventory.manager.metric_manager import MetricManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -98,6 +99,22 @@ class JobManager(BaseManager):
 
         if job_vo.success_tasks > 0:
             self._delete_metric_cache(job_vo.plugin_id, job_vo.domain_id)
+            self._run_metric_queries(job_vo.plugin_id, job_vo.domain_id)
+
+    @staticmethod
+    def _run_metric_queries(plugin_id: str, domain_id: str) -> None:
+        metric_mgr = MetricManager()
+        managed_metric_vos = metric_mgr.filter_metrics(
+            is_managed=True, domain_id=domain_id
+        )
+        for managed_metric_vo in managed_metric_vos:
+            metric_mgr.push_task(managed_metric_vo)
+
+        plugin_metric_vos = metric_mgr.filter_metrics(
+            plugin_id=plugin_id, domain_id=domain_id
+        )
+        for plugin_metric_vo in plugin_metric_vos:
+            metric_mgr.push_task(plugin_metric_vo)
 
     @staticmethod
     def _delete_metric_cache(plugin_id: str, domain_id: str) -> None:
