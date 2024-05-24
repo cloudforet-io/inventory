@@ -1,13 +1,14 @@
 import logging
-from typing import Tuple
+from typing import Tuple, List
 from datetime import datetime, timedelta
-from spaceone.core import cache
+from spaceone.core import cache, config
 from spaceone.core.manager import BaseManager
 from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.error import *
 from spaceone.inventory.model.collector_model import Collector
 from spaceone.inventory.model.job_model import Job
 from spaceone.inventory.manager.metric_manager import MetricManager
+from spaceone.inventory.manager.metric_data_manager import MetricDataManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -101,20 +102,49 @@ class JobManager(BaseManager):
             self._delete_metric_cache(job_vo.plugin_id, job_vo.domain_id)
             self._run_metric_queries(job_vo.plugin_id, job_vo.domain_id)
 
-    @staticmethod
-    def _run_metric_queries(plugin_id: str, domain_id: str) -> None:
+    def _run_metric_queries(self, plugin_id: str, domain_id: str) -> None:
         metric_mgr = MetricManager()
+        recent_metrics = self._get_recent_metrics(domain_id)
+
         managed_metric_vos = metric_mgr.filter_metrics(
             is_managed=True, domain_id=domain_id
         )
         for managed_metric_vo in managed_metric_vos:
-            metric_mgr.push_task(managed_metric_vo)
+            if managed_metric_vo.metric_id in recent_metrics:
+                metric_mgr.push_task(managed_metric_vo)
 
         plugin_metric_vos = metric_mgr.filter_metrics(
             plugin_id=plugin_id, domain_id=domain_id
         )
         for plugin_metric_vo in plugin_metric_vos:
-            metric_mgr.push_task(plugin_metric_vo)
+            if plugin_metric_vo.metric_id in recent_metrics:
+                metric_mgr.push_task(plugin_metric_vo)
+
+    @staticmethod
+    def _get_recent_metrics(domain_id: str) -> List[str]:
+        metric_data_mgr = MetricDataManager()
+        metric_cache_ttl = config.get_global("METRIC_QUERY_TTL", 3)
+        ttl_time = datetime.utcnow() - timedelta(days=metric_cache_ttl)
+
+        query = {
+            "filter": [
+                {"k": "domain_id", "v": domain_id, "o": "eq"},
+                {"k": "updated_at", "v": ttl_time, "o": "gte"},
+            ]
+        }
+
+        _LOGGER.debug(
+            f"[_get_metric_query_history] metric_cache_ttl: {metric_cache_ttl} days"
+        )
+
+        history_vos, total_count = metric_data_mgr.list_metric_query_history(query)
+        recent_metrics = []
+        for history_vo in history_vos:
+            recent_metrics.append(history_vo.metric_id)
+
+        _LOGGER.debug(f"[_get_metric_query_history] recent_metrics: {recent_metrics}")
+
+        return recent_metrics
 
     @staticmethod
     def _delete_metric_cache(plugin_id: str, domain_id: str) -> None:

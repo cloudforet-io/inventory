@@ -39,6 +39,7 @@ STATS_SCHEDULE_HOUR = 15  # Hour (UTC)
 
 # Metric Settings
 METRIC_SCHEDULE_HOUR = 0  # Hour (UTC)
+METRIC_QUERY_TTL = 3  # Days
 
 # Handler Settings
 HANDLERS = {

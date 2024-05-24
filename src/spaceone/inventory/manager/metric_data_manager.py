@@ -24,6 +24,7 @@ class MetricDataManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.metric_data_model = MetricData
         self.monthly_metric_data = MonthlyMetricData
+        self.history_model = MetricQueryHistory
 
     def create_metric_data(self, params: dict) -> MetricData:
         metric_data_vo: MetricData = self.metric_data_model.create(params)
@@ -168,6 +169,9 @@ class MetricDataManager(BaseManager):
 
         return response
 
+    def list_metric_query_history(self, query: dict) -> Tuple[QuerySet, int]:
+        return self.history_model.query(**query)
+
     @cache.cacheable(
         key="inventory:metric-query-history:{domain_id}:{metric_id}",
         expire=600,
@@ -179,10 +183,11 @@ class MetricDataManager(BaseManager):
             )
             vo.delete()
 
-        history_model = MetricQueryHistory()
-        history_vos = history_model.filter(domain_id=domain_id, metric_id=metric_id)
+        history_vos = self.history_model.filter(
+            domain_id=domain_id, metric_id=metric_id
+        )
         if history_vos.count() == 0:
-            history_vo = history_model.create(
+            history_vo = self.history_model.create(
                 {
                     "metric_id": metric_id,
                     "domain_id": domain_id,
