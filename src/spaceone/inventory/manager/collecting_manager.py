@@ -115,11 +115,10 @@ class CollectingManager(BaseManager):
                 job_task_vo, "ERROR_COLLECTOR_PLUGIN", error_message
             )
 
-            self.job_task_mgr.make_failure_by_vo(job_task_vo)
+            self.job_task_mgr.make_failure_by_vo(job_task_vo, {"failure_count": 1})
             raise ERROR_COLLECTOR_COLLECTING(plugin_info=plugin_info)
 
         job_task_status = "SUCCESS"
-        collecting_count_info = {}
 
         try:
             collecting_count_info = self._upsert_collecting_resources(
@@ -143,19 +142,19 @@ class CollectingManager(BaseManager):
                 job_task_vo, "ERROR_COLLECTOR_PLUGIN", error_message
             )
             job_task_status = "FAILURE"
+            collecting_count_info = {"failure_count": 1}
 
-        finally:
-            _LOGGER.debug(
-                f"[collecting_resources] job task summary ({job_task_id}: {job_task_status}) "
-                f"=> {collecting_count_info}"
+        _LOGGER.debug(
+            f"[collecting_resources] job task summary ({job_task_id}: {job_task_status}) "
+            f"=> {collecting_count_info}"
+        )
+
+        if job_task_status == "SUCCESS":
+            self.job_task_mgr.decrease_remained_sub_tasks(
+                job_task_vo, collecting_count_info
             )
-
-            if job_task_status == "SUCCESS":
-                self.job_task_mgr.decrease_remained_sub_tasks(
-                    job_task_vo, collecting_count_info
-                )
-            else:
-                self.job_task_mgr.make_failure_by_vo(job_task_vo, collecting_count_info)
+        else:
+            self.job_task_mgr.make_failure_by_vo(job_task_vo, collecting_count_info)
 
         return True
 
