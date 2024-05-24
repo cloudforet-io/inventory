@@ -171,10 +171,10 @@ class MetricManager(BaseManager):
         time.sleep(random_time)
 
     def _check_metric_status(self, metric_vo: Metric) -> None:
-        for i in range(300):
+        for i in range(100):
             metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
             if metric_vo.status == "DONE":
-                break
+                return
 
             time.sleep(3)
 
@@ -283,8 +283,8 @@ class MetricManager(BaseManager):
         query["filter"] = query.get("filter", [])
         query["filter"].extend(
             [
-                {"k": date_field, "v": start, "o": "gte"},
-                {"k": date_field, "v": end, "o": "lt"},
+                {"key": date_field, "value": start, "o": "gte"},
+                {"key": date_field, "value": end, "o": "lt"},
             ]
         )
         return query
@@ -611,9 +611,7 @@ class MetricManager(BaseManager):
     @staticmethod
     def _remove_analyze_cache(domain_id: str, metric_id: str) -> None:
         cache.delete_pattern(f"inventory:metric-data:*:{domain_id}:{metric_id}:*")
-        cache.delete_pattern(
-            f"inventory:metric-query-history:{domain_id}:{metric_id}:*"
-        )
+        cache.delete_pattern(f"inventory:metric-query-history:{domain_id}:{metric_id}")
 
     @staticmethod
     def _set_metric_load_cache(domain_id: str, metric_vo: Metric) -> None:
