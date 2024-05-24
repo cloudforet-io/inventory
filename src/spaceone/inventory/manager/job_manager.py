@@ -142,7 +142,9 @@ class JobManager(BaseManager):
         for history_vo in history_vos:
             recent_metrics.append(history_vo.metric_id)
 
-        _LOGGER.debug(f"[_get_metric_query_history] recent_metrics: {recent_metrics}")
+        _LOGGER.debug(
+            f"[_get_metric_query_history] recent_metrics({domain_id}): {recent_metrics}"
+        )
 
         return recent_metrics
 

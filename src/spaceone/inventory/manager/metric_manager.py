@@ -55,7 +55,7 @@ class MetricManager(BaseManager):
             ],
         }
 
-        _LOGGER.debug(f"[push_task] run query sets by domain: {domain_id}")
+        _LOGGER.debug(f"[push_task] run metric({domain_id}) {metric_id}")
 
         queue.put("collector_q", utils.dump_json(task))
 
