@@ -111,6 +111,15 @@ class CloudServiceService(BaseService):
         elif "data" not in params:
             raise ERROR_REQUIRED_PARAMETER(key="data")
 
+        if "json_metadata" in params:
+            params["metadata"] = utils.load_json(params["json_metadata"])
+            if not isinstance(params["metadata"], dict):
+                raise ERROR_INVALID_PARAMETER_TYPE(
+                    key="json_metadata", type=type(params["metadata"])
+                )
+
+            del params["json_metadata"]
+
         domain_id = params["domain_id"]
         workspace_id = params["workspace_id"]
         secret_project_id = self.transaction.get_meta("secret.project_id")
@@ -198,9 +207,6 @@ class CloudServiceService(BaseService):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
 
         if "json_data" in params:
-            _LOGGER.debug(
-                f"[update_resource] load json_data: {params['cloud_service_id']}"
-            )
             params["data"] = utils.load_json(params["json_data"])
             if not isinstance(params["data"], dict):
                 raise ERROR_INVALID_PARAMETER_TYPE(
@@ -208,6 +214,15 @@ class CloudServiceService(BaseService):
                 )
 
             del params["json_data"]
+
+        if "json_metadata" in params:
+            params["metadata"] = utils.load_json(params["json_metadata"])
+            if not isinstance(params["metadata"], dict):
+                raise ERROR_INVALID_PARAMETER_TYPE(
+                    key="json_metadata", type=type(params["metadata"])
+                )
+
+            del params["json_metadata"]
 
         secret_project_id = self.transaction.get_meta("secret.project_id")
 
@@ -281,7 +296,6 @@ class CloudServiceService(BaseService):
 
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
 
-        _LOGGER.debug(f"[update_resource] merged params: {params}")
         cloud_svc_vo = self.cloud_svc_mgr.update_cloud_service_by_vo(
             params, cloud_svc_vo
         )
