@@ -46,6 +46,9 @@ class CloudServiceService(BaseService):
         self.collector_rule_mgr: CollectorRuleManager = self.locator.get_manager(
             "CollectorRuleManager"
         )
+        self.state_mgr: CollectionStateManager = self.locator.get_manager(
+            "CollectionStateManager"
+        )
         self.collector_id = self.transaction.get_meta("collector_id")
         self.job_id = self.transaction.get_meta("job_id")
         self.plugin_id = self.transaction.get_meta("plugin_id")
@@ -154,10 +157,7 @@ class CloudServiceService(BaseService):
         ch_mgr.add_new_history(cloud_svc_vo, params)
 
         # Create Collection State
-        state_mgr: CollectionStateManager = self.locator.get_manager(
-            "CollectionStateManager"
-        )
-        state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, domain_id)
+        self.state_mgr.create_collection_state(cloud_svc_vo.cloud_service_id, domain_id)
 
         return cloud_svc_vo
 
@@ -281,6 +281,7 @@ class CloudServiceService(BaseService):
 
         params = self.cloud_svc_mgr.merge_data(params, old_cloud_svc_data)
 
+        _LOGGER.debug(f"[update_resource] merged params: {params}")
         cloud_svc_vo = self.cloud_svc_mgr.update_cloud_service_by_vo(
             params, cloud_svc_vo
         )
@@ -289,14 +290,11 @@ class CloudServiceService(BaseService):
         ch_mgr.add_update_history(cloud_svc_vo, params, old_cloud_svc_data)
 
         # Update Collection History
-        state_mgr: CollectionStateManager = self.locator.get_manager(
-            "CollectionStateManager"
-        )
-        state_vo = state_mgr.get_collection_state(cloud_service_id, domain_id)
+        state_vo = self.state_mgr.get_collection_state(cloud_service_id, domain_id)
         if state_vo:
-            state_mgr.reset_collection_state(state_vo)
+            self.state_mgr.reset_collection_state(state_vo)
         else:
-            state_mgr.create_collection_state(cloud_service_id, domain_id)
+            self.state_mgr.create_collection_state(cloud_service_id, domain_id)
 
         if "project_id" in params:
             note_mgr: NoteManager = self.locator.get_manager("NoteManager")
