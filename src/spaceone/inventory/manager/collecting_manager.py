@@ -22,7 +22,13 @@ class CollectingManager(BaseManager):
         super().__init__(*args, **kwargs)
         self.job_mgr: JobManager = self.locator.get_manager(JobManager)
         self.job_task_mgr: JobTaskManager = self.locator.get_manager(JobTaskManager)
+        self.namespace_mgr: NamespaceManager = self.locator.get_manager(
+            NamespaceManager
+        )
+        self.metric_mgr: MetricManager = self.locator.get_manager(MetricManager)
+
         self.db_queue = DB_QUEUE_NAME
+        self._service_and_manager_map = {}
 
     def collecting_resources(self, params: dict):
         """Execute collecting task to get resources from plugin
@@ -254,19 +260,15 @@ class CollectingManager(BaseManager):
         request_data["is_managed"] = True
 
         if resource_type == "inventory.Namespace":
-            namespace_mgr: NamespaceManager = self.locator.get_manager(
-                "NamespaceManager"
-            )
-
             namespace_id = request_data.get("namespace_id")
             version = request_data.get("version")
 
-            namespace_vos = namespace_mgr.filter_namespaces(
+            namespace_vos = self.namespace_mgr.filter_namespaces(
                 namespace_id=namespace_id, domain_id=domain_id
             )
             if namespace_vos.count() == 0:
                 request_data["workspace_id"] = workspace_id
-                namespace_mgr.create_namespace(request_data)
+                self.namespace_mgr.create_namespace(request_data)
             else:
                 namespace_vo = namespace_vos[0]
                 workspaces = namespace_vo.workspaces
@@ -280,20 +282,20 @@ class CollectingManager(BaseManager):
                     request_data["workspaces"] = workspaces
 
                 if namespace_vo.version != version or is_changed:
-                    namespace_mgr.update_namespace_by_vo(request_data, namespace_vo)
+                    self.namespace_mgr.update_namespace_by_vo(
+                        request_data, namespace_vo
+                    )
         else:
-            metric_mgr: MetricManager = self.locator.get_manager("MetricManager")
-
             metric_id = request_data.get("metric_id")
             version = request_data.get("version")
 
-            metric_vos = metric_mgr.filter_metrics(
+            metric_vos = self.metric_mgr.filter_metrics(
                 metric_id=metric_id, domain_id=domain_id
             )
 
             if metric_vos.count() == 0:
                 request_data["workspace_id"] = workspace_id
-                metric_mgr.create_metric(request_data)
+                self.metric_mgr.create_metric(request_data)
             else:
                 metric_vo = metric_vos[0]
                 workspaces = metric_vo.workspaces
@@ -307,7 +309,7 @@ class CollectingManager(BaseManager):
                     request_data["workspaces"] = workspaces
 
                 if metric_vo.version != version or is_changed:
-                    metric_mgr.update_metric_by_vo(request_data, metric_vo)
+                    self.metric_mgr.update_metric_by_vo(request_data, metric_vo)
 
     def _upsert_resource(
         self, resource_data: dict, params: dict, job_task_vo: JobTask
@@ -479,8 +481,13 @@ class CollectingManager(BaseManager):
         if resource_type not in RESOURCE_MAP:
             raise ERROR_UNSUPPORTED_RESOURCE_TYPE(resource_type=resource_type)
 
+        if resource_type in self._service_and_manager_map:
+            return self._service_and_manager_map[resource_type]
+
         service = self.locator.get_service(RESOURCE_MAP[resource_type][0])
         manager = self.locator.get_manager(RESOURCE_MAP[resource_type][1])
+
+        self._service_and_manager_map[resource_type] = service, manager
         return service, manager
 
     @staticmethod
