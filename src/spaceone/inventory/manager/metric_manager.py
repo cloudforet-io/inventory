@@ -133,54 +133,8 @@ class MetricManager(BaseManager):
     def stat_metrics(self, query: dict) -> dict:
         return self.metric_model.stat(**query)
 
-    def check_and_run_metric_query(
-        self, metric_id: str, domain_id: str, workspace_id: str = None
-    ):
-        metric_vo = self.get_metric(metric_id, domain_id, workspace_id)
-        plugin_id = metric_vo.plugin_id
-
-        if metric_vo.is_managed:
-            is_load: bool = cache.get(
-                f"inventory:managed-metric:{domain_id}:{metric_id}:load"
-            )
-        else:
-            is_load: bool = cache.get(
-                f"inventory:plugin-metric:{domain_id}:{plugin_id}:{metric_id}:load"
-            )
-
-        if not is_load:
-            self._wait_random_time()
-            metric_vo = self.get_metric(metric_id, domain_id, workspace_id)
-
-            if metric_vo.status == "IN_PROGRESS":
-                _LOGGER.debug(
-                    f"[check_and_run_metric_query] metric is already in progress: {metric_id}"
-                )
-                self._check_metric_status(metric_vo)
-            else:
-                _LOGGER.debug(
-                    f"[check_and_run_metric_query] run metric query: {metric_id}"
-                )
-                self.run_metric_query(metric_vo)
-
-    @staticmethod
-    def _wait_random_time():
-        random_time = round(random.uniform(0, 5), 2)
-        _LOGGER.debug(f"[_wait_random_time] sleep time: {random_time}")
-
-        time.sleep(random_time)
-
-    def _check_metric_status(self, metric_vo: Metric) -> None:
-        for i in range(100):
-            metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
-            if metric_vo.status == "DONE":
-                return
-
-            time.sleep(3)
-
-        self.update_metric_by_vo({"status": "DONE"}, metric_vo)
-
     def run_metric_query(self, metric_vo: Metric, is_yesterday: bool = False) -> None:
+        self._check_metric_status(metric_vo)
         self.update_metric_by_vo({"status": "IN_PROGRESS"}, metric_vo)
 
         domain_id = metric_vo.domain_id
@@ -213,7 +167,16 @@ class MetricManager(BaseManager):
         self._delete_invalid_metric_data(metric_vo)
         self._delete_old_metric_data(metric_vo)
         self._remove_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
-        self._set_metric_load_cache(domain_id, metric_vo)
+
+        self.update_metric_by_vo({"status": "DONE"}, metric_vo)
+
+    def _check_metric_status(self, metric_vo: Metric) -> None:
+        for i in range(200):
+            metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
+            if metric_vo.status == "DONE":
+                return
+
+            time.sleep(3)
 
         self.update_metric_by_vo({"status": "DONE"}, metric_vo)
 
@@ -612,21 +575,6 @@ class MetricManager(BaseManager):
     def _remove_analyze_cache(domain_id: str, metric_id: str) -> None:
         cache.delete_pattern(f"inventory:metric-data:*:{domain_id}:{metric_id}:*")
         cache.delete_pattern(f"inventory:metric-query-history:{domain_id}:{metric_id}")
-
-    @staticmethod
-    def _set_metric_load_cache(domain_id: str, metric_vo: Metric) -> None:
-        if metric_vo.is_managed:
-            cache_key = (
-                f"inventory:managed-metric:{domain_id}:{metric_vo.metric_id}:load"
-            )
-        else:
-            cache_key = f"inventory:plugin-metric:{domain_id}:{metric_vo.plugin_id}:{metric_vo.metric_id}:load"
-
-        cache.set(
-            cache_key,
-            True,
-            expire=3600 * 24,
-        )
 
     @staticmethod
     def _get_labels_info(query_options: dict) -> list:
