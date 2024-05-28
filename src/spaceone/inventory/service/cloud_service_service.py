@@ -198,6 +198,9 @@ class CloudServiceService(BaseService):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
 
         if "json_data" in params:
+            _LOGGER.debug(
+                f"[update_resource] load json_data: {params['cloud_service_id']}"
+            )
             params["data"] = utils.load_json(params["json_data"])
             if not isinstance(params["data"], dict):
                 raise ERROR_INVALID_PARAMETER_TYPE(

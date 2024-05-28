@@ -81,6 +81,7 @@ class MetricDataManager(BaseManager):
         query["target"] = target
         query["date_field"] = "created_date"
         query["date_field_format"] = "%Y-%m-%d"
+        query = self._append_status_filter(query)
         _LOGGER.debug(f"[analyze_metric_data] query: {query}")
         return self.metric_data_model.analyze(**query)
 
@@ -90,6 +91,7 @@ class MetricDataManager(BaseManager):
         query["target"] = target
         query["date_field"] = "created_month"
         query["date_field_format"] = "%Y-%m"
+        query = self._append_status_filter(query)
         _LOGGER.debug(f"[analyze_monthly_metric_data] query: {query}")
         return self.monthly_metric_data.analyze(**query)
 
@@ -99,6 +101,7 @@ class MetricDataManager(BaseManager):
         query["target"] = target
         query["date_field"] = "created_year"
         query["date_field_format"] = "%Y"
+        query = self._append_status_filter(query)
         _LOGGER.debug(f"[analyze_yearly_metric_data] query: {query}")
         return self.monthly_metric_data.analyze(**query)
 
