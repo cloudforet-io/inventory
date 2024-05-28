@@ -105,7 +105,7 @@ class CloudServiceService(BaseService):
                 )
 
             del params["json_data"]
-        else:
+        elif "data" not in params:
             raise ERROR_REQUIRED_PARAMETER(key="data")
 
         domain_id = params["domain_id"]
