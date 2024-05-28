@@ -137,7 +137,8 @@ class MetricManager(BaseManager):
         self._check_metric_status(metric_vo)
         self.update_metric_by_vo({"status": "IN_PROGRESS"}, metric_vo)
 
-        domain_id = metric_vo.domain_id
+        # delete old metric data before run metric query
+        self._delete_invalid_metric_data(metric_vo)
 
         results = self.analyze_resource(metric_vo, is_yesterday=is_yesterday)
 
@@ -166,7 +167,7 @@ class MetricManager(BaseManager):
         self._update_status(metric_vo, created_at)
         self._delete_invalid_metric_data(metric_vo)
         self._delete_old_metric_data(metric_vo)
-        self._remove_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
+        self._delete_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
 
         self.update_metric_by_vo({"status": "DONE"}, metric_vo)
 
@@ -572,7 +573,7 @@ class MetricManager(BaseManager):
             monthly_metric_data_vos.delete()
 
     @staticmethod
-    def _remove_analyze_cache(domain_id: str, metric_id: str) -> None:
+    def _delete_analyze_cache(domain_id: str, metric_id: str) -> None:
         cache.delete_pattern(f"inventory:metric-data:*:{domain_id}:{metric_id}:*")
         cache.delete_pattern(f"inventory:metric-query-history:{domain_id}:{metric_id}")
 
