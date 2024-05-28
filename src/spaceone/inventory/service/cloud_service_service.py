@@ -98,7 +98,12 @@ class CloudServiceService(BaseService):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
 
         if "json_data" in params:
-            params["data"] = params["json_data"]
+            params["data"] = utils.load_json(params["json_data"])
+            if not isinstance(params["data"], dict):
+                raise ERROR_INVALID_PARAMETER_TYPE(
+                    key="json_data", type=type(params["data"])
+                )
+
             del params["json_data"]
         else:
             raise ERROR_REQUIRED_PARAMETER(key="data")
@@ -193,7 +198,12 @@ class CloudServiceService(BaseService):
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
 
         if "json_data" in params:
-            params["data"] = params["json_data"]
+            params["data"] = utils.load_json(params["json_data"])
+            if not isinstance(params["data"], dict):
+                raise ERROR_INVALID_PARAMETER_TYPE(
+                    key="json_data", type=type(params["data"])
+                )
+
             del params["json_data"]
 
         secret_project_id = self.transaction.get_meta("secret.project_id")
