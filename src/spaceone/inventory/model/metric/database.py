@@ -31,6 +31,9 @@ class Metric(MongoModel):
             "unit",
             "tags",
             "labels_info",
+            "version",
+            "workspaces",
+            "updated_at",
         ],
         "minimal_fields": [
             "metric_id",
