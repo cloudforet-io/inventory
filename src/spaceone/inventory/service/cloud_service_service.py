@@ -68,6 +68,7 @@ class CloudServiceService(BaseService):
                 'instance_size': 'float',
                 'ip_addresses': 'list',
                 'data': 'dict',                     # required
+                'json_data': 'dict',
                 'metadata': 'dict',
                 'reference': 'dict',
                 'tags': 'list or dict',
@@ -89,13 +90,18 @@ class CloudServiceService(BaseService):
             "cloud_service_type",
             "cloud_service_group",
             "provider",
-            "data",
             "workspace_id",
             "domain_id",
         ]
     )
     def create_resource(self, params: dict) -> CloudService:
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
+
+        if "json_data" in params:
+            params["data"] = params["json_data"]
+            del params["json_data"]
+        else:
+            raise ERROR_REQUIRED_PARAMETER(key="data")
 
         domain_id = params["domain_id"]
         workspace_id = params["workspace_id"]
@@ -165,6 +171,7 @@ class CloudServiceService(BaseService):
                 'instance_size': 'float',
                 'ip_addresses': 'list',
                 'data': 'dict',
+                'json_data': 'dict',
                 'metadata': 'dict',
                 'reference': 'dict',
                 'tags': 'list or dict',
@@ -184,6 +191,10 @@ class CloudServiceService(BaseService):
     @check_required(["cloud_service_id", "workspace_id", "domain_id"])
     def update_resource(self, params: dict) -> CloudService:
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
+
+        if "json_data" in params:
+            params["data"] = params["json_data"]
+            del params["json_data"]
 
         secret_project_id = self.transaction.get_meta("secret.project_id")
 
