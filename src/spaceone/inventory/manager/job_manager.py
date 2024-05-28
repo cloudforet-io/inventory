@@ -99,7 +99,6 @@ class JobManager(BaseManager):
                 self.make_success_by_vo(job_vo)
 
         if job_vo.success_tasks > 0:
-            self._delete_metric_cache(job_vo.plugin_id, job_vo.domain_id)
             self._run_metric_queries(job_vo.plugin_id, job_vo.domain_id)
 
     def _run_metric_queries(self, plugin_id: str, domain_id: str) -> None:
@@ -147,11 +146,6 @@ class JobManager(BaseManager):
         )
 
         return recent_metrics
-
-    @staticmethod
-    def _delete_metric_cache(plugin_id: str, domain_id: str) -> None:
-        cache.delete_pattern(f"inventory:managed-metric:{domain_id}:*:load")
-        cache.delete_pattern(f"inventory:plugin-metric:{domain_id}:{plugin_id}:*:load")
 
     def update_job_timeout_by_hour(self, job_timeout: int, domain_id: str) -> None:
         created_at = datetime.utcnow() - timedelta(hours=job_timeout)

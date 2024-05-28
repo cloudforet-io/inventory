@@ -63,10 +63,6 @@ class MetricDataService(BaseService):
         domain_id = params.domain_id
         query = params.query or {}
 
-        self.metric_mgr.check_and_run_metric_query(
-            metric_id, domain_id, params.workspace_id
-        )
-
         metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(query)
 
         metric_datas_info = [
@@ -103,10 +99,6 @@ class MetricDataService(BaseService):
         domain_id = params.domain_id
         metric_id = params.metric_id
         query = params.query or {}
-
-        self.metric_mgr.check_and_run_metric_query(
-            metric_id, domain_id, params.workspace_id
-        )
 
         return self.metric_data_mgr.analyze_metric_data_by_granularity(
             query, domain_id, metric_id
