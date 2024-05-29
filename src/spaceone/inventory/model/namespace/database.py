@@ -3,7 +3,7 @@ from spaceone.core.model.mongo_model import MongoModel
 
 
 class Namespace(MongoModel):
-    namespace_id = StringField(max_length=40, unique_with="domain_id")
+    namespace_id = StringField(max_length=80, unique_with="domain_id")
     name = StringField(max_length=40)
     category = StringField(max_length=40)
     provider = StringField(max_length=40)
