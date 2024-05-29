@@ -146,12 +146,6 @@ class MetricManager(BaseManager):
             {"status": "IN_PROGRESS", "metric_job_id": metric_job_id}, metric_vo
         )
 
-        # delete old metric data before run metric query
-        _LOGGER.debug(
-            f"[run_metric_query] Delete old metric data ({metric_vo.metric_id}): {metric_job_id}"
-        )
-        self._delete_invalid_metric_data(metric_vo, metric_job_id)
-
         results = self.analyze_resource(metric_vo, is_yesterday=is_yesterday)
 
         created_at = datetime.utcnow()
@@ -205,7 +199,7 @@ class MetricManager(BaseManager):
 
             time.sleep(3)
 
-        _LOGGER.debug(f"[_check_metric_status] Timeout: {metric_vo.metric_id}")
+        _LOGGER.warning(f"[_check_metric_status] Timeout: {metric_vo.metric_id}")
         self.update_metric_by_vo({"status": "DONE"}, metric_vo)
 
     def analyze_resource(
@@ -524,8 +518,8 @@ class MetricManager(BaseManager):
     def _rollback_query_results(
         self, metric_vo: Metric, created_at: datetime, metric_job_id: str
     ):
-        _LOGGER.debug(
-            f"[_rollback_query_results] Rollback Query Results: {metric_vo.metric_id}"
+        _LOGGER.warning(
+            f"[_rollback_query_results] Rollback Query Results ({metric_vo.metric_id}): {metric_job_id}"
         )
         metric_id = metric_vo.metric_id
         domain_id = metric_vo.domain_id
