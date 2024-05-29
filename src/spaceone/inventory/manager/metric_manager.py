@@ -398,7 +398,7 @@ class MetricManager(BaseManager):
         metric_id = metric_vo.metric_id
         created_month = created_at.strftime("%Y-%m")
         created_year = created_at.strftime("%Y")
-        group_by = ["service_account_id", "project_id", "workspace_id"]
+        group_by = []
 
         for label_info in metric_vo.labels_info:
             group_by.append(label_info["key"])
@@ -418,11 +418,13 @@ class MetricManager(BaseManager):
             ],
         }
 
-        response = self.metric_data_mgr.analyze_metric_data(query, target="PRIMARY")
+        response = self.metric_data_mgr.analyze_metric_data(
+            query, target="PRIMARY", status="IN_PROGRESS"
+        )
         results = response.get("results", [])
 
         _LOGGER.debug(
-            f"[_aggregate_monthly_metric_data] Aggregate query results({metric_id}): {len(results)}"
+            f"[_aggregate_monthly_metric_data] Aggregate query results ({metric_id}): {len(results)}"
         )
 
         for result in results:
@@ -515,7 +517,7 @@ class MetricManager(BaseManager):
 
     def _update_status(self, metric_vo: Metric, created_at: datetime) -> None:
         _LOGGER.debug(
-            f"[_update_status] Update metric data status: {metric_vo.metric_id}"
+            f"[_update_status] Update metric data status ({metric_vo.metric_id}): IN_PROGRESS -> DONE"
         )
 
         domain_id = metric_vo.domain_id
