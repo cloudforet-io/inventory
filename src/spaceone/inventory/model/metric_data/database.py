@@ -52,8 +52,19 @@ class MetricData(MongoModel):
                     "domain_id",
                     "metric_id",
                     "created_month",
+                    "metric_job_id",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SYNC_JOB_1",
+            },
+            {
+                "fields": [
+                    "domain_id",
+                    "metric_id",
+                    "metric_job_id",
+                    "status",
+                    "-created_date",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SYNC_JOB_2",
             },
         ],
     }
@@ -102,6 +113,16 @@ class MonthlyMetricData(MongoModel):
                     "created_year",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SYNC_JOB_1",
+            },
+            {
+                "fields": [
+                    "domain_id",
+                    "metric_id",
+                    "metric_job_id",
+                    "status",
+                    "-created_month",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SYNC_JOB_2",
             },
         ],
     }

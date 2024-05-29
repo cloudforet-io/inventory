@@ -135,11 +135,13 @@ class MetricManager(BaseManager):
         return self.metric_model.stat(**query)
 
     def run_metric_query(self, metric_vo: Metric, is_yesterday: bool = False) -> None:
-        if not self._check_metric_status(metric_vo):
-            self.push_task(metric_vo, is_yesterday=is_yesterday)
-            return
+        self._check_metric_status(metric_vo)
 
         metric_job_id = utils.generate_id("metric-job")
+        _LOGGER.debug(
+            f"[run_metric_query] Start metric job ({metric_vo.metric_id}): {metric_job_id}"
+        )
+
         self.update_metric_by_vo(
             {"status": "IN_PROGRESS", "metric_job_id": metric_job_id}, metric_vo
         )
@@ -195,17 +197,16 @@ class MetricManager(BaseManager):
 
         self.update_metric_by_vo({"status": "DONE", "is_new": False}, metric_vo)
 
-    def _check_metric_status(self, metric_vo: Metric) -> bool:
+    def _check_metric_status(self, metric_vo: Metric) -> None:
         for i in range(200):
             metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
             if metric_vo.status == "DONE":
-                return True
+                return
 
             time.sleep(3)
 
         _LOGGER.debug(f"[_check_metric_status] Timeout: {metric_vo.metric_id}")
         self.update_metric_by_vo({"status": "DONE"}, metric_vo)
-        return False
 
     def analyze_resource(
         self,
