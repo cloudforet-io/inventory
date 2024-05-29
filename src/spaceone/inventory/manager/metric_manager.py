@@ -484,7 +484,7 @@ class MetricManager(BaseManager):
                 {"k": "metric_id", "v": metric_id, "o": "eq"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
                 {"k": "created_date", "v": created_date, "o": "eq"},
-                {"k": "metric_job_id", "v": metric_job_id, "o": "ne"},
+                {"k": "metric_job_id", "v": metric_job_id, "o": "not"},
             ]
         }
 
@@ -507,7 +507,7 @@ class MetricManager(BaseManager):
                 {"k": "metric_id", "v": metric_id, "o": "eq"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
                 {"k": "created_month", "v": created_month, "o": "eq"},
-                {"k": "metric_job_id", "v": metric_job_id, "o": "ne"},
+                {"k": "metric_job_id", "v": metric_job_id, "o": "not"},
             ]
         }
 
@@ -589,7 +589,7 @@ class MetricManager(BaseManager):
                 {"k": "metric_id", "v": metric_id, "o": "eq"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
                 {"k": "status", "v": "IN_PROGRESS", "o": "eq"},
-                {"k": "metric_job_id", "v": metric_job_id, "o": "ne"},
+                {"k": "metric_job_id", "v": metric_job_id, "o": "not"},
             ]
         }
 
