@@ -4,6 +4,7 @@ from spaceone.core.model.mongo_model import MongoModel
 
 class MetricData(MongoModel):
     metric_id = StringField(max_length=80)
+    metric_job_id = StringField(max_length=40)
     status = StringField(
         max_length=20, default="IN_PROGRESS", choices=["IN_PROGRESS", "DONE"]
     )
@@ -51,8 +52,19 @@ class MetricData(MongoModel):
                     "domain_id",
                     "metric_id",
                     "created_month",
+                    "metric_job_id",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SYNC_JOB_1",
+            },
+            {
+                "fields": [
+                    "domain_id",
+                    "metric_id",
+                    "metric_job_id",
+                    "status",
+                    "-created_date",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SYNC_JOB_2",
             },
         ],
     }
@@ -60,6 +72,7 @@ class MetricData(MongoModel):
 
 class MonthlyMetricData(MongoModel):
     metric_id = StringField(max_length=80)
+    metric_job_id = StringField(max_length=40)
     status = StringField(
         max_length=20, default="IN_PROGRESS", choices=["IN_PROGRESS", "DONE"]
     )
@@ -100,6 +113,16 @@ class MonthlyMetricData(MongoModel):
                     "created_year",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SYNC_JOB_1",
+            },
+            {
+                "fields": [
+                    "domain_id",
+                    "metric_id",
+                    "metric_job_id",
+                    "status",
+                    "-created_month",
+                ],
+                "name": "COMPOUND_INDEX_FOR_SYNC_JOB_2",
             },
         ],
     }
