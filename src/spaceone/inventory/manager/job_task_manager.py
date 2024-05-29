@@ -133,10 +133,11 @@ class JobTaskManager(BaseManager):
             "FAILURE",
             finished_at=datetime.utcnow(),
         )
-        self.decrease_remained_sub_tasks(job_task_vo)
 
         if collecting_count_info:
             self._update_collecting_count_info(job_task_vo, collecting_count_info)
+
+        self.decrease_remained_sub_tasks(job_task_vo)
 
     def decrease_remained_sub_tasks(
         self, job_task_vo: JobTask, collecting_count_info: dict = None

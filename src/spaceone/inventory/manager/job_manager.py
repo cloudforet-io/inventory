@@ -107,7 +107,7 @@ class JobManager(BaseManager):
         job_task_vos: List[JobTask] = job_task_model.filter(
             job_id=job_vo.job_id, domain_id=job_vo.domain_id
         )
-        is_updated = False
+        is_changed = False
 
         for job_task_vo in job_task_vos:
             if (
@@ -115,10 +115,13 @@ class JobManager(BaseManager):
                 or job_task_vo.updated_count > 0
                 or job_task_vo.deleted_count > 0
             ):
-                is_updated = True
+                is_changed = True
                 break
 
-        return is_updated
+        _LOGGER.debug(
+            f"[_is_changed] job_id: {job_vo.job_id}, is_changed: {is_changed}"
+        )
+        return is_changed
 
     def _run_metric_queries(self, plugin_id: str, domain_id: str) -> None:
         metric_mgr = MetricManager()
