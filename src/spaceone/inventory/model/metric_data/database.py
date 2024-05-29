@@ -37,10 +37,10 @@ class MetricData(MongoModel):
             {
                 "fields": [
                     "domain_id",
-                    "workspace_id",
                     "metric_id",
                     "status",
                     "-created_date",
+                    "workspace_id",
                     "project_id",
                     "service_account_id",
                 ],
@@ -49,19 +49,10 @@ class MetricData(MongoModel):
             {
                 "fields": [
                     "domain_id",
-                    "workspace_id",
                     "metric_id",
-                    "status",
-                    "-created_month",
+                    "created_month",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SYNC_JOB_1",
-            },
-            {
-                "fields": [
-                    "domain_id",
-                    "metric_id",
-                ],
-                "name": "COMPOUND_INDEX_FOR_DELETE",
             },
         ],
     }
@@ -93,10 +84,10 @@ class MonthlyMetricData(MongoModel):
             {
                 "fields": [
                     "domain_id",
-                    "workspace_id",
                     "metric_id",
                     "status",
                     "-created_month",
+                    "workspace_id",
                     "project_id",
                     "service_account_id",
                 ],
@@ -105,19 +96,10 @@ class MonthlyMetricData(MongoModel):
             {
                 "fields": [
                     "domain_id",
-                    "workspace_id",
                     "metric_id",
-                    "status",
-                    "-created_year",
+                    "created_year",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SYNC_JOB_1",
-            },
-            {
-                "fields": [
-                    "domain_id",
-                    "metric_id",
-                ],
-                "name": "COMPOUND_INDEX_FOR_DELETE_1",
             },
         ],
     }

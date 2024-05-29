@@ -59,8 +59,6 @@ class MetricDataService(BaseService):
             MetricDataResponse:
         """
 
-        metric_id = params.metric_id
-        domain_id = params.domain_id
         query = params.query or {}
 
         metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(query)
