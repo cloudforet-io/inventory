@@ -76,13 +76,16 @@ class MetricDataManager(BaseManager):
         return self.monthly_metric_data.stat(**query)
 
     def analyze_metric_data(
-        self, query: dict, target: str = "SECONDARY_PREFERRED"
+        self, query: dict, target: str = "SECONDARY_PREFERRED", status: str = None
     ) -> dict:
         query["target"] = target
         query["date_field"] = "created_date"
         query["date_field_format"] = "%Y-%m-%d"
-        query = self._append_status_filter(query)
-        _LOGGER.debug(f"[analyze_metric_data] query: {query}")
+
+        if status != "IN_PROGRESS":
+            query = self._append_status_filter(query)
+
+        _LOGGER.debug(f"[analyze_metric_data] Query: {query}")
         return self.metric_data_model.analyze(**query)
 
     def analyze_monthly_metric_data(
@@ -92,7 +95,7 @@ class MetricDataManager(BaseManager):
         query["date_field"] = "created_month"
         query["date_field_format"] = "%Y-%m"
         query = self._append_status_filter(query)
-        _LOGGER.debug(f"[analyze_monthly_metric_data] query: {query}")
+        _LOGGER.debug(f"[analyze_monthly_metric_data] Query: {query}")
         return self.monthly_metric_data.analyze(**query)
 
     def analyze_yearly_metric_data(
@@ -102,7 +105,7 @@ class MetricDataManager(BaseManager):
         query["date_field"] = "created_year"
         query["date_field_format"] = "%Y"
         query = self._append_status_filter(query)
-        _LOGGER.debug(f"[analyze_yearly_metric_data] query: {query}")
+        _LOGGER.debug(f"[analyze_yearly_metric_data] Query: {query}")
         return self.monthly_metric_data.analyze(**query)
 
     @cache.cacheable(
@@ -182,7 +185,7 @@ class MetricDataManager(BaseManager):
     def _update_metric_query_history(self, domain_id: str, metric_id: str):
         def _rollback(vo: MetricQueryHistory):
             _LOGGER.info(
-                f"[update_metric_query_history._rollback] delete metric query history: {metric_id}"
+                f"[update_metric_query_history._rollback] Delete metric query history: {metric_id}"
             )
             vo.delete()
 
