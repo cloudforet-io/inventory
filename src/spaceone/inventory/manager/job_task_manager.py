@@ -134,14 +134,14 @@ class JobTaskManager(BaseManager):
             finished_at=datetime.utcnow(),
         )
 
-        if collecting_count_info:
-            self._update_collecting_count_info(job_task_vo, collecting_count_info)
-
-        self.decrease_remained_sub_tasks(job_task_vo)
+        self.decrease_remained_sub_tasks(job_task_vo, collecting_count_info)
 
     def decrease_remained_sub_tasks(
         self, job_task_vo: JobTask, collecting_count_info: dict = None
     ) -> JobTask:
+        if collecting_count_info:
+            self._update_collecting_count_info(job_task_vo, collecting_count_info)
+
         job_task_vo: JobTask = job_task_vo.decrement("remained_sub_tasks")
         if job_task_vo.remained_sub_tasks == 0:
             job_mgr: JobManager = self.locator.get_manager(JobManager)
@@ -164,9 +164,6 @@ class JobTaskManager(BaseManager):
                 job_mgr.increase_failure_tasks(
                     job_task_vo.job_id, job_task_vo.domain_id
                 )
-
-        if collecting_count_info:
-            self._update_collecting_count_info(job_task_vo, collecting_count_info)
 
         return job_task_vo
 
