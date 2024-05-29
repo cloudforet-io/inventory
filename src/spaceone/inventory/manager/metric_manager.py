@@ -156,7 +156,7 @@ class MetricManager(BaseManager):
 
         try:
             _LOGGER.debug(
-                f"[run_metric_query] Save query results({metric_vo.metric_id}): {len(results)}"
+                f"[run_metric_query] Save query results ({metric_vo.metric_id}): {len(results)}"
             )
             for result in results:
                 self._save_query_result(metric_vo, result, created_at)
