@@ -7,6 +7,7 @@ from spaceone.core.model.mongo_model import QuerySet
 from spaceone.inventory.error import *
 from spaceone.inventory.model.collector_model import Collector
 from spaceone.inventory.model.job_model import Job
+from spaceone.inventory.model.job_task_model import JobTask
 from spaceone.inventory.manager.metric_manager import MetricManager
 from spaceone.inventory.manager.metric_data_manager import MetricDataManager
 
@@ -98,8 +99,26 @@ class JobManager(BaseManager):
             else:
                 self.make_success_by_vo(job_vo)
 
-        if job_vo.success_tasks > 0:
+        if self._is_changed(job_vo):
             self._run_metric_queries(job_vo.plugin_id, job_vo.domain_id)
+
+    def _is_changed(self, job_vo: Job) -> bool:
+        job_task_model: JobTask = self.locator.get_model("JobTask")
+        job_task_vos: List[JobTask] = job_task_model.filter(
+            job_id=job_vo.job_id, domain_id=job_vo.domain_id
+        )
+        is_updated = False
+
+        for job_task_vo in job_task_vos:
+            if (
+                job_task_vo.created_count > 0
+                or job_task_vo.updated_count > 0
+                or job_task_vo.deleted_count > 0
+            ):
+                is_updated = True
+                break
+
+        return is_updated
 
     def _run_metric_queries(self, plugin_id: str, domain_id: str) -> None:
         metric_mgr = MetricManager()
