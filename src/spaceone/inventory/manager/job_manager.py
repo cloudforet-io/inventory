@@ -116,6 +116,9 @@ class JobManager(BaseManager):
                 or job_task_vo.deleted_count > 0
             ):
                 is_updated = True
+                _LOGGER.debug(
+                    f"[_is_changed] update metrics because resource is changed: {job_vo.job_id}"
+                )
                 break
 
         return is_updated
