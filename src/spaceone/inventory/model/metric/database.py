@@ -14,9 +14,10 @@ class Metric(MongoModel):
     tags = DictField(default=None)
     labels_info = ListField(DictField())
     is_managed = BooleanField(default=False)
+    is_new = BooleanField(default=True)
     version = StringField(max_length=40, default=None, null=True)
     plugin_id = StringField(max_length=40, default=None, null=True)
-    namespace_id = StringField(max_length=40)
+    namespace_id = StringField(max_length=80)
     domain_id = StringField(max_length=40)
     workspaces = ListField(StringField(max_length=40))
     created_at = DateTimeField(auto_now_add=True)
@@ -31,6 +32,7 @@ class Metric(MongoModel):
             "unit",
             "tags",
             "labels_info",
+            "is_new",
             "version",
             "workspaces",
             "updated_at",

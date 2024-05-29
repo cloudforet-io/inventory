@@ -109,14 +109,18 @@ class JobManager(BaseManager):
             is_managed=True, domain_id=domain_id
         )
         for managed_metric_vo in managed_metric_vos:
-            if managed_metric_vo.metric_id in recent_metrics:
+            if managed_metric_vo.is_new or (
+                managed_metric_vo.metric_id in recent_metrics
+            ):
                 metric_mgr.push_task(managed_metric_vo)
 
         plugin_metric_vos = metric_mgr.filter_metrics(
             plugin_id=plugin_id, domain_id=domain_id
         )
         for plugin_metric_vo in plugin_metric_vos:
-            if plugin_metric_vo.metric_id in recent_metrics:
+            if plugin_metric_vo.is_new or (
+                plugin_metric_vo.metric_id in recent_metrics
+            ):
                 metric_mgr.push_task(plugin_metric_vo)
 
     @staticmethod

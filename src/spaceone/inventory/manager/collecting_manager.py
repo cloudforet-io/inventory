@@ -277,6 +277,7 @@ class CollectingManager(BaseManager):
                 if workspace_id not in workspaces:
                     workspaces.append(workspace_id)
                     request_data["workspaces"] = workspaces
+                    request_data["is_new"] = True
                     is_changed = True
                 else:
                     request_data["workspaces"] = workspaces

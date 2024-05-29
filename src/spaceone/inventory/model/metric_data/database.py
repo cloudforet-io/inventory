@@ -10,7 +10,7 @@ class MetricData(MongoModel):
     value = FloatField(default=0)
     unit = StringField(default=None)
     labels = DictField(default=None)
-    namespace_id = StringField(max_length=40)
+    namespace_id = StringField(max_length=80)
     service_account_id = StringField(max_length=40, default=None, null=True)
     project_id = StringField(max_length=40)
     workspace_id = StringField(max_length=40)
