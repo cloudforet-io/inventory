@@ -365,7 +365,13 @@ class MetricManager(BaseManager):
         }
 
         for key, value in result.items():
-            if key not in ["project_id", "workspace_id", "domain_id", "value"]:
+            if key not in [
+                "service_account_id",
+                "project_id",
+                "workspace_id",
+                "domain_id",
+                "value",
+            ]:
                 data["labels"][key] = value
 
         self.metric_data_mgr.create_metric_data(data)
@@ -380,10 +386,10 @@ class MetricManager(BaseManager):
         metric_id = metric_vo.metric_id
         created_month = created_at.strftime("%Y-%m")
         created_year = created_at.strftime("%Y")
-        group_by = ["project_id", "workspace_id"]
+        group_by = ["service_account_id", "project_id", "workspace_id"]
 
-        for key in metric_vo.labels_info:
-            group_by.append(f"labels.{key}")
+        for label_info in metric_vo.labels_info:
+            group_by.append(label_info["key"])
 
         query = {
             "group_by": group_by,
@@ -408,6 +414,7 @@ class MetricManager(BaseManager):
                 "unit": metric_vo.unit,
                 "labels": {},
                 "namespace_id": metric_vo.namespace_id,
+                "service_account_id": result.get("service_account_id"),
                 "project_id": result.get("project_id"),
                 "workspace_id": result["workspace_id"],
                 "domain_id": metric_vo.domain_id,
@@ -416,7 +423,13 @@ class MetricManager(BaseManager):
             }
 
             for key, value in result.items():
-                if key not in ["project_id", "workspace_id", "domain_id", "value"]:
+                if key not in [
+                    "service_account_id",
+                    "project_id",
+                    "workspace_id",
+                    "domain_id",
+                    "value",
+                ]:
                     data["labels"][key] = value
 
             self.metric_data_mgr.create_monthly_metric_data(data)
