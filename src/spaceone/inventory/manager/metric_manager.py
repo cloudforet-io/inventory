@@ -169,7 +169,7 @@ class MetricManager(BaseManager):
         self._delete_old_metric_data(metric_vo)
         self._delete_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
 
-        self.update_metric_by_vo({"status": "DONE"}, metric_vo)
+        self.update_metric_by_vo({"status": "DONE", "is_new": False}, metric_vo)
 
     def _check_metric_status(self, metric_vo: Metric) -> None:
         for i in range(200):
