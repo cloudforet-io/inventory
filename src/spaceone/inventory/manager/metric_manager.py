@@ -139,13 +139,16 @@ class MetricManager(BaseManager):
             self.push_task(metric_vo, is_yesterday=is_yesterday)
             return
 
-        self.update_metric_by_vo({"status": "IN_PROGRESS"}, metric_vo)
+        metric_job_id = utils.generate_id("metric-job")
+        self.update_metric_by_vo(
+            {"status": "IN_PROGRESS", "metric_job_id": metric_job_id}, metric_vo
+        )
 
         # delete old metric data before run metric query
         _LOGGER.debug(
-            f"[run_metric_query] Delete old metric data: {metric_vo.metric_id}"
+            f"[run_metric_query] Delete old metric data ({metric_vo.metric_id}): {metric_job_id}"
         )
-        self._delete_invalid_metric_data(metric_vo)
+        self._delete_invalid_metric_data(metric_vo, metric_job_id)
 
         results = self.analyze_resource(metric_vo, is_yesterday=is_yesterday)
 
@@ -159,25 +162,36 @@ class MetricManager(BaseManager):
                 f"[run_metric_query] Save query results ({metric_vo.metric_id}): {len(results)}"
             )
             for result in results:
-                self._save_query_result(metric_vo, result, created_at)
-            self._delete_changed_metric_data(metric_vo, created_at)
+                self._save_query_result(metric_vo, result, created_at, metric_job_id)
+            self._delete_changed_metric_data(metric_vo, created_at, metric_job_id)
 
             if metric_vo.metric_type == "COUNTER":
-                self._aggregate_monthly_metric_data(metric_vo, created_at)
+                self._aggregate_monthly_metric_data(
+                    metric_vo, created_at, metric_job_id
+                )
 
-            self._delete_changed_monthly_metric_data(metric_vo, created_at)
+            self._delete_changed_monthly_metric_data(
+                metric_vo, created_at, metric_job_id
+            )
         except Exception as e:
             _LOGGER.error(
                 f"[run_metric_query] Failed to save query result: {e}",
                 exc_info=True,
             )
-            self._rollback_query_results(metric_vo, created_at)
+            self._rollback_query_results(metric_vo, created_at, metric_job_id)
             raise ERROR_METRIC_QUERY_RUN_FAILED(metric_id=metric_vo.metric_id)
 
-        self._update_status(metric_vo, created_at)
-        self._delete_invalid_metric_data(metric_vo)
-        self._delete_old_metric_data(metric_vo)
-        self._delete_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
+        metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
+        if metric_vo.metric_job_id != metric_job_id:
+            _LOGGER.debug(
+                f"[run_metric_query] Duplicate metric job ({metric_vo.metric_id}): {metric_job_id}"
+            )
+            self._rollback_query_results(metric_vo, created_at, metric_job_id)
+        else:
+            self._update_status(metric_vo, created_at, metric_job_id)
+            self._delete_invalid_metric_data(metric_vo, metric_job_id)
+            self._delete_old_metric_data(metric_vo)
+            self._delete_analyze_cache(metric_vo.domain_id, metric_vo.metric_id)
 
         self.update_metric_by_vo({"status": "DONE", "is_new": False}, metric_vo)
 
@@ -359,10 +373,11 @@ class MetricManager(BaseManager):
         return True
 
     def _save_query_result(
-        self, metric_vo: Metric, result: dict, created_at: datetime
+        self, metric_vo: Metric, result: dict, created_at: datetime, metric_job_id: str
     ) -> None:
         data = {
             "metric_id": metric_vo.metric_id,
+            "metric_job_id": metric_job_id,
             "value": result["value"],
             "unit": metric_vo.unit,
             "labels": {},
@@ -392,7 +407,7 @@ class MetricManager(BaseManager):
             self.metric_data_mgr.create_monthly_metric_data(data)
 
     def _aggregate_monthly_metric_data(
-        self, metric_vo: Metric, created_at: datetime
+        self, metric_vo: Metric, created_at: datetime, metric_job_id: str
     ) -> None:
         domain_id = metric_vo.domain_id
         metric_id = metric_vo.metric_id
@@ -415,6 +430,7 @@ class MetricManager(BaseManager):
                 {"k": "metric_id", "v": metric_id, "o": "eq"},
                 {"k": "domain_id", "v": domain_id, "o": "eq"},
                 {"k": "created_month", "v": created_month, "o": "eq"},
+                {"k": "metric_job_id", "v": metric_job_id, "o": "eq"},
             ],
         }
 
@@ -430,6 +446,7 @@ class MetricManager(BaseManager):
         for result in results:
             data = {
                 "metric_id": metric_vo.metric_id,
+                "metric_job_id": metric_job_id,
                 "value": result["value"],
                 "unit": metric_vo.unit,
                 "labels": {},
@@ -455,18 +472,22 @@ class MetricManager(BaseManager):
             self.metric_data_mgr.create_monthly_metric_data(data)
 
     def _delete_changed_metric_data(
-        self, metric_vo: Metric, created_at: datetime
+        self, metric_vo: Metric, created_at: datetime, metric_job_id: str
     ) -> None:
         domain_id = metric_vo.domain_id
         metric_id = metric_vo.metric_id
         created_date = created_at.strftime("%Y-%m-%d")
 
-        metric_data_vos = self.metric_data_mgr.filter_metric_data(
-            metric_id=metric_id,
-            domain_id=domain_id,
-            created_date=created_date,
-            status="DONE",
-        )
+        query = {
+            "filter": [
+                {"k": "metric_id", "v": metric_id, "o": "eq"},
+                {"k": "domain_id", "v": domain_id, "o": "eq"},
+                {"k": "created_date", "v": created_date, "o": "eq"},
+                {"k": "metric_job_id", "v": metric_job_id, "o": "ne"},
+            ]
+        }
+
+        metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(query)
 
         _LOGGER.debug(
             f"[_delete_changed_metric_data] delete count: {metric_data_vos.count()}"
@@ -474,25 +495,34 @@ class MetricManager(BaseManager):
         metric_data_vos.delete()
 
     def _delete_changed_monthly_metric_data(
-        self, metric_vo: Metric, created_at: datetime
+        self, metric_vo: Metric, created_at: datetime, metric_job_id: str
     ):
         domain_id = metric_vo.domain_id
         metric_id = metric_vo.metric_id
         created_month = created_at.strftime("%Y-%m")
 
-        monthly_metric_data_vos = self.metric_data_mgr.filter_monthly_metric_data(
-            metric_id=metric_id,
-            domain_id=domain_id,
-            created_month=created_month,
-            status="DONE",
-        )
+        query = {
+            "filter": [
+                {"k": "metric_id", "v": metric_id, "o": "eq"},
+                {"k": "domain_id", "v": domain_id, "o": "eq"},
+                {"k": "created_month", "v": created_month, "o": "eq"},
+                {"k": "metric_job_id", "v": metric_job_id, "o": "ne"},
+            ]
+        }
+
+        (
+            monthly_metric_data_vos,
+            total_count,
+        ) = self.metric_data_mgr.list_monthly_metric_data(query)
 
         _LOGGER.debug(
             f"[_delete_changed_monthly_metric_data] delete count: {monthly_metric_data_vos.count()}"
         )
         monthly_metric_data_vos.delete()
 
-    def _rollback_query_results(self, metric_vo: Metric, created_at: datetime):
+    def _rollback_query_results(
+        self, metric_vo: Metric, created_at: datetime, metric_job_id: str
+    ):
         _LOGGER.debug(
             f"[_rollback_query_results] Rollback Query Results: {metric_vo.metric_id}"
         )
@@ -504,6 +534,7 @@ class MetricManager(BaseManager):
             domain_id=domain_id,
             created_date=created_at.strftime("%Y-%m-%d"),
             status="IN_PROGRESS",
+            metric_job_id=metric_job_id,
         )
         metric_data_vos.delete()
 
@@ -512,12 +543,15 @@ class MetricManager(BaseManager):
             domain_id=domain_id,
             created_month=created_at.strftime("%Y-%m"),
             status="IN_PROGRESS",
+            metric_job_id=metric_job_id,
         )
         monthly_metric_data_vos.delete()
 
-    def _update_status(self, metric_vo: Metric, created_at: datetime) -> None:
+    def _update_status(
+        self, metric_vo: Metric, created_at: datetime, metric_job_id: str
+    ) -> None:
         _LOGGER.debug(
-            f"[_update_status] Update metric data status ({metric_vo.metric_id}): IN_PROGRESS -> DONE"
+            f"[_update_status] Update metric data status ({metric_vo.metric_id}): {metric_job_id}"
         )
 
         domain_id = metric_vo.domain_id
@@ -530,6 +564,7 @@ class MetricManager(BaseManager):
             domain_id=domain_id,
             created_date=created_date,
             status="IN_PROGRESS",
+            metric_job_id=metric_job_id,
         )
         metric_data_vos.update({"status": "DONE"})
 
@@ -538,15 +573,27 @@ class MetricManager(BaseManager):
             domain_id=domain_id,
             created_month=created_month,
             status="IN_PROGRESS",
+            metric_job_id=metric_job_id,
         )
         monthly_metric_data_vos.update({"status": "DONE"})
 
-    def _delete_invalid_metric_data(self, metric_vo: Metric) -> None:
+    def _delete_invalid_metric_data(
+        self, metric_vo: Metric, metric_job_id: str
+    ) -> None:
         domain_id = metric_vo.domain_id
         metric_id = metric_vo.metric_id
 
-        metric_data_vos = self.metric_data_mgr.filter_metric_data(
-            metric_id=metric_id, domain_id=domain_id, status="IN_PROGRESS"
+        query = {
+            "filter": [
+                {"k": "metric_id", "v": metric_id, "o": "eq"},
+                {"k": "domain_id", "v": domain_id, "o": "eq"},
+                {"k": "status", "v": "IN_PROGRESS", "o": "eq"},
+                {"k": "metric_job_id", "v": metric_job_id, "o": "ne"},
+            ]
+        }
+
+        metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(
+            query, status="IN_PROGRESS"
         )
 
         if metric_data_vos.count() > 0:
@@ -555,9 +602,10 @@ class MetricManager(BaseManager):
             )
             metric_data_vos.delete()
 
-        monthly_metric_data_vos = self.metric_data_mgr.filter_monthly_metric_data(
-            metric_id=metric_id, domain_id=domain_id, status="IN_PROGRESS"
-        )
+        (
+            monthly_metric_data_vos,
+            total_count,
+        ) = self.metric_data_mgr.list_monthly_metric_data(query, status="IN_PROGRESS")
 
         if monthly_metric_data_vos.count() > 0:
             _LOGGER.debug(

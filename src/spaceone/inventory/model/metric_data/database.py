@@ -4,6 +4,7 @@ from spaceone.core.model.mongo_model import MongoModel
 
 class MetricData(MongoModel):
     metric_id = StringField(max_length=80)
+    metric_job_id = StringField(max_length=40)
     status = StringField(
         max_length=20, default="IN_PROGRESS", choices=["IN_PROGRESS", "DONE"]
     )
@@ -60,6 +61,7 @@ class MetricData(MongoModel):
 
 class MonthlyMetricData(MongoModel):
     metric_id = StringField(max_length=80)
+    metric_job_id = StringField(max_length=40)
     status = StringField(
         max_length=20, default="IN_PROGRESS", choices=["IN_PROGRESS", "DONE"]
     )

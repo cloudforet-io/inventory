@@ -59,20 +59,30 @@ class MetricDataManager(BaseManager):
     def filter_monthly_metric_data(self, **conditions) -> QuerySet:
         return self.monthly_metric_data.filter(**conditions)
 
-    def list_metric_data(self, query: dict) -> Tuple[QuerySet, int]:
-        query = self._append_status_filter(query)
+    def list_metric_data(self, query: dict, status: str = None) -> Tuple[QuerySet, int]:
+        if status != "IN_PROGRESS":
+            query = self._append_status_filter(query)
+
         return self.metric_data_model.query(**query)
 
-    def list_monthly_metric_data(self, query: dict) -> Tuple[QuerySet, int]:
-        query = self._append_status_filter(query)
+    def list_monthly_metric_data(
+        self, query: dict, status: str = None
+    ) -> Tuple[QuerySet, int]:
+        if status != "IN_PROGRESS":
+            query = self._append_status_filter(query)
+
         return self.monthly_metric_data.query(**query)
 
-    def stat_metric_data(self, query: dict) -> dict:
-        query = self._append_status_filter(query)
+    def stat_metric_data(self, query: dict, status: str = None) -> dict:
+        if status != "IN_PROGRESS":
+            query = self._append_status_filter(query)
+
         return self.metric_data_model.stat(**query)
 
-    def stat_monthly_metric_data(self, query: dict) -> dict:
-        query = self._append_status_filter(query)
+    def stat_monthly_metric_data(self, query: dict, status: str = None) -> dict:
+        if status != "IN_PROGRESS":
+            query = self._append_status_filter(query)
+
         return self.monthly_metric_data.stat(**query)
 
     def analyze_metric_data(
@@ -89,22 +99,28 @@ class MetricDataManager(BaseManager):
         return self.metric_data_model.analyze(**query)
 
     def analyze_monthly_metric_data(
-        self, query: dict, target: str = "SECONDARY_PREFERRED"
+        self, query: dict, target: str = "SECONDARY_PREFERRED", status: str = None
     ) -> dict:
         query["target"] = target
         query["date_field"] = "created_month"
         query["date_field_format"] = "%Y-%m"
-        query = self._append_status_filter(query)
+
+        if status != "IN_PROGRESS":
+            query = self._append_status_filter(query)
+
         _LOGGER.debug(f"[analyze_monthly_metric_data] Query: {query}")
         return self.monthly_metric_data.analyze(**query)
 
     def analyze_yearly_metric_data(
-        self, query: dict, target: str = "SECONDARY_PREFERRED"
+        self, query: dict, target: str = "SECONDARY_PREFERRED", status: str = None
     ) -> dict:
         query["target"] = target
         query["date_field"] = "created_year"
         query["date_field_format"] = "%Y"
-        query = self._append_status_filter(query)
+
+        if status != "IN_PROGRESS":
+            query = self._append_status_filter(query)
+
         _LOGGER.debug(f"[analyze_yearly_metric_data] Query: {query}")
         return self.monthly_metric_data.analyze(**query)
 
