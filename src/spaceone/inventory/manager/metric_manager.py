@@ -198,14 +198,14 @@ class MetricManager(BaseManager):
         self.update_metric_by_vo({"status": "DONE", "is_new": False}, metric_vo)
 
     def _check_metric_status(self, metric_vo: Metric) -> None:
-        for i in range(200):
+        for i in range(100):
             metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
             if metric_vo.status == "DONE":
                 return
 
             time.sleep(3)
 
-        _LOGGER.debug(f"[_check_metric_status] Timeout: {metric_vo.metric_id}")
+        _LOGGER.warning(f"[_check_metric_status] Timeout: {metric_vo.metric_id}")
         self.update_metric_by_vo({"status": "DONE"}, metric_vo)
 
     def analyze_resource(
@@ -524,8 +524,8 @@ class MetricManager(BaseManager):
     def _rollback_query_results(
         self, metric_vo: Metric, created_at: datetime, metric_job_id: str
     ):
-        _LOGGER.debug(
-            f"[_rollback_query_results] Rollback Query Results: {metric_vo.metric_id}"
+        _LOGGER.warning(
+            f"[_rollback_query_results] Rollback Query Results ({metric_vo.metric_id}): {metric_job_id}"
         )
         metric_id = metric_vo.metric_id
         domain_id = metric_vo.domain_id
