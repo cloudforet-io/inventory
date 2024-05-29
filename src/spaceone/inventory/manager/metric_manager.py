@@ -146,12 +146,6 @@ class MetricManager(BaseManager):
             {"status": "IN_PROGRESS", "metric_job_id": metric_job_id}, metric_vo
         )
 
-        # delete old metric data before run metric query
-        _LOGGER.debug(
-            f"[run_metric_query] Delete old metric data ({metric_vo.metric_id}): {metric_job_id}"
-        )
-        self._delete_invalid_metric_data(metric_vo, metric_job_id)
-
         results = self.analyze_resource(metric_vo, is_yesterday=is_yesterday)
 
         created_at = datetime.utcnow()
@@ -198,7 +192,7 @@ class MetricManager(BaseManager):
         self.update_metric_by_vo({"status": "DONE", "is_new": False}, metric_vo)
 
     def _check_metric_status(self, metric_vo: Metric) -> None:
-        for i in range(100):
+        for i in range(200):
             metric_vo = self.get_metric(metric_vo.metric_id, metric_vo.domain_id)
             if metric_vo.status == "DONE":
                 return
