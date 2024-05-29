@@ -139,6 +139,9 @@ class MetricManager(BaseManager):
         self.update_metric_by_vo({"status": "IN_PROGRESS"}, metric_vo)
 
         # delete old metric data before run metric query
+        _LOGGER.debug(
+            f"[run_metric_query] Delete old metric data: {metric_vo.metric_id}"
+        )
         self._delete_invalid_metric_data(metric_vo)
 
         results = self.analyze_resource(metric_vo, is_yesterday=is_yesterday)
@@ -149,6 +152,9 @@ class MetricManager(BaseManager):
             created_at = created_at - relativedelta(days=1)
 
         try:
+            _LOGGER.debug(
+                f"[run_metric_query] Save query results({metric_vo.metric_id}): {len(results)}"
+            )
             for result in results:
                 self._save_query_result(metric_vo, result, created_at)
             self._delete_changed_metric_data(metric_vo, created_at)
@@ -180,6 +186,7 @@ class MetricManager(BaseManager):
 
             time.sleep(3)
 
+        _LOGGER.debug(f"[_check_metric_status] Timeout: {metric_vo.metric_id}")
         self.update_metric_by_vo({"status": "DONE"}, metric_vo)
 
     def analyze_resource(
@@ -408,7 +415,13 @@ class MetricManager(BaseManager):
         }
 
         response = self.metric_data_mgr.analyze_metric_data(query, target="PRIMARY")
-        for result in response.get("results", []):
+        results = response.get("results", [])
+
+        _LOGGER.debug(
+            f"[_aggregate_monthly_metric_data] Aggregate query results({metric_id}): {len(results)}"
+        )
+
+        for result in results:
             data = {
                 "metric_id": metric_vo.metric_id,
                 "value": result["value"],
@@ -497,6 +510,10 @@ class MetricManager(BaseManager):
         monthly_metric_data_vos.delete()
 
     def _update_status(self, metric_vo: Metric, created_at: datetime) -> None:
+        _LOGGER.debug(
+            f"[_update_status] Update metric data status: {metric_vo.metric_id}"
+        )
+
         domain_id = metric_vo.domain_id
         metric_id = metric_vo.metric_id
         created_date = created_at.strftime("%Y-%m-%d")
