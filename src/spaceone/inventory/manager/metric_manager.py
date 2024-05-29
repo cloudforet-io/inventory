@@ -29,7 +29,7 @@ class MetricManager(BaseManager):
         self.metric_model = Metric
         self.metric_data_mgr = MetricDataManager()
 
-    def push_task(self, metric_vo: Metric) -> None:
+    def push_task(self, metric_vo: Metric, is_yesterday: bool = False) -> None:
         metric_id = metric_vo.metric_id
         domain_id = metric_vo.domain_id
 
@@ -49,6 +49,7 @@ class MetricManager(BaseManager):
                         "params": {
                             "metric_id": metric_id,
                             "domain_id": domain_id,
+                            "is_yesterday": is_yesterday,
                         }
                     },
                 }

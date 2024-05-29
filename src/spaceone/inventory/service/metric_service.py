@@ -295,6 +295,7 @@ class MetricService(BaseService):
             params (dict): {
                 'metric_id': 'str',
                 'domain_id': 'str',
+                'is_yesterday': 'bool'
             }
 
         Returns:
@@ -303,10 +304,11 @@ class MetricService(BaseService):
 
         metric_id = params["metric_id"]
         domain_id = params["domain_id"]
+        is_yesterday = params.get("is_yesterday", False)
 
         metric_vo = self.metric_mgr.get_metric(metric_id, domain_id)
 
-        self.metric_mgr.run_metric_query(metric_vo, is_yesterday=True)
+        self.metric_mgr.run_metric_query(metric_vo, is_yesterday=is_yesterday)
 
     @transaction()
     def run_all_metric_queries(self, params: dict) -> None:
@@ -334,7 +336,7 @@ class MetricService(BaseService):
         metric_vos = self.metric_mgr.filter_metrics(domain_id=domain_id)
 
         for metric_vo in metric_vos:
-            self.metric_mgr.push_task(metric_vo)
+            self.metric_mgr.push_task(metric_vo, is_yesterday=True)
 
     @staticmethod
     def _get_all_domains_info() -> list:
