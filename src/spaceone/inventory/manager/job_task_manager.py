@@ -149,12 +149,7 @@ class JobTaskManager(BaseManager):
                 deleted_resources_info = self._update_disconnected_and_deleted_count(
                     job_task_vo
                 )
-                collecting_count_info.update(deleted_resources_info)
-
-                _LOGGER.debug(
-                    f"[decrease_remained_sub_tasks] delete resources({job_task_vo.job_task_id}) "
-                    f"=> {deleted_resources_info}"
-                )
+                self._update_collecting_count_info(job_task_vo, deleted_resources_info)
 
                 self.make_success_by_vo(job_task_vo)
                 job_mgr.increase_success_tasks(
