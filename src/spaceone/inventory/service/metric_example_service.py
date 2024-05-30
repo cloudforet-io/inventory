@@ -77,7 +77,6 @@ class MetricExampleService(BaseService):
                 'options': 'dict',
                 'tags': 'dict',
                 'user_id': 'str',               # injected from auth (required)
-                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -89,7 +88,6 @@ class MetricExampleService(BaseService):
             params.example_id,
             params.domain_id,
             params.user_id,
-            params.workspace_id,
         )
 
         metric_example_vo = self.metric_example_mgr.update_metric_example_by_vo(
@@ -110,7 +108,6 @@ class MetricExampleService(BaseService):
             params (dict): {
                 'example_id': 'str',            # required
                 'user_id': 'str',               # injected from auth (required)
-                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -122,7 +119,6 @@ class MetricExampleService(BaseService):
             params.example_id,
             params.domain_id,
             params.user_id,
-            params.workspace_id,
         )
 
         self.metric_example_mgr.delete_metric_example_by_vo(metric_example_vo)
@@ -141,7 +137,6 @@ class MetricExampleService(BaseService):
             params (dict): {
                 'example_id': 'str',            # required
                 'user_id': 'str',               # injected from auth (required)
-                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -153,7 +148,6 @@ class MetricExampleService(BaseService):
             params.example_id,
             params.domain_id,
             params.user_id,
-            params.workspace_id,
         )
 
         return MetricExampleResponse(**metric_example_vo.to_dict())
@@ -169,7 +163,6 @@ class MetricExampleService(BaseService):
             "metric_id",
             "namespace_id",
             "user_id",
-            "workspace_id",
             "domain_id",
         ]
     )
@@ -188,7 +181,6 @@ class MetricExampleService(BaseService):
                 'metric_id': 'str',
                 'namespace_id': 'str',
                 'user_id': 'str',               # injected from auth (required)
-                'workspace_id': 'list',         # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -212,7 +204,7 @@ class MetricExampleService(BaseService):
         permission="inventory:MetricExample.read",
         role_types=["USER"],
     )
-    @append_query_filter(["user_id", "workspace_id", "domain_id"])
+    @append_query_filter(["user_id", "domain_id"])
     @append_keyword_filter(["example_id", "name"])
     @convert_model
     def stat(self, params: MetricExampleStatQueryRequest) -> dict:
@@ -221,7 +213,6 @@ class MetricExampleService(BaseService):
             params (dict): {
                 'query': 'dict (spaceone.api.core.v1.StatisticsQuery)', # required
                 'user_id': 'str',           # injected from auth (required)
-                'workspace_id': 'list',     # injected from auth
                 'domain_id': 'str',         # injected from auth (required)
             }
 
