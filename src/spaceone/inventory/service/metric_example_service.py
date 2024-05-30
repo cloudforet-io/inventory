@@ -1,9 +1,8 @@
 import logging
-from typing import Union, List
+from typing import Union
 
 from spaceone.core.service import *
 from spaceone.core.service.utils import *
-from spaceone.core.error import *
 
 from spaceone.inventory.model.metric_example.request import *
 from spaceone.inventory.model.metric_example.response import *
@@ -29,6 +28,7 @@ class MetricExampleService(BaseService):
         permission="inventory:MetricExample.write",
         role_types=["USER"],
     )
+    @change_value_by_rule("APPEND", "workspace_id", "*")
     @convert_model
     def create(
         self, params: MetricExampleCreateRequest
