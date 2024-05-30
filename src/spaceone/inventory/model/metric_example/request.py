@@ -17,7 +17,7 @@ class MetricExampleCreateRequest(BaseModel):
     options: dict
     tags: Union[dict, None] = {}
     user_id: str
-    workspace_id: Union[str, None] = None
+    workspace_id: Union[str, list, None] = None
     domain_id: str
 
 
