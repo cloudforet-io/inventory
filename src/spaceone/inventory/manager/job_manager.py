@@ -137,7 +137,7 @@ class JobManager(BaseManager):
                 metric_mgr.push_task(managed_metric_vo)
 
         plugin_metric_vos = metric_mgr.filter_metrics(
-            plugin_id=plugin_id, domain_id=domain_id
+            is_managed=True, plugin_id=plugin_id, domain_id=domain_id
         )
         for plugin_metric_vo in plugin_metric_vos:
             if plugin_metric_vo.is_new or (

@@ -12,6 +12,7 @@ class Namespace(MongoModel):
     is_managed = BooleanField(default=False)
     version = StringField(max_length=40, default=None, null=True)
     plugin_id = StringField(max_length=40, default=None, null=True)
+    resource_group = StringField(max_length=40, choices=("DOMAIN", "WORKSPACE"))
     domain_id = StringField(max_length=40)
     workspace_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now_add=True)
