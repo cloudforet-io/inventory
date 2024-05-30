@@ -25,8 +25,6 @@ class NamespaceManager(BaseManager):
         if "namespace_id" not in params:
             params["namespace_id"] = utils.generate_id("ns")
 
-        params["workspaces"] = [params["workspace_id"]]
-
         namespace_vo: Namespace = self.namespace_model.create(params)
         self.transaction.add_rollback(_rollback, namespace_vo)
 
@@ -62,7 +60,7 @@ class NamespaceManager(BaseManager):
         }
 
         if workspace_id:
-            conditions["workspaces"] = [workspace_id, "*"]
+            conditions["workspace_id"] = workspace_id
 
         return self.namespace_model.get(**conditions)
 
@@ -93,6 +91,7 @@ class NamespaceManager(BaseManager):
         for managed_ns_id, managed_ns_info in managed_namespace_map.items():
             managed_ns_info["domain_id"] = domain_id
             managed_ns_info["is_managed"] = True
+            managed_ns_info["resource_group"] = "DOMAIN"
             managed_ns_info["workspace_id"] = "*"
 
             if ns_version := installed_namespace_version_map.get(managed_ns_id):

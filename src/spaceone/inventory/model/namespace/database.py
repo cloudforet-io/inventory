@@ -13,7 +13,7 @@ class Namespace(MongoModel):
     version = StringField(max_length=40, default=None, null=True)
     plugin_id = StringField(max_length=40, default=None, null=True)
     domain_id = StringField(max_length=40)
-    workspaces = ListField(StringField(max_length=40))
+    workspace_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
 
@@ -23,7 +23,6 @@ class Namespace(MongoModel):
             "icon",
             "tags",
             "version",
-            "workspaces",
             "updated_at",
         ],
         "minimal_fields": [
@@ -33,14 +32,11 @@ class Namespace(MongoModel):
             "provider",
         ],
         "ordering": ["name"],
-        "change_query_keys": {
-            "workspace_id": "workspaces",
-        },
         "indexes": [
             "category",
             "provider",
             "is_managed",
             "domain_id",
-            "workspaces",
+            "workspace_id",
         ],
     }

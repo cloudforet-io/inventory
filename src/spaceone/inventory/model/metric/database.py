@@ -19,8 +19,9 @@ class Metric(MongoModel):
     version = StringField(max_length=40, default=None, null=True)
     plugin_id = StringField(max_length=40, default=None, null=True)
     namespace_id = StringField(max_length=80)
+    resource_group = StringField(max_length=40, choices=("DOMAIN", "WORKSPACE"))
     domain_id = StringField(max_length=40)
-    workspaces = ListField(StringField(max_length=40))
+    workspace_id = StringField(max_length=40)
     created_at = DateTimeField(auto_now_add=True)
     updated_at = DateTimeField(auto_now=True)
 
@@ -36,7 +37,6 @@ class Metric(MongoModel):
             "labels_info",
             "is_new",
             "version",
-            "workspaces",
             "updated_at",
         ],
         "minimal_fields": [
@@ -47,14 +47,11 @@ class Metric(MongoModel):
             "namespace_id",
         ],
         "ordering": ["namespace_id", "name"],
-        "change_query_keys": {
-            "workspace_id": "workspaces",
-        },
         "indexes": [
             {
                 "fields": [
                     "domain_id",
-                    "workspaces",
+                    "workspace_id",
                     "namespace_id",
                 ],
                 "name": "COMPOUND_INDEX_FOR_SEARCH_1",
@@ -63,7 +60,5 @@ class Metric(MongoModel):
             "resource_type",
             "is_managed",
             "namespace_id",
-            "domain_id",
-            "workspaces",
         ],
     }

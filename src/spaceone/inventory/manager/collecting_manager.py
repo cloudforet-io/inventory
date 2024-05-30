@@ -258,6 +258,8 @@ class CollectingManager(BaseManager):
         request_data["domain_id"] = domain_id
         request_data["plugin_id"] = plugin_id
         request_data["is_managed"] = True
+        request_data["resource_group"] = "DOMAIN"
+        request_data["workspace_id"] = "*"
 
         if resource_type == "inventory.Namespace":
             namespace_id = request_data.get("namespace_id")
@@ -267,21 +269,11 @@ class CollectingManager(BaseManager):
                 namespace_id=namespace_id, domain_id=domain_id
             )
             if namespace_vos.count() == 0:
-                request_data["workspace_id"] = workspace_id
                 self.namespace_mgr.create_namespace(request_data)
             else:
                 namespace_vo = namespace_vos[0]
-                workspaces = namespace_vo.workspaces
-                is_changed = False
 
-                if workspace_id not in workspaces:
-                    workspaces.append(workspace_id)
-                    request_data["workspaces"] = workspaces
-                    is_changed = True
-                else:
-                    request_data["workspaces"] = workspaces
-
-                if namespace_vo.version != version or is_changed:
+                if namespace_vo.version != version:
                     self.namespace_mgr.update_namespace_by_vo(
                         request_data, namespace_vo
                     )
@@ -294,22 +286,11 @@ class CollectingManager(BaseManager):
             )
 
             if metric_vos.count() == 0:
-                request_data["workspace_id"] = workspace_id
                 self.metric_mgr.create_metric(request_data)
             else:
                 metric_vo = metric_vos[0]
-                workspaces = metric_vo.workspaces
-                is_changed = False
 
-                if workspace_id not in workspaces:
-                    workspaces.append(workspace_id)
-                    request_data["workspaces"] = workspaces
-                    request_data["is_new"] = True
-                    is_changed = True
-                else:
-                    request_data["workspaces"] = workspaces
-
-                if metric_vo.version != version or is_changed:
+                if metric_vo.version != version:
                     self.metric_mgr.update_metric_by_vo(request_data, metric_vo)
 
     def _upsert_resource(

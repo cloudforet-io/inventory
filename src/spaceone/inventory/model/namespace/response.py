@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Union, List
 from pydantic import BaseModel
 from spaceone.core import utils
+from spaceone.inventory.model.namespace.request import ResourceGroup
 
 __all__ = ["NamespaceResponse", "NamespacesResponse"]
 
@@ -14,6 +15,8 @@ class NamespaceResponse(BaseModel):
     icon: Union[str, None] = None
     tags: Union[dict, None] = None
     is_managed: Union[bool, None] = None
+    resource_group: Union[ResourceGroup, None] = None
+    workspace_id: Union[str, None] = None
     domain_id: Union[str, None] = None
     created_at: Union[datetime, None] = None
     updated_at: Union[datetime, None] = None

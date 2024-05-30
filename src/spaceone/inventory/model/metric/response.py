@@ -3,6 +3,7 @@ from typing import Union, List
 from pydantic import BaseModel
 from spaceone.core import utils
 from spaceone.inventory.model.metric.request import MetricType
+from spaceone.inventory.model.metric.request import ResourceGroup
 
 __all__ = ["MetricResponse", "MetricsResponse"]
 
@@ -19,6 +20,8 @@ class MetricResponse(BaseModel):
     labels_info: Union[List[dict], None] = None
     is_managed: Union[bool, None] = None
     namespace_id: Union[str, None] = None
+    resource_group: Union[ResourceGroup, None] = None
+    workspace_id: Union[str, None] = None
     domain_id: Union[str, None] = None
     created_at: Union[datetime, None] = None
     updated_at: Union[datetime, None] = None

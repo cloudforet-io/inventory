@@ -1,5 +1,5 @@
 import logging
-from typing import Union, List
+from typing import Union
 
 from spaceone.core.service import *
 from spaceone.core.service.utils import *
@@ -8,6 +8,7 @@ from spaceone.core.error import *
 from spaceone.inventory.model.namespace.request import *
 from spaceone.inventory.model.namespace.response import *
 from spaceone.inventory.manager.namespace_manager import NamespaceManager
+from spaceone.inventory.manager.identity_manager import IdentityManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,10 +23,11 @@ class NamespaceService(BaseService):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.namespace_mgr = NamespaceManager()
+        self.identity_mgr = IdentityManager()
 
     @transaction(
         permission="inventory:Namespace.write",
-        role_types=["WORKSPACE_OWNER"],
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @convert_model
     def create(self, params: NamespaceCreateRequest) -> Union[NamespaceResponse, dict]:
@@ -39,7 +41,8 @@ class NamespaceService(BaseService):
                 'provider': 'str',
                 'icon': 'str',
                 'tags': 'dict',
-                'workspace_id': 'str',          # injected from auth (required)
+                'resource_group': 'str',        # required
+                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -47,12 +50,20 @@ class NamespaceService(BaseService):
             NamespaceResponse:
         """
 
+        if params.resource_group == "WORKSPACE":
+            if not params.workspace_id:
+                raise ERROR_REQUIRED_PARAMETER(key="workspace_id")
+
+            self.identity_mgr.check_workspace(params.workspace_id, params.domain_id)
+        else:
+            params.workspace_id = "*"
+
         namespace_vo = self.namespace_mgr.create_namespace(params.dict())
         return NamespaceResponse(**namespace_vo.to_dict())
 
     @transaction(
         permission="inventory:Namespace.write",
-        role_types=["WORKSPACE_OWNER"],
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @convert_model
     def update(self, params: NamespaceUpdateRequest) -> Union[NamespaceResponse, dict]:
@@ -64,7 +75,7 @@ class NamespaceService(BaseService):
                 'name': 'str',
                 'icon': 'str',
                 'tags': 'dict',
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -89,7 +100,7 @@ class NamespaceService(BaseService):
 
     @transaction(
         permission="inventory:Namespace.write",
-        role_types=["WORKSPACE_OWNER"],
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @convert_model
     def delete(self, params: NamespaceDeleteRequest) -> None:
@@ -98,7 +109,7 @@ class NamespaceService(BaseService):
         Args:
             params (dict): {
                 'namespace_id': 'str',          # required
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -121,6 +132,7 @@ class NamespaceService(BaseService):
         permission="inventory:Namespace.read",
         role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
     )
+    @change_value_by_rule("APPEND", "workspace_id", "*")
     @convert_model
     def get(self, params: NamespaceGetRequest) -> Union[NamespaceResponse, dict]:
         """Get namespace
@@ -128,7 +140,7 @@ class NamespaceService(BaseService):
         Args:
             params (dict): {
                 'namespace_id': 'str',          # required
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'list',         # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 

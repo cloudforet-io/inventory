@@ -1,5 +1,5 @@
 import logging
-from typing import Union, List
+from typing import Union
 
 from spaceone.core.service import *
 from spaceone.core.service.utils import *
@@ -23,10 +23,11 @@ class MetricService(BaseService):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.metric_mgr = MetricManager()
+        self.identity_mgr = IdentityManager()
 
     @transaction(
         permission="inventory:Metric.write",
-        role_types=["WORKSPACE_OWNER"],
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @convert_model
     def create(self, params: MetricCreateRequest) -> Union[MetricResponse, dict]:
@@ -42,13 +43,21 @@ class MetricService(BaseService):
                 'unit': 'str',
                 'tags': 'dict',
                 'namespace_id': 'str',          # required
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
         Returns:
             MetricResponse:
         """
+
+        if params.resource_group == "WORKSPACE":
+            if not params.workspace_id:
+                raise ERROR_REQUIRED_PARAMETER(key="workspace_id")
+
+            self.identity_mgr.check_workspace(params.workspace_id, params.domain_id)
+        else:
+            params.workspace_id = "*"
 
         metric_vo = self.metric_mgr.create_metric(params.dict())
 
@@ -58,7 +67,7 @@ class MetricService(BaseService):
 
     @transaction(
         permission="inventory:Metric.write",
-        role_types=["WORKSPACE_OWNER"],
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @convert_model
     def update(self, params: MetricUpdateRequest) -> Union[MetricResponse, dict]:
@@ -71,7 +80,7 @@ class MetricService(BaseService):
                 'query_options': 'dict',
                 'unit': 'str',
                 'tags': 'dict',
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -101,7 +110,7 @@ class MetricService(BaseService):
 
     @transaction(
         permission="inventory:Metric.write",
-        role_types=["WORKSPACE_OWNER"],
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @convert_model
     def delete(self, params: MetricDeleteRequest) -> None:
@@ -110,7 +119,7 @@ class MetricService(BaseService):
         Args:
             params (dict): {
                 'metric_id': 'str',             # required
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -131,7 +140,7 @@ class MetricService(BaseService):
 
     @transaction(
         permission="inventory:Metric.write",
-        role_types=["WORKSPACE_OWNER"],
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @convert_model
     def run(self, params: MetricRunRequest) -> None:
@@ -140,7 +149,7 @@ class MetricService(BaseService):
         Args:
             params (dict): {
                 'metric_id': 'str',             # required
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -157,8 +166,8 @@ class MetricService(BaseService):
         self.metric_mgr.run_metric_query(metric_vo)
 
     @transaction(
-        permission="inventory:Metric.write",
-        role_types=["WORKSPACE_OWNER"],
+        permission="inventory:Metric.read",
+        role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER"],
     )
     @convert_model
     def test(self, params: MetricTestRequest) -> dict:
@@ -168,7 +177,7 @@ class MetricService(BaseService):
             params (dict): {
                 'metric_id': 'str',             # required
                 'query_options': 'dict',
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'str',          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 
@@ -179,10 +188,14 @@ class MetricService(BaseService):
             }
         """
 
+        workspace_id = None
+        if params.workspace_id:
+            workspace_id = ["*", params.workspace_id]
+
         metric_vo = self.metric_mgr.get_metric(
             params.metric_id,
             params.domain_id,
-            params.workspace_id,
+            workspace_id,
         )
 
         results = self.metric_mgr.analyze_resource(
@@ -195,6 +208,7 @@ class MetricService(BaseService):
         permission="inventory:Metric.read",
         role_types=["DOMAIN_ADMIN", "WORKSPACE_OWNER", "WORKSPACE_MEMBER"],
     )
+    @change_value_by_rule("APPEND", "workspace_id", "*")
     @convert_model
     def get(self, params: MetricGetRequest) -> Union[MetricResponse, dict]:
         """Get metric
@@ -202,7 +216,7 @@ class MetricService(BaseService):
         Args:
             params (dict): {
                 'metric_id': 'str',             # required
-                'workspace_id': 'str',          # injected from auth (required)
+                'workspace_id': 'list'          # injected from auth
                 'domain_id': 'str',             # injected from auth (required)
             }
 

@@ -1,8 +1,7 @@
 import logging
 import copy
 import time
-import random
-from typing import Tuple
+from typing import Tuple, Union
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
@@ -71,7 +70,6 @@ class MetricManager(BaseManager):
         if params.get("metric_id") is None:
             params["metric_id"] = utils.generate_id("metric")
 
-        params["workspaces"] = [params["workspace_id"]]
         params["labels_info"] = self._get_labels_info(params["query_options"])
 
         metric_vo: Metric = self.metric_model.create(params)
@@ -112,7 +110,7 @@ class MetricManager(BaseManager):
         self,
         metric_id: str,
         domain_id: str,
-        workspace_id: str = None,
+        workspace_id: Union[str, list] = None,
     ) -> Metric:
         conditions = {
             "metric_id": metric_id,
@@ -120,7 +118,7 @@ class MetricManager(BaseManager):
         }
 
         if workspace_id:
-            conditions["workspaces"] = [workspace_id, "*"]
+            conditions["workspace_id"] = workspace_id
 
         return self.metric_model.get(**conditions)
 
@@ -211,13 +209,19 @@ class MetricManager(BaseManager):
     ) -> list:
         resource_type = metric_vo.resource_type
         domain_id = metric_vo.domain_id
-        query = query_options or metric_vo.query_options
-        query = copy.deepcopy(query)
         metric_type = metric_vo.metric_type
         date_field = metric_vo.date_field
+        query = query_options or metric_vo.query_options
+        query = copy.deepcopy(query)
+        query["filter"] = query.get("filter", [])
 
-        if "*" not in metric_vo.workspaces:
-            query = self._append_workspace_filter(query, metric_vo.workspaces)
+        if metric_vo.resource_group == "WORKSPACE":
+            query["filter"].append(
+                {"k": "workspace_id", "v": metric_vo.workspace_id, "o": "eq"}
+            )
+
+        if workspace_id:
+            query["filter"].append({"k": "workspace_id", "v": workspace_id, "o": "eq"})
 
         if metric_type == "COUNTER":
             query = self._append_datetime_filter(
@@ -226,11 +230,11 @@ class MetricManager(BaseManager):
 
         try:
             if metric_vo.resource_type == "inventory.CloudService":
-                return self._analyze_cloud_service(query, domain_id, workspace_id)
+                return self._analyze_cloud_service(query, domain_id)
             elif metric_vo.resource_type.startswith("inventory.CloudService:"):
                 cloud_service_type_key = metric_vo.resource_type.split(":")[-1]
                 return self._analyze_cloud_service(
-                    query, domain_id, workspace_id, cloud_service_type_key
+                    query, domain_id, cloud_service_type_key
                 )
             else:
                 raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
@@ -244,9 +248,9 @@ class MetricManager(BaseManager):
             )
 
     @staticmethod
-    def _append_workspace_filter(query: dict, workspaces: list) -> dict:
+    def _append_workspace_filter(query: dict, workspace_id: str) -> dict:
         query["filter"] = query.get("filter", [])
-        query["filter"].append({"k": "workspace_id", "v": workspaces, "o": "in"})
+        query["filter"].append({"k": "workspace_id", "v": workspace_id, "o": "in"})
         return query
 
     @staticmethod
@@ -278,7 +282,6 @@ class MetricManager(BaseManager):
     def _analyze_cloud_service(
         query: dict,
         domain_id: str,
-        workspace_id: str,
         cloud_service_type_key: str = None,
     ) -> list:
         default_group_by = [
@@ -301,9 +304,6 @@ class MetricManager(BaseManager):
         query["group_by"] = changed_group_by
         query["filter"] = query.get("filter", [])
         query["filter"].append({"k": "domain_id", "v": domain_id, "o": "eq"})
-
-        if workspace_id:
-            query["filter"].append({"k": "workspace_id", "v": workspace_id, "o": "eq"})
 
         if cloud_service_type_key:
             try:
@@ -350,6 +350,7 @@ class MetricManager(BaseManager):
         for managed_metric_id, managed_metric_info in managed_metric_map.items():
             managed_metric_info["domain_id"] = domain_id
             managed_metric_info["is_managed"] = True
+            managed_metric_info["resource_group"] = "DOMAIN"
             managed_metric_info["workspace_id"] = "*"
 
             if metric_version := installed_metric_version_map.get(managed_metric_id):
