@@ -27,21 +27,18 @@ class MetricExampleUpdateRequest(BaseModel):
     options: Union[dict, None] = None
     tags: Union[dict, None] = None
     user_id: str
-    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class MetricExampleDeleteRequest(BaseModel):
     example_id: str
     user_id: str
-    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class MetricExampleGetRequest(BaseModel):
     example_id: str
     user_id: str
-    workspace_id: Union[str, None] = None
     domain_id: str
 
 
@@ -52,12 +49,10 @@ class MetricExampleSearchQueryRequest(BaseModel):
     metric_id: Union[str, None] = None
     namespace_id: Union[str, None] = None
     user_id: str
-    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class MetricExampleStatQueryRequest(BaseModel):
     query: dict
     user_id: str
-    workspace_id: Union[str, None] = None
     domain_id: str

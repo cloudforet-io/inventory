@@ -49,16 +49,12 @@ class MetricExampleManager(BaseManager):
         example_id: str,
         domain_id: str,
         user_id: str,
-        workspace_id: str = None,
     ) -> MetricExample:
         conditions = {
             "example_id": example_id,
             "domain_id": domain_id,
             "user_id": user_id,
         }
-
-        if workspace_id:
-            conditions["workspace_id"] = workspace_id
 
         return self.metric_example_model.get(**conditions)
 
