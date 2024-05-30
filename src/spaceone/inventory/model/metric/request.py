@@ -10,9 +10,12 @@ __all__ = [
     "MetricGetRequest",
     "MetricSearchQueryRequest",
     "MetricStatQueryRequest",
+    "MetricType",
+    "ResourceGroup",
 ]
 
 MetricType = Literal["COUNTER", "GAUGE"]
+ResourceGroup = Literal["DOMAIN", "WORKSPACE"]
 
 
 class MetricCreateRequest(BaseModel):
@@ -25,7 +28,8 @@ class MetricCreateRequest(BaseModel):
     unit: Union[str, None] = None
     tags: Union[dict, None] = {}
     namespace_id: str
-    workspace_id: str
+    resource_group: ResourceGroup
+    workspace_id: Union[str, None] = None
     domain_id: str
 
 
@@ -36,32 +40,32 @@ class MetricUpdateRequest(BaseModel):
     date_field: Union[str, None] = None
     unit: Union[str, None] = None
     tags: Union[dict, None] = None
-    workspace_id: str
+    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class MetricDeleteRequest(BaseModel):
     metric_id: str
-    workspace_id: str
+    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class MetricRunRequest(BaseModel):
     metric_id: str
-    workspace_id: str
+    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class MetricTestRequest(BaseModel):
     metric_id: str
     query_options: Union[dict, None] = None
-    workspace_id: str
+    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class MetricGetRequest(BaseModel):
     metric_id: str
-    workspace_id: Union[str, None] = None
+    workspace_id: Union[str, list, None] = None
     domain_id: str
 
 
@@ -72,11 +76,11 @@ class MetricSearchQueryRequest(BaseModel):
     resource_type: Union[str, None] = None
     is_managed: Union[bool, None] = None
     namespace_id: Union[str, None] = None
-    workspace_id: Union[list, None] = None
+    workspace_id: Union[str, list, None] = None
     domain_id: str
 
 
 class MetricStatQueryRequest(BaseModel):
     query: dict
-    workspace_id: Union[list, None] = None
+    workspace_id: Union[str, list, None] = None
     domain_id: str

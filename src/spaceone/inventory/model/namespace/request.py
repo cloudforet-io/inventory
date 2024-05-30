@@ -8,9 +8,11 @@ __all__ = [
     "NamespaceGetRequest",
     "NamespaceSearchQueryRequest",
     "NamespaceStatQueryRequest",
+    "ResourceGroup",
 ]
 
 Category = Literal["COMMON", "ASSET", "SECURITY", "INFORMATION", "CUSTOM"]
+ResourceGroup = Literal["DOMAIN", "WORKSPACE"]
 
 
 class NamespaceCreateRequest(BaseModel):
@@ -20,7 +22,8 @@ class NamespaceCreateRequest(BaseModel):
     provider: Union[str, None] = None
     icon: Union[str, None] = None
     tags: Union[dict, None] = {}
-    workspace_id: str
+    resource_group: ResourceGroup
+    workspace_id: Union[str, None] = None
     domain_id: str
 
 
@@ -29,19 +32,20 @@ class NamespaceUpdateRequest(BaseModel):
     name: Union[str, None] = None
     icon: Union[str, None] = None
     tags: Union[dict, None] = None
+    workspace_id: Union[str, None] = None
     workspace_id: str
     domain_id: str
 
 
 class NamespaceDeleteRequest(BaseModel):
     namespace_id: str
-    workspace_id: str
+    workspace_id: Union[str, None] = None
     domain_id: str
 
 
 class NamespaceGetRequest(BaseModel):
     namespace_id: str
-    workspace_id: Union[str, None] = None
+    workspace_id: Union[str, list, None] = None
     domain_id: str
 
 
@@ -51,11 +55,11 @@ class NamespaceSearchQueryRequest(BaseModel):
     category: Union[Category, None] = None
     provider: Union[str, None] = None
     is_managed: Union[bool, None] = None
-    workspace_id: Union[list, None] = None
+    workspace_id: Union[str, list, None] = None
     domain_id: str
 
 
 class NamespaceStatQueryRequest(BaseModel):
     query: dict
-    workspace_id: Union[list, None] = None
+    workspace_id: Union[str, list, None] = None
     domain_id: str
