@@ -11,7 +11,8 @@ class NamespaceResponse(BaseModel):
     namespace_id: Union[str, None] = None
     name: Union[str, None] = None
     category: Union[str, None] = None
-    provider: Union[str, None] = None
+    resource_type: Union[str, None] = None
+    group: Union[str, None] = None
     icon: Union[str, None] = None
     tags: Union[dict, None] = None
     is_managed: Union[bool, None] = None

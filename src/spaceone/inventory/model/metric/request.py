@@ -22,7 +22,7 @@ class MetricCreateRequest(BaseModel):
     metric_id: Union[str, None] = None
     name: str
     metric_type: MetricType
-    resource_type: str
+    resource_type: Union[str, None] = None
     query_options: dict
     date_field: Union[str, None] = None
     unit: Union[str, None] = None
