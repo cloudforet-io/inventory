@@ -1,5 +1,7 @@
 ---
 namespace_id: ns-managed-asset-summary
 name: Asset/Summary
-category: COMMON
+category: ASSET
+resource_type: inventory.CloudService
+group: common
 version: '1.0'

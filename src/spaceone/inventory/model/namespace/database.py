@@ -6,7 +6,8 @@ class Namespace(MongoModel):
     namespace_id = StringField(max_length=80, unique_with="domain_id")
     name = StringField(max_length=40)
     category = StringField(max_length=40)
-    provider = StringField(max_length=40)
+    resource_type = StringField(required=True)
+    group = StringField(max_length=40, default="etc")
     icon = StringField(default=None, null=True)
     tags = DictField(default=None)
     is_managed = BooleanField(default=False)
@@ -30,12 +31,14 @@ class Namespace(MongoModel):
             "namespace_id",
             "name",
             "category",
-            "provider",
+            resource_type,
+            "group",
         ],
         "ordering": ["name"],
         "indexes": [
             "category",
-            "provider",
+            "resource_type",
+            "group",
             "is_managed",
             "domain_id",
             "workspace_id",

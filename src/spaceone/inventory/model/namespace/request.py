@@ -11,7 +11,7 @@ __all__ = [
     "ResourceGroup",
 ]
 
-Category = Literal["COMMON", "ASSET", "SECURITY", "INFORMATION", "CUSTOM"]
+Category = Literal["ASSET", "SECURITY", "INFORMATION", "RECOMMENDATION"]
 ResourceGroup = Literal["DOMAIN", "WORKSPACE"]
 
 
@@ -19,7 +19,8 @@ class NamespaceCreateRequest(BaseModel):
     namespace_id: Union[str, None] = None
     name: str
     category: Category
-    provider: Union[str, None] = None
+    resource_type: str
+    group: Union[str, None] = None
     icon: Union[str, None] = None
     tags: Union[dict, None] = {}
     resource_group: ResourceGroup
@@ -53,7 +54,8 @@ class NamespaceSearchQueryRequest(BaseModel):
     query: Union[dict, None] = None
     namespace_id: Union[str, None] = None
     category: Union[Category, None] = None
-    provider: Union[str, None] = None
+    resource_type: Union[str, None] = None
+    group: Union[str, None] = None
     is_managed: Union[bool, None] = None
     workspace_id: Union[str, list, None] = None
     domain_id: str

@@ -1,5 +1,7 @@
 ---
 namespace_id: ns-managed-asset-change-history
 name: Asset/ChangeHistory
-category: COMMON
+category: ASSET
+resource_type: inventory.CloudService
+group: common
 version: '1.0'

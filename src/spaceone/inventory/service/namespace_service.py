@@ -38,7 +38,8 @@ class NamespaceService(BaseService):
                 'namespace_id': 'str',
                 'name': 'str',                  # required
                 'category': 'str',              # required
-                'provider': 'str',
+                'resource_type': 'str',         # required
+                'group': 'str',
                 'icon': 'str',
                 'tags': 'dict',
                 'resource_group': 'str',        # required
@@ -165,7 +166,8 @@ class NamespaceService(BaseService):
         [
             "namespace_id",
             "category",
-            "provider",
+            "resource_type",
+            "group",
             "is_managed",
             "workspace_id",
             "domain_id",
@@ -183,7 +185,8 @@ class NamespaceService(BaseService):
                 'query': 'dict (spaceone.api.core.v1.Query)',
                 'namespace_id': 'str',
                 'category': 'str',
-                'provider': 'str',
+                'resource_type': 'str',
+                'group': 'str',
                 'is_managed': 'bool',
                 'workspace_id': 'list',         # injected from auth
                 'domain_id': 'str',             # injected from auth (required)

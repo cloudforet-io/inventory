@@ -8,6 +8,7 @@ from spaceone.core.error import *
 from spaceone.inventory.model.metric.request import *
 from spaceone.inventory.model.metric.response import *
 from spaceone.inventory.manager.metric_manager import MetricManager
+from spaceone.inventory.manager.namespace_manager import NamespaceManager
 from spaceone.inventory.manager.identity_manager import IdentityManager
 
 _LOGGER = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ class MetricService(BaseService):
                 'metric_id': 'str',
                 'name': 'str',                  # required
                 'metric_type': 'str',           # required
-                'resource_type': 'str',         # required
+                'resource_type': 'str',
                 'query_options': 'dict',        # required
                 'unit': 'str',
                 'tags': 'dict',
@@ -58,6 +59,11 @@ class MetricService(BaseService):
             self.identity_mgr.check_workspace(params.workspace_id, params.domain_id)
         else:
             params.workspace_id = "*"
+
+        if params.resource_type is None:
+            params.resource_type = self._get_resource_type_from_namespace(
+                params.namespace_id, params.domain_id, params.workspace_id
+            )
 
         metric_vo = self.metric_mgr.create_metric(params.dict())
 
@@ -360,3 +366,17 @@ class MetricService(BaseService):
 
         _LOGGER.debug(f"[_get_all_domains_info] target domains: {len(domains_info)}")
         return domains_info
+
+    @staticmethod
+    def _get_resource_type_from_namespace(
+        namespace_id: str, domain_id: str, workspace_id: str
+    ) -> str:
+        try:
+            namespace_mgr = NamespaceManager()
+            namespace_vo = namespace_mgr.get_namespace(
+                namespace_id, domain_id, workspace_id
+            )
+        except Exception as e:
+            raise ERROR_REQUIRED_PARAMETER(key="resource_type")
+
+        return namespace_vo.resource_type

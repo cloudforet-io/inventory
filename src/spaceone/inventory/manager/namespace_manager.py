@@ -25,6 +25,9 @@ class NamespaceManager(BaseManager):
         if "namespace_id" not in params:
             params["namespace_id"] = utils.generate_id("ns")
 
+        if params.group is None:
+            params.group = "etc"
+
         namespace_vo: Namespace = self.namespace_model.create(params)
         self.transaction.add_rollback(_rollback, namespace_vo)
 
