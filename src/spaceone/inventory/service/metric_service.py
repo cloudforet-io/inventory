@@ -163,10 +163,14 @@ class MetricService(BaseService):
             None
         """
 
+        workspace_id = None
+        if params.workspace_id:
+            workspace_id = ["*", params.workspace_id]
+
         metric_vo = self.metric_mgr.get_metric(
             params.metric_id,
             params.domain_id,
-            params.workspace_id,
+            workspace_id,
         )
 
         self.metric_mgr.run_metric_query(metric_vo)
