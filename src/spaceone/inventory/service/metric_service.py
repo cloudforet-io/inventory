@@ -68,6 +68,7 @@ class MetricService(BaseService):
         metric_vo = self.metric_mgr.create_metric(params.dict())
 
         self.metric_mgr.analyze_resource(metric_vo, params.workspace_id)
+        self.metric_mgr.run_metric_query(metric_vo)
 
         return MetricResponse(**metric_vo.to_dict())
 
@@ -111,6 +112,8 @@ class MetricService(BaseService):
         metric_vo = self.metric_mgr.update_metric_by_vo(
             params.dict(exclude_unset=True), metric_vo
         )
+
+        self.metric_mgr.run_metric_query(metric_vo)
 
         return MetricResponse(**metric_vo.to_dict())
 
