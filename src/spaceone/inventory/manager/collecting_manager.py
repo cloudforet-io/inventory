@@ -251,7 +251,6 @@ class CollectingManager(BaseManager):
         """
 
         domain_id = params["domain_id"]
-        workspace_id = params["workspace_id"]
         plugin_id = params["plugin_info"].get("plugin_id")
         resource_type = resource_data.get("resource_type")
         request_data = resource_data.get("resource", {})
