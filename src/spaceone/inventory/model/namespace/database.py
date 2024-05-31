@@ -22,6 +22,8 @@ class Namespace(MongoModel):
     meta = {
         "updatable_fields": [
             "name",
+            "resource_type",
+            "group",
             "icon",
             "tags",
             "version",
