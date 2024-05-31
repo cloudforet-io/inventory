@@ -62,7 +62,7 @@ class MetricService(BaseService):
 
         if params.resource_type is None:
             params.resource_type = self._get_resource_type_from_namespace(
-                params.namespace_id, params.domain_id, params.workspace_id
+                params.namespace_id, params.domain_id
             )
 
         metric_vo = self.metric_mgr.create_metric(params.dict())
@@ -375,14 +375,10 @@ class MetricService(BaseService):
         return domains_info
 
     @staticmethod
-    def _get_resource_type_from_namespace(
-        namespace_id: str, domain_id: str, workspace_id: str
-    ) -> str:
+    def _get_resource_type_from_namespace(namespace_id: str, domain_id: str) -> str:
         try:
             namespace_mgr = NamespaceManager()
-            namespace_vo = namespace_mgr.get_namespace(
-                namespace_id, domain_id, workspace_id
-            )
+            namespace_vo = namespace_mgr.get_namespace(namespace_id, domain_id)
         except Exception as e:
             raise ERROR_REQUIRED_PARAMETER(key="resource_type")
 
