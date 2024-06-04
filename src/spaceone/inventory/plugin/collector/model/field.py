@@ -12,6 +12,7 @@ __all__ = [
     "ImageField",
     "MoreField",
     "EnumField",
+    "ListField",
     "EnumBadgeField",
     "EnumStateField",
     "EnumDatetimeField",
@@ -240,6 +241,14 @@ class MoreField(BaseModel):
     key: str
     type: str = "more"
     options: MoreOptions = None
+
+
+class ListField(BaseModel):
+    name: str
+    key: str
+    type: str = "list"
+    reference: Union[dict, None] = None
+    options: Union[dict, None] = None
 
 
 class EnumBadgeField(BaseModel):
