@@ -181,7 +181,26 @@ class MetadataGenerator:
 
             elif field["type"] == "more":
                 gen_fields.append(self._generate_more_field(field))
+
+            elif field["type"] == "list":
+                gen_fields.append(self._generate_list_field(field))
         return gen_fields
+
+    def _generate_list_field(self, field: dict) -> dict:
+        if "key" not in field:
+            field = self._add_key_name_fields(field)
+
+        if "options" in field:
+            field["options"] = field.get("options", {"delimiter": " "})
+
+        if "reference_key" in field:
+            field["reference"] = {
+                "reference_key": field["reference_key"],
+                "resource_type": "inventory.CloudService",
+            }
+            del field["reference_key"]
+
+        return ListField(**field).dict(exclude_none=True)
 
     def _generate_text_field(self, field: dict) -> dict:
         if "key" not in field:
