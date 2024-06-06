@@ -560,13 +560,13 @@ class CollectorService(BaseService):
                         exc_info=True,
                     )
                     job_mgr.make_failure_by_vo(job_vo)
+
+                self.collector_mgr.update_last_collected_time(collector_vo)
+                return job_vo
         else:
             # close job if no tasks
             job_mgr.make_success_by_vo(job_vo)
             return job_vo
-
-        self.collector_mgr.update_last_collected_time(collector_vo)
-        return job_vo
 
     def _get_tasks(
         self,
