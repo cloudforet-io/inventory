@@ -83,6 +83,9 @@ class CollectorManager(BaseManager):
         return self.collector_model.stat(**query)
 
     def update_last_collected_time(self, collector_vo: Collector):
+        _LOGGER.debug(
+            f"[update_last_collected_time] updated collected at: {collector_vo.collector_id}"
+        )
         self.update_collector_by_vo(
             collector_vo, {"last_collected_at": datetime.utcnow()}
         )
