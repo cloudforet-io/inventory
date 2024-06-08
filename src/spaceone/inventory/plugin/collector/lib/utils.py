@@ -159,7 +159,7 @@ def make_error_response(
         "state": "FAILURE",
         "resource_type": "inventory.ErrorResource",
         "error_message": error_message,
-        "error_data": {
+        "resource": {
             "provider": provider,
             "cloud_service_group": cloud_service_group,
             "cloud_service_type": cloud_service_type,
