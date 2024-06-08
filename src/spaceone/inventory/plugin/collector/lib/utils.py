@@ -61,7 +61,7 @@ def make_cloud_service(
     instance_type: str = None,
     instance_size: float = None,
     region_code: str = None,
-    reference: Reference = None,
+    reference: dict = None,
     tags: dict = None,
     data_format: str = "json",
 ) -> dict:
