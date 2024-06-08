@@ -494,6 +494,7 @@ class CollectorService(BaseService):
             domain_id,
         )
 
+        _LOGGER.debug(f"[collect] total tasks({collector_id}): {len(tasks)}")
         duplicated_job_vos = job_mgr.get_duplicate_jobs(
             collector_id, domain_id, workspace_id, params.get("secret_id")
         )
@@ -536,6 +537,9 @@ class CollectorService(BaseService):
                 try:
                     # create job task
                     job_task_vo = job_task_mgr.create_job_task(create_params)
+                    _LOGGER.debug(
+                        f"[collect] create job task({job_task_vo.job_task_id}): {job_task_vo.service_account_id}"
+                    )
                     task.update({"job_task_id": job_task_vo.job_task_id})
 
                     if len(sub_tasks) > 0:
