@@ -39,31 +39,39 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
 
             if cloud_service_type := response.get("cloud_service_type"):
                 response["resource"] = cloud_service_type
+                del response["cloud_service_type"]
             elif cloud_service := response.get("cloud_service"):
                 response["resource"] = cloud_service
+                del response["cloud_service"]
             elif region := response.get("region"):
                 response["resource"] = region
-
+                del response["region"]
             elif namespace := response.get("namespace"):
                 response["resource"] = namespace
-
+                del response["namespace"]
             elif metric := response.get("metric"):
                 response["resource"] = metric
+                del response["metric"]
 
             if error_data := response.get("error_data"):
                 response["resource"] = error_data
+                del response["error_data"]
 
             if response["state"] == "FAILURE":
                 response["resource_type"] = "inventory.ErrorResource"
 
             if error_message := response.get("error_message"):
                 response["message"] = error_message
+                del response["error_message"]
 
             if match_keys := response.get("match_keys"):
                 response["match_rules"] = {}
 
                 for idx, keys in enumerate(match_keys, 1):
                     response["match_rules"][str(idx)] = keys
+
+                del response["match_keys"]
+
             yield self.dict_to_message(response)
 
     def _select_valid_resource_and_resource_type(self, response: dict) -> dict:
