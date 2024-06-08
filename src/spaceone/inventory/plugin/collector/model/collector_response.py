@@ -32,6 +32,8 @@ class PluginMetadata(BaseModel):
         "inventory.CloudService",
         "inventory.CloudServiceType",
         "inventory.Region",
+        "inventory.Namespace",
+        "inventory.Metric",
     ]
     supported_schedules: List[str] = ["hours"]
     supported_features: List[str] = ["garbage_collection"]
