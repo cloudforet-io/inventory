@@ -86,7 +86,7 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
             raise ERROR_NO_INPUT_FIELD()
 
         if len(valid_resource) != 1:
-            raise ERROR_INVAILD_INPUT_FIELD(fields=valid_resource)
+            raise ERROR_INVALID_INPUT_FIELD(fields=valid_resource)
 
         resource_type = response["resource_type"]
         if resource_type != VALID_RESOURCE_TYPES[valid_resource[0]]:
