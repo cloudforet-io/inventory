@@ -103,6 +103,7 @@ class CloudServiceTypeService(BaseService):
                 'is_primary': 'bool',
                 'is_major': 'bool',
                 'resource_type': 'str',
+                'json_metadata': 'str',
                 'metadata': 'dict',
                 'labels': 'list',
                 'tags': 'dict',
@@ -118,6 +119,15 @@ class CloudServiceTypeService(BaseService):
 
     @check_required(["cloud_service_type_id", "workspace_id", "domain_id"])
     def update_resource(self, params: dict) -> CloudServiceType:
+        if "json_metadata" in params:
+            params["metadata"] = utils.load_json(params["json_metadata"])
+            if not isinstance(params["metadata"], dict):
+                raise ERROR_INVALID_PARAMETER_TYPE(
+                    key="json_metadata", type=type(params["metadata"])
+                )
+
+            del params["json_metadata"]
+
         if "tags" in params:
             if isinstance(params["tags"], list):
                 params["tags"] = utils.tags_to_dict(params["tags"])
