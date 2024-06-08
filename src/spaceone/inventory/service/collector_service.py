@@ -537,9 +537,6 @@ class CollectorService(BaseService):
                 try:
                     # create job task
                     job_task_vo = job_task_mgr.create_job_task(create_params)
-                    _LOGGER.debug(
-                        f"[collect] create job task({job_task_vo.job_task_id}): {job_task_vo.service_account_id}"
-                    )
                     task.update({"job_task_id": job_task_vo.job_task_id})
 
                     if len(sub_tasks) > 0:
@@ -565,8 +562,8 @@ class CollectorService(BaseService):
                     )
                     job_mgr.make_failure_by_vo(job_vo)
 
-                self.collector_mgr.update_last_collected_time(collector_vo)
-                return job_vo
+            self.collector_mgr.update_last_collected_time(collector_vo)
+            return job_vo
         else:
             # close job if no tasks
             job_mgr.make_success_by_vo(job_vo)
