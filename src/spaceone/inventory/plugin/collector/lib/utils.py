@@ -1,9 +1,11 @@
 import logging
-import json
 
 from spaceone.core.error import *
 from spaceone.core import utils
-from spaceone.inventory.plugin.collector.error.response import ERROR_INVALID_PARAMETER
+from spaceone.inventory.plugin.collector.error.response import (
+    ERROR_NOT_SUPPORTED_RESOURCE_TYPE,
+    ERROR_REQUIRED_PARAMETER_FOR_RESOURCE_TYPE,
+)
 from spaceone.inventory.plugin.collector.model import (
     CloudService,
     CloudServiceType,
@@ -15,12 +17,6 @@ from spaceone.inventory.plugin.collector.lib.metadata import (
 )
 
 _LOGGER = logging.getLogger(__name__)
-
-VALID_RESOURCE_TYPES = {
-    "cloud_service_type": "inventory.CloudServiceType",
-    "cloud_service": "inventory.CloudService",
-    "region": "inventory.Region",
-}
 
 
 def make_cloud_service_type(
@@ -103,11 +99,11 @@ def make_cloud_service(
 
 def make_response(
     match_keys: list,
-    cloud_service_type=None,
-    cloud_service=None,
-    region=None,
-    metric=None,
-    namespace=None,
+    cloud_service_type: dict = None,
+    cloud_service: dict = None,
+    region: dict = None,
+    metric: dict = None,
+    namespace: dict = None,
     resource_type: str = "inventory.CloudService",
 ) -> dict:
     response = {
@@ -116,23 +112,48 @@ def make_response(
         "match_keys": match_keys,
     }
 
-    if resource_type == "inventory.CloudServiceType" and cloud_service_type is not None:
-        response["cloud_service_type"] = cloud_service_type
-        return response
-    elif resource_type == "inventory.CloudService" and cloud_service is not None:
-        response["cloud_service"] = cloud_service
-        return response
-    elif resource_type == "inventory.Region" and region is not None:
-        response["region"] = region
-        return response
-    elif resource_type == "inventory.Metric" and metric is not None:
-        response["metric"] = metric
-        return response
-    elif resource_type == "inventory.Namespace" and namespace is not None:
-        response["namespace"] = namespace
-        return response
+    if resource_type == "inventory.CloudServiceType":
+        if cloud_service_type is not None:
+            response["cloud_service_type"] = cloud_service_type
+            return response
+        else:
+            raise ERROR_REQUIRED_PARAMETER_FOR_RESOURCE_TYPE(
+                resource_type=resource_type, key="cloud_service_type"
+            )
+    elif resource_type == "inventory.CloudService":
+        if cloud_service is not None:
+            response["cloud_service"] = cloud_service
+            return response
+        else:
+            raise ERROR_REQUIRED_PARAMETER_FOR_RESOURCE_TYPE(
+                resource_type=resource_type, key="cloud_service"
+            )
+    elif resource_type == "inventory.Region":
+        if region is not None:
+            response["region"] = region
+            return response
+        else:
+            raise ERROR_REQUIRED_PARAMETER_FOR_RESOURCE_TYPE(
+                resource_type=resource_type, key="region"
+            )
+    elif resource_type == "inventory.Metric":
+        if metric is not None:
+            response["metric"] = metric
+            return response
+        else:
+            raise ERROR_REQUIRED_PARAMETER_FOR_RESOURCE_TYPE(
+                resource_type=resource_type, key="metric"
+            )
+    elif resource_type == "inventory.Namespace":
+        if namespace is not None:
+            response["namespace"] = namespace
+            return response
+        else:
+            raise ERROR_REQUIRED_PARAMETER_FOR_RESOURCE_TYPE(
+                resource_type=resource_type, key="namespace"
+            )
     else:
-        raise ERROR_INVALID_PARAMETER()
+        raise ERROR_NOT_SUPPORTED_RESOURCE_TYPE(resource_type=resource_type)
 
 
 def make_error_response(
@@ -144,22 +165,19 @@ def make_error_response(
     region_name: str = "",
 ) -> dict:
     if isinstance(error, ERROR_BASE):
-        error = ERROR_UNKNOWN(message=error)
         error_message = error.message
-    elif type(error) is dict:
-        error_message = json.dumps(error)
     else:
         error_message = str(error)
 
     _LOGGER.error(
-        f"[error_response] {cloud_service_group} / {cloud_service_type}",
+        f"[make_error_response] {provider}.{cloud_service_group}.{cloud_service_type}: {error_message}",
         exc_info=True,
     )
     return {
         "state": "FAILURE",
         "resource_type": "inventory.ErrorResource",
         "error_message": error_message,
-        "resource": {
+        "error_data": {
             "provider": provider,
             "cloud_service_group": cloud_service_group,
             "cloud_service_type": cloud_service_type,
