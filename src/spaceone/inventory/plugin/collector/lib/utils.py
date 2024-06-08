@@ -2,6 +2,7 @@ import logging
 import json
 
 from spaceone.core.error import *
+from spaceone.core import utils
 from spaceone.inventory.plugin.collector.error.response import ERROR_INVALID_PARAMETER
 from spaceone.inventory.plugin.collector.model import (
     CloudService,
@@ -42,7 +43,9 @@ def make_cloud_service_type(
         name=name,
         group=group,
         provider=provider,
-        metadata=convert_cloud_service_type_meta(metadata_path),
+        json_metadata=utils.dump_json(
+            convert_cloud_service_type_meta(metadata_path), 4
+        ),
         is_primary=is_primary,
         is_major=is_major,
         service_code=service_code,
@@ -79,9 +82,12 @@ def make_cloud_service(
         cloud_service_type=cloud_service_type,
         cloud_service_group=cloud_service_group,
         provider=provider,
-        data=data,
-        metadata=convert_cloud_service_meta(
-            provider, cloud_service_group, cloud_service_type
+        json_data=utils.dump_json(data, 4),
+        json_metadata=utils.dump_json(
+            convert_cloud_service_meta(
+                provider, cloud_service_group, cloud_service_type
+            ),
+            4,
         ),
         ip_addresses=ip_addresses,
         account=account,
@@ -113,11 +119,9 @@ def make_response(
     if resource_type == "inventory.CloudServiceType" and cloud_service_type is not None:
         response["cloud_service_type"] = cloud_service_type
         return response
-
     elif resource_type == "inventory.CloudService" and cloud_service is not None:
         response["cloud_service"] = cloud_service
         return response
-
     elif resource_type == "inventory.Region" and region is not None:
         response["region"] = region
         return response
@@ -128,7 +132,6 @@ def make_response(
         response["namespace"] = namespace
         return response
     else:
-        # TODO: Check this logic
         raise ERROR_INVALID_PARAMETER()
 
 

@@ -37,39 +37,29 @@ class Collector(BaseAPI, collector_pb2_grpc.CollectorServicer):
         for response in collector_svc.collect(params):
             response = self._select_valid_resource_and_resource_type(response)
 
-            if "cloud_service_type" in response:
-                cloud_service_type = response.pop("cloud_service_type")
+            if cloud_service_type := response.get("cloud_service_type"):
                 response["resource"] = cloud_service_type
-
-            if "cloud_service" in response:
-                cloud_service = response.pop("cloud_service")
+            elif cloud_service := response.get("cloud_service"):
                 response["resource"] = cloud_service
-
-            if "error_data" in response:
-                error_data = response.pop("error_data")
-                response["resource"] = error_data
-
-            if "region" in response:
-                region = response.pop("region")
+            elif region := response.get("region"):
                 response["resource"] = region
 
-            if "namespace" in response:
-                namespace = response.pop("namespace")
+            elif namespace := response.get("namespace"):
                 response["resource"] = namespace
 
-            if "metric" in response:
-                metric = response.pop("metric")
+            elif metric := response.get("metric"):
                 response["resource"] = metric
+
+            if error_data := response.get("error_data"):
+                response["resource"] = error_data
 
             if response["state"] == "FAILURE":
                 response["resource_type"] = "inventory.ErrorResource"
 
-            if "error_message" in response:
-                error_message = response.pop("error_message")
+            if error_message := response.get("error_message"):
                 response["message"] = error_message
 
-            if "match_keys" in response:
-                match_keys = response.pop("match_keys")
+            if match_keys := response.get("match_keys"):
                 response["match_rules"] = {}
 
                 for idx, keys in enumerate(match_keys, 1):

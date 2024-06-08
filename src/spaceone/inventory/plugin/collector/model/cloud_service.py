@@ -21,7 +21,9 @@ class CloudService(BaseModel):
     instance_size: float = 0
     launched_at: str = None
     region_code: str = None
-    data: dict
-    metadata: dict
+    data: dict = None
+    json_data: str = None
+    metadata: dict = None
+    json_metadata: str = None
     reference: Reference = None
     tags: dict = {}

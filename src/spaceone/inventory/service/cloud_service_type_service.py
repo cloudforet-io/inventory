@@ -3,6 +3,7 @@ from typing import Tuple
 from spaceone.core import utils
 from spaceone.core.service import *
 from spaceone.core.model.mongo_model import QuerySet
+from spaceone.inventory.error import *
 from spaceone.inventory.model.cloud_service_type_model import CloudServiceType
 from spaceone.inventory.manager.cloud_service_type_manager import (
     CloudServiceTypeManager,
@@ -40,6 +41,7 @@ class CloudServiceTypeService(BaseService):
                 'is_primary': 'bool',
                 'is_major': 'bool',
                 'resource_type': 'str',
+                'json_metadata': 'str',
                 'metadata': 'dict',
                 'labels': 'list,
                 'tags': 'dict',
@@ -55,6 +57,15 @@ class CloudServiceTypeService(BaseService):
 
     @check_required(["name", "group", "provider", "workspace_id", "domain_id"])
     def create_resource(self, params: dict) -> CloudServiceType:
+        if "json_metadata" in params:
+            params["metadata"] = utils.load_json(params["json_metadata"])
+            if not isinstance(params["metadata"], dict):
+                raise ERROR_INVALID_PARAMETER_TYPE(
+                    key="json_metadata", type=type(params["metadata"])
+                )
+
+            del params["json_metadata"]
+
         if "tags" in params:
             if isinstance(params["tags"], list):
                 params["tags"] = utils.tags_to_dict(params["tags"])

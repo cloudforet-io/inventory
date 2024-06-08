@@ -63,7 +63,7 @@ class CollectorService(BaseService):
     @convert_model
     def collect(
         self, params: CollectorCollectRequest
-    ) -> Union[Generator[ResourceResponse, None, None], dict]:
+    ) -> Generator[Union[ResourceResponse, dict], None, None]:
         """Collect external data
 
         Args:

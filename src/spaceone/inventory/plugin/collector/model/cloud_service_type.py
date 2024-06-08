@@ -9,6 +9,7 @@ class CloudServiceType(BaseModel):
     is_primary: bool = False
     is_major: bool = False
     metadata: dict
+    json_metadata: str = None
     service_code: str = None
     tags: dict = {}
     labels: List[str] = []
