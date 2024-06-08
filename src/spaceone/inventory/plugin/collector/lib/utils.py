@@ -39,9 +39,7 @@ def make_cloud_service_type(
         name=name,
         group=group,
         provider=provider,
-        json_metadata=utils.dump_json(
-            convert_cloud_service_type_meta(metadata_path), 4
-        ),
+        json_metadata=utils.dump_json(convert_cloud_service_type_meta(metadata_path)),
         is_primary=is_primary,
         is_major=is_major,
         service_code=service_code,
@@ -57,7 +55,7 @@ def make_cloud_service(
     cloud_service_type: str,
     cloud_service_group: str,
     provider: str,
-    data: dict,
+    data: dict = None,
     ip_addresses: list = None,
     account: str = None,
     instance_type: str = None,
@@ -65,6 +63,7 @@ def make_cloud_service(
     region_code: str = None,
     reference: Reference = None,
     tags: dict = None,
+    json_data: dict = None,
 ) -> dict:
     if ip_addresses is None:
         ip_addresses = []
@@ -78,12 +77,12 @@ def make_cloud_service(
         cloud_service_type=cloud_service_type,
         cloud_service_group=cloud_service_group,
         provider=provider,
-        json_data=utils.dump_json(data, 4),
+        data=data,
+        json_data=utils.dump_json(json_data),
         json_metadata=utils.dump_json(
             convert_cloud_service_meta(
                 provider, cloud_service_group, cloud_service_type
-            ),
-            4,
+            )
         ),
         ip_addresses=ip_addresses,
         account=account,
