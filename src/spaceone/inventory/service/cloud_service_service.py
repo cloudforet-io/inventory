@@ -100,8 +100,8 @@ class CloudServiceService(BaseService):
     def create_resource(self, params: dict) -> CloudService:
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
 
-        if "json_data" in params:
-            params["data"] = utils.load_json(params["json_data"])
+        if json_data := params.get("json_data"):
+            params["data"] = utils.load_json(json_data)
             if not isinstance(params["data"], dict):
                 raise ERROR_INVALID_PARAMETER_TYPE(
                     key="json_data", type=type(params["data"])
@@ -111,8 +111,8 @@ class CloudServiceService(BaseService):
         elif "data" not in params:
             raise ERROR_REQUIRED_PARAMETER(key="data")
 
-        if "json_metadata" in params:
-            params["metadata"] = utils.load_json(params["json_metadata"])
+        if json_metadata := params.get("json_metadata"):
+            params["metadata"] = utils.load_json(json_metadata)
             if not isinstance(params["metadata"], dict):
                 raise ERROR_INVALID_PARAMETER_TYPE(
                     key="json_metadata", type=type(params["metadata"])
@@ -206,8 +206,8 @@ class CloudServiceService(BaseService):
     def update_resource(self, params: dict) -> CloudService:
         ch_mgr: ChangeHistoryManager = self.locator.get_manager("ChangeHistoryManager")
 
-        if "json_data" in params:
-            params["data"] = utils.load_json(params["json_data"])
+        if json_data := params.get("json_data"):
+            params["data"] = utils.load_json(json_data)
             if not isinstance(params["data"], dict):
                 raise ERROR_INVALID_PARAMETER_TYPE(
                     key="json_data", type=type(params["data"])
@@ -215,8 +215,8 @@ class CloudServiceService(BaseService):
 
             del params["json_data"]
 
-        if "json_metadata" in params:
-            params["metadata"] = utils.load_json(params["json_metadata"])
+        if json_metadata := params.get("json_metadata"):
+            params["metadata"] = utils.load_json(json_metadata)
             if not isinstance(params["metadata"], dict):
                 raise ERROR_INVALID_PARAMETER_TYPE(
                     key="json_metadata", type=type(params["metadata"])
