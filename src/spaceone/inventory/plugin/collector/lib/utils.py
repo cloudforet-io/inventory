@@ -63,7 +63,7 @@ def make_cloud_service(
     region_code: str = None,
     reference: Reference = None,
     tags: dict = None,
-    json_data: dict = None,
+    data_format: str = "json",
 ) -> dict:
     if ip_addresses is None:
         ip_addresses = []
@@ -72,13 +72,20 @@ def make_cloud_service(
     if tags is None:
         tags = {}
 
+    if data_format == "json":
+        data_kwargs = {
+            "json_data": utils.dump_json(data),
+        }
+    else:
+        data_kwargs = {
+            "data": data,
+        }
+
     cloud_service = CloudService(
         name=name,
         cloud_service_type=cloud_service_type,
         cloud_service_group=cloud_service_group,
         provider=provider,
-        data=data,
-        json_data=utils.dump_json(json_data),
         json_metadata=utils.dump_json(
             convert_cloud_service_meta(
                 provider, cloud_service_group, cloud_service_type
@@ -91,6 +98,7 @@ def make_cloud_service(
         region_code=region_code,
         reference=reference,
         tags=tags,
+        **data_kwargs,
     )
 
     return cloud_service.dict()
