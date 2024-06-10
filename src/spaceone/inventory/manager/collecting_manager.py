@@ -290,6 +290,14 @@ class CollectingManager(BaseManager):
                 metric_vo = metric_vos[0]
 
                 if metric_vo.version != version:
+                    if "query_options" in request_data:
+                        old_query_hash = utils.dict_to_hash(metric_vo.query_options)
+                        new_query_hash = utils.dict_to_hash(
+                            request_data.get("query_options")
+                        )
+                        if old_query_hash == new_query_hash:
+                            del request_data["query_options"]
+
                     self.metric_mgr.update_metric_by_vo(request_data, metric_vo)
 
     def _upsert_resource(
