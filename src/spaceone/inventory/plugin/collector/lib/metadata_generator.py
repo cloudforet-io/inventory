@@ -91,9 +91,9 @@ class MetadataGenerator:
                         del inner_tab_meta["root_path"]
 
                     if "sort" in inner_tab_meta:
-                        inner_dynamic_view["options"]["default_sort"] = (
-                            self._generate_sort(inner_tab_meta["sort"])
-                        )
+                        inner_dynamic_view["options"][
+                            "default_sort"
+                        ] = self._generate_sort(inner_tab_meta["sort"])
 
                     if "root_path" in inner_tab_meta:
                         inner_dynamic_view["options"]["root_path"] = inner_tab_meta[
@@ -148,7 +148,6 @@ class MetadataGenerator:
     def _generate_fields(self, fields: list) -> list:
         gen_fields = []
         for field in fields:
-
             if "type" not in field:
                 gen_fields.append(self._generate_text_field(field))
 
@@ -432,6 +431,10 @@ class MetadataGenerator:
                     enums[main_key] = self._generate_datetime_field(
                         field=enum, is_enum=True
                     )
+
+                if "name" in enum:
+                    enums[main_key]["name"] = enum["name"]
+                    del enum["name"]
 
             if "options" in field:
                 field["options"].update(enums)
