@@ -49,7 +49,7 @@ class MetadataGenerator:
         return query_sets_meta, search_meta, table_meta, tabs_meta, widget_meta
 
     def _generate_search(self, search_meta: dict) -> list:
-        return self._generate_fields(search_meta["fields"])
+        return self._generate_fields(search_meta["fields"], is_search=True)
 
     def _generate_table(self, table_meta: dict) -> dict:
         table_metadata = self._generate_default_dynamic_view(
@@ -123,6 +123,15 @@ class MetadataGenerator:
                 if "root_path" in tab_meta:
                     dynamic_view["options"]["root_path"] = tab_meta["root_path"]
 
+                if "unwind" in tab_meta:
+                    dynamic_view["options"]["unwind"] = tab_meta["unwind"]
+
+                if "default_sort" in tab_meta:
+                    dynamic_view["options"]["default_sort"] = tab_meta["default_sort"]
+
+                if "search" in tab_meta:
+                    dynamic_view["options"]["search"] = tab_meta["search"]
+
                 new_tabs_metadata.append(dynamic_view)
         return {"layouts": new_tabs_metadata}
 
@@ -146,7 +155,7 @@ class MetadataGenerator:
 
         return Sort(**sort_option).dict()
 
-    def _generate_fields(self, fields: list) -> list:
+    def _generate_fields(self, fields: list, is_search: bool = True) -> list:
         gen_fields = []
         for field in fields:
             if "type" not in field:
@@ -177,7 +186,10 @@ class MetadataGenerator:
                 gen_fields.append(self._generate_image_field(field))
 
             elif field["type"] == "enum":
-                gen_fields.append(self._generate_enum_field(field))
+                if is_search:
+                    gen_fields.append(self._generate_search_enum_field(field))
+                else:
+                    gen_fields.append(self._generate_enum_field(field))
 
             elif field["type"] == "more":
                 gen_fields.append(self._generate_more_field(field))
@@ -374,6 +386,27 @@ class MetadataGenerator:
             return ImageField(**field).dict(exclude_none=True)
         else:
             return EnumImageField(**field).dict(exclude_none=True)
+
+    def _generate_search_enum_field(self, field: dict) -> dict:
+        if "key" not in field:
+            field = self._add_key_name_fields(field)
+
+        enums = {}
+        if "enums" in field:
+            for enum in field["enums"]:
+                enum_keys = list(enum.keys())
+                enum_key = enum_keys[0]
+                if enum_label := enum.get("label"):
+                    enums[enum_key] = {"label": enum_label}
+                else:
+                    enums[enum_key] = {"label": enum_key}
+
+        return {
+            "key": field["key"],
+            "name": field["name"],
+            "type": "enum",
+            "enums": enums,
+        }
 
     def _generate_enum_field(self, field: dict) -> dict:
         if "key" not in field:
