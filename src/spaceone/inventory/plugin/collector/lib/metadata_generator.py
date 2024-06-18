@@ -155,7 +155,7 @@ class MetadataGenerator:
 
         return Sort(**sort_option).dict()
 
-    def _generate_fields(self, fields: list, is_search: bool = True) -> list:
+    def _generate_fields(self, fields: list, is_search: bool = False) -> list:
         gen_fields = []
         for field in fields:
             if "type" not in field:
