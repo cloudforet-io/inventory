@@ -97,6 +97,7 @@ class MetricDataService(BaseService):
         domain_id = params.domain_id
         metric_id = params.metric_id
         query = params.query or {}
+        self._check_required(query)
 
         return self.metric_data_mgr.analyze_metric_data_by_granularity(
             query, domain_id, metric_id
