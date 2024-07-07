@@ -1,4 +1,5 @@
 import logging
+import time
 from typing import Generator
 from spaceone.core import utils
 from spaceone.core.manager import BaseManager
@@ -76,6 +77,8 @@ class CollectingManager(BaseManager):
             _LOGGER.debug(f"[collecting_resources] start job task: {job_task_id}")
 
         if not self._check_concurrency(collector_id, job_id, domain_id):
+            time.sleep(60)
+            _LOGGER.debug(f"[collecting_resources] retry sub task: {job_task_id}")
             self.job_task_mgr.push_job_task(params)
             return True
 
