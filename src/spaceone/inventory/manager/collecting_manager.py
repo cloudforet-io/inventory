@@ -5,6 +5,7 @@ from spaceone.core.manager import BaseManager
 from spaceone.inventory.lib.resource_manager import ResourceManager
 from spaceone.inventory.manager.job_manager import JobManager
 from spaceone.inventory.manager.job_task_manager import JobTaskManager
+from spaceone.inventory.manager.collector_manager import CollectorManager
 from spaceone.inventory.manager.plugin_manager import PluginManager
 from spaceone.inventory.manager.collector_plugin_manager import CollectorPluginManager
 from spaceone.inventory.manager.namespace_manager import NamespaceManager
@@ -30,7 +31,7 @@ class CollectingManager(BaseManager):
         self.db_queue = DB_QUEUE_NAME
         self._service_and_manager_map = {}
 
-    def collecting_resources(self, params: dict):
+    def collecting_resources(self, params: dict) -> bool:
         """Execute collecting task to get resources from plugin
         Args:
             params (dict): {
@@ -58,16 +59,13 @@ class CollectingManager(BaseManager):
 
         job_id = params["job_id"]
         job_task_id = params["job_task_id"]
+        collector_id = params["collector_id"]
         domain_id = params["domain_id"]
         task_options = params.get("task_options")
         is_sub_task = params.get("is_sub_task", False)
         secret_info = params["secret_info"]
         secret_data = params["secret_data"]
         plugin_info = params["plugin_info"]
-        job_task_vo = self.job_task_mgr.get(job_task_id, domain_id)
-
-        # add workspace_id to params from secret_info
-        params["workspace_id"] = secret_info["workspace_id"]
 
         if is_sub_task:
             _LOGGER.debug(
@@ -76,6 +74,15 @@ class CollectingManager(BaseManager):
             )
         else:
             _LOGGER.debug(f"[collecting_resources] start job task: {job_task_id}")
+
+        if not self._check_concurrency(collector_id, job_id, domain_id):
+            self.job_task_mgr.push_job_task(params)
+            return True
+
+        job_task_vo = self.job_task_mgr.get(job_task_id, domain_id)
+
+        # add workspace_id to params from secret_info
+        params["workspace_id"] = secret_info["workspace_id"]
 
         if self.job_mgr.check_cancel(job_id, domain_id):
             self.job_task_mgr.add_error(
@@ -161,6 +168,33 @@ class CollectingManager(BaseManager):
             )
         else:
             self.job_task_mgr.make_failure_by_vo(job_task_vo, collecting_count_info)
+
+        return True
+
+    def _check_concurrency(self, collector_id: str, job_id: str, domain_id: str):
+        collector_mgr: CollectorManager = self.locator.get_manager(CollectorManager)
+        try:
+            collector_vo = collector_mgr.get_collector(collector_id, domain_id)
+            plugin_info = collector_vo.plugin_info.to_dict()
+            metadata = plugin_info.get("metadata", {})
+        except Exception as e:
+            _LOGGER.warning(
+                f"[_check_concurrency] failed to get collector metadata: {e}"
+            )
+            metadata = {}
+
+        max_concurrency = metadata.get("concurrency")
+        if max_concurrency and isinstance(max_concurrency, int):
+            job_task_vos = self.job_task_mgr.filter_job_tasks(
+                job_id=job_id, domain_id=domain_id, status="IN_PROGRESS"
+            )
+            current_concurrency = job_task_vos.count()
+            if job_task_vos.count() >= max_concurrency:
+                _LOGGER.debug(
+                    f"[_check_concurrency] job task concurrency exceeded ({job_id}): "
+                    f"{current_concurrency}/{max_concurrency}"
+                )
+                return False
 
         return True
 
