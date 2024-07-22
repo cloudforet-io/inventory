@@ -129,7 +129,7 @@ class JobManager(BaseManager):
         recent_metrics = self._get_recent_metrics(domain_id)
 
         managed_metric_vos = metric_mgr.filter_metrics(
-            is_managed=True, domain_id=domain_id
+            is_managed=True, domain_id=domain_id, plugin_id=None
         )
         for managed_metric_vo in managed_metric_vos:
             if managed_metric_vo.is_new or (
