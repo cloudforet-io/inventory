@@ -28,25 +28,17 @@ def make_cloud_service_type(
     service_code=None,
     tags=None,
     labels=None,
-    generate_metadata=False,
 ) -> dict:
     if tags is None:
         tags = {}
     if labels is None:
         labels = []
 
-    metadata = convert_cloud_service_type_meta(metadata_path)
-    json_metadata = utils.dump_json(metadata)
-
-    if not generate_metadata:
-        metadata = {}
-
     cloud_service_type = CloudServiceType(
         name=name,
         group=group,
         provider=provider,
-        metadata=metadata,
-        json_metadata=json_metadata,
+        json_metadata=utils.dump_json(convert_cloud_service_type_meta(metadata_path)),
         is_primary=is_primary,
         is_major=is_major,
         service_code=service_code,
@@ -55,6 +47,62 @@ def make_cloud_service_type(
     )
 
     return cloud_service_type.dict()
+
+
+# only use for cloudforet inventory chart version 1.12.2
+def make_cloud_service_with_metadata(
+    name: str,
+    cloud_service_type: str,
+    cloud_service_group: str,
+    provider: str,
+    data: dict = None,
+    metadata_path: str = None,
+    ip_addresses: list = None,
+    account: str = None,
+    instance_type: str = None,
+    instance_size: float = None,
+    region_code: str = None,
+    reference: dict = None,
+    tags: dict = None,
+    data_format: str = "json",
+) -> dict:
+    metadata = {}
+    if ip_addresses is None:
+        ip_addresses = []
+    if instance_size is None:
+        instance_size = 0
+    if tags is None:
+        tags = {}
+
+    if data_format == "json":
+        data_kwargs = {
+            "json_data": utils.dump_json(data),
+        }
+    else:
+        data_kwargs = {
+            "data": data,
+        }
+
+    if metadata_path:
+        metadata = convert_cloud_service_type_meta(metadata_path)
+
+    cloud_service = CloudService(
+        name=name,
+        cloud_service_type=cloud_service_type,
+        cloud_service_group=cloud_service_group,
+        provider=provider,
+        ip_addresses=ip_addresses,
+        account=account,
+        instance_type=instance_type,
+        instance_size=instance_size,
+        region_code=region_code,
+        metadata=metadata,
+        reference=reference,
+        tags=tags,
+        **data_kwargs,
+    )
+
+    return cloud_service.dict()
 
 
 def make_cloud_service(
