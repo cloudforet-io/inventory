@@ -9,7 +9,6 @@ from spaceone.inventory.plugin.collector.error.response import (
 from spaceone.inventory.plugin.collector.model import (
     CloudService,
     CloudServiceType,
-    Reference,
 )
 from spaceone.inventory.plugin.collector.lib.metadata import (
     convert_cloud_service_type_meta,
@@ -29,17 +28,25 @@ def make_cloud_service_type(
     service_code=None,
     tags=None,
     labels=None,
+    generate_metadata=False,
 ) -> dict:
     if tags is None:
         tags = {}
     if labels is None:
         labels = []
 
+    metadata = convert_cloud_service_type_meta(metadata_path)
+    json_metadata = utils.dump_json(metadata)
+
+    if not generate_metadata:
+        metadata = {}
+
     cloud_service_type = CloudServiceType(
         name=name,
         group=group,
         provider=provider,
-        json_metadata=utils.dump_json(convert_cloud_service_type_meta(metadata_path)),
+        metadata=metadata,
+        json_metadata=json_metadata,
         is_primary=is_primary,
         is_major=is_major,
         service_code=service_code,
