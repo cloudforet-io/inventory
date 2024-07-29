@@ -438,6 +438,7 @@ class MetadataGenerator:
                     key for key in enum.keys() if key not in enable_enum_options
                 ][0]
 
+
                 if enum["type"] == "badge":
                     enum["outline_color"] = enum[main_key]
                     del enum[main_key]
@@ -446,7 +447,8 @@ class MetadataGenerator:
                     )
 
                 elif enum["type"] == "state":
-                    enum["icon_color"] = enum[main_key]
+                    if enum[main_key] is not None:
+                        enum["icon_color"] = enum[main_key]
                     del enum[main_key]
                     enums[main_key] = self._generate_state_field(
                         field=enum, is_enum=True
