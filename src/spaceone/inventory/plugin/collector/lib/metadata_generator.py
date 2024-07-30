@@ -335,10 +335,11 @@ class MetadataGenerator:
         if "is_optional" in field:
             field = self._add_options_field(field, "is_optional")
 
-        if not is_enum:
-            return StateField(**field).dict(exclude_none=True)
-        else:
+        if is_enum:
             return EnumStateField(**field).dict(exclude_none=True)
+        else:
+            return StateField(**field).dict(exclude_none=True)
+
 
     def _generate_badge_field(self, field: dict, is_enum: bool = False) -> dict:
         if not is_enum:
@@ -438,6 +439,7 @@ class MetadataGenerator:
                     key for key in enum.keys() if key not in enable_enum_options
                 ][0]
 
+
                 if enum["type"] == "badge":
                     enum["outline_color"] = enum[main_key]
                     del enum[main_key]
@@ -446,8 +448,9 @@ class MetadataGenerator:
                     )
 
                 elif enum["type"] == "state":
-                    enum["icon_color"] = enum[main_key]
-                    del enum[main_key]
+                    if icon_color := enum[main_key]:
+                        enum["icon_color"] = icon_color
+                        del enum[main_key]
                     enums[main_key] = self._generate_state_field(
                         field=enum, is_enum=True
                     )
