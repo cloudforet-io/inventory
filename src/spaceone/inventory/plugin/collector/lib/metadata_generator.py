@@ -56,8 +56,8 @@ class MetadataGenerator:
             "Main Table", "query-search-table"
         )
         if "options" in table_meta:
-            if "default_filters" in table_meta["options"]:
-                table_metadata["options"]["default_filters"] = self._generate_filters(table_meta)
+            if "default_filter" in table_meta["options"]:
+                table_metadata["options"]["default_filter"] = self._generate_filter(table_meta)
 
         if "sort" in table_meta:
             table_metadata["options"]["default_sort"] = self._generate_sort(table_meta)
@@ -146,9 +146,9 @@ class MetadataGenerator:
         return {"name": name, "type": view_type, "options": options}
 
     @staticmethod
-    def _generate_filters(table: dict) -> list:
+    def _generate_filter(table: dict) -> list:
         filters = []
-        filters_field = table["options"]["default_filters"]
+        filters_field = table["options"]["default_filter"]
         for filter_dict in filters_field:
             filter_options = {
                 "key": filter_dict["key"],
