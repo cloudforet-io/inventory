@@ -146,7 +146,7 @@ class MetadataGenerator:
         return {"name": name, "type": view_type, "options": options}
 
     @staticmethod
-    def _generate_filters(table: dict) -> list[dict]:
+    def _generate_filters(table: dict) -> list:
         filters = []
         filters_field = table["options"]["default_filters"]
         for filter_dict in filters_field:
