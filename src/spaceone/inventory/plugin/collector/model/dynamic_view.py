@@ -6,8 +6,15 @@ class Sort(BaseModel):
     desc: bool = False
 
 
+class Filter(BaseModel):
+    key: str
+    value: str
+    operator: str
+
+
 class Options(BaseModel):
     default_sort: Sort
+    default_filter: list[Filter]
     fields: list
 
 
