@@ -9,7 +9,7 @@ class Sort(BaseModel):
 class Filter(BaseModel):
     key: str
     value: str
-    operator: str = 'eq'
+    operator: str
 
 
 class Options(BaseModel):
