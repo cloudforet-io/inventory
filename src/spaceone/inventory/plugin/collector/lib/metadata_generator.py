@@ -356,7 +356,6 @@ class MetadataGenerator:
         else:
             return StateField(**field).dict(exclude_none=True)
 
-
     def _generate_badge_field(self, field: dict, is_enum: bool = False) -> dict:
         if not is_enum:
             if "key" not in field:

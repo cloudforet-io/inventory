@@ -14,7 +14,7 @@ class Filter(BaseModel):
 
 class Options(BaseModel):
     default_sort: Sort
-    default_filter: list[Filter]
+    default_filters: list[Filter]
     fields: list
 
 
