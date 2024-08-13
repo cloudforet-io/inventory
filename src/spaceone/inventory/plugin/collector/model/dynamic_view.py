@@ -12,12 +12,6 @@ class Filter(BaseModel):
     operator: str
 
 
-class Options(BaseModel):
-    default_sort: Sort
-    default_filters: list[Filter]
-    fields: list
-
-
 class BaseDynamicView(BaseModel):
     type: str
     options: dict = {}
