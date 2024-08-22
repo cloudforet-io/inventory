@@ -118,6 +118,8 @@ BACKGROUND_COLORS = (
 class SizeOptions(BaseModel):
     display_unit: Literal["BYTES", "KB", "MB", "GB", "TB", "PB"] = None
     source_unit: Literal["BYTES", "KB", "MB", "GB", "TB", "PB"] = None
+    default: str = None
+    field_description: str = None
     is_optional: bool = None
 
 
@@ -168,6 +170,13 @@ class MoreOptionsLayout(BaseModel):
 class MoreOptions(BaseModel):
     sub_key: str = None
     layout: MoreOptionsLayout = None
+
+
+class ListOptions(BaseModel):
+    items: dict = None
+    sub_key: str = None
+    delimiter: str = None
+    is_optional: bool = None
 
 
 class TextField(BaseModel):
@@ -248,7 +257,7 @@ class ListField(BaseModel):
     key: str
     type: str = "list"
     reference: Union[dict, None] = None
-    options: Union[dict, None] = None
+    options: ListOptions = None
 
 
 class EnumBadgeField(BaseModel):
