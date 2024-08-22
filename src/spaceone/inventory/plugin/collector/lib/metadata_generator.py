@@ -202,8 +202,19 @@ class MetadataGenerator:
         if "key" not in field:
             field = self._add_key_name_fields(field)
 
-        if "options" in field:
-            field["options"] = field.get("options", {"delimiter": " "})
+        if "is_optional" in field:
+            field = self._add_options_field(field, "is_optional")
+
+        if "delimiter" in field:
+            field = self._add_options_field(field, "delimiter")
+        else:
+            field["options"]["delimiter"] = " "
+
+        if "sub_key" in field:
+            field = self._add_options_field(field, "sub_key")
+
+        if "items" in  field:
+            field = self._add_options_field(field, "items")
 
         if "reference_key" in field:
             field["reference"] = {

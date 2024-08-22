@@ -170,6 +170,13 @@ class MoreOptions(BaseModel):
     layout: MoreOptionsLayout = None
 
 
+class ListOptions(BaseModel):
+    items: dict = None
+    sub_key: str = None
+    delimiter: str = None
+    is_optional: bool = None
+
+
 class TextField(BaseModel):
     name: str
     key: str
@@ -248,7 +255,7 @@ class ListField(BaseModel):
     key: str
     type: str = "list"
     reference: Union[dict, None] = None
-    options: Union[dict, None] = None
+    options: ListOptions = None
 
 
 class EnumBadgeField(BaseModel):
