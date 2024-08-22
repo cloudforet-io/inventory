@@ -118,6 +118,8 @@ BACKGROUND_COLORS = (
 class SizeOptions(BaseModel):
     display_unit: Literal["BYTES", "KB", "MB", "GB", "TB", "PB"] = None
     source_unit: Literal["BYTES", "KB", "MB", "GB", "TB", "PB"] = None
+    default: str = None
+    field_description: str = None
     is_optional: bool = None
 
 

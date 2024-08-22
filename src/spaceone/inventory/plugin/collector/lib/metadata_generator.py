@@ -280,6 +280,12 @@ class MetadataGenerator:
         if "source_unit" in field:
             field = self._add_options_field(field, "source_unit")
 
+        if "field_description" in field:
+            field = self._add_options_field(field, "field_description")
+
+        if "default" in field:
+            field = self._add_options_field(field, "default")
+
         if "is_optional" in field:
             field = self._add_options_field(field, "is_optional")
 
