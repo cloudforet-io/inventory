@@ -1,5 +1,5 @@
 import logging
-from typing import Tuple
+from typing import Tuple, Union
 from datetime import datetime
 from spaceone.core.manager import BaseManager
 from spaceone.core.model.mongo_model import QuerySet
@@ -61,7 +61,7 @@ class CollectorManager(BaseManager):
         self,
         collector_id: str,
         domain_id: str,
-        workspace_id: str = None,
+        workspace_id: Union[list, str, None] = None,
     ) -> Collector:
         conditions = {
             "collector_id": collector_id,

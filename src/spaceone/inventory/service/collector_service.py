@@ -273,6 +273,12 @@ class CollectorService(BaseService):
         collector_vo = self.collector_mgr.get_collector(
             collector_id, domain_id, workspace_id
         )
+
+        if collector_vo.resource_group == "WORKSPACE":
+            collector_workspace_id = collector_vo.workspace_id
+        else:
+            collector_workspace_id = None
+
         plugin_info = collector_vo.plugin_info.to_dict()
 
         endpoint, updated_version = plugin_manager.get_endpoint(
@@ -287,7 +293,7 @@ class CollectorService(BaseService):
             collector_vo.provider,
             domain_id,
             params.get("secret_id"),
-            workspace_id,
+            collector_workspace_id,
         )
 
         if secret_ids:
@@ -445,7 +451,7 @@ class CollectorService(BaseService):
             params (dict): {
                 'collector_id': 'str',      # required
                 'secret_id': 'str',
-                'workspace_id': 'str',      # injected from auth
+                'workspace_id': 'str | list',      # injected from auth
                 'domain_id': 'str',         # injected from auth (required)
                 'user_projects': 'list',    # injected from auth
             }
@@ -466,6 +472,11 @@ class CollectorService(BaseService):
             collector_id, domain_id, workspace_id
         )
         collector_data = collector_vo.to_dict()
+
+        if collector_data["resource_group"] == "WORKSPACE":
+            collector_workspace_id = collector_data["workspace_id"]
+        else:
+            collector_workspace_id = None
 
         plugin_info = collector_data["plugin_info"]
         secret_filter = collector_data.get("secret_filter", {}) or {}
@@ -493,7 +504,7 @@ class CollectorService(BaseService):
             plugin_info,
             secret_filter,
             domain_id,
-            workspace_id,
+            collector_workspace_id,
         )
 
         duplicated_job_vos = job_mgr.get_duplicate_jobs(
