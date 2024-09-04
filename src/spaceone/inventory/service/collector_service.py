@@ -287,6 +287,7 @@ class CollectorService(BaseService):
             collector_vo.provider,
             domain_id,
             params.get("secret_id"),
+            workspace_id,
         )
 
         if secret_ids:
@@ -459,7 +460,7 @@ class CollectorService(BaseService):
 
         collector_id = params["collector_id"]
         domain_id = params["domain_id"]
-        workspace_id = params.get("workspace_id")
+        workspace_id = params.get("workspace_id", None)
 
         collector_vo = self.collector_mgr.get_collector(
             collector_id, domain_id, workspace_id
@@ -492,6 +493,7 @@ class CollectorService(BaseService):
             plugin_info,
             secret_filter,
             domain_id,
+            workspace_id,
         )
 
         duplicated_job_vos = job_mgr.get_duplicate_jobs(
@@ -579,6 +581,7 @@ class CollectorService(BaseService):
         plugin_info: dict,
         secret_filter: dict,
         domain_id: str,
+        workspace_id: str = None,
     ) -> list:
         secret_mgr: SecretManager = self.locator.get_manager(SecretManager)
         collector_plugin_mgr: CollectorPluginManager = self.locator.get_manager(
@@ -591,6 +594,7 @@ class CollectorService(BaseService):
             collector_provider,
             domain_id,
             params.get("secret_id"),
+            workspace_id,
         )
 
         for secret_id in secret_ids:
@@ -778,10 +782,15 @@ class CollectorService(BaseService):
         provider: str,
         domain_id: str,
         secret_id: str = None,
+        workspace_id: str = None,
     ) -> list:
         secret_manager: SecretManager = self.locator.get_manager(SecretManager)
 
-        query = {"filter": self._make_secret_filter(secret_filter, provider, secret_id)}
+        query = {
+            "filter": self._make_secret_filter(
+                secret_filter, provider, secret_id, workspace_id
+            )
+        }
         response = secret_manager.list_secrets(query, domain_id)
 
         return [
@@ -852,12 +861,18 @@ class CollectorService(BaseService):
 
     @staticmethod
     def _make_secret_filter(
-        secret_filter: dict, provider: str, secret_id: str = None
+        secret_filter: dict,
+        provider: str,
+        secret_id: str = None,
+        workspace_id: str = None,
     ) -> list:
         _filter = [{"k": "provider", "v": provider, "o": "eq"}]
 
         if secret_id:
             _filter.append({"k": "secret_id", "v": secret_id, "o": "eq"})
+
+        if workspace_id:
+            _filter.append({"k": "workspace_id", "v": workspace_id, "o": "eq"})
 
         if secret_filter.get("state") == "ENABLED":
             if secrets := secret_filter.get("secrets"):
