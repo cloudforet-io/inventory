@@ -29,9 +29,12 @@ def convert_cloud_service_meta(
     }
 
 
-def convert_cloud_service_type_meta(metadata_path: str) -> dict:
-    yaml_path = _get_yaml_path(metadata_path)
-    old_metadata = load_yaml_from_file(yaml_path)
+def convert_cloud_service_type_meta(metadata_path: str, metadata: dict = None) -> dict:
+    if not metadata:
+        yaml_path = _get_yaml_path(metadata_path)
+        old_metadata = load_yaml_from_file(yaml_path)
+    else:
+        old_metadata = metadata
     return MetadataGenerator(old_metadata).generate_metadata()
 
 
