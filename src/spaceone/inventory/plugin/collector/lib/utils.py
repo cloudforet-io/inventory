@@ -22,13 +22,17 @@ def make_cloud_service_type(
     name,
     group,
     provider,
-    metadata_path,
+    metadata_path=None,
+    metadata=None,
     is_primary=False,
     is_major=False,
     service_code=None,
     tags=None,
     labels=None,
 ) -> dict:
+    if not metadata and metadata_path is None:
+        raise ERROR_REQUIRED_PARAMETER(key="metadata or metadata_path")
+
     if tags is None:
         tags = {}
     if labels is None:
@@ -38,7 +42,9 @@ def make_cloud_service_type(
         name=name,
         group=group,
         provider=provider,
-        json_metadata=utils.dump_json(convert_cloud_service_type_meta(metadata_path)),
+        json_metadata=utils.dump_json(
+            convert_cloud_service_type_meta(metadata_path, metadata)
+        ),
         is_primary=is_primary,
         is_major=is_major,
         service_code=service_code,
