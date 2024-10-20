@@ -509,7 +509,7 @@ class CloudServiceService(BaseService):
     @check_required(["query", "query.fields", "domain_id"])
     @append_query_filter(["workspace_id", "domain_id", "user_projects"])
     @append_keyword_filter(_KEYWORD_FILTER)
-    @set_query_page_limit(1000)
+    # @set_query_page_limit(1000)
     def analyze(self, params: dict) -> dict:
         """
         Args:

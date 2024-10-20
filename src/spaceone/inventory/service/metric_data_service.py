@@ -74,7 +74,7 @@ class MetricDataService(BaseService):
     )
     @append_query_filter(["metric_id", "workspace_id", "domain_id", "user_projects"])
     @append_keyword_filter(["metric_id", "name"])
-    @set_query_page_limit(1000)
+    # @set_query_page_limit(1000)
     @convert_model
     def analyze(self, params: MetricDataAnalyzeQueryRequest) -> dict:
         """Analyze metric data
@@ -109,7 +109,7 @@ class MetricDataService(BaseService):
     )
     @append_query_filter(["metric_id", "workspace_id", "domain_id", "user_projects"])
     @append_keyword_filter(["metric_id", "name"])
-    @set_query_page_limit(1000)
+    # @set_query_page_limit(1000)
     @convert_model
     def stat(self, params: MetricDataStatQueryRequest) -> dict:
         """
