@@ -1,4 +1,4 @@
-name: "[Dispatch] Release"
+name: "[Dispatch] Release Test"
 
 on:
   workflow_dispatch:
