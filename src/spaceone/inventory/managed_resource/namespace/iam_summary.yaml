@@ -1,0 +1,7 @@
+---
+namespace_id: ns-managed-iam-summary
+name: IAM/Summary
+category: IAM
+resource_type: identity.ServiceAccount
+group: common
+version: '1.0'

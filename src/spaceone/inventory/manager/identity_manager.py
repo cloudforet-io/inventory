@@ -118,3 +118,9 @@ class IdentityManager(BaseManager):
         return self.identity_conn.dispatch(
             "Domain.list", {"query": query, "state": "ENABLED"}
         )
+
+    def analyze_service_accounts(self, query: dict, domain_id: str) -> dict:
+        # For background job, use system token
+        return self.identity_conn.dispatch(
+            "ServiceAccount.analyze", {"query": query}, x_domain_id=domain_id
+        )
