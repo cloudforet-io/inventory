@@ -14,7 +14,7 @@ from spaceone.inventory.error.metric import (
     ERROR_METRIC_QUERY_RUN_FAILED,
     ERROR_WRONG_QUERY_OPTIONS,
 )
-from spaceone.inventory.manager import IdentityManager
+from spaceone.inventory.manager.identity_manager import IdentityManager
 from spaceone.inventory.model.metric.database import Metric
 from spaceone.inventory.manager.managed_resource_manager import ManagedResourceManager
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
