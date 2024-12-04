@@ -14,6 +14,7 @@ from spaceone.inventory.error.metric import (
     ERROR_METRIC_QUERY_RUN_FAILED,
     ERROR_WRONG_QUERY_OPTIONS,
 )
+from spaceone.inventory.manager import IdentityManager
 from spaceone.inventory.model.metric.database import Metric
 from spaceone.inventory.manager.managed_resource_manager import ManagedResourceManager
 from spaceone.inventory.manager.cloud_service_manager import CloudServiceManager
@@ -236,6 +237,8 @@ class MetricManager(BaseManager):
                 return self._analyze_cloud_service(
                     query, domain_id, cloud_service_type_key
                 )
+            elif metric_vo.resource_type == "identity.ServiceAccount":
+                return self._analyze_service_accounts(query, domain_id)
             else:
                 raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
         except Exception as e:
@@ -707,3 +710,38 @@ class MetricManager(BaseManager):
             labels_info.append(label_info)
 
         return labels_info
+
+    @staticmethod
+    def _analyze_service_accounts(query: dict, domain_id: str) -> list:
+        default_group_by = [
+            "project_id",
+            "workspace_id",
+        ]
+        changed_group_by = []
+        changed_group_by += copy.deepcopy(default_group_by)
+
+        for group_option in query.get("group_by", []):
+            if isinstance(group_option, dict):
+                key = group_option.get("key")
+            else:
+                key = group_option
+
+            if key not in default_group_by:
+                changed_group_by.append(group_option)
+
+        query["group_by"] = changed_group_by
+        query["filter"] = query.get("filter", [])
+        query["filter"].append({"k": "domain_id", "v": domain_id, "o": "eq"})
+
+        if "select" in query:
+            for group_by_key in ["service_account_id", "project_id", "workspace_id"]:
+                query["select"][group_by_key] = group_by_key
+
+        _LOGGER.debug(
+            f"[_analyze_service_account] Analyze Service Account Query: {query}"
+        )
+
+        identity_mgr = IdentityManager()
+        response = identity_mgr.analyze_service_accounts(query, domain_id)
+
+        return response.get("results", [])
