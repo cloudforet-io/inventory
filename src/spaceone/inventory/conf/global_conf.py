@@ -58,11 +58,11 @@ HANDLERS = {
 CONNECTORS = {
     "AWSS3UploadConnector": {},
     "SMTPConnector": {
-        "host": "smtp.mail.com",
-        "port": "1234",
-        "user": "cloudforet",
-        "password": "1234",
-        "from_email": "support@cloudforet.com",
+        # "host": "smtp.mail.com",
+        # "port": "",
+        # "user": "cloudforet",
+        # "password": "",
+        # "from_email": "support@cloudforet.com",
     },
     "SpaceConnector": {
         "backend": "spaceone.core.connector.space_connector:SpaceConnector",
