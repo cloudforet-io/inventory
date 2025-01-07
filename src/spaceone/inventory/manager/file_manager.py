@@ -4,9 +4,9 @@ from spaceone.core.connector.space_connector import SpaceConnector
 from spaceone.core.auth.jwt.jwt_util import JWTUtil
 from spaceone.inventory.connector.file_upload_connector import (
     FileUploadConnector,
-    AWSS3UploadConnector,
     FilesUploadConnector,
 )
+
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -22,29 +22,9 @@ class FileManager(BaseManager):
             "SpaceConnector", service="file_manager"
         )
 
-    def add_file(self, params: dict, domain_id: str) -> dict:
-        if self.token_type == "SYSTEM_TOKEN":
-            return self.file_mgr_conn.dispatch(
-                "File.add", params, x_domain_id=domain_id
-            )
-        else:
-            return self.file_mgr_conn.dispatch("File.add", params)
-
-    def get_download_url(self, file_id: str, domain_id: str) -> dict:
-        if self.token_type == "SYSTEM_TOKEN":
-            return self.file_mgr_conn.dispatch(
-                "File.get_download_url",
-                {"file_id": file_id},
-                x_domain_id=domain_id,
-            )
-        else:
-            return self.file_mgr_conn.dispatch(
-                "File.get_download_url", {"file_id": file_id}
-            )
-
-    def upload_file(self, file_path: str, options: dict):
+    def upload_user_file(self, file_path: str) -> dict:
         connector_name = _CONNECTOR_MAP.get("FILES", "FILES")
         file_upload_connector: FileUploadConnector = self.locator.get_connector(
             connector_name
         )
-        return file_upload_connector.upload_file(file_path, options)
+        return file_upload_connector.upload_user_file(file_path)

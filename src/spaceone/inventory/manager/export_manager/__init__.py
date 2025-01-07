@@ -36,7 +36,7 @@ class ExportManager(BaseManager):
             self._file_dir = temp_dir
             self._file_path = f"{self._file_dir}/{self._file_name}"
             self.make_file(export_options)
-            return self.upload_file(export_options, domain_id, workspace_id)
+            return self.upload_file(domain_id, workspace_id)
 
     def make_file(self, export_options: dict) -> None:
         self._check_results(export_options)
@@ -159,27 +159,9 @@ class ExportManager(BaseManager):
         else:
             self._write_excel_file(writer, df, sheet_name, title)
 
-    def upload_file(
-        self, export_options, domain_id: str, workspace_id: str = None
-    ) -> dict:
+    def upload_file(self, domain_id: str, workspace_id: str = None) -> dict:
         file_mgr: FileManager = self.locator.get_manager(FileManager)
-
-        params = {
-            "name": self._file_name,
-            "domain_id": domain_id,
-            "resource_group": "DOMAIN",
-        }
-
-        if workspace_id:
-            role_type = self.transaction.get_meta("role_type")
-            params["workspace_id"] = workspace_id
-
-            if role_type == "WORKSPACE_OWNER":
-                params["resource_group"] = "WORKSPACE"
-            else:
-                params["resource_group"] = "PROJECT"
-
-        file_info = file_mgr.upload_file(self._file_path, export_options)
+        file_info = file_mgr.upload_user_file(self._file_path)
 
         return {"download_url": file_info["download_url"]}
 
