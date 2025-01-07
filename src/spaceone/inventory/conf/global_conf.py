@@ -56,6 +56,7 @@ HANDLERS = {
 }
 
 CONNECTORS = {
+    "FilesUploadConnector": {"endpoint": "http://file-manager:8000"},
     "AWSS3UploadConnector": {},
     "SMTPConnector": {
         # "host": "smtp.mail.com",
@@ -72,7 +73,7 @@ CONNECTORS = {
             "repository": "grpc://repository:50051",
             "secret": "grpc://secret:50051",
             "config": "grpc://config:50051",
-            "file_manager": "grpc://file-manager: 50051",
+            "file_manager": "grpc://file-manager:50051",
         },
     },
 }
