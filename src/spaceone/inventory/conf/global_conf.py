@@ -57,7 +57,6 @@ HANDLERS = {
 
 CONNECTORS = {
     "FilesUploadConnector": {"endpoint": "http://file-manager:8000"},
-    "AWSS3UploadConnector": {},
     "SMTPConnector": {
         # "host": "smtp.mail.com",
         # "port": "",
