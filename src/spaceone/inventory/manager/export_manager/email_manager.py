@@ -3,6 +3,7 @@ import tempfile
 import logging
 from datetime import datetime
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from spaceone.core.error import ERROR_PERMISSION_DENIED
 
 from spaceone.inventory.manager.export_manager import ExportManager
 from spaceone.inventory.connector.smtp_connector import SMTPConnector
@@ -30,7 +31,9 @@ class EmailManager(ExportManager):
             self.make_file(export_options)
             response = self.upload_file(domain_id, workspace_id)
 
-            download_url = response["download_url"]
+            token = self._get_token()
+
+            download_url = f"{response['download_url']}?token={token}"
             subject = "[SpaceONE] The Cloud Service Report File is ready to download"
 
             for email in emails:
@@ -47,3 +50,11 @@ class EmailManager(ExportManager):
     def send_email(self, email: str, subject: str, contents: str) -> None:
         smtp_connector: SMTPConnector = self.locator.get_connector("SMTPConnector")
         smtp_connector.send_email(email, subject, contents)
+
+    def _get_token(self) -> str:
+        token_type = self.transaction.get_meta("authorization.token_type")
+        if token_type == "SYSTEM_TOKEN":
+            raise ERROR_PERMISSION_DENIED()
+
+        token = self.transaction.get_meta("token")
+        return token

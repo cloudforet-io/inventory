@@ -163,19 +163,7 @@ class ExportManager(BaseManager):
         file_mgr: FileManager = self.locator.get_manager(FileManager)
         file_info = file_mgr.upload_user_file(self._file_path)
 
-        token = self._get_token()
-
-        download_url = f"{file_info['download_url']}?token={token}"
-
-        return {"download_url": download_url}
-
-    def _get_token(self) -> str:
-        token_type = self.transaction.get_meta("authorization.token_type")
-        if token_type == "SYSTEM_TOKEN":
-            raise ERROR_PERMISSION_DENIED()
-
-        token = self.transaction.get_meta("token")
-        return token
+        return {"download_url": file_info["download_url"]}
 
     @staticmethod
     def _check_results(export_options: dict) -> None:
