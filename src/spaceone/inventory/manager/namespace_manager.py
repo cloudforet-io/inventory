@@ -22,10 +22,10 @@ class NamespaceManager(BaseManager):
             )
             vo.delete()
 
-        if "namespace_id" not in params:
+        if not params.get("namespace_id"):
             params["namespace_id"] = utils.generate_id("ns")
 
-        if "group" not in params:
+        if not params.get("group"):
             params["group"] = "etc"
 
         namespace_vo: Namespace = self.namespace_model.create(params)
@@ -85,9 +85,9 @@ class NamespaceManager(BaseManager):
 
         installed_namespace_version_map = {}
         for namespace_vo in namespace_vos:
-            installed_namespace_version_map[
-                namespace_vo.namespace_id
-            ] = namespace_vo.version
+            installed_namespace_version_map[namespace_vo.namespace_id] = (
+                namespace_vo.version
+            )
 
         managed_namespace_map = managed_resource_mgr.get_managed_namespaces()
 

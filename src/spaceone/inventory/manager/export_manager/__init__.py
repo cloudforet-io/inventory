@@ -36,7 +36,7 @@ class ExportManager(BaseManager):
             self._file_dir = temp_dir
             self._file_path = f"{self._file_dir}/{self._file_name}"
             self.make_file(export_options)
-            return self.upload_file(domain_id, workspace_id)
+            return self.upload_file(export_options, domain_id, workspace_id)
 
     def make_file(self, export_options: dict) -> None:
         self._check_results(export_options)
@@ -159,7 +159,9 @@ class ExportManager(BaseManager):
         else:
             self._write_excel_file(writer, df, sheet_name, title)
 
-    def upload_file(self, domain_id: str, workspace_id: str = None) -> dict:
+    def upload_file(
+        self, export_options, domain_id: str, workspace_id: str = None
+    ) -> dict:
         file_mgr: FileManager = self.locator.get_manager(FileManager)
 
         params = {
@@ -177,14 +179,9 @@ class ExportManager(BaseManager):
             else:
                 params["resource_group"] = "PROJECT"
 
-        file_info = file_mgr.add_file(params, domain_id)
+        file_info = file_mgr.upload_file(self._file_path, export_options)
 
-        file_mgr.upload_file(
-            self._file_path, file_info["upload_url"], file_info["upload_options"]
-        )
-        download_file_info = file_mgr.get_download_url(file_info["file_id"], domain_id)
-
-        return {"download_url": download_file_info["download_url"]}
+        return {"download_url": file_info["download_url"]}
 
     @staticmethod
     def _check_results(export_options: dict) -> None:

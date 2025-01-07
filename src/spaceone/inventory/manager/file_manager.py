@@ -5,11 +5,12 @@ from spaceone.core.auth.jwt.jwt_util import JWTUtil
 from spaceone.inventory.connector.file_upload_connector import (
     FileUploadConnector,
     AWSS3UploadConnector,
+    FilesUploadConnector,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
-_CONNECTOR_MAP = {"AWS_S3": AWSS3UploadConnector}
+_CONNECTOR_MAP = {"FILES": FilesUploadConnector}
 
 
 class FileManager(BaseManager):
@@ -41,11 +42,9 @@ class FileManager(BaseManager):
                 "File.get_download_url", {"file_id": file_id}
             )
 
-    def upload_file(
-        self, file_path: str, url: str, options: dict, storage_type: str = "AWS_S3"
-    ):
-        connector_name = _CONNECTOR_MAP.get(storage_type, "AWS_S3")
+    def upload_file(self, file_path: str, options: dict):
+        connector_name = _CONNECTOR_MAP.get("FILES", "FILES")
         file_upload_connector: FileUploadConnector = self.locator.get_connector(
             connector_name
         )
-        file_upload_connector.upload_file(file_path, url, options)
+        return file_upload_connector.upload_file(file_path, options)
