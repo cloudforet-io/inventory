@@ -19,6 +19,3 @@ CACHES = {
         "ttl": 86400,
     },
 }
-
-# gRPC Settings
-MAX_WORKERS = 4
