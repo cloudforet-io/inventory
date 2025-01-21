@@ -15,6 +15,7 @@ from spaceone.inventory.error.metric import (
     ERROR_INVALID_DATE_RANGE,
     ERROR_INVALID_PARAMETER_TYPE,
 )
+from spaceone.inventory.manager.identity_manager import IdentityManager
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -59,34 +60,46 @@ class MetricDataManager(BaseManager):
     def filter_monthly_metric_data(self, **conditions) -> QuerySet:
         return self.monthly_metric_data.filter(**conditions)
 
-    def list_metric_data(self, query: dict, status: str = None) -> Tuple[QuerySet, int]:
-        if status != "IN_PROGRESS":
-            query = self._append_status_filter(query)
-
-        return self.metric_data_model.query(**query)
-
-    def list_monthly_metric_data(
-        self, query: dict, status: str = None
+    def list_metric_data(
+        self, query: dict, domain_id: str, status: str = None
     ) -> Tuple[QuerySet, int]:
         if status != "IN_PROGRESS":
             query = self._append_status_filter(query)
 
+        query = self._change_filter_project_group_id(query, domain_id)
+        return self.metric_data_model.query(**query)
+
+    def list_monthly_metric_data(
+        self, query: dict, domain_id: str, status: str = None
+    ) -> Tuple[QuerySet, int]:
+        if status != "IN_PROGRESS":
+            query = self._append_status_filter(query)
+
+        query = self._change_filter_project_group_id(query, domain_id)
         return self.monthly_metric_data.query(**query)
 
-    def stat_metric_data(self, query: dict, status: str = None) -> dict:
+    def stat_metric_data(self, query: dict, domain_id: str, status: str = None) -> dict:
         if status != "IN_PROGRESS":
             query = self._append_status_filter(query)
 
+        query = self._change_filter_project_group_id(query, domain_id)
         return self.metric_data_model.stat(**query)
 
-    def stat_monthly_metric_data(self, query: dict, status: str = None) -> dict:
+    def stat_monthly_metric_data(
+        self, query: dict, domain_id: str, status: str = None
+    ) -> dict:
         if status != "IN_PROGRESS":
             query = self._append_status_filter(query)
 
+        query = self._change_filter_project_group_id(query, domain_id)
         return self.monthly_metric_data.stat(**query)
 
     def analyze_metric_data(
-        self, query: dict, target: str = "SECONDARY_PREFERRED", status: str = None
+        self,
+        query: dict,
+        domain_id: str,
+        target: str = "SECONDARY_PREFERRED",
+        status: str = None,
     ) -> dict:
         query["target"] = target
         query["date_field"] = "created_date"
@@ -95,11 +108,17 @@ class MetricDataManager(BaseManager):
         if status != "IN_PROGRESS":
             query = self._append_status_filter(query)
 
+        query = self._change_filter_project_group_id(query, domain_id)
+
         _LOGGER.debug(f"[analyze_metric_data] Query: {query}")
         return self.metric_data_model.analyze(**query)
 
     def analyze_monthly_metric_data(
-        self, query: dict, target: str = "SECONDARY_PREFERRED", status: str = None
+        self,
+        query: dict,
+        domain_id: str,
+        target: str = "SECONDARY_PREFERRED",
+        status: str = None,
     ) -> dict:
         query["target"] = target
         query["date_field"] = "created_month"
@@ -108,11 +127,17 @@ class MetricDataManager(BaseManager):
         if status != "IN_PROGRESS":
             query = self._append_status_filter(query)
 
+        query = self._change_filter_project_group_id(query, domain_id)
+
         _LOGGER.debug(f"[analyze_monthly_metric_data] Query: {query}")
         return self.monthly_metric_data.analyze(**query)
 
     def analyze_yearly_metric_data(
-        self, query: dict, target: str = "SECONDARY_PREFERRED", status: str = None
+        self,
+        query: dict,
+        domain_id: str,
+        target: str = "SECONDARY_PREFERRED",
+        status: str = None,
     ) -> dict:
         query["target"] = target
         query["date_field"] = "created_year"
@@ -120,6 +145,8 @@ class MetricDataManager(BaseManager):
 
         if status != "IN_PROGRESS":
             query = self._append_status_filter(query)
+
+        query = self._change_filter_project_group_id(query, domain_id)
 
         _LOGGER.debug(f"[analyze_yearly_metric_data] Query: {query}")
         return self.monthly_metric_data.analyze(**query)
@@ -136,7 +163,7 @@ class MetricDataManager(BaseManager):
         metric_id: str,
         target: str = "SECONDARY_PREFERRED",
     ) -> dict:
-        return self.analyze_metric_data(query, target)
+        return self.analyze_metric_data(query, domain_id, target)
 
     @cache.cacheable(
         key="inventory:metric-data:monthly:{domain_id}:{metric_id}:{query_hash}",
@@ -150,7 +177,7 @@ class MetricDataManager(BaseManager):
         metric_id: str,
         target: str = "SECONDARY_PREFERRED",
     ) -> dict:
-        return self.analyze_monthly_metric_data(query, target)
+        return self.analyze_monthly_metric_data(query, domain_id, target)
 
     @cache.cacheable(
         key="inventory:metric-data:yearly:{domain_id}:{metric_id}:{query_hash}",
@@ -164,7 +191,7 @@ class MetricDataManager(BaseManager):
         metric_id: str,
         target: str = "SECONDARY_PREFERRED",
     ) -> dict:
-        return self.analyze_yearly_metric_data(query, target)
+        return self.analyze_yearly_metric_data(query, domain_id, target)
 
     def analyze_metric_data_by_granularity(
         self, query: dict, domain_id: str, metric_id: str
@@ -326,4 +353,56 @@ class MetricDataManager(BaseManager):
         query_filter = query.get("filter", [])
         query_filter.append({"k": "status", "v": "DONE", "o": "eq"})
         query["filter"] = query_filter
+        return query
+
+    def _change_filter_project_group_id(self, query: dict, domain_id: str) -> dict:
+        change_filter = []
+        self.identity_mgr = None
+
+        for condition in query.get("filter", []):
+            key = condition.get("k", condition.get("key"))
+            value = condition.get("v", condition.get("value"))
+            operator = condition.get("o", condition.get("operator"))
+
+            if key == "project_group_id":
+                if self.identity_mgr is None:
+                    self.identity_mgr: IdentityManager = self.locator.get_manager(
+                        "IdentityManager"
+                    )
+
+                project_groups_info = self.identity_mgr.list_project_groups(
+                    {
+                        "query": {
+                            "only": ["project_group_id"],
+                            "filter": [{"k": key, "v": value, "o": operator}],
+                        }
+                    },
+                    domain_id,
+                )
+
+                project_group_ids = [
+                    project_group_info["project_group_id"]
+                    for project_group_info in project_groups_info.get("results", [])
+                ]
+
+                project_ids = []
+
+                for project_group_id in project_group_ids:
+                    projects_info = self.identity_mgr.get_projects_in_project_group(
+                        project_group_id
+                    )
+                    project_ids.extend(
+                        [
+                            project_info["project_id"]
+                            for project_info in projects_info.get("results", [])
+                        ]
+                    )
+
+                project_ids = list(set(project_ids))
+                change_filter.append({"k": "project_id", "v": project_ids, "o": "in"})
+
+            else:
+                change_filter.append(condition)
+
+        query["filter"] = change_filter
         return query

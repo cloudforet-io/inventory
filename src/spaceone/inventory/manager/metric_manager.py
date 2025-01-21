@@ -434,7 +434,7 @@ class MetricManager(BaseManager):
         }
 
         response = self.metric_data_mgr.analyze_metric_data(
-            query, target="PRIMARY", status="IN_PROGRESS"
+            query, domain_id, target="PRIMARY", status="IN_PROGRESS"
         )
         results = response.get("results", [])
 
@@ -486,7 +486,9 @@ class MetricManager(BaseManager):
             ]
         }
 
-        metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(query)
+        metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(
+            query, domain_id
+        )
 
         _LOGGER.debug(
             f"[_delete_changed_metric_data] delete count: {metric_data_vos.count()}"
@@ -512,7 +514,7 @@ class MetricManager(BaseManager):
         (
             monthly_metric_data_vos,
             total_count,
-        ) = self.metric_data_mgr.list_monthly_metric_data(query)
+        ) = self.metric_data_mgr.list_monthly_metric_data(query, domain_id)
 
         _LOGGER.debug(
             f"[_delete_changed_monthly_metric_data] delete count: {monthly_metric_data_vos.count()}"
@@ -592,7 +594,7 @@ class MetricManager(BaseManager):
         }
 
         metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(
-            query, status="IN_PROGRESS"
+            query, domain_id, status="IN_PROGRESS"
         )
 
         if metric_data_vos.count() > 0:
@@ -604,7 +606,9 @@ class MetricManager(BaseManager):
         (
             monthly_metric_data_vos,
             total_count,
-        ) = self.metric_data_mgr.list_monthly_metric_data(query, status="IN_PROGRESS")
+        ) = self.metric_data_mgr.list_monthly_metric_data(
+            query, domain_id, status="IN_PROGRESS"
+        )
 
         if monthly_metric_data_vos.count() > 0:
             _LOGGER.debug(
@@ -628,7 +632,7 @@ class MetricManager(BaseManager):
         }
 
         metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(
-            delete_query
+            delete_query, domain_id
         )
 
         if total_count > 0:
@@ -648,7 +652,9 @@ class MetricManager(BaseManager):
         (
             monthly_metric_data_vos,
             total_count,
-        ) = self.metric_data_mgr.list_monthly_metric_data(monthly_delete_query)
+        ) = self.metric_data_mgr.list_monthly_metric_data(
+            monthly_delete_query, domain_id
+        )
 
         if total_count > 0:
             _LOGGER.debug(

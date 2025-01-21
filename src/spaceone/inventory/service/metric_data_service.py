@@ -61,7 +61,9 @@ class MetricDataService(BaseService):
 
         query = params.query or {}
 
-        metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(query)
+        metric_data_vos, total_count = self.metric_data_mgr.list_metric_data(
+            query, params.domain_id
+        )
 
         metric_datas_info = [
             metric_data_vo.to_dict() for metric_data_vo in metric_data_vos
@@ -130,7 +132,7 @@ class MetricDataService(BaseService):
 
         query = params.query or {}
 
-        return self.metric_data_mgr.stat_metric_data(query)
+        return self.metric_data_mgr.stat_metric_data(query, params.domain_id)
 
     @staticmethod
     def _check_required(query: dict) -> None:
