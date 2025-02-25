@@ -5,7 +5,7 @@ from spaceone.core.model.mongo_model import MongoModel
 class Metric(MongoModel):
     metric_id = StringField(max_length=80, unique_with="domain_id")
     metric_job_id = StringField(max_length=40)
-    name = StringField(max_length=40)
+    name = StringField(max_length=80)
     status = StringField(max_length=20, choices=["IN_PROGRESS", "DONE"], default="DONE")
     metric_type = StringField(max_length=40, choices=["COUNTER", "GAUGE"])
     resource_type = StringField()

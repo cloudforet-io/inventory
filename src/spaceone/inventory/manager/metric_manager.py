@@ -720,6 +720,7 @@ class MetricManager(BaseManager):
     @staticmethod
     def _analyze_service_accounts(query: dict, domain_id: str) -> list:
         default_group_by = [
+            "service_account_id",
             "project_id",
             "workspace_id",
         ]
