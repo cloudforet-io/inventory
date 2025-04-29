@@ -1,7 +1,9 @@
 import tempfile
 import logging
-from datetime import datetime
 import pandas as pd
+import re
+from datetime import datetime
+from typing import Any
 from openpyxl.styles import Font, Border, PatternFill, Alignment, Side
 
 from spaceone.core.manager import BaseManager
@@ -76,11 +78,19 @@ class ExportManager(BaseManager):
         return Font(size=12, bold=is_header, color="FFFFFF" if is_header else "000000")
 
     @staticmethod
+    def _sanitize_string(value: Any) -> Any:
+        illegal_characters_re = re.compile(r"[\000-\010\013\014\016-\037]")
+        if isinstance(value, str):
+            value = illegal_characters_re.sub("", value)
+        return value
+
+    @staticmethod
     def _write_excel_file(
         writer: pd.ExcelWriter, df: pd.DataFrame, sheet_name: str, title: str = None
     ) -> None:
         start_row = 1 if title else 0
 
+        df = df.map(ExportManager._sanitize_string)
         df.to_excel(writer, sheet_name=sheet_name, index=False, startrow=start_row)
         ws = writer.sheets[sheet_name]
 
