@@ -1,0 +1,18 @@
+---
+metric_id: metric-managed-iam-workspace
+name: Workspace Count
+metric_type: GAUGE
+resource_type: identity.Workspace
+query_options:
+  group_by:
+    - key: state
+      name: State
+      default: true
+    - key: is_dormant
+      name: Dormant
+  fields:
+    value:
+      operator: count
+unit: Count
+namespace_id: ns-managed-iam-summary
+version: '1.0'
