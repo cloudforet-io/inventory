@@ -124,3 +124,9 @@ class IdentityManager(BaseManager):
         return self.identity_conn.dispatch(
             "ServiceAccount.analyze", {"query": query}, x_domain_id=domain_id
         )
+
+    def analyze_workspaces(self, query: dict, domain_id: str) -> dict:
+        # For background job, use system token
+        return self.identity_conn.dispatch(
+            "Workspace.analyze", {"query": query}, x_domain_id=domain_id
+        )

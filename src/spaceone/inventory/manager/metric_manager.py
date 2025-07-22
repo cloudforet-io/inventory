@@ -239,6 +239,8 @@ class MetricManager(BaseManager):
                 )
             elif metric_vo.resource_type == "identity.ServiceAccount":
                 return self._analyze_service_accounts(query, domain_id)
+            elif metric_vo.resource_type == "identity.Workspace":
+                return self._analyze_workspaces(query, domain_id)
             else:
                 raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
         except Exception as e:
@@ -750,5 +752,39 @@ class MetricManager(BaseManager):
 
         identity_mgr = IdentityManager()
         response = identity_mgr.analyze_service_accounts(query, domain_id)
+
+        return response.get("results", [])
+
+    @staticmethod
+    def _analyze_workspaces(query: dict, domain_id: str) -> list:
+        default_group_by = [
+            "workspace_id",
+        ]
+        changed_group_by = []
+        changed_group_by += copy.deepcopy(default_group_by)
+
+        for group_option in query.get("group_by", []):
+            if isinstance(group_option, dict):
+                key = group_option.get("key")
+            else:
+                key = group_option
+
+            if key not in default_group_by:
+                changed_group_by.append(group_option)
+
+        query["group_by"] = changed_group_by
+        query["filter"] = query.get("filter", [])
+        query["filter"].append({"k": "domain_id", "v": domain_id, "o": "eq"})
+
+        if "select" in query:
+            for group_by_key in ["workspace_id"]:
+                query["select"][group_by_key] = group_by_key
+
+        _LOGGER.debug(
+            f"[_analyze_workspace] Analyze Workspace Query: {query}"
+        )
+
+        identity_mgr = IdentityManager()
+        response = identity_mgr.analyze_workspaces(query, domain_id)
 
         return response.get("results", [])
