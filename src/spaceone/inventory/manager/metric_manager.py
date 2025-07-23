@@ -1,9 +1,10 @@
 import logging
 import copy
 import time
-from typing import Tuple, Union
+from typing import Tuple, Union, List, Dict, Any
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
+from collections import defaultdict
 
 from spaceone.core import config, queue
 from spaceone.core.model.mongo_model import QuerySet
@@ -241,6 +242,8 @@ class MetricManager(BaseManager):
                 return self._analyze_service_accounts(query, domain_id)
             elif metric_vo.resource_type == "identity.Workspace":
                 return self._analyze_workspaces(query, domain_id)
+            elif metric_vo.resource_type == "identity.User":
+                return self._analyze_users(query, domain_id)
             else:
                 raise ERROR_NOT_SUPPORT_RESOURCE_TYPE(resource_type=resource_type)
         except Exception as e:
@@ -788,3 +791,66 @@ class MetricManager(BaseManager):
         response = identity_mgr.analyze_workspaces(query, domain_id)
 
         return response.get("results", [])
+
+    @staticmethod
+    def _analyze_users(query: dict, domain_id: str) -> list:
+        identity_mgr = IdentityManager()
+
+        # role binding list
+        rolebinding_results = identity_mgr.list_rolebindings(
+        {
+            "only": ["domain_id", "workspace_id", "role_type", "user_id"],
+        }, domain_id)
+
+        rolebindings_info = rolebinding_results.get("results", [])
+
+        # user list
+        user_results = identity_mgr.list_users(
+        {
+            "only": ["user_id", "state", "auth_type"],
+        }, domain_id)
+
+        users_info = user_results.get("results", [])
+        user_lookup = {user['user_id']: user for user in users_info}
+
+        # role binding list + user list
+        joined_list = []
+        for rolebinding in rolebindings_info:
+            user = user_lookup.get(rolebinding['user_id'], {})
+            joined = rolebinding.copy()
+            joined['state'] = user.get('state')
+            joined['auth_type'] = user.get('auth_type')
+            joined_list.append(joined)
+
+        # group by keys
+        group_by_keys = ['domain_id', 'workspace_id']
+        group_by_specs = query.get('group_by', [])
+        if 'group_by' in query and group_by_specs:
+            for specs in group_by_specs:
+                key = specs['key']
+                if key not in group_by_keys:
+                    group_by_keys.append(key)
+
+        # count
+        counter: Dict[tuple, int] = defaultdict(int)
+        for rec in joined_list:
+            # tuple of group by keys
+            key = tuple(rec.get(k) for k in group_by_keys)
+            counter[key] += 1
+
+        # result
+        result: List[Dict[str, Any]] = []
+        for key_tuple, cnt in counter.items():
+            out: Dict[str, Any] = {
+                'domain_id': key_tuple[0],
+                'workspace_id': key_tuple[1],
+            }
+
+            for idx, spec in enumerate(group_by_specs, start=2):
+                name = spec.get('name')
+                out[name] = key_tuple[idx]
+
+            out['value'] = float(cnt)
+            result.append(out)
+
+        return result
