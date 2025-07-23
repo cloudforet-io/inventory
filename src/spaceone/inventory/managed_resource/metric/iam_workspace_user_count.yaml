@@ -1,6 +1,6 @@
 ---
-metric_id: metric-managed-iam-user
-name: User Count
+metric_id: metric-managed-iam-workspace-user
+name: WorkspaceUser Count
 metric_type: GAUGE
 resource_type: identity.User
 query_options:
