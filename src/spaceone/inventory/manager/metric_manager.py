@@ -816,11 +816,12 @@ class MetricManager(BaseManager):
         # role binding list + user list
         joined_list = []
         for rolebinding in rolebindings_info:
-            user = user_lookup.get(rolebinding['user_id'], {})
-            joined = rolebinding.copy()
-            joined['state'] = user.get('state')
-            joined['auth_type'] = user.get('auth_type')
-            joined_list.append(joined)
+            user = user_lookup.get(rolebinding['user_id'])
+            if user is not None:
+                joined = rolebinding.copy()
+                joined['state'] = user.get('state')
+                joined['auth_type'] = user.get('auth_type')
+                joined_list.append(joined)
 
         # group by keys
         group_by_keys = ['domain_id', 'workspace_id']
