@@ -12,9 +12,11 @@ query_options:
       name: Role Type
     - key: auth_type
       name: Auth Type
+    - key: user_id
+      name: User ID
   fields:
     value:
       operator: count
 unit: Count
 namespace_id: ns-managed-iam-summary
-version: '1.0'
+version: '1.1'
