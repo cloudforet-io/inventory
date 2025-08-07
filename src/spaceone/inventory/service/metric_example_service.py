@@ -167,6 +167,7 @@ class MetricExampleService(BaseService):
         ]
     )
     @append_keyword_filter(["example_id", "name"])
+    @set_query_page_limit(1000)
     @convert_model
     def list(
         self, params: MetricExampleSearchQueryRequest

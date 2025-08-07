@@ -35,6 +35,7 @@ class ChangeHistoryService(BaseService):
         ]
     )
     @append_keyword_filter(["diff.key", "diff.before", "diff.after"])
+    @set_query_page_limit(1000)
     def list(self, params: dict):
         """
         Args:

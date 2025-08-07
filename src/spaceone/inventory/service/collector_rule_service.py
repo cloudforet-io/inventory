@@ -302,6 +302,7 @@ class CollectorRuleService(BaseService):
         ]
     )
     @append_keyword_filter(["collector_rule_id", "name"])
+    @set_query_page_limit(1000)
     def list(self, params):
         """List collector rule
 

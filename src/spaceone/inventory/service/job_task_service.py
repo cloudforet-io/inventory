@@ -86,6 +86,7 @@ class JobTaskService(BaseService):
             "user_projects",
         ]
     )
+    @set_query_page_limit(1000)
     @append_keyword_filter(["job_task_id"])
     def list(self, params):
         """

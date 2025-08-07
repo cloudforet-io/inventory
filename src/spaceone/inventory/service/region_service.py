@@ -155,6 +155,7 @@ class RegionService(BaseService):
         ]
     )
     @append_keyword_filter(_KEYWORD_FILTER)
+    @set_query_page_limit(1000)
     def list(self, params: dict) -> Tuple[QuerySet, int]:
         """
         Args:
