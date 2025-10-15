@@ -1,8 +1,8 @@
-spaceone-api
-langcodes
-ipaddress
-fakeredis
-pandas
-jinja2
-openpyxl
-pytz
+spaceone-api==2.0.266
+langcodes==3.4.0
+ipaddress==1.0.23
+fakeredis==2.24.1
+pandas==2.0.3
+Jinja2==3.1.4
+openpyxl==3.1.5
+pytz==2024.1
