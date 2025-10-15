@@ -1,4 +1,4 @@
-FROM cloudforet/python-core:2.0
+FROM cloudforet/python-core:2.0.96
 ARG PACKAGE_VERSION
 ENV PYTHONUNBUFFERED 1
 ENV SPACEONE_PORT 50051
@@ -17,7 +17,7 @@ WORKDIR ${SRC_DIR}
 
 RUN python3 setup.py install && rm -rf /tmp/*
 
-RUN pip install --upgrade spaceone-api
+RUN pip install --upgrade spaceone-api==2.0.266
 
 EXPOSE ${SPACEONE_PORT}
 
