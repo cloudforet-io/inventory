@@ -18,7 +18,7 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name="spaceone-inventory",
+    name="spaceone_inventory",
     version=os.environ.get("PACKAGE_VERSION"),
     description="SpaceONE inventory service",
     long_description="",
