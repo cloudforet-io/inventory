@@ -271,6 +271,7 @@ class CloudServiceManager(BaseManager, ResourceManager):
         workspace_id: str,
         ref_mgr: ReferenceManager,
     ):
+        _LOGGER.debug(f"[export] search_query: {query}")
         cloud_service_vos, total_count = self.list_cloud_services(
             query, change_filter=True, domain_id=domain_id
         )
@@ -350,6 +351,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
         return results
 
     def _get_analyze_query_results(self, query: dict, domain_id: str) -> List[dict]:
+        _LOGGER.debug(f"[export] analyze_query: {query}")
+
         response = self.analyze_cloud_services(
             query, change_filter=True, domain_id=domain_id
         )
