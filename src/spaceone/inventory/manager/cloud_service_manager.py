@@ -583,6 +583,8 @@ class CloudServiceManager(BaseManager, ResourceManager):
         workspace_id: str = None,
         user_projects: list = None,
     ):
+        query["page"] = {"limit": 1000}
+
         query["filter"] = query.get("filter", [])
         query["filter_or"] = query.get("filter_or", [])
         keyword = query.get("keyword")
