@@ -41,6 +41,10 @@ SIZE_MAP = {
     "YB": 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024 * 1024,
 }
 
+PAGE_LIMIT_VALUES = [
+    "CSPM"
+]
+
 
 class CloudServiceManager(BaseManager, ResourceManager):
     resource_keys = ["cloud_service_id"]
@@ -578,15 +582,15 @@ class CloudServiceManager(BaseManager, ResourceManager):
         else:
             raise ERROR_REQUIRED_PARAMETER(key="options[].query_type")
 
-    @staticmethod
     def _change_export_query(
+        self,
         query_type: str,
         query: dict,
         domain_id: str,
         workspace_id: str = None,
         user_projects: list = None,
     ):
-        query["page"] = {"limit": 1000}
+        query = self._set_page_limit(query)
 
         query["filter"] = query.get("filter", [])
         query["filter_or"] = query.get("filter_or", [])
@@ -640,5 +644,30 @@ class CloudServiceManager(BaseManager, ResourceManager):
                     raise ERROR_INVALID_PARAMETER_TYPE(
                         key="options[].search_query.fields", type="str or dict"
                     )
+
+        return query
+
+    @staticmethod
+    def _set_page_limit(query: dict) -> dict:
+        is_target = False
+
+        for search_filter in query.get("filter", []):
+            operator = search_filter.get("o")
+
+            if operator == "in" or operator == "eq":
+                value = search_filter.get("v")
+
+                if isinstance(value, list):
+                    value_set = set(value)
+                    target_set = set(PAGE_LIMIT_VALUES)
+
+                    if value_set.intersection(target_set):
+                        is_target = True
+                elif value in PAGE_LIMIT_VALUES:
+                    is_target = True
+
+                if is_target:
+                    query["page"] = {"limit": 1000}
+                    break
 
         return query
