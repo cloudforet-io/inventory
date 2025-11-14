@@ -39,6 +39,7 @@ jobs:
           
           echo "TIME=$CURRENT_TIME" >> $GITHUB_ENV
           echo "TIME=$CURRENT_TIME" >> $GITHUB_OUTPUT
+          echo "PACKAGE_VERSION=$CURRENT_TIME" >> $GITHUB_ENV
 
       - name: Build and push to dockerhub
         uses: docker/build-push-action@v4
