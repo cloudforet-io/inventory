@@ -67,6 +67,12 @@ spec:
               mountPath: /opt/spaceone/{{ .Values.name }}/config/application.yaml
               subPath: application.yaml
               readOnly: true
+{{- if .Values.global.shared_secret.enabled }}
+            - name: shared-secret
+              mountPath: /opt/spaceone/{{ .Values.name }}/config/shared-secret.yaml
+              subPath: shared-secret.yaml
+              readOnly: true
+{{- end }}
 {{- if .Values.volumeMounts.application_rest }}
 {{- toYaml .Values.volumeMounts.application_rest | nindent 12 }}
 {{- end }}
@@ -137,7 +143,11 @@ spec:
         - name: rest-nginx-proxy-conf
           configMap:
             name: {{ .Values.name }}-rest-nginx-proxy-conf
-
+{{- if .Values.global.shared_secret.enabled }}
+        - name: shared-secret
+          secret:
+            secretName: shared-secret
+{{- end }}
 {{- if .Values.volumes }}
 {{- toYaml .Values.volumes | nindent 8 }}
 {{- end }}
